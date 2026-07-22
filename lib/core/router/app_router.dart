@@ -13,17 +13,17 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (_, __) => const _Placeholder('Onboarding')),
-      GoRoute(path: '/login', builder: (_, __) => const _Placeholder('Login')),
-      GoRoute(path: '/register', builder: (_, __) => const _Placeholder('Register')),
-      GoRoute(path: '/track-select', builder: (_, __) => const _Placeholder('Track select')),
-      GoRoute(path: '/home', builder: (_, __) => const _Placeholder('Home')),
-      GoRoute(path: '/catalog', builder: (_, __) => const _Placeholder('Subjects')),
-      GoRoute(path: '/quiz/:quizId', builder: (_, __) => const _Placeholder('Quiz')),
-      GoRoute(path: '/subscription', builder: (_, __) => const _Placeholder('Subscription')),
-      GoRoute(path: '/subscription/return', builder: (_, __) => const _Placeholder('Paymob return')),
-      GoRoute(path: '/profile', builder: (_, __) => const _Placeholder('Profile')),
-      GoRoute(path: '/settings', builder: (_, __) => const _Placeholder('Settings')),
+      GoRoute(path: '/', builder: (_, _) => const _Placeholder('Onboarding')),
+      GoRoute(path: '/login', builder: (_, _) => const _Placeholder('Login')),
+      GoRoute(path: '/register', builder: (_, _) => const _Placeholder('Register')),
+      GoRoute(path: '/track-select', builder: (_, _) => const _Placeholder('Track select')),
+      GoRoute(path: '/home', builder: (_, _) => const _Placeholder('Home')),
+      GoRoute(path: '/catalog', builder: (_, _) => const _Placeholder('Subjects')),
+      GoRoute(path: '/quiz/:quizId', builder: (_, _) => const _Placeholder('Quiz')),
+      GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),
+      GoRoute(path: '/subscription/return', builder: (_, _) => const _Placeholder('Paymob return')),
+      GoRoute(path: '/profile', builder: (_, _) => const _Placeholder('Profile')),
+      GoRoute(path: '/settings', builder: (_, _) => const _Placeholder('Settings')),
     ],
   );
 });
