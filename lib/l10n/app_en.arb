@@ -1,0 +1,10 @@
+{
+  "@@locale": "en",
+  "appTitle": "Level Up",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "retry": "Retry",
+  "offline": "You are offline",
+  "genericError": "Something went wrong"
+}
