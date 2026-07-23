@@ -20,7 +20,11 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
 
-const _args = OtpArgs(phone: '+201021871999', resendAfterSeconds: 0, expiresInSeconds: 300);
+const _args = OtpArgs(
+  phone: '+201021871999',
+  resendAfterSeconds: 0,
+  expiresInSeconds: 300,
+);
 const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
 const _tokens = TokenPair(
   accessToken: 'access.jwt',
@@ -48,12 +52,14 @@ void main() {
   late MockAuthRepository repo;
   late MockSecureStorage storage;
 
-  ProviderContainer makeContainer() {
+  ProviderContainer makeContainer({bool offline = false}) {
     final container = ProviderContainer(
       overrides: [
         authRepositoryProvider.overrideWithValue(repo),
         secureStorageProvider.overrideWithValue(storage),
         deviceInfoProvider.overrideWith((ref) async => _device),
+        if (offline)
+          isOnlineProvider.overrideWith((ref) => Stream.value(false)),
       ],
     );
     addTearDown(container.dispose);
@@ -63,14 +69,17 @@ void main() {
   setUp(() {
     repo = MockAuthRepository();
     storage = MockSecureStorage();
-    when(() => storage.writeTokens(
-          access: any(named: 'access'),
-          refresh: any(named: 'refresh'),
-        )).thenAnswer((_) async {});
+    when(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  testWidgets('renders 6 OTP boxes and, at 0 countdown, the Resend action',
-      (tester) async {
+  testWidgets('renders 6 OTP boxes and, at 0 countdown, the Resend action', (
+    tester,
+  ) async {
     await tester.pumpWidget(_harness(makeContainer()));
 
     // pinput renders a single Pinput; its length is the contract-mandated 6.
@@ -79,13 +88,35 @@ void main() {
     expect(find.widgetWithText(TextButton, 'Resend OTP'), findsOneWidget);
   });
 
-  testWidgets('authenticated verify → success screen with Continue',
-      (tester) async {
-    when(() => repo.verifyOtp(
-          phone: any(named: 'phone'),
-          code: any(named: 'code'),
-          device: any(named: 'device'),
-        )).thenAnswer(
+  testWidgets('offline → distinct banner shown, Verify + Resend disabled', (
+    tester,
+  ) async {
+    final container = makeContainer(offline: true);
+    await tester.pumpWidget(_harness(container));
+    await tester.pump(); // let the connectivity stream emit `false`
+
+    expect(find.text('You are offline'), findsOneWidget);
+    // Resend is enabled at 0 countdown when online — offline disables it.
+    final resend = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Resend OTP'),
+    );
+    expect(resend.onPressed, isNull);
+    final verify = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Verify'),
+    );
+    expect(verify.onPressed, isNull);
+  });
+
+  testWidgets('authenticated verify → success screen with Continue', (
+    tester,
+  ) async {
+    when(
+      () => repo.verifyOtp(
+        phone: any(named: 'phone'),
+        code: any(named: 'code'),
+        device: any(named: 'device'),
+      ),
+    ).thenAnswer(
       (_) async => const AuthResult.authenticated(tokens: _tokens, profile: {}),
     );
 

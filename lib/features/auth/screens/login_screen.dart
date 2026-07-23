@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
@@ -31,7 +32,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   // TODO(legal): real legal URLs are TBD — these are placeholders flagged to
   // product/legal. Wired through url_launcher so the links work once finalized.
-  static const _userAgreementUrl = 'https://levelup.example/legal/user-agreement';
+  static const _userAgreementUrl =
+      'https://levelup.example/legal/user-agreement';
   static const _privacyPolicyUrl = 'https://levelup.example/legal/privacy';
   static const _cookiePolicyUrl = 'https://levelup.example/legal/cookies';
 
@@ -48,6 +50,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() => _phoneErrorKey = l10n.invalidPhone);
       return;
     }
+    // Don't fire a doomed request while known-offline (the button is also
+    // disabled; this guards the keyboard-submit path too).
+    if (ref.read(isOnlineProvider).value == false) return;
     setState(() => _phoneErrorKey = null);
     FocusScope.of(context).unfocus();
 
@@ -74,131 +79,185 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final ext = Theme.of(context).extension<AppColors>()!;
     final loginState = ref.watch(loginProvider);
     final isSubmitting = loginState.isLoading;
+    // Distinct offline STATE: only when connectivity is definitively down
+    // (null = unknown/first frame → treated as online, don't block).
+    final offline = ref.watch(isOnlineProvider).value == false;
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Language toggle — top-end (right in LTR, left in RTL).
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: _LanguagePill(
-                  label: l10n.switchLanguage,
-                  onTap: () => ref.read(localeProvider.notifier).toggle(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Bird logo — placeholder (Figma vector not yet exported to assets).
-              Icon(Icons.flutter_dash, size: 88, color: cs.primary),
-              const SizedBox(height: 16),
-              Text(
-                l10n.welcomeBack,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: ext.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.loginSubtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: ext.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                l10n.phoneLabel,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                  color: ext.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              _PhoneField(
-                controller: _phoneController,
-                hint: l10n.phoneHint,
-                enabled: !isSubmitting,
-                onSubmitted: (_) => _submit(),
-              ),
-              if (_phoneErrorKey != null) ...[
-                const SizedBox(height: 8),
-                _InlineMessage(text: _phoneErrorKey!, color: cs.error),
-              ],
-              // Server / offline error from the request itself.
-              if (loginState.hasError) ...[
-                const SizedBox(height: 8),
-                _InlineMessage(
-                  text: authErrorMessage(l10n, loginState.error),
-                  color: cs.error,
-                  icon: isOffline(loginState.error)
-                      ? Icons.wifi_off
-                      : Icons.error_outline,
-                ),
-              ],
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: isSubmitting ? null : _submit,
-                child: isSubmitting
-                    ? SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: cs.onPrimary,
+        child: Column(
+          children: [
+            if (offline) const _OfflineBanner(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Language toggle — top-end (right in LTR, left in RTL).
+                    Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: _LanguagePill(
+                        label: l10n.switchLanguage,
+                        onTap: () => ref.read(localeProvider.notifier).toggle(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Bird logo — placeholder (Figma vector not yet exported to assets).
+                    Icon(Icons.flutter_dash, size: 88, color: cs.primary),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.welcomeBack,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: ext.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.loginSubtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: ext.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    Text(
+                      l10n.phoneLabel,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: ext.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _PhoneField(
+                      controller: _phoneController,
+                      hint: l10n.phoneHint,
+                      enabled: !isSubmitting,
+                      onSubmitted: (_) => _submit(),
+                    ),
+                    if (_phoneErrorKey != null) ...[
+                      const SizedBox(height: 8),
+                      _InlineMessage(text: _phoneErrorKey!, color: cs.error),
+                    ],
+                    // Server / offline error from the request itself.
+                    if (loginState.hasError) ...[
+                      const SizedBox(height: 8),
+                      _InlineMessage(
+                        text: authErrorMessage(l10n, loginState.error),
+                        color: cs.error,
+                        icon: isOffline(loginState.error)
+                            ? Icons.wifi_off
+                            : Icons.error_outline,
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: (isSubmitting || offline) ? null : _submit,
+                      child: isSubmitting
+                          ? SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: cs.onPrimary,
+                              ),
+                            )
+                          : Text(
+                              l10n.sendOtp,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.orDivider,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: ext.textSecondary),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () => context.push('/register'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(60),
+                        backgroundColor: ext.fieldFill,
+                        side: BorderSide(
+                          color: ext.secondaryButtonBorder,
+                          width: 0.5,
                         ),
-                      )
-                    : Text(
-                        l10n.sendOtp,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
                       ),
+                      child: Text(
+                        l10n.createNewAccount,
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w600,
+                          color: ext.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _LegalLine(
+                      onOpen: _openUrl,
+                      userAgreementUrl: _userAgreementUrl,
+                      privacyPolicyUrl: _privacyPolicyUrl,
+                      cookiePolicyUrl: _cookiePolicyUrl,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.orDivider,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A distinct, pinned offline indicator (NOT a failed-request error). Shown when
+/// connectivity is definitively down; the primary action is disabled alongside it.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.errorContainer,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: 16,
+          vertical: 10,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.offline,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: ext.textSecondary),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: isSubmitting ? null : () => context.push('/register'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(60),
-                  backgroundColor: ext.fieldFill,
-                  side: BorderSide(color: ext.secondaryButtonBorder, width: 0.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Text(
-                  l10n.createNewAccount,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                style: TextStyle(
+                  color: cs.onErrorContainer,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 24),
-              _LegalLine(
-                onOpen: _openUrl,
-                userAgreementUrl: _userAgreementUrl,
-                privacyPolicyUrl: _privacyPolicyUrl,
-                cookiePolicyUrl: _cookiePolicyUrl,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -217,7 +276,10 @@ class _LanguagePill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsetsDirectional.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: 14,
+          vertical: 8,
+        ),
         decoration: BoxDecoration(
           color: ext.background,
           border: Border.all(color: ext.secondaryButtonBorder),
@@ -344,9 +406,9 @@ class _LegalLine extends StatelessWidget {
     final link = base.copyWith(color: ext.link, fontWeight: FontWeight.w600);
 
     Widget linkText(String label, String url) => GestureDetector(
-          onTap: () => onOpen(url),
-          child: Text(label, style: link),
-        );
+      onTap: () => onOpen(url),
+      child: Text(label, style: link),
+    );
 
     return Wrap(
       alignment: WrapAlignment.center,

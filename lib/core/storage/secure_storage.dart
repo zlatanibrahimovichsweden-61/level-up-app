@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Never log token values.
 class SecureStorage {
   SecureStorage([FlutterSecureStorage? storage])
-      : _storage = storage ?? const FlutterSecureStorage();
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -26,6 +26,17 @@ class SecureStorage {
   Future<String?> readAccessToken() => _storage.read(key: _kAccess);
   Future<String?> readRefreshToken() => _storage.read(key: _kRefresh);
 
+  /// Logout MUST use this, NOT [clear]: it deletes only the tokens and preserves
+  /// `_kDeviceId`. Wiping the device id would make the next login look like a
+  /// brand-new device and mis-trigger the `session_superseded` eviction (adr-019).
+  Future<void> clearTokens() async {
+    await _storage.delete(key: _kAccess);
+    await _storage.delete(key: _kRefresh);
+  }
+
+  /// Full wipe of ALL keys, including the device id. Use only for a true reset
+  /// (e.g. account deletion / reinstall semantics) — never for logout; use
+  /// [clearTokens] there.
   Future<void> clear() => _storage.deleteAll();
 
   /// The stable device-binding id (adr-019). Generated once and persisted, so

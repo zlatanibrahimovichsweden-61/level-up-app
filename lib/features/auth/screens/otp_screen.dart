@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
 
+import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../auth_error_copy.dart';
@@ -36,6 +37,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   void _verify() {
+    // Guard the auto-submit path too (button is disabled when offline).
+    if (ref.read(isOnlineProvider).value == false) return;
     FocusScope.of(context).unfocus();
     ref.read(otpProvider(widget.args).notifier).verify(_pin);
   }
@@ -44,6 +47,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(otpProvider(widget.args));
+    // Distinct offline STATE: only when connectivity is definitively down
+    // (null = unknown/first frame → treated as online, don't block).
+    final offline = ref.watch(isOnlineProvider).value == false;
 
     // registrationRequired navigates away immediately (no success screen);
     // navigation can't happen during build, so it goes through this listener.
@@ -57,22 +63,75 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return Scaffold(
       appBar: AppBar(),
       body: SafeArea(
-        child: state.outcome is AuthenticatedOutcome
-            ? _SuccessView(onContinue: () => context.go('/home'))
-            : _InputView(
-                l10n: l10n,
-                state: state,
-                pinController: _pinController,
-                focusNode: _focusNode,
-                onChanged: (v) => setState(() => _pin = v),
-                onCompleted: (v) {
-                  _pin = v;
-                  _verify();
-                },
-                onVerify: _pin.length == 6 && !state.isVerifying ? _verify : null,
-                onResend: () =>
-                    ref.read(otpProvider(widget.args).notifier).resend(),
+        child: Column(
+          children: [
+            if (offline) const _OfflineBanner(),
+            Expanded(
+              child: state.outcome is AuthenticatedOutcome
+                  ? _SuccessView(onContinue: () => context.go('/home'))
+                  : _InputView(
+                      l10n: l10n,
+                      state: state,
+                      pinController: _pinController,
+                      focusNode: _focusNode,
+                      onChanged: (v) => setState(() => _pin = v),
+                      onCompleted: (v) {
+                        _pin = v;
+                        _verify();
+                      },
+                      onVerify:
+                          _pin.length == 6 && !state.isVerifying && !offline
+                          ? _verify
+                          : null,
+                      // Resend is disabled while offline (null → button disabled).
+                      onResend: offline
+                          ? null
+                          : () => ref
+                                .read(otpProvider(widget.args).notifier)
+                                .resend(),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A distinct, pinned offline indicator (NOT a failed-request error). Shown when
+/// connectivity is definitively down; Verify and Resend are disabled alongside it.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.errorContainer,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(
+          horizontal: 16,
+          vertical: 10,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.offline,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: cs.onErrorContainer,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -97,7 +156,7 @@ class _InputView extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final ValueChanged<String> onCompleted;
   final VoidCallback? onVerify;
-  final VoidCallback onResend;
+  final VoidCallback? onResend;
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +285,7 @@ class _ResendRow extends StatelessWidget {
   final AppLocalizations l10n;
   final int secondsRemaining;
   final bool isResending;
-  final VoidCallback onResend;
+  final VoidCallback? onResend;
 
   @override
   Widget build(BuildContext context) {
