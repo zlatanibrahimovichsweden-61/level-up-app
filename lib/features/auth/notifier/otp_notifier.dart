@@ -11,6 +11,7 @@ import '../models/auth_result.dart';
 import '../models/otp_args.dart';
 import '../repository/auth_repository.dart';
 import '../repository/device_info_provider.dart';
+import 'auth_controller.dart';
 
 /// Immutable UI state for the OTP screen. Multiple independent concerns —
 /// the resend countdown (periodic), verify, resend, inline error styling and the
@@ -97,6 +98,9 @@ class OtpNotifier extends Notifier<OtpUiState> {
                 access: tokens.accessToken,
                 refresh: tokens.refreshToken,
               );
+          // Flip the single source of auth truth so the router guard authorizes
+          // /home (the screen still shows the success view + Continue first).
+          ref.read(authControllerProvider.notifier).markAuthenticated();
           state = state.copyWith(
             isVerifying: false,
             outcome: const AuthenticatedOutcome(),

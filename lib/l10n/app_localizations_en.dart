@@ -87,6 +87,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueLabel => 'Continue';
 
   @override
+  String get sessionEndedSuperseded =>
+      'You\'ve been signed out — your account was used on another device.';
+
+  @override
+  String get sessionExpired => 'Your session expired. Please sign in again.';
+
+  @override
   String get invalidPhone => 'Please enter a valid phone number';
 
   @override

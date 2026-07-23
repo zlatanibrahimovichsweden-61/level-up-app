@@ -2,8 +2,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/auth/notifier/auth_controller.dart';
+import '../../features/auth/repository/auth_repository.dart';
 import '../network/dio_client.dart';
-import '../network/interceptors/auth_interceptor.dart';
 import '../network/interceptors/error_interceptor.dart';
 import '../storage/secure_storage.dart';
 
@@ -12,10 +13,26 @@ import '../storage/secure_storage.dart';
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
 
-final dioProvider = Provider<Dio>((ref) {
-  final storage = ref.watch(secureStorageProvider);
+/// The bare client used ONLY for `POST /auth/refresh` — no AuthInterceptor, so a
+/// 401 during refresh cannot re-enter the retry path.
+final refreshDioProvider = Provider<Dio>((ref) {
+  return DioClient.createBare(error: ErrorInterceptor());
+});
+
+// Explicit left-side type: dioProvider and authRepositoryProvider reference each
+// other (the refresh closure), which is a lazy RUNTIME link but a static
+// reference cycle — annotating the variable breaks the inference cycle.
+final Provider<Dio> dioProvider = Provider<Dio>((ref) {
   return DioClient.create(
-    auth: AuthInterceptor(storage),
+    storage: ref.watch(secureStorageProvider),
+    authController: ref.read(authControllerProvider.notifier),
+    // Lazy: reads authRepositoryProvider only when a refresh is actually needed
+    // (at onError), so building dioProvider doesn't cycle back through the repo.
+    refresh: ({required refreshToken, required deviceId}) =>
+        ref.read(authRepositoryProvider).refresh(
+              refreshToken: refreshToken,
+              deviceId: deviceId,
+            ),
     error: ErrorInterceptor(),
   );
 });

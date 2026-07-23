@@ -44,6 +44,9 @@
   "otpSuccessSubtitle": "You have been authenticated",
   "continueLabel": "Continue",
 
+  "sessionEndedSuperseded": "You've been signed out — your account was used on another device.",
+  "sessionExpired": "Your session expired. Please sign in again.",
+
   "invalidPhone": "Please enter a valid phone number",
   "errorOtpInvalid": "This is an incorrect code, try again",
   "errorOtpExpired": "This code has expired. Request a new one.",

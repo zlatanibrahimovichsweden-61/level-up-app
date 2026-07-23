@@ -248,6 +248,18 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get continueLabel;
 
+  /// No description provided for @sessionEndedSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been signed out — your account was used on another device.'**
+  String get sessionEndedSuperseded;
+
+  /// No description provided for @sessionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session expired. Please sign in again.'**
+  String get sessionExpired;
+
   /// No description provided for @invalidPhone.
   ///
   /// In en, this message translates to:

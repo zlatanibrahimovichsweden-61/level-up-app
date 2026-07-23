@@ -75,6 +75,8 @@ void main() {
         refresh: any(named: 'refresh'),
       ),
     ).thenAnswer((_) async {});
+    // The authenticated path now flips AuthController, whose build() reads this.
+    when(() => storage.readAccessToken()).thenAnswer((_) async => null);
   });
 
   testWidgets('renders 6 OTP boxes and, at 0 countdown, the Resend action', (

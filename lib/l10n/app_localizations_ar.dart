@@ -87,6 +87,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get continueLabel => 'متابعة';
 
   @override
+  String get sessionEndedSuperseded =>
+      'تم تسجيل خروجك — تم استخدام حسابك على جهاز آخر.';
+
+  @override
+  String get sessionExpired =>
+      'انتهت صلاحية جلستك. من فضلك سجّل الدخول مرة أخرى.';
+
+  @override
   String get invalidPhone => 'من فضلك أدخل رقم هاتف صحيح';
 
   @override

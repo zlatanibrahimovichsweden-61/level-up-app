@@ -55,6 +55,8 @@ void main() {
           access: any(named: 'access'),
           refresh: any(named: 'refresh'),
         )).thenAnswer((_) async {});
+    // The authenticated path now flips AuthController, whose build() reads this.
+    when(() => storage.readAccessToken()).thenAnswer((_) async => null);
   });
 
   test('authenticated → tokens stored, then AuthenticatedOutcome', () async {

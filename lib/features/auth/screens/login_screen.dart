@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../auth_error_copy.dart';
 import '../models/otp_args.dart';
 import '../models/phone.dart';
+import '../notifier/auth_controller.dart';
 import '../notifier/login_notifier.dart';
 
 /// Login (phone entry). Collects an Egyptian number behind a fixed +20 chip,
@@ -36,6 +37,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       'https://levelup.example/legal/user-agreement';
   static const _privacyPolicyUrl = 'https://levelup.example/legal/privacy';
   static const _cookiePolicyUrl = 'https://levelup.example/legal/cookies';
+
+  @override
+  void initState() {
+    super.initState();
+    // The forced-logout message: on arrival at /login (fresh mount after a
+    // forceLogout), show the reason ONCE, then clear it so it can't repeat.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showLogoutReasonOnce());
+  }
+
+  void _showLogoutReasonOnce() {
+    if (!mounted) return;
+    final status = ref.read(authControllerProvider);
+    if (status is! AuthUnauthenticated || status.reason == null) return;
+
+    final l10n = AppLocalizations.of(context);
+    final message = switch (status.reason!) {
+      LogoutReason.supersededOtherDevice => l10n.sessionEndedSuperseded,
+      LogoutReason.sessionExpired => l10n.sessionExpired,
+      LogoutReason.userInitiated => null, // routine sign-out → no message
+    };
+    ref.read(authControllerProvider.notifier).clearReason();
+    if (message == null) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   void dispose() {

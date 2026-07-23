@@ -29,6 +29,9 @@
   "otpSuccessSubtitle": "تم تسجيل دخولك بنجاح",
   "continueLabel": "متابعة",
 
+  "sessionEndedSuperseded": "تم تسجيل خروجك — تم استخدام حسابك على جهاز آخر.",
+  "sessionExpired": "انتهت صلاحية جلستك. من فضلك سجّل الدخول مرة أخرى.",
+
   "invalidPhone": "من فضلك أدخل رقم هاتف صحيح",
   "errorOtpInvalid": "الرمز غير صحيح، حاول مرة أخرى",
   "errorOtpExpired": "انتهت صلاحية هذا الرمز. اطلب رمزًا جديدًا.",
