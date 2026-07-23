@@ -94,6 +94,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionExpired => 'Your session expired. Please sign in again.';
 
   @override
+  String get createAccountTitle => 'Create Account';
+
+  @override
+  String get createAccountSubtitle => 'Join thousands of students leveling up';
+
+  @override
+  String get fullNameLabel => 'Full Name';
+
+  @override
+  String get fullNameHint => 'Your full name';
+
+  @override
+  String get parentNumberLabel => 'Parent\'s Number';
+
+  @override
+  String get referralCodeOptional => 'Referral Code (Optional)';
+
+  @override
+  String get referralCodeHint => 'Enter code';
+
+  @override
+  String get chooseTrackTitle => 'Choose Your Track';
+
+  @override
+  String get chooseTrackSubtitle => 'This determines your content and quizzes';
+
+  @override
+  String get trackSchool => 'School Student';
+
+  @override
+  String get trackUniversity => 'University Student';
+
+  @override
+  String get registrationExpired =>
+      'Your registration session expired. Please start again.';
+
+  @override
+  String get backToLogin => 'Back to login';
+
+  @override
+  String get invalidName => 'Please enter your name';
+
+  @override
   String get invalidPhone => 'Please enter a valid phone number';
 
   @override

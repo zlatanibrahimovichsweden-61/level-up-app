@@ -95,6 +95,50 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت صلاحية جلستك. من فضلك سجّل الدخول مرة أخرى.';
 
   @override
+  String get createAccountTitle => 'إنشاء حساب';
+
+  @override
+  String get createAccountSubtitle =>
+      'انضم إلى آلاف الطلاب الذين يرتقون بمستواهم';
+
+  @override
+  String get fullNameLabel => 'الاسم الكامل';
+
+  @override
+  String get fullNameHint => 'اسمك الكامل';
+
+  @override
+  String get parentNumberLabel => 'رقم ولي الأمر';
+
+  @override
+  String get referralCodeOptional => 'رمز الإحالة (اختياري)';
+
+  @override
+  String get referralCodeHint => 'أدخل الرمز';
+
+  @override
+  String get chooseTrackTitle => 'اختر مسارك';
+
+  @override
+  String get chooseTrackSubtitle => 'هذا يحدّد المحتوى والاختبارات الخاصة بك';
+
+  @override
+  String get trackSchool => 'طالب مدرسة';
+
+  @override
+  String get trackUniversity => 'طالب جامعة';
+
+  @override
+  String get registrationExpired =>
+      'انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.';
+
+  @override
+  String get backToLogin => 'العودة لتسجيل الدخول';
+
+  @override
+  String get invalidName => 'من فضلك أدخل اسمك';
+
+  @override
   String get invalidPhone => 'من فضلك أدخل رقم هاتف صحيح';
 
   @override

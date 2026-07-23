@@ -260,6 +260,90 @@ abstract class AppLocalizations {
   /// **'Your session expired. Please sign in again.'**
   String get sessionExpired;
 
+  /// No description provided for @createAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccountTitle;
+
+  /// No description provided for @createAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join thousands of students leveling up'**
+  String get createAccountSubtitle;
+
+  /// No description provided for @fullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullNameLabel;
+
+  /// No description provided for @fullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full name'**
+  String get fullNameHint;
+
+  /// No description provided for @parentNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent\'s Number'**
+  String get parentNumberLabel;
+
+  /// No description provided for @referralCodeOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral Code (Optional)'**
+  String get referralCodeOptional;
+
+  /// No description provided for @referralCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code'**
+  String get referralCodeHint;
+
+  /// No description provided for @chooseTrackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Your Track'**
+  String get chooseTrackTitle;
+
+  /// No description provided for @chooseTrackSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This determines your content and quizzes'**
+  String get chooseTrackSubtitle;
+
+  /// No description provided for @trackSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'School Student'**
+  String get trackSchool;
+
+  /// No description provided for @trackUniversity.
+  ///
+  /// In en, this message translates to:
+  /// **'University Student'**
+  String get trackUniversity;
+
+  /// No description provided for @registrationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your registration session expired. Please start again.'**
+  String get registrationExpired;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to login'**
+  String get backToLogin;
+
+  /// No description provided for @invalidName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get invalidName;
+
   /// No description provided for @invalidPhone.
   ///
   /// In en, this message translates to:
