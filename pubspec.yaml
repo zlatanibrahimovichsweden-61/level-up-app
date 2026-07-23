@@ -50,6 +50,10 @@ dependencies:
   intl: 0.20.2
   flutter_localizations:
     sdk: flutter
+  pinput: ^6.0.2
+  device_info_plus: ^13.2.0
+  flutter_svg: ^2.3.0
+  country_flags: ^4.1.2
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +83,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Generate the typed AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
+  # All user-facing copy goes through AppLocalizations — zero hardcoded strings.
+  generate: true
 
   assets:
     - assets/images/

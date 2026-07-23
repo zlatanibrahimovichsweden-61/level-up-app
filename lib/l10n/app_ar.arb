@@ -3,5 +3,35 @@
   "appTitle": "ليفل أب",
   "retry": "إعادة المحاولة",
   "offline": "أنت غير متصل بالإنترنت",
-  "genericError": "حدث خطأ ما"
+  "genericError": "حدث خطأ ما",
+
+  "switchLanguage": "English",
+
+  "welcomeBack": "مرحبًا بعودتك",
+  "loginSubtitle": "أدخل رقم هاتفك للمتابعة",
+  "phoneLabel": "رقم الهاتف",
+  "phoneHint": "01021871999",
+  "sendOtp": "إرسال رمز التحقق",
+  "orDivider": "أو",
+  "createNewAccount": "إنشاء حساب جديد",
+  "legalPrefix": "بالمتابعة، فإنك توافق على",
+  "userAgreement": "اتفاقية المستخدم",
+  "privacyPolicy": "سياسة الخصوصية",
+  "cookiePolicy": "سياسة ملفات تعريف الارتباط",
+  "legalAnd": "و",
+
+  "checkOtpTitle": "التحقق من الرمز",
+  "otpSubtitle": "لقد أرسلنا رمز التحقق إلى هاتفك. أدخل الرمز المكوّن من 6 أرقام.",
+  "verify": "تحقّق",
+  "resendOtp": "إعادة إرسال الرمز",
+  "resendIn": "إعادة الإرسال خلال {seconds} ث",
+  "otpSuccessTitle": "تم بنجاح",
+  "otpSuccessSubtitle": "تم تسجيل دخولك بنجاح",
+  "continueLabel": "متابعة",
+
+  "invalidPhone": "من فضلك أدخل رقم هاتف صحيح",
+  "errorOtpInvalid": "الرمز غير صحيح، حاول مرة أخرى",
+  "errorOtpExpired": "انتهت صلاحية هذا الرمز. اطلب رمزًا جديدًا.",
+  "errorOtpThrottled": "محاولات كثيرة جدًا. انتظر لحظة ثم حاول مرة أخرى.",
+  "errorValidationFailed": "من فضلك تحقق من بياناتك وحاول مرة أخرى."
 }
