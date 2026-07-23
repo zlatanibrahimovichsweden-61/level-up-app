@@ -6,5 +6,50 @@
   },
   "retry": "Retry",
   "offline": "You are offline",
-  "genericError": "Something went wrong"
+  "genericError": "Something went wrong",
+
+  "switchLanguage": "العربية",
+  "@switchLanguage": {
+    "description": "Language-toggle pill label. Shows the OTHER language's endonym: in English it offers Arabic."
+  },
+
+  "welcomeBack": "Welcome back",
+  "loginSubtitle": "Enter your phone number to continue",
+  "phoneLabel": "Phone Number",
+  "phoneHint": "01021871999",
+  "sendOtp": "Send OTP",
+  "orDivider": "OR",
+  "createNewAccount": "Create New Account",
+  "legalPrefix": "By continuing, you agree to our",
+  "userAgreement": "User Agreement",
+  "privacyPolicy": "Privacy Policy",
+  "cookiePolicy": "Cookie Policy",
+  "legalAnd": "and",
+
+  "checkOtpTitle": "Check OTP code",
+  "otpSubtitle": "We have sent a verification code to your phone. Enter the 6-digit code.",
+  "verify": "Verify",
+  "resendOtp": "Resend OTP",
+  "resendIn": "Resend in {seconds}s",
+  "@resendIn": {
+    "description": "Countdown until the resend action becomes available.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "60"
+      }
+    }
+  },
+  "otpSuccessTitle": "Successful",
+  "otpSuccessSubtitle": "You have been authenticated",
+  "continueLabel": "Continue",
+
+  "sessionEndedSuperseded": "You've been signed out — your account was used on another device.",
+  "sessionExpired": "Your session expired. Please sign in again.",
+
+  "invalidPhone": "Please enter a valid phone number",
+  "errorOtpInvalid": "This is an incorrect code, try again",
+  "errorOtpExpired": "This code has expired. Request a new one.",
+  "errorOtpThrottled": "Too many attempts. Please wait a moment and try again.",
+  "errorValidationFailed": "Please check your input and try again."
 }

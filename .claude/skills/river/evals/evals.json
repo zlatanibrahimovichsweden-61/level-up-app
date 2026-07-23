@@ -1,0 +1,19 @@
+{
+  "skill_name": "river",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "subscription-pending-state",
+      "prompt": "write the riverpod state layer + screen widget for the level up subscription status screen. GET /api/v1/subscription returns { \"status\": \"active\" | \"pending\" | \"inactive\", \"plan\": \"base_subscription\", \"expires_at\": string|null }. keep in mind some students pay cash via fawry. dart files please: model, repository, notifier/provider, widget.",
+      "expected_output": "Sealed SubscriptionStatus (Active/Pending/Inactive); Fawry pending rendered as its own 'Payment processing' UI, never as loading or active; AsyncNotifier with AsyncValue.guard; AsyncValue mapped to loading/empty/error/offline via the shared StateWidget; OfflineException drives the offline view; user-tapped retry calling refresh(); DI via providers; glossary names verbatim (baseSubscription, not 'premium'/'plan').",
+      "files": []
+    },
+    {
+      "id": 1,
+      "eval_name": "fix-boolean-state-screen",
+      "prompt": "a teammate wrote this for the level up flashcard list screen and it's buggy: when you go offline it shows the generic error view, sometimes the loading spinner and the error text show at the same time, and the whole list rebuilds whenever the user's points change in the header. here's the gist of his code:\n\nclass FlashcardScreenState extends State<FlashcardScreen> {\n  bool isLoading = false;\n  bool hasError = false;\n  List<Flashcard> cards = [];\n  @override\n  void initState() { super.initState(); load(); }\n  Future<void> load() async {\n    setState(() => isLoading = true);\n    try { cards = await api.get('/flashcards'); } catch (e) { hasError = true; }\n    setState(() => isLoading = false);\n  }\n  ...\n}\n\nrefactor it the right way for this project.",
+      "expected_output": "Diagnoses the boolean-soup problem (impossible combinations); moves network state out of setState into a Riverpod AsyncNotifier; repository throws typed AppExceptions so OfflineException gets the offline view distinct from error; exhaustive rendering via StateWidget/sealed states; select() or provider scoping so the points header doesn't rebuild the list; retry is user-tapped.",
+      "files": []
+    }
+  ]
+}
