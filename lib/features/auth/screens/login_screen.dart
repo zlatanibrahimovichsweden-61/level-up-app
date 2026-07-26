@@ -8,6 +8,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/otp_args.dart';
 import '../models/phone.dart';
@@ -70,6 +71,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// Requests an OTP for the typed phone and advances to `/otp`.
+  ///
+  /// This backs BOTH buttons on this screen. "Create New Account" used to push
+  /// `/register` directly, which always dead-ended on the registration expiry
+  /// guard: the contract is phone-verify-first, so there is no token-less
+  /// registration route to push. The new-vs-existing fork is decided by the
+  /// server at `otp/verify` (`registrationRequired` vs `authenticated`), so
+  /// signing in and signing up are the same first step. An empty/invalid number
+  /// surfaces the same inline error either way.
+  /// See docs/DESIGN_ISSUES.md #8 — the designer still owes us the intended copy.
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     final phone = Phone.tryParse(_phoneController.text);
@@ -130,7 +141,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Bird logo — placeholder (Figma vector not yet exported to assets).
+                    // TODO(design-asset): real bird logo (Figma node 82:849) — blocked by
+                    // export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
+                    // Swap this Icon for SvgPicture.asset('assets/images/logo.svg') once received.
                     Icon(Icons.flutter_dash, size: 88, color: cs.primary),
                     const SizedBox(height: 16),
                     Text(
@@ -211,9 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () => context.push('/register'),
+                      onPressed: (isSubmitting || offline) ? null : _submit,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
                         backgroundColor: ext.fieldFill,
@@ -429,7 +440,7 @@ class _LegalLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
-    final base = TextStyle(fontSize: 14, color: ext.secondaryButtonBorder);
+    final base = TextStyle(fontSize: 14, color: ext.legalText);
     final link = base.copyWith(color: ext.link, fontWeight: FontWeight.w600);
 
     Widget linkText(String label, String url) => GestureDetector(

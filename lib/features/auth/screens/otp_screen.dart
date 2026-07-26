@@ -6,6 +6,8 @@ import 'package:pinput/pinput.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../registration/models/registration_args.dart';
+import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/auth_outcome.dart';
 import '../models/otp_args.dart';
@@ -56,7 +58,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     ref.listen(otpProvider(widget.args), (prev, next) {
       final outcome = next.outcome;
       if (outcome is RegistrationRequiredOutcome) {
-        context.go('/register', extra: outcome);
+        // Seed the registration wizard with the token, its TTL, and the proven
+        // phone (shown read-only on Sign Up_1; never re-submitted).
+        context.go(
+          '/register',
+          extra: RegistrationArgs(
+            registrationToken: outcome.registrationToken,
+            expiresInSeconds: outcome.expiresInSeconds,
+            phone: widget.args.phone,
+          ),
+        );
       }
     });
 
@@ -341,6 +352,8 @@ class _SuccessView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // TODO(design-asset): real OTP success badge (green scalloped check, Figma node
+          // 155:786) — blocked by export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
           Icon(Icons.check_circle, size: 96, color: cs.primary),
           const SizedBox(height: 24),
           Text(

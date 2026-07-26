@@ -6,9 +6,22 @@ import '../../features/auth/models/otp_args.dart';
 import '../../features/auth/notifier/auth_controller.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
+import '../../features/registration/models/registration_args.dart';
+import '../../features/registration/screens/school_detail_screen.dart';
+import '../../features/registration/screens/signup_identity_screen.dart';
+import '../../features/registration/screens/signup_track_screen.dart';
+import '../../features/registration/screens/university_detail_screen.dart';
 
 /// The auth routes — reachable while signed out. Everything else requires auth.
-const _authRoutes = {'/login', '/otp', '/register'};
+/// The whole `/register` wizard is pre-auth: registration happens BEFORE any
+/// account/token exists, so every `/register*` sub-route must stay reachable
+/// while unauthenticated (see [_atAuthRoute]).
+const _authRoutes = {'/login', '/otp'};
+
+/// A location is an auth route if it is a known signed-out route OR anywhere in
+/// the `/register` wizard (identity → track → Day-3 sub-flows).
+bool _atAuthRoute(String location) =>
+    _authRoutes.contains(location) || location.startsWith('/register');
 
 /// Pure redirect decision (unit-tested directly). Returns the path to redirect
 /// to, or null to stay.
@@ -16,7 +29,7 @@ const _authRoutes = {'/login', '/otp', '/register'};
 /// - signed out on a protected route → /login.
 /// - signed in sitting on /login → /home.
 String? authRedirect(AuthStatus status, String matchedLocation) {
-  final atAuthRoute = _authRoutes.contains(matchedLocation);
+  final atAuthRoute = _atAuthRoute(matchedLocation);
   if (status is AuthUnknown) return null;
   if (status is AuthUnauthenticated && !atAuthRoute) return '/login';
   if (status is AuthAuthenticated && matchedLocation == '/login') return '/home';
@@ -52,7 +65,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/otp',
         builder: (_, state) => OtpScreen(args: state.extra! as OtpArgs),
       ),
-      GoRoute(path: '/register', builder: (_, _) => const _Placeholder('Register')),
+      // Registration wizard (Day 2 front two screens + Day-3 sub-flow stubs).
+      // `/register` seeds the draft from the OTP `extra`; back-navigation re-enters
+      // with a null extra and uses the already-seeded draft.
+      GoRoute(
+        path: '/register',
+        builder: (_, state) =>
+            SignupIdentityScreen(args: state.extra as RegistrationArgs?),
+      ),
+      GoRoute(
+        path: '/register/track',
+        builder: (_, _) => const SignupTrackScreen(),
+      ),
+      // The two track-detail forms (Figma 337:5269 / 337:10373). Both end in
+      // `POST /auth/register`, which returns tokens — so the student leaves
+      // these screens already authenticated, straight to /home.
+      GoRoute(
+        path: '/register/school',
+        builder: (_, _) => const SchoolDetailScreen(),
+      ),
+      GoRoute(
+        path: '/register/university',
+        builder: (_, _) => const UniversityDetailScreen(),
+      ),
       GoRoute(path: '/track-select', builder: (_, _) => const _Placeholder('Track select')),
       GoRoute(path: '/home', builder: (_, _) => const _Placeholder('Home')),
       GoRoute(path: '/catalog', builder: (_, _) => const _Placeholder('Subjects')),

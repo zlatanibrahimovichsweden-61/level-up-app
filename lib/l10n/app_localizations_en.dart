@@ -94,6 +94,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionExpired => 'Your session expired. Please sign in again.';
 
   @override
+  String get createAccountTitle => 'Create Account';
+
+  @override
+  String get createAccountSubtitle => 'Join thousands of students leveling up';
+
+  @override
+  String get fullNameLabel => 'Full Name';
+
+  @override
+  String get fullNameHint => 'Your full name';
+
+  @override
+  String get parentNumberLabel => 'Parent\'s Number';
+
+  @override
+  String get referralCodeOptional => 'Referral Code (Optional)';
+
+  @override
+  String get referralCodeHint => 'Enter code';
+
+  @override
+  String get chooseTrackTitle => 'Choose Your Track';
+
+  @override
+  String get chooseTrackSubtitle => 'This determines your content and quizzes';
+
+  @override
+  String get trackSchool => 'School Student';
+
+  @override
+  String get trackUniversity => 'University Student';
+
+  @override
+  String get registrationExpired =>
+      'Your registration session expired. Please start again.';
+
+  @override
+  String get backToLogin => 'Back to login';
+
+  @override
+  String get invalidName => 'Please enter your name';
+
+  @override
   String get invalidPhone => 'Please enter a valid phone number';
 
   @override
@@ -108,4 +151,126 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorValidationFailed => 'Please check your input and try again.';
+
+  @override
+  String get schoolRegistrationTitle => 'School Registration';
+
+  @override
+  String get schoolRegistrationSubtitle =>
+      'Complete your profile to get started';
+
+  @override
+  String get universityRegistrationTitle => 'University Registration';
+
+  @override
+  String get universityRegistrationSubtitle => 'Egypt University students';
+
+  @override
+  String get startLearning => 'Start learning';
+
+  @override
+  String get dobLabel => 'Date of Birth';
+
+  @override
+  String get dobHint => 'Select your date of birth';
+
+  @override
+  String get countryLabel => 'Country';
+
+  @override
+  String get governorateLabel => 'Governorate';
+
+  @override
+  String get cityLabel => 'City';
+
+  @override
+  String get educationSystemLabel => 'Education System';
+
+  @override
+  String get stageLabel => 'Grade';
+
+  @override
+  String get schoolLabel => 'School Name';
+
+  @override
+  String get schoolNameOptional => 'School Name (Optional)';
+
+  @override
+  String get schoolNameHint => 'Enter your school name';
+
+  @override
+  String get universityLabel => 'University Name';
+
+  @override
+  String get facultyLabel => 'Faculty';
+
+  @override
+  String get studyYearLabel => 'Academic Year';
+
+  @override
+  String studyYearNumber(int number) {
+    return 'Year $number';
+  }
+
+  @override
+  String get stagePrep1 => 'Prep 1';
+
+  @override
+  String get stagePrep2 => 'Prep 2';
+
+  @override
+  String get stagePrep3 => 'Prep 3';
+
+  @override
+  String get stageSecondary1 => 'Secondary 1';
+
+  @override
+  String get stageSecondary2 => 'Secondary 2';
+
+  @override
+  String get stageSecondary3 => 'Secondary 3';
+
+  @override
+  String get selectHint => 'Select';
+
+  @override
+  String get noOptions => 'Nothing to show here';
+
+  @override
+  String get searchSchoolsHint => 'Search for your school';
+
+  @override
+  String get noSchoolsFound => 'No schools match your search';
+
+  @override
+  String get loadMore => 'Load more';
+
+  @override
+  String get selectCountryFirst => 'Choose a country first';
+
+  @override
+  String get selectGovernorateFirst => 'Choose a governorate first';
+
+  @override
+  String get selectUniversityFirst => 'Choose a university first';
+
+  @override
+  String get selectFacultyFirst => 'Choose a faculty first';
+
+  @override
+  String get fieldRequired => 'This field is required';
+
+  @override
+  String get fieldNotAllowed => 'This doesn\'t apply to your selection';
+
+  @override
+  String get fieldRejected => 'Please check this field';
+
+  @override
+  String get phoneAlreadyRegistered =>
+      'This number already has an account. Please sign in.';
+
+  @override
+  String get registrationTokenInvalid =>
+      'Your registration session expired. Please start again.';
 }
