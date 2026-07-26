@@ -23,7 +23,9 @@ class LevelUpApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      // Light is the default (design's primary canvas). Dark stays available for
+      // when a theme toggle lands in Settings; flip to ThemeMode.system then.
+      themeMode: ThemeMode.light,
       routerConfig: router,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,

@@ -25,6 +25,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.hint,
     required this.link,
     required this.secondaryButtonBorder,
+    required this.legalText,
   });
 
   final Color background;
@@ -36,6 +37,10 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color link;
   final Color secondaryButtonBorder;
 
+  /// "By continuing…" legal paragraph base text — green in light, cream in dark
+  /// (the LINK spans use [link]).
+  final Color legalText;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -46,6 +51,7 @@ class AppColors extends ThemeExtension<AppColors> {
     hint: Color(0xFF696969),
     link: Color(0xFFE67E22), // orange
     secondaryButtonBorder: Brand.greenPrimary,
+    legalText: Brand.greenPrimary, // #384F47 green
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -58,6 +64,7 @@ class AppColors extends ThemeExtension<AppColors> {
     hint: Color(0xFFFCFBF9),
     link: Color(0xFFAE87E7), // purple
     secondaryButtonBorder: Brand.greenPrimary, // green border kept in both
+    legalText: Color(0xFFFCFBF9), // #FCFBF9 cream
   );
 
   @override
@@ -70,6 +77,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? hint,
     Color? link,
     Color? secondaryButtonBorder,
+    Color? legalText,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -80,6 +88,7 @@ class AppColors extends ThemeExtension<AppColors> {
       hint: hint ?? this.hint,
       link: link ?? this.link,
       secondaryButtonBorder: secondaryButtonBorder ?? this.secondaryButtonBorder,
+      legalText: legalText ?? this.legalText,
     );
   }
 
@@ -96,6 +105,7 @@ class AppColors extends ThemeExtension<AppColors> {
       link: Color.lerp(link, other.link, t)!,
       secondaryButtonBorder:
           Color.lerp(secondaryButtonBorder, other.secondaryButtonBorder, t)!,
+      legalText: Color.lerp(legalText, other.legalText, t)!,
     );
   }
 }

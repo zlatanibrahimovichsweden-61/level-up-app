@@ -429,7 +429,7 @@ class _LegalLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
-    final base = TextStyle(fontSize: 14, color: ext.secondaryButtonBorder);
+    final base = TextStyle(fontSize: 14, color: ext.legalText);
     final link = base.copyWith(color: ext.link, fontWeight: FontWeight.w600);
 
     Widget linkText(String label, String url) => GestureDetector(
