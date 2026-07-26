@@ -351,6 +351,8 @@ class _SuccessView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // TODO(design-asset): real OTP success badge (green scalloped check, Figma node
+          // 155:786) — blocked by export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
           Icon(Icons.check_circle, size: 96, color: cs.primary),
           const SizedBox(height: 24),
           Text(

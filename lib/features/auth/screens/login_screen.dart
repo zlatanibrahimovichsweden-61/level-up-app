@@ -130,7 +130,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Bird logo — placeholder (Figma vector not yet exported to assets).
+                    // TODO(design-asset): real bird logo (Figma node 82:849) — blocked by
+                    // export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
+                    // Swap this Icon for SvgPicture.asset('assets/images/logo.svg') once received.
                     Icon(Icons.flutter_dash, size: 88, color: cs.primary),
                     const SizedBox(height: 16),
                     Text(

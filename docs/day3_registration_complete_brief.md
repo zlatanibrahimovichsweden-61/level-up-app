@@ -4,12 +4,20 @@
 > Builds the track-detail forms + the final `POST /auth/register`, consuming the Day-2
 > `RegistrationController` (draft) and the 7 reference pickers. Plus the Create-New-Account fix.
 >
-> Figma note: the School/University registration screens live inside the **School Student Flow**
-> (dark section `337:5268`) / **University Student Flow** sibling section. Chrome disconnected
-> while gathering exact frame spacing, so **build the layout from the contract fields below using
-> the established components/tokens; group fields sensibly**. If a screen looks off vs the design,
-> say so and I'll pull the exact frame. The FIELDS and RULES here are contract-authoritative and
-> final — do not invent or drop any.
+> Figma frames PULLED (both confirmed — they exist as their own screens, named "Sign Up_2"
+> inside each flow, distinct from the Common Sign-up track picker):
+>
+> **School Registration** — node `337:5269`. Title "School Registration" / subtitle
+> "Complete your profile to get started". Fields, top→bottom, each a rounded dropdown:
+> **Country** (flag + Egypt) → **Governorate** → **City** → **Education System** → **Grade**
+> → **School Name** → primary **Start learning** button. Language pill top-right; back chevron.
+>
+> **University Registration** — node `337:10373`. Title "University Registration" / subtitle
+> "Egypt University students". Fields: **Faculty** → **Academic Year** → **City** →
+> **University Name** → **Start learning**.
+>
+> Same rounded-dropdown component, theme tokens (light green / dark purple), AR-RTL + EN.
+> Match this field order and styling. Gaps vs the contract are called out below — the contract wins.
 
 ## Skills (in order)
 `level-up-domain` · `build-screen` · `seif-api-contract` · `figma-frame` · `river` · `screen-states`
@@ -62,23 +70,42 @@ nationalArabic/nationalLanguages/ig/american/ib (from `GET /reference/education-
 
 ---
 
-## Screens
+## Screens (single scrollable form per track, matching the pulled frames)
 
-Build one **track-detail form per track** (SCHOOL and UNIVERSITY), reached from Sign Up_2:
-`/register/school` and `/register/university` (currently placeholders). A single scrollable form is
-fine; if the Figma clearly splits it into steps, match that — the draft accumulates either way.
+Reached from Sign Up_2 (track pick): `/register/school` and `/register/university` (currently
+placeholders). Match the frame field order below.
 
-### `/register/school` — SchoolDetailScreen
-Fields, in order: **Date of birth** (date picker) · **Country** (`countriesProvider`) · then branch:
-- EG: **Governorate** (`governoratesProvider('EG')`) → **City** (`citiesProvider(EG, governorateId)`) → **School** (searchable, `schoolsProvider`, paginated)
-- non-EG: **City** (`citiesProvider(country)`) → **School name** (free text, optional)
-· **Stage** (dropdown) · **Education system** (`educationSystemsProvider`) · **Avatar** (grid from `avatarsProvider`, optional) · **Email** (optional).
-Submit → build `SchoolRegistration` from the draft → `POST /auth/register`.
+### `/register/school` — SchoolDetailScreen  (frame `337:5269`)
+Field order AS DESIGNED (rounded dropdowns), each cascading:
+1. **Country** (`countriesProvider`; defaults EG) → drives the EG/non-EG branch via `requiresGovernorate`
+2. **Governorate** (`governoratesProvider(country)`) — EG only
+3. **City** (`citiesProvider(country, governorateId)`)
+4. **Education System** (`educationSystemsProvider`) → `educationSystem`
+5. **Grade** (dropdown of `Stage` values) → `stage`   *(design labels it "Grade")*
+6. **School Name** — EG: **schoolId** picker (`schoolsProvider`, searchable/paginated); non-EG: free-text `schoolName`
+7. **⚠️ Date of birth** — REQUIRED by contract but NOT in the design. Add a date picker here
+   (place it sensibly, e.g. top under the subtitle). Flag to designer; contract wins.
+8. Avatar (`avatarsProvider`, optional) + Email (optional) — not in the frame; include only if trivial, else omit (both optional).
+→ **Start learning** button = submit → build `SchoolRegistration` → `POST /auth/register`.
 
-### `/register/university` — UniversityDetailScreen
-Fields: **Date of birth** · **University** (`universitiesProvider`) → **Faculty** → **Study year**
-(active only) · **Governorate** → **City** · **Avatar** (optional) · **Email** (optional).
-Submit → build `UniversityRegistration` → `POST /auth/register`.
+### `/register/university` — UniversityDetailScreen  (frame `337:10373`, Egypt-only)
+Design order is Faculty → Academic Year → City → University Name, but the DATA cascade is
+**University → Faculty → Year**, so University must be chosen first to load faculties. Keep the
+visual order if you like, but gate the dependency correctly (Faculty disabled until University set):
+1. **University Name** (`universitiesProvider`) → `universityId`
+2. **Faculty** (from the selected university's `faculties`) → `facultyId`
+3. **Academic Year** (that faculty's `years`, **`active` only**; hide `soon`) → `studyYearId`
+4. **City** (`citiesProvider`) → `cityId`
+5. **⚠️ Governorate** — REQUIRED by contract but NOT in the design (uni shows only City). Add it
+   (`governoratesProvider('EG')`) before City so City can filter by it. Flag to designer; contract wins.
+6. **⚠️ Date of birth** — REQUIRED, not in design. Add a date picker. Flag; contract wins.
+7. Avatar + Email optional (not in frame) — omit unless trivial.
+→ **Start learning** = submit → build `UniversityRegistration` → `POST /auth/register`.
+
+### Design-vs-contract gaps (build the contract's way; flag all to the designer)
+- **`dateOfBirth`** missing from BOTH screens — add a date picker (minors: many users are <18).
+- **University `governorateId`** missing — add the governorate picker to the uni screen.
+- These are required fields; without them the server returns `validation_failed`.
 
 Both: loading/empty/error/offline on every picker (via `StateWidget`); AR (RTL) + EN; display
 `nameAr`/`nameEn` by locale, submit the `id`. Show the token-expiry guard (draft `isExpired`) →
