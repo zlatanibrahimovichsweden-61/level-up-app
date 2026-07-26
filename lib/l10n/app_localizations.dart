@@ -373,6 +373,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please check your input and try again.'**
   String get errorValidationFailed;
+
+  /// No description provided for @schoolRegistrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'School Registration'**
+  String get schoolRegistrationTitle;
+
+  /// No description provided for @schoolRegistrationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile to get started'**
+  String get schoolRegistrationSubtitle;
+
+  /// No description provided for @universityRegistrationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'University Registration'**
+  String get universityRegistrationTitle;
+
+  /// No description provided for @universityRegistrationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Egypt University students'**
+  String get universityRegistrationSubtitle;
+
+  /// No description provided for @startLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Start learning'**
+  String get startLearning;
+
+  /// No description provided for @dobLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get dobLabel;
+
+  /// No description provided for @dobHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your date of birth'**
+  String get dobHint;
+
+  /// No description provided for @countryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get countryLabel;
+
+  /// No description provided for @governorateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Governorate'**
+  String get governorateLabel;
+
+  /// No description provided for @cityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get cityLabel;
+
+  /// No description provided for @educationSystemLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Education System'**
+  String get educationSystemLabel;
+
+  /// The design labels this field 'Grade'; the contract field is `stage`.
+  ///
+  /// In en, this message translates to:
+  /// **'Grade'**
+  String get stageLabel;
+
+  /// No description provided for @schoolLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'School Name'**
+  String get schoolLabel;
+
+  /// Non-Egypt only — free text, never blocks registration (adr-010).
+  ///
+  /// In en, this message translates to:
+  /// **'School Name (Optional)'**
+  String get schoolNameOptional;
+
+  /// No description provided for @schoolNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your school name'**
+  String get schoolNameHint;
+
+  /// No description provided for @universityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'University Name'**
+  String get universityLabel;
+
+  /// No description provided for @facultyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Faculty'**
+  String get facultyLabel;
+
+  /// No description provided for @studyYearLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Academic Year'**
+  String get studyYearLabel;
+
+  /// A data-driven study year from /reference/universities.
+  ///
+  /// In en, this message translates to:
+  /// **'Year {number}'**
+  String studyYearNumber(int number);
+
+  /// No description provided for @stagePrep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Prep 1'**
+  String get stagePrep1;
+
+  /// No description provided for @stagePrep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Prep 2'**
+  String get stagePrep2;
+
+  /// No description provided for @stagePrep3.
+  ///
+  /// In en, this message translates to:
+  /// **'Prep 3'**
+  String get stagePrep3;
+
+  /// No description provided for @stageSecondary1.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary 1'**
+  String get stageSecondary1;
+
+  /// No description provided for @stageSecondary2.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary 2'**
+  String get stageSecondary2;
+
+  /// No description provided for @stageSecondary3.
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary 3'**
+  String get stageSecondary3;
+
+  /// No description provided for @selectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectHint;
+
+  /// No description provided for @noOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show here'**
+  String get noOptions;
+
+  /// No description provided for @searchSchoolsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for your school'**
+  String get searchSchoolsHint;
+
+  /// No description provided for @noSchoolsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No schools match your search'**
+  String get noSchoolsFound;
+
+  /// No description provided for @loadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get loadMore;
+
+  /// No description provided for @selectCountryFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a country first'**
+  String get selectCountryFirst;
+
+  /// No description provided for @selectGovernorateFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a governorate first'**
+  String get selectGovernorateFirst;
+
+  /// No description provided for @selectUniversityFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a university first'**
+  String get selectUniversityFirst;
+
+  /// No description provided for @selectFacultyFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a faculty first'**
+  String get selectFacultyFirst;
+
+  /// No description provided for @fieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required'**
+  String get fieldRequired;
+
+  /// No description provided for @fieldNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This doesn\'t apply to your selection'**
+  String get fieldNotAllowed;
+
+  /// No description provided for @fieldRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check this field'**
+  String get fieldRejected;
+
+  /// No description provided for @phoneAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'This number already has an account. Please sign in.'**
+  String get phoneAlreadyRegistered;
+
+  /// No description provided for @registrationTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Your registration session expired. Please start again.'**
+  String get registrationTokenInvalid;
 }
 
 class _AppLocalizationsDelegate

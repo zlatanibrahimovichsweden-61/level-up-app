@@ -42,6 +42,35 @@ class UnauthorizedException extends ApiException {
       : super(status: 401);
 }
 
+/// 400 `validation_failed` carrying `ProblemDetails.errors` — the contract's
+/// field map (`field -> [messages]`). Screens turn it into per-field inline
+/// errors; it is how the server reports a geography-conditionality violation
+/// (adr-010) too.
+///
+/// The message strings are NOT rendered: `ProblemDetails.title`/`detail` are
+/// documented as developer-facing English, and the contract says nothing about
+/// the language of `errors` values. Only the field NAMES are used, mapped to
+/// localized copy at the screen. They are never logged either (minors' data).
+class ValidationException extends ApiException {
+  const ValidationException({required this.errors, super.detail})
+      : super(status: 400, code: 'validation_failed');
+
+  /// Contract shape: `additionalProperties: { type: array, items: string }`.
+  final Map<String, List<String>> errors;
+
+  /// The field names the server rejected — the only part the UI consumes.
+  Iterable<String> get fields => errors.keys;
+}
+
 class UnknownException extends AppException {
   const UnknownException({super.detail}) : super('unknown');
 }
+
+/// Connectivity failure → drives the Offline state, not a generic error.
+/// The ErrorInterceptor maps timeouts/connection errors to [NetworkException];
+/// [OfflineException] is the explicit no-connectivity signal.
+///
+/// Lives here (not in a feature) because every feature's screens branch on it
+/// to pick the Offline view.
+bool isOffline(Object? error) =>
+    error is OfflineException || error is NetworkException;

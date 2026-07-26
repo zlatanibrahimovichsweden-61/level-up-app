@@ -26,9 +26,12 @@ class ErrorInterceptor extends Interceptor {
           ? data['code'] as String
           : 'unknown';
       final status = res.statusCode ?? 0;
-      mapped = status == 401
-          ? UnauthorizedException(code: code)
-          : ApiException(status: status, code: code);
+      mapped = switch (status) {
+        401 => UnauthorizedException(code: code),
+        400 when code == 'validation_failed' =>
+          ValidationException(errors: _fieldMap(data)),
+        _ => ApiException(status: status, code: code),
+      };
     } else {
       mapped = const UnknownException();
     }
@@ -41,5 +44,23 @@ class ErrorInterceptor extends Interceptor {
         error: mapped,
       ),
     );
+  }
+
+  /// `ProblemDetails.errors` — `field -> [messages]`. Parsed defensively (a
+  /// malformed or absent map yields `{}`, not a crash): the field NAMES are what
+  /// the UI needs, and a validation error must still surface as a validation
+  /// error even if the map is unusable.
+  static Map<String, List<String>> _fieldMap(Object? data) {
+    if (data is! Map) return const {};
+    final errors = data['errors'];
+    if (errors is! Map) return const {};
+    return {
+      for (final entry in errors.entries)
+        entry.key.toString(): switch (entry.value) {
+          final List<dynamic> messages =>
+            messages.map((m) => m.toString()).toList(),
+          final Object? single => [if (single != null) single.toString()],
+        },
+    };
   }
 }

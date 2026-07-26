@@ -66,5 +66,64 @@
   "errorOtpInvalid": "This is an incorrect code, try again",
   "errorOtpExpired": "This code has expired. Request a new one.",
   "errorOtpThrottled": "Too many attempts. Please wait a moment and try again.",
-  "errorValidationFailed": "Please check your input and try again."
+  "errorValidationFailed": "Please check your input and try again.",
+
+  "schoolRegistrationTitle": "School Registration",
+  "schoolRegistrationSubtitle": "Complete your profile to get started",
+  "universityRegistrationTitle": "University Registration",
+  "universityRegistrationSubtitle": "Egypt University students",
+  "startLearning": "Start learning",
+
+  "dobLabel": "Date of Birth",
+  "dobHint": "Select your date of birth",
+  "countryLabel": "Country",
+  "governorateLabel": "Governorate",
+  "cityLabel": "City",
+  "educationSystemLabel": "Education System",
+  "stageLabel": "Grade",
+  "@stageLabel": {
+    "description": "The design labels this field 'Grade'; the contract field is `stage`."
+  },
+  "schoolLabel": "School Name",
+  "schoolNameOptional": "School Name (Optional)",
+  "@schoolNameOptional": {
+    "description": "Non-Egypt only — free text, never blocks registration (adr-010)."
+  },
+  "schoolNameHint": "Enter your school name",
+  "universityLabel": "University Name",
+  "facultyLabel": "Faculty",
+  "studyYearLabel": "Academic Year",
+  "studyYearNumber": "Year {number}",
+  "@studyYearNumber": {
+    "description": "A data-driven study year from /reference/universities.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+
+  "stagePrep1": "Prep 1",
+  "stagePrep2": "Prep 2",
+  "stagePrep3": "Prep 3",
+  "stageSecondary1": "Secondary 1",
+  "stageSecondary2": "Secondary 2",
+  "stageSecondary3": "Secondary 3",
+
+  "selectHint": "Select",
+  "noOptions": "Nothing to show here",
+  "searchSchoolsHint": "Search for your school",
+  "noSchoolsFound": "No schools match your search",
+  "loadMore": "Load more",
+  "selectCountryFirst": "Choose a country first",
+  "selectGovernorateFirst": "Choose a governorate first",
+  "selectUniversityFirst": "Choose a university first",
+  "selectFacultyFirst": "Choose a faculty first",
+
+  "fieldRequired": "This field is required",
+  "fieldNotAllowed": "This doesn't apply to your selection",
+  "fieldRejected": "Please check this field",
+  "phoneAlreadyRegistered": "This number already has an account. Please sign in.",
+  "registrationTokenInvalid": "Your registration session expired. Please start again."
 }

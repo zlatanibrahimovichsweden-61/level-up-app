@@ -153,4 +153,125 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorValidationFailed => 'من فضلك تحقق من بياناتك وحاول مرة أخرى.';
+
+  @override
+  String get schoolRegistrationTitle => 'تسجيل طلاب المدارس';
+
+  @override
+  String get schoolRegistrationSubtitle => 'أكمل بياناتك لتبدأ';
+
+  @override
+  String get universityRegistrationTitle => 'تسجيل طلاب الجامعات';
+
+  @override
+  String get universityRegistrationSubtitle => 'طلاب الجامعات في مصر';
+
+  @override
+  String get startLearning => 'ابدأ التعلّم';
+
+  @override
+  String get dobLabel => 'تاريخ الميلاد';
+
+  @override
+  String get dobHint => 'اختر تاريخ ميلادك';
+
+  @override
+  String get countryLabel => 'الدولة';
+
+  @override
+  String get governorateLabel => 'المحافظة';
+
+  @override
+  String get cityLabel => 'المدينة';
+
+  @override
+  String get educationSystemLabel => 'النظام التعليمي';
+
+  @override
+  String get stageLabel => 'الصف الدراسي';
+
+  @override
+  String get schoolLabel => 'اسم المدرسة';
+
+  @override
+  String get schoolNameOptional => 'اسم المدرسة (اختياري)';
+
+  @override
+  String get schoolNameHint => 'أدخل اسم مدرستك';
+
+  @override
+  String get universityLabel => 'اسم الجامعة';
+
+  @override
+  String get facultyLabel => 'الكلية';
+
+  @override
+  String get studyYearLabel => 'السنة الدراسية';
+
+  @override
+  String studyYearNumber(int number) {
+    return 'السنة $number';
+  }
+
+  @override
+  String get stagePrep1 => 'الصف الأول الإعدادي';
+
+  @override
+  String get stagePrep2 => 'الصف الثاني الإعدادي';
+
+  @override
+  String get stagePrep3 => 'الصف الثالث الإعدادي';
+
+  @override
+  String get stageSecondary1 => 'الصف الأول الثانوي';
+
+  @override
+  String get stageSecondary2 => 'الصف الثاني الثانوي';
+
+  @override
+  String get stageSecondary3 => 'الصف الثالث الثانوي';
+
+  @override
+  String get selectHint => 'اختر';
+
+  @override
+  String get noOptions => 'لا يوجد ما يمكن عرضه';
+
+  @override
+  String get searchSchoolsHint => 'ابحث عن مدرستك';
+
+  @override
+  String get noSchoolsFound => 'لا توجد مدارس مطابقة لبحثك';
+
+  @override
+  String get loadMore => 'عرض المزيد';
+
+  @override
+  String get selectCountryFirst => 'اختر الدولة أولًا';
+
+  @override
+  String get selectGovernorateFirst => 'اختر المحافظة أولًا';
+
+  @override
+  String get selectUniversityFirst => 'اختر الجامعة أولًا';
+
+  @override
+  String get selectFacultyFirst => 'اختر الكلية أولًا';
+
+  @override
+  String get fieldRequired => 'هذا الحقل مطلوب';
+
+  @override
+  String get fieldNotAllowed => 'هذا الحقل لا ينطبق على اختيارك';
+
+  @override
+  String get fieldRejected => 'من فضلك تحقق من هذا الحقل';
+
+  @override
+  String get phoneAlreadyRegistered =>
+      'هذا الرقم لديه حساب بالفعل. من فضلك سجّل الدخول.';
+
+  @override
+  String get registrationTokenInvalid =>
+      'انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.';
 }

@@ -7,6 +7,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
+import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/auth_outcome.dart';
 import '../models/otp_args.dart';

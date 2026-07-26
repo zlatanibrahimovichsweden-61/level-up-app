@@ -24,6 +24,23 @@ void main() {
       expect(authRedirect(const AuthUnauthenticated(), '/register'), isNull);
     });
 
+    test('the whole /register wizard stays reachable while signed out', () {
+      // Registration happens BEFORE any account exists, so every track-detail
+      // sub-route must survive the guard.
+      for (final route in [
+        '/register',
+        '/register/track',
+        '/register/school',
+        '/register/university',
+      ]) {
+        expect(
+          authRedirect(const AuthUnauthenticated(), route),
+          isNull,
+          reason: '$route must be reachable pre-auth',
+        );
+      }
+    });
+
     test('authenticated sitting on /login → /home', () {
       expect(authRedirect(const AuthAuthenticated(), '/login'), '/home');
     });

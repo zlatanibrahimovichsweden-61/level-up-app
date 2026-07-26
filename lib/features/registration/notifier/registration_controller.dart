@@ -57,8 +57,122 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     state = draft.copyWith(track: track);
   }
 
+  /// Day-3 · date of birth. Contract-required on BOTH tracks but absent from
+  /// both Figma frames — see docs/DESIGN_ISSUES.md #2.
+  void setDateOfBirth(DateTime dateOfBirth) =>
+      _update((draft) => draft.copyWith(dateOfBirth: dateOfBirth));
+
+  // --- School geography cascade (adr-010) ---------------------------------
+  //
+  // Each setter CLEARS everything downstream of it. This is what makes the
+  // "forbidden" half of the conditionality unreachable: switching EG → UAE must
+  // not leave a governorate/school id behind, or the body would carry a field
+  // the server forbids. The body factory hard-nulls them too (belt and braces),
+  // but clearing here is what keeps the visible form honest.
+
+  /// Country picked. [requiresGovernorate] comes from the country row itself
+  /// (`GET /reference/countries`) — the adr-010 switch. Changing country resets
+  /// the whole geography branch, since governorates/cities/schools are all
+  /// scoped to it.
+  void setCountry({
+    required String countryCode,
+    required bool requiresGovernorate,
+  }) {
+    _update((draft) {
+      if (draft.countryCode == countryCode) return draft;
+      return draft.copyWith(
+        countryCode: countryCode,
+        requiresGovernorate: requiresGovernorate,
+        governorateId: null,
+        cityId: null,
+        schoolId: null,
+        schoolName: null,
+      );
+    });
+  }
+
+  /// Governorate picked (EG only) — cities and schools are filtered by it.
+  void setGovernorate(String governorateId) {
+    _update((draft) {
+      if (draft.governorateId == governorateId) return draft;
+      return draft.copyWith(
+        governorateId: governorateId,
+        cityId: null,
+        schoolId: null,
+      );
+    });
+  }
+
+  /// City picked — the school search is filtered by it.
+  void setCity(String cityId) {
+    _update((draft) {
+      if (draft.cityId == cityId) return draft;
+      return draft.copyWith(cityId: cityId, schoolId: null);
+    });
+  }
+
+  /// EG: the coded school id from the searchable list.
+  void setSchool(String schoolId) =>
+      _update((draft) => draft.copyWith(schoolId: schoolId));
+
+  /// Non-EG: optional free-text school name. Blank normalizes to null so it is
+  /// omitted from the body rather than sent empty.
+  void setSchoolName(String? schoolName) {
+    final trimmed = schoolName?.trim();
+    _update(
+      (draft) => draft.copyWith(
+        schoolName: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+      ),
+    );
+  }
+
+  // --- School academic -----------------------------------------------------
+
+  /// The design labels this "Grade"; the contract field is `stage`.
+  void setStage(String stage) =>
+      _update((draft) => draft.copyWith(stage: stage));
+
+  /// The wire `code` from `GET /reference/education-systems`, submitted verbatim
+  /// (the enum is extensible — unknown values are tolerated, never re-mapped).
+  void setEducationSystem(String educationSystem) =>
+      _update((draft) => draft.copyWith(educationSystem: educationSystem));
+
+  // --- University cascade (university → faculty → year) --------------------
+
+  /// Faculties belong to a university, so changing it invalidates faculty+year.
+  void setUniversity(String universityId) {
+    _update((draft) {
+      if (draft.universityId == universityId) return draft;
+      return draft.copyWith(
+        universityId: universityId,
+        facultyId: null,
+        studyYearId: null,
+      );
+    });
+  }
+
+  /// Years belong to a faculty, so changing it invalidates the year.
+  void setFaculty(String facultyId) {
+    _update((draft) {
+      if (draft.facultyId == facultyId) return draft;
+      return draft.copyWith(facultyId: facultyId, studyYearId: null);
+    });
+  }
+
+  /// Must be an `active` year — `soon` years are never offered by the picker
+  /// (the server answers `validation_failed` for them).
+  void setStudyYear(String studyYearId) =>
+      _update((draft) => draft.copyWith(studyYearId: studyYearId));
+
   /// Abandon the registration (e.g. token expired, or user backs out to login).
   void reset() => state = null;
+
+  /// Apply [change] to the active draft; no-op when there is none.
+  void _update(RegistrationDraft Function(RegistrationDraft draft) change) {
+    final draft = state;
+    if (draft == null) return;
+    state = change(draft);
+  }
 }
 
 final registrationControllerProvider =

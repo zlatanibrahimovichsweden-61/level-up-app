@@ -8,6 +8,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/otp_args.dart';
 import '../models/phone.dart';
@@ -70,6 +71,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  /// Requests an OTP for the typed phone and advances to `/otp`.
+  ///
+  /// This backs BOTH buttons on this screen. "Create New Account" used to push
+  /// `/register` directly, which always dead-ended on the registration expiry
+  /// guard: the contract is phone-verify-first, so there is no token-less
+  /// registration route to push. The new-vs-existing fork is decided by the
+  /// server at `otp/verify` (`registrationRequired` vs `authenticated`), so
+  /// signing in and signing up are the same first step. An empty/invalid number
+  /// surfaces the same inline error either way.
+  /// See docs/DESIGN_ISSUES.md #8 — the designer still owes us the intended copy.
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     final phone = Phone.tryParse(_phoneController.text);
@@ -213,9 +224,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () => context.push('/register'),
+                      onPressed: (isSubmitting || offline) ? null : _submit,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
                         backgroundColor: ext.fieldFill,

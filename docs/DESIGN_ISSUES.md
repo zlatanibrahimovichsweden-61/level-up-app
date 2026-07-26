@@ -17,9 +17,9 @@
 | # | Issue | Sev | Owner | Code marker |
 |---|---|---|---|---|
 | 1 | Figma export disabled + our seat is View-only → can't export brand assets | 🔴 | Designer/Owner | `TODO(design-asset)` |
-| 2 | `dateOfBirth` field missing from BOTH registration screens (contract-required) | 🔴 | Designer + Seif | (Day-3 code) |
-| 3 | University `governorateId` missing from University Registration (contract-required) | 🔴 | Designer | (Day-3 code) |
-| 4 | University field order breaks the University→Faculty→Year data cascade | 🟠 | Designer | (Day-3 code) |
+| 2 | `dateOfBirth` field missing from BOTH registration screens (contract-required) | 🔴 | Designer + Seif | `TODO(design)` ×3 |
+| 3 | University `governorateId` missing from University Registration (contract-required) | 🔴 | Designer | `TODO(design)` |
+| 4 | University field order breaks the University→Faculty→Year data cascade | 🟠 | Designer | built by cascade |
 | 5 | OTP screen shows **4** digit boxes; contract requires **6** | 🟠 | Designer | built as 6 |
 | 6 | Phone prefix shows `+02`; Egypt is `+20` | 🟠 | Designer | built as +20 |
 | 7 | Referral / Invitation Code field has no backend field in the contract | 🟠 | PM + Seif | `TODO(contract)` |
@@ -51,14 +51,23 @@ assets via `flutter_svg`.
 `SchoolRegistration` and `UniversityRegistration` (`registration` will 400 `validation_failed` without it).
 Many users are **minors**, so DoB is also product-critical.
 **Fix we need:** designer adds a **Date of birth** picker to both registration screens.
-**Meanwhile in code:** Day-3 adds a DoB picker anyway (contract wins), marked `TODO(design): DoB not in Figma`.
+**Meanwhile in code (Day 3, built — contract wins):** a rounded date picker styled to match the
+surrounding fields, placed directly under each subtitle.
+- `lib/features/registration/widgets/date_of_birth_field.dart:10` — the widget (`TODO(design)`)
+- `lib/features/registration/screens/school_detail_screen.dart:125` — School usage (`TODO(design)`)
+- `lib/features/registration/screens/university_detail_screen.dart:113` — University usage (`TODO(design)`)
+
+No minimum age is enforced client-side (many students are minors — the server owns that rule);
+the range is simply "not in the future, within 100 years".
 
 ## 3. 🔴 University `governorateId` missing
 **Where:** University Registration (`337:10373`) — shows only **City**, no Governorate.
 **What:** contract's `UniversityRegistration` **requires `governorateId`** (and `cityId`).
 Without governorate, city can't be filtered correctly and register 400s.
 **Fix we need:** designer adds a **Governorate** dropdown above City on the university screen.
-**Meanwhile in code:** Day-3 adds it, marked `TODO(design): governorate not in Figma`.
+**Meanwhile in code (Day 3, built):** `lib/features/registration/screens/university_detail_screen.dart:202`
+(`TODO(design)`) — placed **above** City, because `/reference/cities` needs a `governorateId` for
+Egypt (it 400s without one), so City stays gated until Governorate is answered.
 
 ## 4. 🟠 University field order breaks the data cascade
 **Where:** University Registration (`337:10373`). **What:** design order is Faculty → Academic Year
@@ -66,6 +75,12 @@ Without governorate, city can't be filtered correctly and register 400s.
 first** to load its faculties, then the faculty's years. As drawn, Faculty appears before University.
 **Fix we need:** reorder to **University → Faculty → Academic Year** (or confirm we gate Faculty/Year
 until University is picked, keeping the visual order).
+**Decided in code (Day 3):** we follow the **data cascade**, not the drawn order. The screen renders
+Date of Birth → University → Faculty → Academic Year → Governorate → City. Keeping the drawn order
+would leave the student staring at two disabled fields above the one that unlocks them.
+Faculty is disabled until a University is chosen, Academic Year until a Faculty is; changing either
+clears everything below it. **Designer: please confirm or send a reordered frame.**
+`lib/features/registration/screens/university_detail_screen.dart` (class doc explains the deviation).
 
 ## 5. 🟠 OTP boxes: 4 vs 6
 **Where:** OTP screens (`82:1171` etc.). **What:** design draws **4** code boxes; the contract's
@@ -86,7 +101,13 @@ scope? If yes, Seif adds a contract field; if no, remove it from the design.
 **Where:** Login (`82:819`). **What:** the button implies a direct registration path, but the
 contract is **phone-verify-first** — you cannot register without an OTP first (the new-vs-existing
 fork happens at `otp/verify`). So "Create New Account" must funnel to the same phone→OTP entry.
-**Fix we need:** designer confirm the intended flow/copy. Code (Day-3) routes it to phone entry.
+**Fixed in code (Day 3):** the button no longer pushes `/register` (which always dead-ended on the
+registration expiry guard, since no `registrationToken` exists yet). Login **is** the phone-entry
+screen, so the button now runs the same `requestOtp` → `/otp` flow as *Send OTP*
+(`lib/features/auth/screens/login_screen.dart` — see the `_submit` doc comment).
+**Still needed from the designer:** confirm the intended copy. As built, the two buttons do the same
+thing, which is correct per the contract but reads oddly — this may want a single CTA, or copy like
+"Sign in or create an account".
 
 ## 9. 🟡 Legal URLs are placeholders
 **Where:** `lib/features/auth/screens/login_screen.dart:37–39` (`TODO(legal)`).

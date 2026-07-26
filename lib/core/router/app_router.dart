@@ -7,8 +7,10 @@ import '../../features/auth/notifier/auth_controller.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/registration/models/registration_args.dart';
+import '../../features/registration/screens/school_detail_screen.dart';
 import '../../features/registration/screens/signup_identity_screen.dart';
 import '../../features/registration/screens/signup_track_screen.dart';
+import '../../features/registration/screens/university_detail_screen.dart';
 
 /// The auth routes — reachable while signed out. Everything else requires auth.
 /// The whole `/register` wizard is pre-auth: registration happens BEFORE any
@@ -75,13 +77,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register/track',
         builder: (_, _) => const SignupTrackScreen(),
       ),
+      // The two track-detail forms (Figma 337:5269 / 337:10373). Both end in
+      // `POST /auth/register`, which returns tokens — so the student leaves
+      // these screens already authenticated, straight to /home.
       GoRoute(
         path: '/register/school',
-        builder: (_, _) => const _Placeholder('School flow'),
+        builder: (_, _) => const SchoolDetailScreen(),
       ),
       GoRoute(
         path: '/register/university',
-        builder: (_, _) => const _Placeholder('University flow'),
+        builder: (_, _) => const UniversityDetailScreen(),
       ),
       GoRoute(path: '/track-select', builder: (_, _) => const _Placeholder('Track select')),
       GoRoute(path: '/home', builder: (_, _) => const _Placeholder('Home')),

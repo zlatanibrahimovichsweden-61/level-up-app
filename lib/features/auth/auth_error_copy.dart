@@ -24,12 +24,6 @@ String authErrorMessage(AppLocalizations l10n, Object? error) {
   return l10n.genericError;
 }
 
-/// Connectivity failure → drives the Offline view, not a generic error. The
-/// ErrorInterceptor maps timeouts/connection errors to [NetworkException];
-/// [OfflineException] is the explicit no-connectivity signal.
-bool isOffline(Object? error) =>
-    error is OfflineException || error is NetworkException;
-
 /// `otp_invalid` specifically drives the red/pink OTP-box error styling
 /// (Figma error components 82:1170 / 337:19271).
 bool isInvalidOtp(Object? error) =>
