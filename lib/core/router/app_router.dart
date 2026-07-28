@@ -6,11 +6,14 @@ import '../../features/auth/models/otp_args.dart';
 import '../../features/auth/notifier/auth_controller.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
+import '../../features/home/screens/home_screen.dart';
 import '../../features/registration/models/registration_args.dart';
 import '../../features/registration/screens/school_detail_screen.dart';
 import '../../features/registration/screens/signup_identity_screen.dart';
 import '../../features/registration/screens/signup_track_screen.dart';
 import '../../features/registration/screens/university_detail_screen.dart';
+import '../../features/shell/main_shell.dart';
+import '../../features/shell/screens/tab_placeholder.dart';
 
 /// The auth routes — reachable while signed out. Everything else requires auth.
 /// The whole `/register` wizard is pre-auth: registration happens BEFORE any
@@ -89,7 +92,53 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const UniversityDetailScreen(),
       ),
       GoRoute(path: '/track-select', builder: (_, _) => const _Placeholder('Track select')),
-      GoRoute(path: '/home', builder: (_, _) => const _Placeholder('Home')),
+      // The signed-in app lives inside the 5-tab nav shell. `indexedStack`
+      // keeps one Navigator per branch, so each tab preserves its own state
+      // (and Home does not re-fetch `/me`) when the student switches tabs.
+      // Home is branch 0 → the tab you land on after login.
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, navigationShell) =>
+            MainShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/leaderboard',
+                builder: (_, _) => const LeaderboardPlaceholderScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/learn',
+                builder: (_, _) => const LearnPlaceholderScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/message',
+                builder: (_, _) => const MessagePlaceholderScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/account',
+                builder: (_, _) => const AccountPlaceholderScreen(),
+              ),
+            ],
+          ),
+        ],
+      ),
       GoRoute(path: '/catalog', builder: (_, _) => const _Placeholder('Subjects')),
       GoRoute(path: '/quiz/:quizId', builder: (_, _) => const _Placeholder('Quiz')),
       GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),

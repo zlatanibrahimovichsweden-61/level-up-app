@@ -274,4 +274,80 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get registrationTokenInvalid =>
       'انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.';
+
+  @override
+  String get homeWelcome => 'أهلًا بعودتك،';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get currentLevel => 'المستوى الحالي';
+
+  @override
+  String levelLabel(int level) {
+    return 'المستوى $level';
+  }
+
+  @override
+  String get pointsBalance => 'رصيد النقاط';
+
+  @override
+  String levelProgress(int level) {
+    return 'المستوى $level';
+  }
+
+  @override
+  String levelProgressPoints(int points, int target) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+    final intl.NumberFormat targetNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String targetString = targetNumberFormat.format(target);
+
+    return '$pointsString / $targetString';
+  }
+
+  @override
+  String pointsValue(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString';
+  }
+
+  @override
+  String get dailyTasks => 'المهام اليومية';
+
+  @override
+  String get continueLearning => 'أكمل التعلم';
+
+  @override
+  String get topStudent => 'الأوائل';
+
+  @override
+  String get seeAll => 'عرض الكل';
+
+  @override
+  String get comingSoon => 'قريبًا';
+
+  @override
+  String get learnTodayLeadTomorrow => 'تعلّم اليوم، تصدّر غدًا';
+
+  @override
+  String get navHome => 'الرئيسية';
+
+  @override
+  String get navLeaderboard => 'المتصدرون';
+
+  @override
+  String get navLearn => 'تعلّم';
+
+  @override
+  String get navMessage => 'الرسائل';
+
+  @override
+  String get navAccount => 'حسابي';
 }

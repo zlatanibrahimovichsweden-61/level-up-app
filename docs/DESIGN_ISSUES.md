@@ -129,6 +129,35 @@ be read-only (not editable).
 same hue). Implemented faithfully. **Fix:** just confirm this hue flip is intentional, not a leftover
 from the School(green)/University(purple) accent.
 
+## 13. 🔴 Level-progress bar has no threshold to progress toward
+**Where:** `lib/features/home/widgets/level_card.dart:8` (`TODO(contract)`), constant at
+`lib/features/home/widgets/level_card.dart:20`. Figma Home `337:5303`, level card `337:5336`.
+
+**What:** the card shows a progress bar from the current level to the next one, captioned
+"2,450 / 5,000" in the frame. `GET /me` returns `points`, `level` and `badges` — but **not the
+threshold for the next level**, so there is nothing server-side to draw the bar from.
+
+The two available sources disagree:
+- the **contract** says levels are "1–12, thresholds every 500 points" (so level 8 → 9 would be
+  4,000, and the card's own "LEVEL 8 / 2,450" is itself inconsistent — 2,450 is level 5 under that
+  rule);
+- the **design** shows "/ 5,000", which is the post-level-12 **badge** cadence (first badge at
+  11,000), not a level threshold.
+
+**Built as:** `LEVEL {level}` and the points balance are rendered EXACTLY as `/me` returns them —
+never recomputed. Only the bar's fill and the "x / y" caption are derived, from a documented client
+constant `kPointsPerLevel = 500` that follows the contract, not the mock. The fraction is clamped,
+so if the constant is wrong the bar is merely full or empty — nothing a student is scored on moves.
+The frame's literal "/ 5,000" is deliberately NOT hardcoded.
+
+**Fix we need — one of:**
+1. *(preferred)* Seif adds the next-level threshold to `GET /me` (e.g. `nextLevelPoints`, or a
+   `levelProgress { current, next, earned }` block) so the client derives nothing at all; or
+2. Seif confirms 500/level is authoritative and static, and the designer corrects the frame's
+   "/ 5,000" caption and its sample figures.
+
+Until then the bar is the only number on Home the server did not supply.
+
 ---
 
 ## Code markers to grep

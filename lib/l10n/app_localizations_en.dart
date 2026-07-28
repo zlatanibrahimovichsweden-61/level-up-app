@@ -273,4 +273,80 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get registrationTokenInvalid =>
       'Your registration session expired. Please start again.';
+
+  @override
+  String get homeWelcome => 'Welcome back,';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get currentLevel => 'current level';
+
+  @override
+  String levelLabel(int level) {
+    return 'LEVEL $level';
+  }
+
+  @override
+  String get pointsBalance => 'Pts Balance';
+
+  @override
+  String levelProgress(int level) {
+    return 'Level $level';
+  }
+
+  @override
+  String levelProgressPoints(int points, int target) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+    final intl.NumberFormat targetNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String targetString = targetNumberFormat.format(target);
+
+    return '$pointsString / $targetString';
+  }
+
+  @override
+  String pointsValue(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString';
+  }
+
+  @override
+  String get dailyTasks => 'Daily Tasks';
+
+  @override
+  String get continueLearning => 'Continue Learning';
+
+  @override
+  String get topStudent => 'Top Student';
+
+  @override
+  String get seeAll => 'See All';
+
+  @override
+  String get comingSoon => 'Coming soon';
+
+  @override
+  String get learnTodayLeadTomorrow => 'Learn Today, Lead Tomorrow';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navLeaderboard => 'Leaderboard';
+
+  @override
+  String get navLearn => 'Learn';
+
+  @override
+  String get navMessage => 'Message';
+
+  @override
+  String get navAccount => 'Account';
 }

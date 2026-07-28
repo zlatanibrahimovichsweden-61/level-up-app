@@ -125,5 +125,67 @@
   "fieldNotAllowed": "This doesn't apply to your selection",
   "fieldRejected": "Please check this field",
   "phoneAlreadyRegistered": "This number already has an account. Please sign in.",
-  "registrationTokenInvalid": "Your registration session expired. Please start again."
+  "registrationTokenInvalid": "Your registration session expired. Please start again.",
+
+  "homeWelcome": "Welcome back,",
+  "notifications": "Notifications",
+  "currentLevel": "current level",
+  "levelLabel": "LEVEL {level}",
+  "@levelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "pointsBalance": "Pts Balance",
+  "levelProgress": "Level {level}",
+  "@levelProgress": {
+    "placeholders": {
+      "level": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "levelProgressPoints": "{points} / {target}",
+  "@levelProgressPoints": {
+    "description": "Points earned toward the next level. The target comes from a CLIENT constant — see DESIGN_ISSUES #13.",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2450"
+      },
+      "target": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "3000"
+      }
+    }
+  },
+  "pointsValue": "{points}",
+  "@pointsValue": {
+    "description": "A points figure on its own, locale-grouped (2,450 / ٢٬٤٥٠).",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2450"
+      }
+    }
+  },
+  "dailyTasks": "Daily Tasks",
+  "continueLearning": "Continue Learning",
+  "topStudent": "Top Student",
+  "seeAll": "See All",
+  "comingSoon": "Coming soon",
+  "learnTodayLeadTomorrow": "Learn Today, Lead Tomorrow",
+
+  "navHome": "Home",
+  "navLeaderboard": "Leaderboard",
+  "navLearn": "Learn",
+  "navMessage": "Message",
+  "navAccount": "Account"
 }

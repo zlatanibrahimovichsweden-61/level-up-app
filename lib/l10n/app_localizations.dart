@@ -607,6 +607,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your registration session expired. Please start again.'**
   String get registrationTokenInvalid;
+
+  /// No description provided for @homeWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back,'**
+  String get homeWelcome;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @currentLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'current level'**
+  String get currentLevel;
+
+  /// No description provided for @levelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LEVEL {level}'**
+  String levelLabel(int level);
+
+  /// No description provided for @pointsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pts Balance'**
+  String get pointsBalance;
+
+  /// No description provided for @levelProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String levelProgress(int level);
+
+  /// Points earned toward the next level. The target comes from a CLIENT constant — see DESIGN_ISSUES #13.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} / {target}'**
+  String levelProgressPoints(int points, int target);
+
+  /// A points figure on its own, locale-grouped (2,450 / ٢٬٤٥٠).
+  ///
+  /// In en, this message translates to:
+  /// **'{points}'**
+  String pointsValue(int points);
+
+  /// No description provided for @dailyTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Tasks'**
+  String get dailyTasks;
+
+  /// No description provided for @continueLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Learning'**
+  String get continueLearning;
+
+  /// No description provided for @topStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Student'**
+  String get topStudent;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See All'**
+  String get seeAll;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// No description provided for @learnTodayLeadTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn Today, Lead Tomorrow'**
+  String get learnTodayLeadTomorrow;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navLeaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get navLeaderboard;
+
+  /// No description provided for @navLearn.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn'**
+  String get navLearn;
+
+  /// No description provided for @navMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get navMessage;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
 }
 
 class _AppLocalizationsDelegate

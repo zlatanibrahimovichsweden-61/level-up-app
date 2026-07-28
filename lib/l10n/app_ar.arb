@@ -95,5 +95,26 @@
   "fieldNotAllowed": "هذا الحقل لا ينطبق على اختيارك",
   "fieldRejected": "من فضلك تحقق من هذا الحقل",
   "phoneAlreadyRegistered": "هذا الرقم لديه حساب بالفعل. من فضلك سجّل الدخول.",
-  "registrationTokenInvalid": "انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد."
+  "registrationTokenInvalid": "انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.",
+
+  "homeWelcome": "أهلًا بعودتك،",
+  "notifications": "الإشعارات",
+  "currentLevel": "المستوى الحالي",
+  "levelLabel": "المستوى {level}",
+  "pointsBalance": "رصيد النقاط",
+  "levelProgress": "المستوى {level}",
+  "levelProgressPoints": "{points} / {target}",
+  "pointsValue": "{points}",
+  "dailyTasks": "المهام اليومية",
+  "continueLearning": "أكمل التعلم",
+  "topStudent": "الأوائل",
+  "seeAll": "عرض الكل",
+  "comingSoon": "قريبًا",
+  "learnTodayLeadTomorrow": "تعلّم اليوم، تصدّر غدًا",
+
+  "navHome": "الرئيسية",
+  "navLeaderboard": "المتصدرون",
+  "navLearn": "تعلّم",
+  "navMessage": "الرسائل",
+  "navAccount": "حسابي"
 }
