@@ -7,6 +7,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
+import '../../registration/notifier/registration_controller.dart';
 import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/auth_outcome.dart';
@@ -58,16 +59,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     ref.listen(otpProvider(widget.args), (prev, next) {
       final outcome = next.outcome;
       if (outcome is RegistrationRequiredOutcome) {
-        // Seed the registration wizard with the token, its TTL, and the proven
+        // The registration wizard's seed: the token, its TTL, and the proven
         // phone (shown read-only on Sign Up_1; never re-submitted).
-        context.go(
-          '/register',
-          extra: RegistrationArgs(
-            registrationToken: outcome.registrationToken,
-            expiresInSeconds: outcome.expiresInSeconds,
-            phone: widget.args.phone,
-          ),
+        final args = RegistrationArgs(
+          registrationToken: outcome.registrationToken,
+          expiresInSeconds: outcome.expiresInSeconds,
+          phone: widget.args.phone,
         );
+        // Seed HERE, not in SignupIdentityScreen.initState. A ref.listen
+        // callback runs outside the build phase, so mutating a provider is
+        // legal; initState is part of element mount, and Riverpod asserts on
+        // it — which red-screened the whole wizard (BUG-001).
+        ref.read(registrationControllerProvider.notifier).start(args);
+        context.go('/register', extra: args);
       }
     });
 
