@@ -93,13 +93,14 @@ void main() {
     expect(shell.navigationShell.currentIndex, 0);
   });
 
-  testWidgets('the other four tabs are coming-soon placeholders',
+  testWidgets('the three unbuilt tabs are coming-soon placeholders',
       (tester) async {
     await pumpApp(tester);
 
+    // Learn is NOT in this list any more — Day 5 gave it the real
+    // SubjectsScreen (see catalog tests). Home and Learn are the built tabs.
     for (final (label, type) in <(String, Type)>[
       ('Leaderboard', LeaderboardPlaceholderScreen),
-      ('Learn', LearnPlaceholderScreen),
       ('Message', MessagePlaceholderScreen),
       ('Account', AccountPlaceholderScreen),
     ]) {

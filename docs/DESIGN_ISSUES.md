@@ -28,6 +28,11 @@
 | 10 | No in-app theme toggle although a full dark theme exists | 🟡 | Designer/PM | default light |
 | 11 | Student phone re-shown on Sign Up_1 (already bound to token) | 🟡 | Designer | built read-only |
 | 12 | Dark-mode primary accent flips green→purple — confirm intentional | 🟡 | Designer | — |
+| 13 | Level-progress bar has no threshold to progress toward | 🔴 | Seif + Designer | `TODO(contract)` |
+| 14 | ~~Learn Units/Chapters/Lessons frames unreachable~~ — **RESOLVED**, screens reconciled | ✅ | — | — |
+| 15 | Subject-card caption is 8.56dp — below a readable minimum | 🟡 | Designer | built at 10 |
+| 16 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Seif + Designer | `tree_list_row.dart` |
+| 17 | Search field drawn on all 3 drill-down screens, placeholder reads "Search Subjects" | 🟡 | Designer | not built |
 
 ---
 
@@ -157,6 +162,84 @@ The frame's literal "/ 5,000" is deliberately NOT hardcoded.
    "/ 5,000" caption and its sample figures.
 
 Until then the bar is the only number on Home the server did not supply.
+
+## 14. ✅ RESOLVED — Learn drill-down frames, now confirmed
+**Node ids (confirmed by the owner):**
+- Units — **`337:5894`** ("Learn(Units) for school student")
+- Chapters — **`337:6047`** ("Learn(Chapter) for school student")
+- Lessons — **`337:6143`** ("Learn(lessons) for school student")
+- shared row — **`337:5926`** · shared header — `337:6038`
+
+*(Original problem, kept for the record: the Figma MCP addresses nodes only by exact id, and its
+page index truncates at ~20 top-level nodes — the screen frames are not in it — so the three
+frames could not be found by name. Ids had to come from the owner.)*
+
+**Verified and reconciled (Day 5, second pass).** The derived screens were close on chrome but
+wrong on the row, so the row was rebuilt from `337:5926`:
+
+| | Frame | Was derived as | Now |
+|---|---|---|---|
+| Row surface | `#27282C`, 0.5px `#FCFBF9` border, radius 16, h 78 | fill only, radius 10.7 | `ext.catalogCardFill` + `ext.fieldBorder` border, radius 16 ✔ |
+| Leading | 40dp numbered circle, `rgba(39,40,44,.2)`, Cairo Bold 16 | *(absent)* | added — `ext.cardFill`, locale-aware digits ✔ |
+| Name | Inter SemiBold 16 / 21, `#FCFBF9` | Bold 16 | SemiBold 16, `ext.textPrimary` ✔ |
+| Progress | bar h 6, track `#2E2D32`, fill `#AE87E7` + trailing label | *(absent)* | `ext.progressTrack` + `cs.primary`, **lessons only** — see #16 |
+| Chevron | 28dp | 18dp | 28dp, RTL-mirrored ✔ |
+| Title | "{parent} Units/Chapter/lessons" | static "Units"/"Chapters"/"Lessons" | parameterized (`unitsTitleFor` etc.), bare key kept as the deep-link fallback ✔ |
+
+Every colour still resolves through `colorScheme`/`AppColors` — **no new tokens were needed**, and
+a grep of `lib/features/catalog` for `Color(0x`/`Colors.`/hex returns nothing.
+
+**Two copy points to confirm (built as noted, not blocking):**
+1. The Chapters frame titles itself **"Cell Biology Chapter"** (singular) and Lessons
+   **"…lessons"** (lower-case). Built as **"Chapters"/"Lessons"** — these are lists, and the other
+   two levels are capitalised. Say the word and it flips.
+2. The header draws a **back chevron on Subjects**, but Subjects is a tab root — nothing to pop.
+   Rendered only when the navigator can actually pop (absent on Subjects, present on the other
+   three). Confirm, or tell us where a Subjects chevron should lead.
+   (`lib/features/catalog/widgets/catalog_scaffold.dart` — `CatalogHeader` class doc.)
+
+## 16. 🔴 Units and Chapters show a progress % the contract cannot supply
+**Where:** Units `337:5894`, Chapters `337:6047` — every row draws a progress bar and a trailing
+"80%". Code: `lib/features/catalog/widgets/tree_list_row.dart` (`progress` is nullable and why).
+
+**What:** in `SchoolSubjectTree`, `questionCounter` exists on **lessons only**. Units and chapters
+carry `id`, `name` and their children — nothing else. So there is no server value to draw those
+bars from, and the "80%" in the frame has no source.
+
+The only way to produce it client-side is to sum the descendant lessons' counters, which is exactly
+what the contract forbids: `questionCounter` is display-only, "render the number and a clamped
+fraction and nothing more". A summed percentage would also be *wrong* the moment the server scopes
+or weights progress differently from a naive lesson-count average — and it is the kind of number a
+student reads as authoritative.
+
+**Built as:** the bar + label render on **Lessons only**, from that lesson's own `questionCounter`.
+Units and Chapters rows are name + chevron. Nothing is faked.
+
+**Fix we need — one of:**
+1. *(preferred)* Seif adds `questionCounter` to the unit and chapter nodes of `SchoolSubjectTree`,
+   so the client renders three levels the same way and derives nothing; or
+2. the designer drops the bar from the Units and Chapters rows.
+
+**Also note:** the Lessons frame's trailing label is a rounded **"80%"**; we render the server's own
+**"{answered} / {total} questions"** there instead — strictly more information, no extra client
+math, and it matches the Subjects card. Confirm if the percentage was deliberate.
+
+## 17. 🟡 A "Search Subjects" field is drawn on all three drill-down screens
+**Where:** `337:5894`, `337:6047`, `337:6143` — each carries the same search field as Subjects,
+placeholder text and all.
+**What:** the placeholder still reads **"Search Subjects"** on the Units, Chapters and Lessons
+screens, which is wrong copy at every one of those levels — it looks like an unreviewed
+copy-paste of the Subjects frame.
+**Built as:** search is on **Subjects only** (which is also what the Day-5 brief scopes it to).
+**Fix we need:** designer confirms whether these three screens should really have search; if yes,
+supply the correct placeholder for each level and we will wire the same client-side filter.
+
+## 15. 🟡 Subject-card caption is 8.56dp
+**Where:** Subjects `337:5748` — the "216 / 480 questions" caption, `Cairo SemiBold 8.558px` on a
+402dp-wide frame, so that is literal dp, not a scaled export.
+**What:** 8.5dp is below any readable minimum on a real phone, and this caption carries the only
+progress number on the card. **Built at 10dp** (`lib/features/catalog/widgets/subject_card.dart`).
+**Fix we need:** designer confirms 10dp, or supplies an intended size.
 
 ---
 

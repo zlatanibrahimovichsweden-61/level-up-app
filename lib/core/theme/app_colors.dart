@@ -30,6 +30,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.cardLabel,
     required this.mutedText,
     required this.progressTrack,
+    required this.catalogCardFill,
+    required this.catalogTrack,
   });
 
   final Color background;
@@ -68,6 +70,22 @@ class AppColors extends ThemeExtension<AppColors> {
   /// The unfilled part of a progress bar. Figma dark `#2E2D32`.
   final Color progressTrack;
 
+  // --- Catalog tokens (Figma Learn/Subjects 337:5702) -----------------------
+  //
+  // Same situation as the Home tokens above: only a DARK Learn frame exists, so
+  // the dark values are Figma-verbatim and the light values reuse an approved
+  // light token rather than an invented hex.
+
+  /// The subject card / drill-down row surface. Figma dark `#27282C` — an
+  /// OPAQUE raised surface, unlike [cardFill] (a 20% wash that composites to the
+  /// background), so the two are genuinely different tokens, not a duplicate.
+  final Color catalogCardFill;
+
+  /// Unfilled track of the per-subject progress bar. Figma dark `#ECECEC` — a
+  /// LIGHT track on a dark card, the inverse of [progressTrack] on Home. Kept
+  /// separate so correcting one bar never silently restyles the other.
+  final Color catalogTrack;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -83,6 +101,8 @@ class AppColors extends ThemeExtension<AppColors> {
     cardLabel: Color(0xFF696969), // = light hint (no light Home frame)
     mutedText: Color(0xFFB3B3B3), // Figma — same in both canvases
     progressTrack: Color(0xFFD1D1D1), // = light fieldBorder (no light Home frame)
+    catalogCardFill: Color(0xFFFDFDFD), // = light fieldFill (no light Learn frame)
+    catalogTrack: Color(0xFFD1D1D1), // = light fieldBorder (no light Learn frame)
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -100,6 +120,8 @@ class AppColors extends ThemeExtension<AppColors> {
     cardLabel: Color(0xFF7070A0), // Figma 337:5340
     mutedText: Color(0xFFB3B3B3), // Figma 337:5346
     progressTrack: Color(0xFF2E2D32), // Figma 337:5350
+    catalogCardFill: Color(0xFF27282C), // Figma 337:5732
+    catalogTrack: Color(0xFFECECEC), // Figma 337:5744
   );
 
   @override
@@ -117,6 +139,8 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? cardLabel,
     Color? mutedText,
     Color? progressTrack,
+    Color? catalogCardFill,
+    Color? catalogTrack,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -132,6 +156,8 @@ class AppColors extends ThemeExtension<AppColors> {
       cardLabel: cardLabel ?? this.cardLabel,
       mutedText: mutedText ?? this.mutedText,
       progressTrack: progressTrack ?? this.progressTrack,
+      catalogCardFill: catalogCardFill ?? this.catalogCardFill,
+      catalogTrack: catalogTrack ?? this.catalogTrack,
     );
   }
 
@@ -153,6 +179,8 @@ class AppColors extends ThemeExtension<AppColors> {
       cardLabel: Color.lerp(cardLabel, other.cardLabel, t)!,
       mutedText: Color.lerp(mutedText, other.mutedText, t)!,
       progressTrack: Color.lerp(progressTrack, other.progressTrack, t)!,
+      catalogCardFill: Color.lerp(catalogCardFill, other.catalogCardFill, t)!,
+      catalogTrack: Color.lerp(catalogTrack, other.catalogTrack, t)!,
     );
   }
 }

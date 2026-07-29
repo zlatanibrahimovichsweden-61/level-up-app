@@ -47,15 +47,8 @@ class LeaderboardPlaceholderScreen extends StatelessWidget {
       TabPlaceholder(title: AppLocalizations.of(context).navLeaderboard);
 }
 
-/// `/learn` — this is where the subjects list (`GET /catalog/subjects`) lands.
-/// Explicitly deferred: subjects are the Learn tab, not Home.
-class LearnPlaceholderScreen extends StatelessWidget {
-  const LearnPlaceholderScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) =>
-      TabPlaceholder(title: AppLocalizations.of(context).navLearn);
-}
+// The Learn tab's placeholder was removed in Day 5 — `/learn` now serves the
+// real SubjectsScreen (see app_router.dart).
 
 /// `/message` — the in-app inbox (admin broadcasts, end-of-year promotion).
 class MessagePlaceholderScreen extends StatelessWidget {

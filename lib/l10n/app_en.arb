@@ -187,5 +187,65 @@
   "navLeaderboard": "Leaderboard",
   "navLearn": "Learn",
   "navMessage": "Message",
-  "navAccount": "Account"
+  "navAccount": "Account",
+
+  "subjectsTitle": "Subjects",
+  "searchSubjects": "Search Subjects",
+  "mistakes": "Mistakes",
+  "questionsCount": "{answered} / {total} questions",
+  "@questionsCount": {
+    "description": "The contract's questionCounter. DISPLAY ONLY — it never gates or hides content.",
+    "placeholders": {
+      "answered": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "216"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "480"
+      }
+    }
+  },
+  "unitsTitle": "Units",
+  "chaptersTitle": "Chapters",
+  "lessonsTitle": "Lessons",
+  "unitsTitleFor": "{subject} Units",
+  "@unitsTitleFor": {
+    "description": "Drill-down title carrying the parent's name, per Figma 337:5894 (\"Biology Units\"). The bare unitsTitle is the fallback before the name is known.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "Biology"
+      }
+    }
+  },
+  "chaptersTitleFor": "{unit} Chapters",
+  "@chaptersTitleFor": {
+    "description": "Figma 337:6047 draws the singular \"Chapter\"; built plural — this is a list. Confirm with the designer.",
+    "placeholders": {
+      "unit": {
+        "type": "String",
+        "example": "Cell Biology"
+      }
+    }
+  },
+  "lessonsTitleFor": "{chapter} Lessons",
+  "@lessonsTitleFor": {
+    "placeholders": {
+      "chapter": {
+        "type": "String",
+        "example": "The Cell"
+      }
+    }
+  },
+  "noSubjects": "No subjects yet",
+  "noSubjectsMatch": "No subjects match your search",
+  "nothingHere": "Nothing here yet",
+  "subjectUnavailable": "This subject isn't part of your course.",
+  "@subjectUnavailable": {
+    "description": "403 insufficient_scope — the subject is outside the student's server-derived scope."
+  },
+  "quizSetupComingSoon": "Quiz setup is coming soon"
 }

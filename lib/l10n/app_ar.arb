@@ -116,5 +116,21 @@
   "navLeaderboard": "المتصدرون",
   "navLearn": "تعلّم",
   "navMessage": "الرسائل",
-  "navAccount": "حسابي"
+  "navAccount": "حسابي",
+
+  "subjectsTitle": "المواد",
+  "searchSubjects": "ابحث عن مادة",
+  "mistakes": "أخطائي",
+  "questionsCount": "{answered} / {total} سؤال",
+  "unitsTitle": "الوحدات",
+  "chaptersTitle": "الفصول",
+  "lessonsTitle": "الدروس",
+  "unitsTitleFor": "وحدات {subject}",
+  "chaptersTitleFor": "فصول {unit}",
+  "lessonsTitleFor": "دروس {chapter}",
+  "noSubjects": "لا توجد مواد بعد",
+  "noSubjectsMatch": "لا توجد مواد مطابقة لبحثك",
+  "nothingHere": "لا يوجد شيء هنا بعد",
+  "subjectUnavailable": "هذه المادة ليست ضمن مقررك.",
+  "quizSetupComingSoon": "إعداد الاختبار قريبًا"
 }

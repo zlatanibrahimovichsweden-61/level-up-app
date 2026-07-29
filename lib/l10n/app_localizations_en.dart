@@ -349,4 +349,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navAccount => 'Account';
+
+  @override
+  String get subjectsTitle => 'Subjects';
+
+  @override
+  String get searchSubjects => 'Search Subjects';
+
+  @override
+  String get mistakes => 'Mistakes';
+
+  @override
+  String questionsCount(int answered, int total) {
+    final intl.NumberFormat answeredNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String answeredString = answeredNumberFormat.format(answered);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$answeredString / $totalString questions';
+  }
+
+  @override
+  String get unitsTitle => 'Units';
+
+  @override
+  String get chaptersTitle => 'Chapters';
+
+  @override
+  String get lessonsTitle => 'Lessons';
+
+  @override
+  String unitsTitleFor(String subject) {
+    return '$subject Units';
+  }
+
+  @override
+  String chaptersTitleFor(String unit) {
+    return '$unit Chapters';
+  }
+
+  @override
+  String lessonsTitleFor(String chapter) {
+    return '$chapter Lessons';
+  }
+
+  @override
+  String get noSubjects => 'No subjects yet';
+
+  @override
+  String get noSubjectsMatch => 'No subjects match your search';
+
+  @override
+  String get nothingHere => 'Nothing here yet';
+
+  @override
+  String get subjectUnavailable => 'This subject isn\'t part of your course.';
+
+  @override
+  String get quizSetupComingSoon => 'Quiz setup is coming soon';
 }

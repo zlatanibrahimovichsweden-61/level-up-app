@@ -721,6 +721,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account'**
   String get navAccount;
+
+  /// No description provided for @subjectsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get subjectsTitle;
+
+  /// No description provided for @searchSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Subjects'**
+  String get searchSubjects;
+
+  /// No description provided for @mistakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistakes'**
+  String get mistakes;
+
+  /// The contract's questionCounter. DISPLAY ONLY — it never gates or hides content.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} / {total} questions'**
+  String questionsCount(int answered, int total);
+
+  /// No description provided for @unitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get unitsTitle;
+
+  /// No description provided for @chaptersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get chaptersTitle;
+
+  /// No description provided for @lessonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lessons'**
+  String get lessonsTitle;
+
+  /// Drill-down title carrying the parent's name, per Figma 337:5894 ("Biology Units"). The bare unitsTitle is the fallback before the name is known.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} Units'**
+  String unitsTitleFor(String subject);
+
+  /// Figma 337:6047 draws the singular "Chapter"; built plural — this is a list. Confirm with the designer.
+  ///
+  /// In en, this message translates to:
+  /// **'{unit} Chapters'**
+  String chaptersTitleFor(String unit);
+
+  /// No description provided for @lessonsTitleFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{chapter} Lessons'**
+  String lessonsTitleFor(String chapter);
+
+  /// No description provided for @noSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects yet'**
+  String get noSubjects;
+
+  /// No description provided for @noSubjectsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects match your search'**
+  String get noSubjectsMatch;
+
+  /// No description provided for @nothingHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get nothingHere;
+
+  /// 403 insufficient_scope — the subject is outside the student's server-derived scope.
+  ///
+  /// In en, this message translates to:
+  /// **'This subject isn\'t part of your course.'**
+  String get subjectUnavailable;
+
+  /// No description provided for @quizSetupComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz setup is coming soon'**
+  String get quizSetupComingSoon;
 }
 
 class _AppLocalizationsDelegate

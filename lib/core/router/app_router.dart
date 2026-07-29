@@ -6,7 +6,13 @@ import '../../features/auth/models/otp_args.dart';
 import '../../features/auth/notifier/auth_controller.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
+import '../../features/catalog/screens/chapters_screen.dart';
+import '../../features/catalog/screens/lessons_screen.dart';
+import '../../features/catalog/screens/subjects_screen.dart';
+import '../../features/catalog/screens/units_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/quiz/models/quiz_setup_args.dart';
+import '../../features/quiz/screens/quiz_setup_placeholder.dart';
 import '../../features/registration/models/registration_args.dart';
 import '../../features/registration/screens/school_detail_screen.dart';
 import '../../features/registration/screens/signup_identity_screen.dart';
@@ -113,11 +119,46 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Learn — the catalog browse stack. The drill-down routes are NESTED
+          // inside the branch, so each level pushes onto the Learn branch's own
+          // Navigator: the nav bar stays put and switching tabs mid-drill-down
+          // preserves where you were.
+          //
+          // Every level carries its ids in the PATH, and all three read the one
+          // `subjectTreeProvider(subjectId)` — the ids select from the cached
+          // tree, they are not fetch keys for per-level requests.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/learn',
-                builder: (_, _) => const LearnPlaceholderScreen(),
+                builder: (_, _) => const SubjectsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'subject/:subjectId',
+                    builder: (_, state) => UnitsScreen(
+                      subjectId: state.pathParameters['subjectId']!,
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'unit/:unitId',
+                        builder: (_, state) => ChaptersScreen(
+                          subjectId: state.pathParameters['subjectId']!,
+                          unitId: state.pathParameters['unitId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'chapter/:chapterId',
+                            builder: (_, state) => LessonsScreen(
+                              subjectId: state.pathParameters['subjectId']!,
+                              unitId: state.pathParameters['unitId']!,
+                              chapterId: state.pathParameters['chapterId']!,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -139,7 +180,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(path: '/catalog', builder: (_, _) => const _Placeholder('Subjects')),
+      // OUTSIDE the shell on purpose: taking a quiz is a full-screen task, not a
+      // tab. Day 5 only routes here; the setup UI itself is Day 6.
+      GoRoute(
+        path: '/quiz/setup',
+        builder: (_, state) =>
+            QuizSetupPlaceholderScreen(args: state.extra! as QuizSetupArgs),
+      ),
       GoRoute(path: '/quiz/:quizId', builder: (_, _) => const _Placeholder('Quiz')),
       GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),
       GoRoute(path: '/subscription/return', builder: (_, _) => const _Placeholder('Paymob return')),

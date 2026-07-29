@@ -350,4 +350,64 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get navAccount => 'حسابي';
+
+  @override
+  String get subjectsTitle => 'المواد';
+
+  @override
+  String get searchSubjects => 'ابحث عن مادة';
+
+  @override
+  String get mistakes => 'أخطائي';
+
+  @override
+  String questionsCount(int answered, int total) {
+    final intl.NumberFormat answeredNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String answeredString = answeredNumberFormat.format(answered);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$answeredString / $totalString سؤال';
+  }
+
+  @override
+  String get unitsTitle => 'الوحدات';
+
+  @override
+  String get chaptersTitle => 'الفصول';
+
+  @override
+  String get lessonsTitle => 'الدروس';
+
+  @override
+  String unitsTitleFor(String subject) {
+    return 'وحدات $subject';
+  }
+
+  @override
+  String chaptersTitleFor(String unit) {
+    return 'فصول $unit';
+  }
+
+  @override
+  String lessonsTitleFor(String chapter) {
+    return 'دروس $chapter';
+  }
+
+  @override
+  String get noSubjects => 'لا توجد مواد بعد';
+
+  @override
+  String get noSubjectsMatch => 'لا توجد مواد مطابقة لبحثك';
+
+  @override
+  String get nothingHere => 'لا يوجد شيء هنا بعد';
+
+  @override
+  String get subjectUnavailable => 'هذه المادة ليست ضمن مقررك.';
+
+  @override
+  String get quizSetupComingSoon => 'إعداد الاختبار قريبًا';
 }

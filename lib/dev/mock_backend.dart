@@ -123,6 +123,34 @@ class MockBackendInterceptor extends Interceptor {
       });
     }
 
+    // ---- catalog ----------------------------------------------------------
+    // The Learn tab. Server-scoped in production — the client sends no scope
+    // params, so there is nothing to branch on here either.
+    if (method == 'GET' && path == '/catalog/subjects') {
+      return _ok(handler, options, 200, _subjects);
+    }
+
+    final tree = RegExp(r'^/catalog/subjects/([^/]+)/tree$').firstMatch(path);
+    if (method == 'GET' && tree != null) {
+      final subjectId = tree.group(1)!;
+      final units = _subjectTrees[subjectId];
+      // A subject outside the caller's scope — the contract's 403. Reachable
+      // here by deep-linking an id that isn't in the mock's list.
+      if (units == null) {
+        return _problem(
+          handler,
+          options,
+          403,
+          'insufficient_scope',
+          'Subject $subjectId is not in scope',
+        );
+      }
+      return _ok(handler, options, 200, <String, dynamic>{
+        'track': 'school',
+        'units': units,
+      });
+    }
+
     // ---- reference --------------------------------------------------------
     if (method == 'GET' && path == '/reference/countries') {
       return _ok(handler, options, 200, _countries);
@@ -396,6 +424,103 @@ final _universities = <dynamic>[
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Catalog (Learn tab)
+// ---------------------------------------------------------------------------
+
+Map<String, dynamic> _counter(int answered, int total) =>
+    <String, dynamic>{'answered': answered, 'total': total};
+
+Map<String, dynamic> _subject(String id, String name, int answered, int total) =>
+    <String, dynamic>{
+      'id': id,
+      'name': name,
+      'questionCounter': _counter(answered, total),
+    };
+
+/// `name` arrives already in the content language (adr-018), so these are
+/// Arabic — exactly what an Egyptian school student's catalog returns, and the
+/// only way the RTL grid gets exercised on device.
+///
+/// The spread is deliberate: a fully-answered subject and a `0 / 0` subject both
+/// appear, so it is visible on device that the counter locks nothing.
+final _subjects = <dynamic>[
+  _subject('sub-bio', 'الأحياء', 216, 480),
+  _subject('sub-chem', 'الكيمياء', 480, 480), // finished — still fully tappable
+  _subject('sub-phys', 'الفيزياء', 0, 0), // no questions yet — still tappable
+  _subject('sub-math', 'الرياضيات', 95, 300),
+  _subject('sub-geo', 'الجغرافيا', 40, 120),
+  _subject('sub-arabic', 'اللغة العربية', 12, 150), // empty tree, on purpose
+];
+
+Map<String, dynamic> _lesson(String id, String name, int answered, int total) =>
+    <String, dynamic>{
+      'id': id,
+      'name': name,
+      'questionCounter': _counter(answered, total),
+    };
+
+/// Two units × two chapters × two-or-three lessons per subject — enough that
+/// every level of the drill-down has something to show, and `الفيزياء`'s second
+/// chapter is empty so the Lessons empty state is reachable on device.
+List<dynamic> _schoolUnits(String prefix) => <dynamic>[
+      <String, dynamic>{
+        'id': '$prefix-u1',
+        'name': 'الوحدة الأولى',
+        'chapters': <dynamic>[
+          <String, dynamic>{
+            'id': '$prefix-u1-c1',
+            'name': 'الفصل الأول',
+            'lessons': <dynamic>[
+              _lesson('$prefix-u1-c1-l1', 'الدرس الأول', 12, 40),
+              _lesson('$prefix-u1-c1-l2', 'الدرس الثاني', 40, 40),
+              _lesson('$prefix-u1-c1-l3', 'الدرس الثالث', 0, 25),
+            ],
+          },
+          <String, dynamic>{
+            'id': '$prefix-u1-c2',
+            'name': 'الفصل الثاني',
+            'lessons': <dynamic>[
+              _lesson('$prefix-u1-c2-l1', 'الدرس الأول', 5, 30),
+              _lesson('$prefix-u1-c2-l2', 'الدرس الثاني', 18, 35),
+            ],
+          },
+        ],
+      },
+      <String, dynamic>{
+        'id': '$prefix-u2',
+        'name': 'الوحدة الثانية',
+        'chapters': <dynamic>[
+          <String, dynamic>{
+            'id': '$prefix-u2-c1',
+            'name': 'الفصل الأول',
+            'lessons': <dynamic>[
+              _lesson('$prefix-u2-c1-l1', 'الدرس الأول', 3, 20),
+              _lesson('$prefix-u2-c1-l2', 'الدرس الثاني', 0, 0),
+            ],
+          },
+          // A chapter with no lessons yet — the Lessons empty state.
+          <String, dynamic>{
+            'id': '$prefix-u2-c2',
+            'name': 'الفصل الثاني',
+            'lessons': <dynamic>[],
+          },
+        ],
+      },
+    ];
+
+/// Keyed by `subjectId`; anything not in here answers `403 insufficient_scope`,
+/// which is the contract's own response for an out-of-scope subject.
+final _subjectTrees = <String, List<dynamic>>{
+  'sub-bio': _schoolUnits('bio'),
+  'sub-chem': _schoolUnits('chem'),
+  'sub-phys': _schoolUnits('phys'),
+  'sub-math': _schoolUnits('math'),
+  'sub-geo': _schoolUnits('geo'),
+  // A subject with no content published yet — the Units empty state.
+  'sub-arabic': <dynamic>[],
+};
 
 /// NOTE: these are remote URLs — the only thing in this harness that is not
 /// offline. Nothing renders them today (the avatar grid was deliberately not
