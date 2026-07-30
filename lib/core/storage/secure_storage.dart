@@ -7,7 +7,32 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Never log token values.
 class SecureStorage {
   SecureStorage([FlutterSecureStorage? storage])
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage =
+          storage ?? const FlutterSecureStorage(iOptions: _iosOptions);
+
+  /// iOS Keychain policy. Both values are deliberate; do not drop back to the
+  /// plugin defaults.
+  ///
+  /// - `first_unlock_this_device` — the `_this_device` suffix is the load-bearing
+  ///   part. Without it the Keychain item is eligible for an encrypted iCloud/
+  ///   iTunes backup and can be RESTORED ONTO A DIFFERENT PHONE. Because
+  ///   `device_id` lives in this same store, it restores too, so the server sees
+  ///   the same device and adr-019's `session_superseded` eviction never fires —
+  ///   a restored backup would silently inherit a live session. `first_unlock`
+  ///   (rather than `unlocked`) is required so the token is still readable after
+  ///   a reboot without the user having opened the app, which the refresh path
+  ///   depends on.
+  /// - `synchronizable: false` — never sync the tokens to iCloud Keychain.
+  ///
+  /// Android needs NO options here. flutter_secure_storage 10.x rewrote the
+  /// Android backend after Jetpack Security was deprecated: storage is always
+  /// encrypted (AES-GCM payload, RSA-OAEP key wrap, keys in the KeyStore).
+  /// `AndroidOptions.encryptedSharedPreferences` is DEPRECATED in 10.x — setting
+  /// it opts back into the old Jetpack path. Do not add it.
+  static const _iosOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+    synchronizable: false,
+  );
 
   final FlutterSecureStorage _storage;
 
