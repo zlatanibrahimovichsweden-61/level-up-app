@@ -63,3 +63,44 @@ Map<String, dynamic> _$LessonToJson(_Lesson instance) => <String, dynamic>{
   'name': instance.name,
   'questionCounter': instance.questionCounter,
 };
+
+_UniversitySubjectTree _$UniversitySubjectTreeFromJson(
+  Map<String, dynamic> json,
+) => _UniversitySubjectTree(
+  track: $enumDecode(_$TrackEnumMap, json['track']),
+  quizTypes: (json['quizTypes'] as List<dynamic>)
+      .map((e) => $enumDecode(_$QuizTypeEnumMap, e))
+      .toList(),
+  lectures: (json['lectures'] as List<dynamic>)
+      .map((e) => Lecture.fromJson(e as Map<String, dynamic>))
+      .toList(),
+);
+
+Map<String, dynamic> _$UniversitySubjectTreeToJson(
+  _UniversitySubjectTree instance,
+) => <String, dynamic>{
+  'track': _$TrackEnumMap[instance.track]!,
+  'quizTypes': instance.quizTypes.map((e) => _$QuizTypeEnumMap[e]!).toList(),
+  'lectures': instance.lectures,
+};
+
+const _$QuizTypeEnumMap = {
+  QuizType.normal: 'normal',
+  QuizType.midTermRevision: 'midTermRevision',
+  QuizType.finalRevision: 'finalRevision',
+  QuizType.practicalRevision: 'practicalRevision',
+};
+
+_Lecture _$LectureFromJson(Map<String, dynamic> json) => _Lecture(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  questionCounter: QuestionCounter.fromJson(
+    json['questionCounter'] as Map<String, dynamic>,
+  ),
+);
+
+Map<String, dynamic> _$LectureToJson(_Lecture instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'questionCounter': instance.questionCounter,
+};

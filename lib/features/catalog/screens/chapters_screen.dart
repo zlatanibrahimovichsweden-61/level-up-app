@@ -47,7 +47,7 @@ class ChaptersScreen extends ConsumerWidget {
         children: [
           if (offline) const OfflineBanner(),
           Expanded(
-            child: CatalogAsyncView<SchoolSubjectTree>(
+            child: CatalogAsyncView<SubjectTree>(
               value: tree,
               // An unknown unitId (stale deep link, content withdrawn) is EMPTY,
               // not a crash and not an error.
@@ -68,14 +68,18 @@ class ChaptersScreen extends ConsumerWidget {
     );
   }
 
-  Unit? _unitOf(SchoolSubjectTree? tree) {
-    for (final unit in tree?.units ?? const <Unit>[]) {
+  /// Only a school tree has units. These routes are unreachable on university
+  /// (its tree is flat and stops at the lecture), so a university payload here
+  /// means a hand-typed URL — treated as EMPTY, never a crash.
+  Unit? _unitOf(SubjectTree? tree) {
+    if (tree is! SchoolSubjectTree) return null;
+    for (final unit in tree.units) {
       if (unit.id == unitId) return unit;
     }
     return null;
   }
 
-  List<Chapter> _chaptersOf(SchoolSubjectTree tree) =>
+  List<Chapter> _chaptersOf(SubjectTree tree) =>
       _unitOf(tree)?.chapters ?? const [];
 }
 

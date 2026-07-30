@@ -55,6 +55,17 @@ class MockBackendInterceptor extends Interceptor {
 
   final Duration latency;
 
+  /// Which track this mock session is. Set by the OTP code you enter (see
+  /// [_kAuthenticatedCode] / [_kUniversityCode]) or by what you register as,
+  /// then honoured by `GET /me` and the whole catalog — so one build walks
+  /// either track without an edit or a reinstall.
+  ///
+  /// In production this is never a client choice: the server derives scope from
+  /// the token (adr-013). The switch exists only because there is no server.
+  String _track = 'school';
+
+  bool get _isUniversity => _track == 'university';
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -78,13 +89,17 @@ class MockBackendInterceptor extends Interceptor {
     if (method == 'POST' && path == '/auth/otp/verify') {
       final code = body['code'] as String? ?? '';
       final phone = body['phone'] as String? ?? '+201001234567';
-      // The magic code lands you straight on /home with a full session; every
-      // other 6-digit code forks to registration so the wizard can be walked.
-      if (code == _kAuthenticatedCode) {
+      // The two magic codes land you straight on /home with a full session, one
+      // per track; every other 6-digit code forks to registration so the wizard
+      // can be walked.
+      if (code == _kAuthenticatedCode || code == _kUniversityCode) {
+        _track = code == _kUniversityCode ? 'university' : 'school';
         return _ok(handler, options, 200, <String, dynamic>{
           'result': 'authenticated',
           'tokens': _tokenPair(),
-          'profile': _schoolProfile(phone: phone),
+          'profile': _isUniversity
+              ? _universityProfile(phone: phone)
+              : _schoolProfile(phone: phone),
         });
       }
       return _ok(handler, options, 200, <String, dynamic>{
@@ -95,6 +110,10 @@ class MockBackendInterceptor extends Interceptor {
     }
 
     if (method == 'POST' && path == '/auth/register') {
+      // Registering as a university student makes the rest of the session
+      // university — otherwise the Learn tab would contradict what you just
+      // signed up as.
+      _track = body['track'] == 'university' ? 'university' : 'school';
       return _ok(handler, options, 201, <String, dynamic>{
         'result': 'authenticated',
         'tokens': _tokenPair(),
@@ -114,7 +133,15 @@ class MockBackendInterceptor extends Interceptor {
     // Home is powered entirely by GET /me, so without this the whole tab
     // renders its error state on device.
     if (method == 'GET' && path == '/me') {
-      return _ok(handler, options, 200, _schoolProfile(phone: '+201021871999'));
+      const phone = '+201021871999';
+      return _ok(
+        handler,
+        options,
+        200,
+        _isUniversity
+            ? _universityProfile(phone: phone)
+            : _schoolProfile(phone: phone),
+      );
     }
 
     if (method == 'GET' && path == '/me/entitlements') {
@@ -127,16 +154,25 @@ class MockBackendInterceptor extends Interceptor {
     // The Learn tab. Server-scoped in production — the client sends no scope
     // params, so there is nothing to branch on here either.
     if (method == 'GET' && path == '/catalog/subjects') {
-      return _ok(handler, options, 200, _subjects);
+      return _ok(
+        handler,
+        options,
+        200,
+        _isUniversity ? _universitySubjects : _subjects,
+      );
     }
 
     final tree = RegExp(r'^/catalog/subjects/([^/]+)/tree$').firstMatch(path);
     if (method == 'GET' && tree != null) {
       final subjectId = tree.group(1)!;
-      final units = _subjectTrees[subjectId];
+      // The contract's `oneOf`: same endpoint, a different shape per track.
+      final body = _isUniversity
+          ? _universitySubjectTrees[subjectId]
+          : _schoolSubjectTree(subjectId);
       // A subject outside the caller's scope — the contract's 403. Reachable
-      // here by deep-linking an id that isn't in the mock's list.
-      if (units == null) {
+      // here by deep-linking an id that isn't in the mock's list, or by asking
+      // for the other track's subjects.
+      if (body == null) {
         return _problem(
           handler,
           options,
@@ -145,10 +181,7 @@ class MockBackendInterceptor extends Interceptor {
           'Subject $subjectId is not in scope',
         );
       }
-      return _ok(handler, options, 200, <String, dynamic>{
-        'track': 'school',
-        'units': units,
-      });
+      return _ok(handler, options, 200, body);
     }
 
     // ---- reference --------------------------------------------------------
@@ -236,8 +269,13 @@ class MockBackendInterceptor extends Interceptor {
   }
 }
 
-/// Enter this at the OTP screen to skip registration and land on `/home`.
+/// Enter this at the OTP screen to skip registration and land on `/home` as a
+/// SCHOOL student.
 const _kAuthenticatedCode = '000000';
+
+/// Same, but as a UNIVERSITY student — the whole session (Home's Learning Tools
+/// section, the Learn tab's lecture trees) follows from this one code.
+const _kUniversityCode = '111111';
 
 // ---------------------------------------------------------------------------
 // Canned data
@@ -510,6 +548,13 @@ List<dynamic> _schoolUnits(String prefix) => <dynamic>[
       },
     ];
 
+/// `SchoolSubjectTree` for a known subject, else null → `403`.
+Map<String, dynamic>? _schoolSubjectTree(String subjectId) {
+  final units = _subjectTrees[subjectId];
+  if (units == null) return null;
+  return <String, dynamic>{'track': 'school', 'units': units};
+}
+
 /// Keyed by `subjectId`; anything not in here answers `403 insufficient_scope`,
 /// which is the contract's own response for an out-of-scope subject.
 final _subjectTrees = <String, List<dynamic>>{
@@ -520,6 +565,81 @@ final _subjectTrees = <String, List<dynamic>>{
   'sub-geo': _schoolUnits('geo'),
   // A subject with no content published yet — the Units empty state.
   'sub-arabic': <dynamic>[],
+};
+
+// ---- university catalog ----------------------------------------------------
+
+/// A first-year medical student's subjects — the server scopes these by
+/// university/faculty/year, which is why they are a different set entirely from
+/// the school list rather than the same subjects re-labelled.
+final _universitySubjects = <dynamic>[
+  _subject('uni-anatomy', 'التشريح', 132, 400),
+  _subject('uni-physio', 'الفسيولوجي', 400, 400), // finished — still tappable
+  _subject('uni-biochem', 'الكيمياء الحيوية', 0, 0), // untouched — still tappable
+  _subject('uni-histology', 'الأنسجة', 58, 210),
+];
+
+Map<String, dynamic> _lecture(String id, String name, int answered, int total) =>
+    <String, dynamic>{
+      'id': id,
+      'name': name,
+      'questionCounter': _counter(answered, total),
+    };
+
+/// `UniversitySubjectTree` — flat, plus the quiz types THIS subject offers.
+///
+/// [quizTypes] deliberately varies per subject below: the tab row is built from
+/// this list, so a subject without a practical component must not show a
+/// Practice tab. Hardcoding five tabs would hide that bug on device.
+Map<String, dynamic> _universityTree(
+  String prefix,
+  List<String> quizTypes,
+  List<dynamic> lectures,
+) =>
+    <String, dynamic>{
+      'track': 'university',
+      'quizTypes': quizTypes,
+      'lectures': lectures,
+    };
+
+final _universitySubjectTrees = <String, Map<String, dynamic>>{
+  // The full set of four quiz types.
+  'uni-anatomy': _universityTree(
+    'anatomy',
+    <String>['normal', 'midTermRevision', 'finalRevision', 'practicalRevision'],
+    <dynamic>[
+      _lecture('anatomy-l1', 'المحاضرة الأولى: مقدمة', 44, 120),
+      _lecture('anatomy-l2', 'المحاضرة الثانية: الأطراف العلوية', 120, 120),
+      _lecture('anatomy-l3', 'المحاضرة الثالثة: الأطراف السفلية', 0, 90),
+      _lecture('anatomy-l4', 'المحاضرة الرابعة: الصدر', 12, 70),
+    ],
+  ),
+  // No practical component — the Practice tab must NOT appear here.
+  'uni-physio': _universityTree(
+    'physio',
+    <String>['normal', 'midTermRevision', 'finalRevision'],
+    <dynamic>[
+      _lecture('physio-l1', 'المحاضرة الأولى: الدم', 80, 100),
+      _lecture('physio-l2', 'المحاضرة الثانية: القلب', 100, 100),
+      _lecture('physio-l3', 'المحاضرة الثالثة: الجهاز التنفسي', 60, 90),
+    ],
+  ),
+  // Only one quiz type — the tab row degrades to a single tab.
+  'uni-biochem': _universityTree(
+    'biochem',
+    <String>['normal'],
+    <dynamic>[
+      _lecture('biochem-l1', 'المحاضرة الأولى: البروتينات', 0, 0),
+      _lecture('biochem-l2', 'المحاضرة الثانية: الإنزيمات', 5, 50),
+      _lecture('biochem-l3', 'المحاضرة الثالثة: الكربوهيدرات', 25, 50),
+    ],
+  ),
+  // No lectures published yet — the university EMPTY state.
+  'uni-histology': _universityTree(
+    'histology',
+    <String>['normal', 'finalRevision'],
+    <dynamic>[],
+  ),
 };
 
 /// NOTE: these are remote URLs — the only thing in this harness that is not
@@ -590,6 +710,30 @@ Map<String, dynamic> _schoolProfile({required String phone}) => _profile(
       university: null,
     );
 
+/// The university counterpart — a first-year medical student. `school` is null
+/// and the `university` block is populated, exactly as the contract specifies.
+Map<String, dynamic> _universityProfile({required String phone}) => _profile(
+      track: 'university',
+      name: 'طالب جامعي تجريبي',
+      phone: phone,
+      dateOfBirth: '2005-03-02',
+      countryCode: 'EG',
+      school: null,
+      university: <String, dynamic>{
+        'university': _named(
+          '0197b2f3-0005-7cc3-9b4e-000000000001',
+          'جامعة القاهرة',
+          'Cairo University',
+        ),
+        'faculty': _named(
+          '0197b2f3-0006-7cc3-9b4e-000000000001',
+          'كلية الطب البشري',
+          'Faculty of Human Medicine',
+        ),
+        'yearNumber': 1,
+      },
+    );
+
 Map<String, dynamic> _profile({
   required String track,
   required String name,
@@ -619,7 +763,13 @@ Map<String, dynamic> _profile({
     'school': school,
     'university': university,
     // Server-authoritative — the app must display these, never recompute them.
-    'points': <String, dynamic>{'school': 1250, 'university': 0, 'total': 1250},
+    // The pools are per-track (adr-003), so the points sit in the one the
+    // student actually earns in; `total` is the server's own sum.
+    'points': <String, dynamic>{
+      'school': track == 'school' ? 1250 : 0,
+      'university': track == 'university' ? 1250 : 0,
+      'total': 1250,
+    },
     'level': 3,
     'badges': 0,
     'privacy': <String, dynamic>{'leaderboardVisible': true, 'scoreHidden': false},

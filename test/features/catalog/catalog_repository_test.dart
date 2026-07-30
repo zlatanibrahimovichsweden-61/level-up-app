@@ -1,7 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/profile/models/student_profile.dart';
+import 'package:level_up_app/features/quiz/models/quiz_type.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'catalog_fixtures.dart';
@@ -76,8 +79,42 @@ void main() {
 
       final tree = await repo.getSubjectTree('sub-1');
 
-      expect(tree.units, hasLength(2));
-      expect(tree.units.first.chapters.first.lessons, hasLength(2));
+      expect(tree, isA<SchoolSubjectTree>());
+      final school = tree as SchoolSubjectTree;
+      expect(school.track, Track.school);
+      expect(school.units, hasLength(2));
+      expect(school.units.first.chapters.first.lessons, hasLength(2));
+    });
+
+    test('parses the university tree — the OTHER side of the oneOf', () async {
+      when(() => dio.get<Map<String, dynamic>>('/catalog/subjects/uni-1/tree'))
+          .thenAnswer((_) async => response(universityTreeJson()));
+
+      final tree = await repo.getSubjectTree('uni-1');
+
+      expect(tree, isA<UniversitySubjectTree>());
+      final uni = tree as UniversitySubjectTree;
+      expect(uni.track, Track.university);
+      expect(uni.lectures, hasLength(3));
+      expect(uni.quizTypes, [
+        QuizType.normal,
+        QuizType.midTermRevision,
+        QuizType.finalRevision,
+      ]);
+    });
+
+    test('an unknown track is contract drift — it throws, it does not guess',
+        () async {
+      // A third track would parse as neither shape. Failing loudly beats
+      // rendering an empty screen and calling it "no content".
+      when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
+        (_) async => response(<String, dynamic>{'track': 'bootcamp'}),
+      );
+
+      await expectLater(
+        () => repo.getSubjectTree('sub-1'),
+        throwsA(isA<UnknownException>()),
+      );
     });
 
     test('403 surfaces as insufficient_scope, not a generic failure', () async {
@@ -95,9 +132,11 @@ void main() {
       );
     });
 
-    test('a university tree is refused, not half-parsed', () async {
-      // The `oneOf`'s other branch. Parsing it as a school tree would throw a
-      // raw TypeError out of generated code; this must be a typed AppException.
+    test('an empty university tree parses — 0 lectures is not a failure',
+        () async {
+      // Day 5 REFUSED this payload (no model for it yet). Day 6 parses it, so
+      // the assertion inverts: it must come back as a tree, and the screen —
+      // not the repository — decides that no lectures means EMPTY.
       when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
         (_) async => response(<String, dynamic>{
           'track': 'university',
@@ -106,10 +145,10 @@ void main() {
         }),
       );
 
-      expect(
-        () => repo.getSubjectTree('sub-uni'),
-        throwsA(isA<UnknownException>()),
-      );
+      final tree = await repo.getSubjectTree('sub-uni');
+
+      expect(tree, isA<UniversitySubjectTree>());
+      expect((tree as UniversitySubjectTree).lectures, isEmpty);
     });
 
     test('offline surfaces as OfflineException', () async {

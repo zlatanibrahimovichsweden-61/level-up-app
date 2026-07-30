@@ -182,6 +182,55 @@ void main() {
     });
   });
 
+  /// Figma `125:2373` vs `337:5303`. ONE screen serves both tracks: `GET /me`
+  /// is track-agnostic and so is everything Home renders from it. The frames
+  /// differ in exactly one place, and that difference is asserted here rather
+  /// than described in a comment.
+  group('university (Figma 125:2373)', () {
+    testWidgets('renders from a university /me — the shared parts are shared',
+        (tester) async {
+      when(repo.getMe).thenAnswer((_) async => universityProfile());
+      await pumpHome(tester);
+
+      expect(find.text('Mona Adel'), findsOneWidget);
+      // Server-authoritative points, from the university pool this time.
+      expect(find.byType(LevelCard), findsOneWidget);
+      expect(find.text('Daily Tasks'), findsOneWidget);
+      expect(find.text('Continue Learning'), findsOneWidget);
+      expect(find.text('Top Student'), findsOneWidget);
+    });
+
+    testWidgets('adds Learning Tools, stubbed like every other section',
+        (tester) async {
+      // The frame draws five shortcut cards behind a premium crown. Not one of
+      // them has an endpoint in M1 (quiz creation is Day 7; Flashcard has no
+      // content endpoint at all), so the section is a header + "Coming soon".
+      when(repo.getMe).thenAnswer((_) async => universityProfile());
+      await pumpHome(tester);
+
+      expect(find.text('Learning Tools'), findsOneWidget);
+      expect(find.text('Coming soon'), findsNWidgets(4));
+      // Never drawn as tappable cards a student can fall into.
+      expect(find.text('Flash Card'), findsNothing);
+      expect(find.text('Practices'), findsNothing);
+    });
+
+    testWidgets('school Home does NOT get the section', (tester) async {
+      when(repo.getMe).thenAnswer((_) async => schoolProfile());
+      await pumpHome(tester);
+
+      expect(find.text('Learning Tools'), findsNothing);
+      expect(find.text('Coming soon'), findsNWidgets(3));
+    });
+
+    testWidgets('Arabic labels the section in Arabic', (tester) async {
+      when(repo.getMe).thenAnswer((_) async => universityProfile());
+      await pumpHome(tester, locale: const Locale('ar'));
+
+      expect(find.text('أدوات التعلّم'), findsOneWidget);
+    });
+  });
+
   group('levelProgressFraction (the one derived value on this screen)', () {
     test('is the fraction of the current level earned so far', () {
       // Level 8 starts at 3,500 (7 × 500); 2,450 is below it → clamped to 0.

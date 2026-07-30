@@ -63,6 +63,29 @@ Map<String, dynamic> schoolProfileJson() => <String, dynamic>{
 
 StudentProfile schoolProfile() => StudentProfile.fromJson(schoolProfileJson());
 
+/// The same student one track over: `school` null, the `university` block
+/// populated. Everything Home renders (name, avatar, points, level, badges) is
+/// track-agnostic — which is the point of the university Home test.
+Map<String, dynamic> universityProfileJson() => <String, dynamic>{
+      ...schoolProfileJson(),
+      'track': 'university',
+      'name': 'Mona Adel',
+      'school': null,
+      'university': <String, dynamic>{
+        'university': namedRefJson('uni-cairo'),
+        'faculty': namedRefJson('fac-medicine'),
+        'yearNumber': 1,
+      },
+      'points': <String, dynamic>{
+        'school': 0,
+        'university': 2450,
+        'total': 2450,
+      },
+    };
+
+StudentProfile universityProfile() =>
+    StudentProfile.fromJson(universityProfileJson());
+
 const baseEntitlement = EntitlementState(
   type: EntitlementType.baseSubscription,
   active: true,

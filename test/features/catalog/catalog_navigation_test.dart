@@ -6,6 +6,7 @@ import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/catalog/screens/chapters_screen.dart';
 import 'package:level_up_app/features/catalog/screens/lessons_screen.dart';
+import 'package:level_up_app/features/catalog/screens/subject_tree_screen.dart';
 import 'package:level_up_app/features/catalog/screens/subjects_screen.dart';
 import 'package:level_up_app/features/catalog/screens/units_screen.dart';
 import 'package:level_up_app/features/catalog/widgets/catalog_states.dart';
@@ -55,7 +56,7 @@ void main() {
 
     await tester.tap(find.text('Biology'));
     await tester.pumpAndSettle();
-    expect(find.byType(UnitsScreen), findsOneWidget);
+    expect(find.byType(UnitsView), findsOneWidget);
     expect(find.text('Cell Biology'), findsOneWidget);
     expect(find.text('Genetics'), findsOneWidget);
 
@@ -88,7 +89,7 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
     await tester.pumpAndSettle();
-    expect(find.byType(UnitsScreen), findsOneWidget);
+    expect(find.byType(UnitsView), findsOneWidget);
 
     await tester.tap(find.text('Cell Biology'));
     await tester.pumpAndSettle();
@@ -108,7 +109,7 @@ void main() {
       find.byType(QuizSetupPlaceholderScreen),
     );
     expect(screen.args.lessonId, 'lesson-2');
-    expect(screen.args.lessonName, 'Cell Division');
+    expect(screen.args.scopeName, 'Cell Division');
     expect(find.text('Quiz setup is coming soon'), findsOneWidget);
   });
 
@@ -165,7 +166,7 @@ void main() {
     await tester.tap(find.text('Biology'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(UnitsScreen), findsOneWidget);
+    expect(find.byType(SubjectTreeScreen), findsOneWidget);
     expect(find.text('Nothing here yet'), findsOneWidget);
   });
 
@@ -240,7 +241,7 @@ void main() {
   });
 
   testWidgets('the tree shows a row skeleton while it loads', (tester) async {
-    final completer = Completer<SchoolSubjectTree>();
+    final completer = Completer<SubjectTree>();
     when(() => catalog.getSubjectTree(any())).thenAnswer((_) => completer.future);
 
     await pumpCatalogApp(tester, catalog: catalog);
@@ -249,7 +250,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byType(UnitsScreen), findsOneWidget);
+    expect(find.byType(SubjectTreeScreen), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(CatalogBlock), findsWidgets);
     expect(find.byType(TreeListRow), findsNothing);
@@ -262,7 +263,7 @@ void main() {
   group('tree failures', () {
     testWidgets('error shows copy + a retry that re-requests', (tester) async {
       when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SchoolSubjectTree>.error(const UnknownException()),
+        (_) => Future<SubjectTree>.error(const UnknownException()),
       );
 
       await pumpCatalogApp(tester, catalog: catalog);
@@ -282,7 +283,7 @@ void main() {
 
     testWidgets('offline gets its own view', (tester) async {
       when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SchoolSubjectTree>.error(const OfflineException()),
+        (_) => Future<SubjectTree>.error(const OfflineException()),
       );
 
       await pumpCatalogApp(tester, catalog: catalog, online: false);
@@ -299,7 +300,7 @@ void main() {
       // Retrying an out-of-scope subject would 403 again — offering the button
       // would just teach the student to tap it forever.
       when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SchoolSubjectTree>.error(
+        (_) => Future<SubjectTree>.error(
           const ApiException(status: 403, code: 'insufficient_scope'),
         ),
       );
@@ -343,7 +344,7 @@ void main() {
 
     expect(find.text('وحدات Biology'), findsOneWidget);
     expect(
-      Directionality.of(tester.element(find.byType(UnitsScreen))),
+      Directionality.of(tester.element(find.byType(SubjectTreeScreen))),
       TextDirection.rtl,
     );
   });

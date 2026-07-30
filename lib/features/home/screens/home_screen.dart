@@ -13,12 +13,19 @@ import '../widgets/home_banner.dart';
 import '../widgets/home_header.dart';
 import '../widgets/level_card.dart';
 
-/// Home (school) · Figma `337:5303`. The first tab of the nav shell.
+/// Home · Figma `337:5303` (school) and `125:2373` (university). The first tab
+/// of the nav shell, and ONE screen for both tracks.
 ///
-/// Powered by ONE call, `GET /me`. Only the header and the level card are real;
-/// Daily Tasks / Continue Learning / Top Student have no endpoint yet and render
-/// as coming-soon sections (see [ComingSoonSection] for why they are not
-/// populated with the frame's sample values).
+/// Powered by ONE call, `GET /me`, which is track-agnostic — header, level card
+/// and points are identical on both frames. The two frames differ in exactly one
+/// place: university adds a **Learning Tools** section between Daily Tasks and
+/// Continue Learning. That is a `track` branch on the profile the server already
+/// returned, not a second screen.
+///
+/// Only the header and the level card are real; Daily Tasks / Learning Tools /
+/// Continue Learning / Top Student have no endpoint yet and render as
+/// coming-soon sections (see [ComingSoonSection] for why they are not populated
+/// with the frame's sample values).
 ///
 /// States: loading (a skeleton shaped like the header + level card, not a bare
 /// spinner) · error (retry re-calls `/me` on tap) · offline (its own view, and a
@@ -77,6 +84,22 @@ class _Loaded extends StatelessWidget {
           const SizedBox(height: 25),
           ComingSoonSection(title: l10n.dailyTasks),
           const SizedBox(height: 25),
+          // University only (`125:2373`) — the school frame has no such section.
+          // The frame draws five shortcut cards (Flash Card, Normal EX, Midterm,
+          // Final, Practices) behind a premium crown. Every one of them needs an
+          // endpoint that does not exist yet: the four quiz types need
+          // `POST /quizzes` (Day 7), and Flashcard has no M1 content endpoint at
+          // all (docs/DESIGN_ISSUES.md #18). Stubbed rather than drawn as dead
+          // cards a student can tap into nothing.
+          if (profile.track == Track.university) ...[
+            ComingSoonSection(title: l10n.learningTools),
+            const SizedBox(height: 25),
+          ],
+          // TODO(day7): the university frame's row reads "12 lecture left" where
+          // school reads "lesson". Both live inside this section's CONTENT,
+          // which is quiz-history data we deliberately do not invent — so the
+          // noun has nowhere to render today. Whoever builds the real card must
+          // pick it by track, not hardcode "lesson".
           ComingSoonSection(title: l10n.continueLearning),
           const SizedBox(height: 25),
           ComingSoonSection(title: l10n.topStudent),

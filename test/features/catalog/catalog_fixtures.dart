@@ -90,3 +90,46 @@ Map<String, dynamic> schoolTreeJson() => <String, dynamic>{
     };
 
 SchoolSubjectTree schoolTree() => SchoolSubjectTree.fromJson(schoolTreeJson());
+
+/// The other side of the contract's `oneOf` — flat, and the lectures DO carry
+/// counters (unlike school units/chapters).
+///
+/// `quizTypes` deliberately omits `practicalRevision`: the tab row is built from
+/// this list, so a fixture that listed all four could never catch a hardcoded
+/// five-tab row. The counters again span the whole range — untouched, partway
+/// and finished — so tests can prove the counter gates nothing.
+Map<String, dynamic> universityTreeJson({
+  List<String>? quizTypes,
+  List<dynamic>? lectures,
+}) =>
+    <String, dynamic>{
+      'track': 'university',
+      'quizTypes': quizTypes ??
+          <String>['normal', 'midTermRevision', 'finalRevision'],
+      'lectures': lectures ??
+          <dynamic>[
+            <String, dynamic>{
+              'id': 'lec-1',
+              'name': 'Upper Limb',
+              'questionCounter': counterJson(0, 60),
+            },
+            <String, dynamic>{
+              'id': 'lec-2',
+              'name': 'Lower Limb',
+              'questionCounter': counterJson(30, 60),
+            },
+            <String, dynamic>{
+              'id': 'lec-3',
+              'name': 'Thorax',
+              'questionCounter': counterJson(45, 45),
+            },
+          ],
+    };
+
+UniversitySubjectTree universityTree({
+  List<String>? quizTypes,
+  List<dynamic>? lectures,
+}) =>
+    UniversitySubjectTree.fromJson(
+      universityTreeJson(quizTypes: quizTypes, lectures: lectures),
+    );

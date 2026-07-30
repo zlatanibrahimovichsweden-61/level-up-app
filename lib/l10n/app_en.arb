@@ -40,8 +40,26 @@
       }
     }
   },
+  "onboardingTitle": "Level Up",
+  "onboardingTaglineAccent": "Your",
+  "@onboardingTaglineAccent": {
+    "description": "Figma 459:43876 — the ACCENTED span of 'Your Learning Journey'. Rendered in ext.accentSoft. Split from onboardingTaglineRest so the translator decides which word is accented AND in what order; the widget renders accent-then-rest, so a translation that needs the accent last must put it last by rewording. Do not concatenate these at the call site in a fixed order."
+  },
+  "onboardingTaglineRest": "Learning Journey",
+  "@onboardingTaglineRest": {
+    "description": "Figma 459:43876 — the plain span, in ext.textPrimary."
+  },
+  "onboardingSubtitle": "Study. Compete. Achieve.\nAll in one place.",
+  "@onboardingSubtitle": {
+    "description": "Figma 459:43887. The line break is deliberate — keep the \\n. NOTE: the design misspells this as 'Achive' in BOTH frames (DESIGN_ISSUES #26); we ship the correct spelling."
+  },
+  "getStarted": "Get Started",
+  "logIn": "Log In",
   "otpSuccessTitle": "Successful",
-  "otpSuccessSubtitle": "You have been authenticated",
+  "otpSuccessSubtitle": "Congratulations! You have been successfully authenticated",
+  "@otpSuccessSubtitle": {
+    "description": "Figma 82:1578 — the full sentence. The shipped copy was truncated to 'You have been authenticated' when the screen was built from a screenshot."
+  },
   "continueLabel": "Continue",
 
   "sessionEndedSuperseded": "You've been signed out — your account was used on another device.",
@@ -177,6 +195,10 @@
     }
   },
   "dailyTasks": "Daily Tasks",
+  "learningTools": "Learning Tools",
+  "@learningTools": {
+    "description": "University Home only (Figma 125:2373) — quiz-type and flashcard shortcuts. Stubbed: none of them has an endpoint in M1."
+  },
   "continueLearning": "Continue Learning",
   "topStudent": "Top Student",
   "seeAll": "See All",
@@ -240,8 +262,27 @@
       }
     }
   },
+  "lecturesTitle": "Lectures",
+  "lecturesTitleFor": "{subject} Lectures",
+  "@lecturesTitleFor": {
+    "description": "University drill-down title, per Figma 180:5208 (\"Biology Lectures\"). The subject name is NOT in the tree payload — it comes from the cached subjects list, and the bare lecturesTitle is the cold-deep-link fallback.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "Biology"
+      }
+    }
+  },
+  "quizTypeNormal": "Normal",
+  "quizTypeMidterm": "Midterm",
+  "quizTypeFinal": "Final",
+  "quizTypePractice": "Practice",
+  "@quizTypePractice": {
+    "description": "Contract value practicalRevision. The frame labels it \"Practice\", but the wire word is \"practical\" (lab/practical exam) — confirm with the designer, see DESIGN_ISSUES #18."
+  },
   "noSubjects": "No subjects yet",
   "noSubjectsMatch": "No subjects match your search",
+  "noLectures": "No lectures yet",
   "nothingHere": "Nothing here yet",
   "subjectUnavailable": "This subject isn't part of your course.",
   "@subjectUnavailable": {

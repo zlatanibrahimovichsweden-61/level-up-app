@@ -50,7 +50,7 @@ class LessonsScreen extends ConsumerWidget {
         children: [
           if (offline) const OfflineBanner(),
           Expanded(
-            child: CatalogAsyncView<SchoolSubjectTree>(
+            child: CatalogAsyncView<SubjectTree>(
               value: tree,
               isEmpty: (data) => _lessonsOf(data).isEmpty,
               emptyMessage: l10n.nothingHere,
@@ -65,8 +65,11 @@ class LessonsScreen extends ConsumerWidget {
     );
   }
 
-  Chapter? _chapterOf(SchoolSubjectTree? tree) {
-    for (final unit in tree?.units ?? const <Unit>[]) {
+  /// Only a school tree has units/chapters — see [ChaptersScreen] for why a
+  /// university payload here is EMPTY rather than an error.
+  Chapter? _chapterOf(SubjectTree? tree) {
+    if (tree is! SchoolSubjectTree) return null;
+    for (final unit in tree.units) {
       if (unit.id != unitId) continue;
       for (final chapter in unit.chapters) {
         if (chapter.id == chapterId) return chapter;
@@ -75,7 +78,7 @@ class LessonsScreen extends ConsumerWidget {
     return null;
   }
 
-  List<Lesson> _lessonsOf(SchoolSubjectTree tree) =>
+  List<Lesson> _lessonsOf(SubjectTree tree) =>
       _chapterOf(tree)?.lessons ?? const [];
 }
 
@@ -107,7 +110,10 @@ class _LessonList extends StatelessWidget {
           caption: l10n.questionsCount(counter.answered, counter.total),
           onTap: () => context.push(
             '/quiz/setup',
-            extra: QuizSetupArgs(lessonId: lesson.id, lessonName: lesson.name),
+            extra: QuizSetupArgs.lesson(
+              lessonId: lesson.id,
+              scopeName: lesson.name,
+            ),
           ),
         );
       },

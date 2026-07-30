@@ -15,8 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SchoolSubjectTree {
 
-/// Always [Track.school] here — it is the `oneOf` discriminator, kept in the
-/// model so the value that was actually parsed is inspectable.
+/// Always [Track.school] here.
  Track get track; List<Unit> get units;
 /// Create a copy of SchoolSubjectTree
 /// with the given fields replaced by the non-null parameter values.
@@ -215,8 +214,7 @@ class _SchoolSubjectTree implements SchoolSubjectTree {
   const _SchoolSubjectTree({required this.track, required final  List<Unit> units}): _units = units;
   factory _SchoolSubjectTree.fromJson(Map<String, dynamic> json) => _$SchoolSubjectTreeFromJson(json);
 
-/// Always [Track.school] here — it is the `oneOf` discriminator, kept in the
-/// model so the value that was actually parsed is inspectable.
+/// Always [Track.school] here.
 @override final  Track track;
  final  List<Unit> _units;
 @override List<Unit> get units {
@@ -1113,6 +1111,576 @@ as QuestionCounter,
 }
 
 /// Create a copy of Lesson
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$QuestionCounterCopyWith<$Res> get questionCounter {
+  
+  return $QuestionCounterCopyWith<$Res>(_self.questionCounter, (value) {
+    return _then(_self.copyWith(questionCounter: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$UniversitySubjectTree {
+
+/// Always [Track.university] here.
+ Track get track; List<QuizType> get quizTypes; List<Lecture> get lectures;
+/// Create a copy of UniversitySubjectTree
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$UniversitySubjectTreeCopyWith<UniversitySubjectTree> get copyWith => _$UniversitySubjectTreeCopyWithImpl<UniversitySubjectTree>(this as UniversitySubjectTree, _$identity);
+
+  /// Serializes this UniversitySubjectTree to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UniversitySubjectTree&&(identical(other.track, track) || other.track == track)&&const DeepCollectionEquality().equals(other.quizTypes, quizTypes)&&const DeepCollectionEquality().equals(other.lectures, lectures));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,track,const DeepCollectionEquality().hash(quizTypes),const DeepCollectionEquality().hash(lectures));
+
+@override
+String toString() {
+  return 'UniversitySubjectTree(track: $track, quizTypes: $quizTypes, lectures: $lectures)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $UniversitySubjectTreeCopyWith<$Res>  {
+  factory $UniversitySubjectTreeCopyWith(UniversitySubjectTree value, $Res Function(UniversitySubjectTree) _then) = _$UniversitySubjectTreeCopyWithImpl;
+@useResult
+$Res call({
+ Track track, List<QuizType> quizTypes, List<Lecture> lectures
+});
+
+
+
+
+}
+/// @nodoc
+class _$UniversitySubjectTreeCopyWithImpl<$Res>
+    implements $UniversitySubjectTreeCopyWith<$Res> {
+  _$UniversitySubjectTreeCopyWithImpl(this._self, this._then);
+
+  final UniversitySubjectTree _self;
+  final $Res Function(UniversitySubjectTree) _then;
+
+/// Create a copy of UniversitySubjectTree
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? track = null,Object? quizTypes = null,Object? lectures = null,}) {
+  return _then(_self.copyWith(
+track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
+as Track,quizTypes: null == quizTypes ? _self.quizTypes : quizTypes // ignore: cast_nullable_to_non_nullable
+as List<QuizType>,lectures: null == lectures ? _self.lectures : lectures // ignore: cast_nullable_to_non_nullable
+as List<Lecture>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [UniversitySubjectTree].
+extension UniversitySubjectTreePatterns on UniversitySubjectTree {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _UniversitySubjectTree value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _UniversitySubjectTree() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _UniversitySubjectTree value)  $default,){
+final _that = this;
+switch (_that) {
+case _UniversitySubjectTree():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _UniversitySubjectTree value)?  $default,){
+final _that = this;
+switch (_that) {
+case _UniversitySubjectTree() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Track track,  List<QuizType> quizTypes,  List<Lecture> lectures)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _UniversitySubjectTree() when $default != null:
+return $default(_that.track,_that.quizTypes,_that.lectures);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Track track,  List<QuizType> quizTypes,  List<Lecture> lectures)  $default,) {final _that = this;
+switch (_that) {
+case _UniversitySubjectTree():
+return $default(_that.track,_that.quizTypes,_that.lectures);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Track track,  List<QuizType> quizTypes,  List<Lecture> lectures)?  $default,) {final _that = this;
+switch (_that) {
+case _UniversitySubjectTree() when $default != null:
+return $default(_that.track,_that.quizTypes,_that.lectures);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _UniversitySubjectTree implements UniversitySubjectTree {
+  const _UniversitySubjectTree({required this.track, required final  List<QuizType> quizTypes, required final  List<Lecture> lectures}): _quizTypes = quizTypes,_lectures = lectures;
+  factory _UniversitySubjectTree.fromJson(Map<String, dynamic> json) => _$UniversitySubjectTreeFromJson(json);
+
+/// Always [Track.university] here.
+@override final  Track track;
+ final  List<QuizType> _quizTypes;
+@override List<QuizType> get quizTypes {
+  if (_quizTypes is EqualUnmodifiableListView) return _quizTypes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_quizTypes);
+}
+
+ final  List<Lecture> _lectures;
+@override List<Lecture> get lectures {
+  if (_lectures is EqualUnmodifiableListView) return _lectures;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_lectures);
+}
+
+
+/// Create a copy of UniversitySubjectTree
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$UniversitySubjectTreeCopyWith<_UniversitySubjectTree> get copyWith => __$UniversitySubjectTreeCopyWithImpl<_UniversitySubjectTree>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$UniversitySubjectTreeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _UniversitySubjectTree&&(identical(other.track, track) || other.track == track)&&const DeepCollectionEquality().equals(other._quizTypes, _quizTypes)&&const DeepCollectionEquality().equals(other._lectures, _lectures));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,track,const DeepCollectionEquality().hash(_quizTypes),const DeepCollectionEquality().hash(_lectures));
+
+@override
+String toString() {
+  return 'UniversitySubjectTree(track: $track, quizTypes: $quizTypes, lectures: $lectures)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$UniversitySubjectTreeCopyWith<$Res> implements $UniversitySubjectTreeCopyWith<$Res> {
+  factory _$UniversitySubjectTreeCopyWith(_UniversitySubjectTree value, $Res Function(_UniversitySubjectTree) _then) = __$UniversitySubjectTreeCopyWithImpl;
+@override @useResult
+$Res call({
+ Track track, List<QuizType> quizTypes, List<Lecture> lectures
+});
+
+
+
+
+}
+/// @nodoc
+class __$UniversitySubjectTreeCopyWithImpl<$Res>
+    implements _$UniversitySubjectTreeCopyWith<$Res> {
+  __$UniversitySubjectTreeCopyWithImpl(this._self, this._then);
+
+  final _UniversitySubjectTree _self;
+  final $Res Function(_UniversitySubjectTree) _then;
+
+/// Create a copy of UniversitySubjectTree
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? track = null,Object? quizTypes = null,Object? lectures = null,}) {
+  return _then(_UniversitySubjectTree(
+track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
+as Track,quizTypes: null == quizTypes ? _self._quizTypes : quizTypes // ignore: cast_nullable_to_non_nullable
+as List<QuizType>,lectures: null == lectures ? _self._lectures : lectures // ignore: cast_nullable_to_non_nullable
+as List<Lecture>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$Lecture {
+
+ String get id; String get name; QuestionCounter get questionCounter;
+/// Create a copy of Lecture
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LectureCopyWith<Lecture> get copyWith => _$LectureCopyWithImpl<Lecture>(this as Lecture, _$identity);
+
+  /// Serializes this Lecture to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+
+@override
+String toString() {
+  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LectureCopyWith<$Res>  {
+  factory $LectureCopyWith(Lecture value, $Res Function(Lecture) _then) = _$LectureCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, QuestionCounter questionCounter
+});
+
+
+$QuestionCounterCopyWith<$Res> get questionCounter;
+
+}
+/// @nodoc
+class _$LectureCopyWithImpl<$Res>
+    implements $LectureCopyWith<$Res> {
+  _$LectureCopyWithImpl(this._self, this._then);
+
+  final Lecture _self;
+  final $Res Function(Lecture) _then;
+
+/// Create a copy of Lecture
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
+as QuestionCounter,
+  ));
+}
+/// Create a copy of Lecture
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$QuestionCounterCopyWith<$Res> get questionCounter {
+  
+  return $QuestionCounterCopyWith<$Res>(_self.questionCounter, (value) {
+    return _then(_self.copyWith(questionCounter: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [Lecture].
+extension LecturePatterns on Lecture {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Lecture value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _Lecture() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Lecture value)  $default,){
+final _that = this;
+switch (_that) {
+case _Lecture():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Lecture value)?  $default,){
+final _that = this;
+switch (_that) {
+case _Lecture() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _Lecture() when $default != null:
+return $default(_that.id,_that.name,_that.questionCounter);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)  $default,) {final _that = this;
+switch (_that) {
+case _Lecture():
+return $default(_that.id,_that.name,_that.questionCounter);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  QuestionCounter questionCounter)?  $default,) {final _that = this;
+switch (_that) {
+case _Lecture() when $default != null:
+return $default(_that.id,_that.name,_that.questionCounter);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _Lecture implements Lecture {
+  const _Lecture({required this.id, required this.name, required this.questionCounter});
+  factory _Lecture.fromJson(Map<String, dynamic> json) => _$LectureFromJson(json);
+
+@override final  String id;
+@override final  String name;
+@override final  QuestionCounter questionCounter;
+
+/// Create a copy of Lecture
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LectureCopyWith<_Lecture> get copyWith => __$LectureCopyWithImpl<_Lecture>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LectureToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+
+@override
+String toString() {
+  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LectureCopyWith<$Res> implements $LectureCopyWith<$Res> {
+  factory _$LectureCopyWith(_Lecture value, $Res Function(_Lecture) _then) = __$LectureCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, QuestionCounter questionCounter
+});
+
+
+@override $QuestionCounterCopyWith<$Res> get questionCounter;
+
+}
+/// @nodoc
+class __$LectureCopyWithImpl<$Res>
+    implements _$LectureCopyWith<$Res> {
+  __$LectureCopyWithImpl(this._self, this._then);
+
+  final _Lecture _self;
+  final $Res Function(_Lecture) _then;
+
+/// Create a copy of Lecture
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+  return _then(_Lecture(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
+as QuestionCounter,
+  ));
+}
+
+/// Create a copy of Lecture
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

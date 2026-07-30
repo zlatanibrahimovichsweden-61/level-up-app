@@ -40,22 +40,26 @@ class CatalogRepository {
   /// here as an [ApiException] carrying that code — the ErrorInterceptor
   /// already mapped it — and the screens turn it into its own copy rather than
   /// a generic failure.
-  Future<SchoolSubjectTree> getSubjectTree(String subjectId) async {
+  Future<SubjectTree> getSubjectTree(String subjectId) async {
     try {
       final res = await _dio.get<Map<String, dynamic>>(
         '/catalog/subjects/$subjectId/tree',
       );
       final json = res.data!;
-      // The `oneOf` discriminator. A university payload has `lectures`, not
-      // `units`, so parsing it as a school tree would throw a raw TypeError out
-      // of generated code. Refuse it deliberately instead.
-      // TODO(university): drop this guard once UniversitySubjectTree exists.
-      if (json['track'] != 'school') {
-        throw UnknownException(
-          detail: 'unsupported subject tree track: ${json['track']}',
-        );
-      }
-      return SchoolSubjectTree.fromJson(json);
+      // The contract's `discriminator: {propertyName: track, mapping: {...}}`,
+      // mirrored one-for-one. Dispatching on the key BEFORE parsing is what
+      // keeps a university payload from being fed to the school model, where the
+      // missing `units` would surface as a raw TypeError out of generated code.
+      //
+      // A fourth value is contract drift, not a client bug: it fails loudly with
+      // a typed error instead of rendering an empty screen.
+      return switch (json['track']) {
+        'school' => SchoolSubjectTree.fromJson(json),
+        'university' => UniversitySubjectTree.fromJson(json),
+        final track => throw UnknownException(
+            detail: 'unsupported subject tree track: $track',
+          ),
+      };
     } on DioException catch (e) {
       throw _asAppException(e);
     }

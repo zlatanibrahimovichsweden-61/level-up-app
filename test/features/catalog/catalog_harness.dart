@@ -15,6 +15,7 @@ import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -37,13 +38,21 @@ Future<ProviderContainer> pumpCatalogApp(
   String locale = 'en',
   ThemeData? theme,
   bool online = true,
+  Track track = Track.school,
 }) async {
   final storage = MockSecureStorage();
   when(() => storage.readAccessToken()).thenAnswer((_) async => 'access');
   when(() => storage.clearTokens()).thenAnswer((_) async {});
 
   final profile = MockProfileRepository();
-  when(profile.getMe).thenAnswer((_) async => schoolProfile());
+  // `GET /me` is track-agnostic for everything the Learn stack reads; the track
+  // matters only to Home. The catalog screens branch on the TREE's
+  // discriminator, never on this — which is what makes the university flow
+  // testable without touching the profile at all.
+  when(profile.getMe).thenAnswer(
+    (_) async =>
+        track == Track.university ? universityProfile() : schoolProfile(),
+  );
   when(profile.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
 
   final container = ProviderContainer(

@@ -78,10 +78,29 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get onboardingTitle => 'ليفل أب';
+
+  @override
+  String get onboardingTaglineAccent => 'رحلتك';
+
+  @override
+  String get onboardingTaglineRest => 'التعليمية';
+
+  @override
+  String get onboardingSubtitle =>
+      'ذاكر. نافس. حقّق أهدافك.\nكل ذلك في مكان واحد.';
+
+  @override
+  String get getStarted => 'ابدأ الآن';
+
+  @override
+  String get logIn => 'تسجيل الدخول';
+
+  @override
   String get otpSuccessTitle => 'تم بنجاح';
 
   @override
-  String get otpSuccessSubtitle => 'تم تسجيل دخولك بنجاح';
+  String get otpSuccessSubtitle => 'تهانينا! تم تسجيل دخولك بنجاح';
 
   @override
   String get continueLabel => 'متابعة';
@@ -322,6 +341,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dailyTasks => 'المهام اليومية';
 
   @override
+  String get learningTools => 'أدوات التعلّم';
+
+  @override
   String get continueLearning => 'أكمل التعلم';
 
   @override
@@ -397,10 +419,33 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get lecturesTitle => 'المحاضرات';
+
+  @override
+  String lecturesTitleFor(String subject) {
+    return 'محاضرات $subject';
+  }
+
+  @override
+  String get quizTypeNormal => 'عادي';
+
+  @override
+  String get quizTypeMidterm => 'منتصف الترم';
+
+  @override
+  String get quizTypeFinal => 'نهائي';
+
+  @override
+  String get quizTypePractice => 'عملي';
+
+  @override
   String get noSubjects => 'لا توجد مواد بعد';
 
   @override
   String get noSubjectsMatch => 'لا توجد مواد مطابقة لبحثك';
+
+  @override
+  String get noLectures => 'لا توجد محاضرات بعد';
 
   @override
   String get nothingHere => 'لا يوجد شيء هنا بعد';

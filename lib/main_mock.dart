@@ -6,6 +6,10 @@
 /// `lib/dev/mock_backend.dart`, so every built screen can be walked on a real
 /// device while `AppConfig.baseUrl` is still TBD and no server exists.
 ///
+/// At the OTP screen: **`000000`** signs in as a SCHOOL student, **`111111`** as
+/// a UNIVERSITY one (which changes Home, the subject list and the whole shape of
+/// the Learn tab); any other 6-digit code forks to the registration wizard.
+///
 /// This file and `lib/dev/mock_backend.dart` are the ONLY additions — nothing
 /// that ships was edited. Injection is a single `dioProvider` override, which
 /// is why no production file needed to learn about the mock: `AuthRepository`,

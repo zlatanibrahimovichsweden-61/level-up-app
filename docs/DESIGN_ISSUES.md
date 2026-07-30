@@ -16,7 +16,7 @@
 
 | # | Issue | Sev | Owner | Code marker |
 |---|---|---|---|---|
-| 1 | Figma export disabled + our seat is View-only → can't export brand assets | 🔴 | Designer/Owner | `TODO(design-asset)` |
+| 1 | ~~Figma export disabled → can't export brand assets~~ — **RESOLVED**, all 3 landed | ✅ | — | — |
 | 2 | `dateOfBirth` field missing from BOTH registration screens (contract-required) | 🔴 | Designer + Seif | `TODO(design)` ×3 |
 | 3 | University `governorateId` missing from University Registration (contract-required) | 🔴 | Designer | `TODO(design)` |
 | 4 | University field order breaks the University→Faculty→Year data cascade | 🟠 | Designer | built by cascade |
@@ -33,22 +33,42 @@
 | 15 | Subject-card caption is 8.56dp — below a readable minimum | 🟡 | Designer | built at 10 |
 | 16 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Seif + Designer | `tree_list_row.dart` |
 | 17 | Search field drawn on all 3 drill-down screens, placeholder reads "Search Subjects" | 🟡 | Designer | not built |
+| 18 | University Lectures draws a **Flashcard** quiz-type tab the contract has no value for | 🟠 | Seif + Designer | `quiz_type_tabs.dart` |
+| 19 | Arabic renders Latin digits (1, 2, 3) — confirm ٠١٢ was not intended | 🟡 | Designer | `tree_list_row.dart` |
+| 20 | University Home "Learning Tools" cards have no endpoint in M1 | 🟠 | PM + Seif | `home_screen.dart` |
+| 21 | Onboarding dark "Log In" button is the inverse of the dark Login button | 🟠 | Designer | built as Login |
+| 22 | Onboarding dark border is purple; the token is green in both themes | 🟡 | Designer | token kept |
+| 23 | Sheet dark fill is `#232628`; every neighbouring token is `#232428` | 🟡 | Designer | frame value kept |
+| 24 | Five near-identical greys across two frames → consolidated to one token | 🟡 | Designer | `bodyMuted` |
+| 25 | No dark OTP-success frame exists (same as Home / Learn) | 🟡 | Designer | theme-derived |
+| 26 | Copy typo "Achive" in BOTH onboarding frames | 🟡 | Designer | shipped "Achieve" |
+| 27 | Onboarding draws no language pill, though Login and Success both do | 🟠 | Designer | pill added |
+| 28 | `flutter_svg` cannot render the success badge's `<filter>` drop shadow | 🟡 | Designer | shadow absent |
 
 ---
 
-## 1. 🔴 Asset export is blocked
-**Where:** whole file. **What:** the file has *export disabled* and our account seat is **View-only**,
-so the Figma MCP `download_assets` refuses. We cannot pull any brand art.
-**Affected assets (currently placeholders in code):**
-- **Bird logo** (Figma node `82:849`) → `lib/features/auth/screens/login_screen.dart:134`
-  (`Icons.flutter_dash` placeholder) — `TODO(design-asset)`
-- **OTP success badge** (green scalloped check, node `155:786`) →
-  `lib/features/auth/screens/otp_screen.dart:354` (`Icons.check_circle` placeholder) — `TODO(design-asset)`
-- Any future illustrations (empty/error states, onboarding).
-**Fix we need (any one):** (a) owner re-enables *export/copy* on the file; or (b) grant Zlatan an
-**Editor** seat; or (c) designer sends the SVGs directly. Then we swap placeholders for the real
-assets via `flutter_svg`.
-**Note:** national flags are NOT affected — handled by the `country_flags` package.
+## 1. ✅ RESOLVED — asset export was blocked, and no longer is
+**Was:** the file had *export disabled* on a **View-only** seat, so `download_assets` refused and
+every piece of brand art shipped as a Material icon placeholder.
+
+**Now:** re-verified with `download_assets` on Day 00 — it returns both SVG and PNG for all three
+blocked nodes. No seat or file-permission change was needed on our side; whatever was blocking it
+has been lifted. All three landed:
+
+| Asset | Node | File | Bytes |
+|---|---|---|---|
+| Onboarding illustration | `337:15166` | `assets/images/onboarding_illustration.svg` | 189,450 |
+| OTP success badge | `82:1598` | `assets/images/success_badge.svg` | 4,017 |
+| Bird logo | `82:849` | `assets/images/bird_logo.svg` | 3,875 |
+
+Both `TODO(design-asset)` markers are deleted (`login_screen.dart`, `otp_screen.dart`), the
+`Icons.flutter_dash` and `Icons.check_circle` placeholders are gone, and all three render through
+`flutter_svg`. `test/core/theme/app_colors_test.dart` asserts the three files exist and are
+non-empty, so a future `.gitkeep`-only regression fails a test rather than shipping.
+
+**One rendering caveat, see #28:** `flutter_svg` drops the badge's `<filter>` drop shadow.
+
+**Note:** national flags were never affected — handled by the `country_flags` package.
 
 ## 2. 🔴 `dateOfBirth` missing from both registration screens
 **Where:** School Registration (`337:5269`) and University Registration (`337:10373`).
@@ -240,6 +260,143 @@ supply the correct placeholder for each level and we will wire the same client-s
 **What:** 8.5dp is below any readable minimum on a real phone, and this caption carries the only
 progress number on the card. **Built at 10dp** (`lib/features/catalog/widgets/subject_card.dart`).
 **Fix we need:** designer confirms 10dp, or supplies an intended size.
+
+## 18. 🟠 The Lectures tab row draws a "Flashcard" the contract has no value for
+**Where:** University Lectures `180:5208`, tab row `180:5337` — tabs read
+**Normal · Flashcard · Midterm · Final · Practice**.
+Code: `lib/features/catalog/widgets/quiz_type_tabs.dart`, `lib/features/quiz/models/quiz_type.dart`.
+
+**What:** the tab row is built from the server's `UniversitySubjectTree.quizTypes`, whose enum is
+`[normal, midTermRevision, finalRevision, practicalRevision]` — **there is no flashcard value**.
+Flashcards are a separate concern in the contract: a `flashcardSubscription` entitlement, with **no
+content endpoint at all in M1**. So a Flashcard tab could not be populated even if we drew it; it
+would be a tab that does nothing, in the one row a student uses to pick what they are about to be
+quizzed on.
+
+**Built as:** tabs come from `tree.quizTypes`, in server order, Flashcard omitted. A subject that
+does not offer `practicalRevision` correctly shows no Practice tab (the mock harness serves three
+such variations on purpose, so this is visible on device).
+
+**Fix we need — answer two questions:**
+1. **Seif:** is flashcard content in M1? If yes, which endpoint, and is it a `quizTypes` value or a
+   separate entry point? If no, the tab should come out of the design.
+2. **Designer:** if Flashcard stays, where does it lead, given there is nothing to open?
+
+**Also in this frame, two smaller ones:**
+- **Label for `practicalRevision`.** The frame says **"Practice"**; the wire word is *practical*
+  (as in a practical/lab exam), which is a different thing in a medical faculty. Built as
+  "Practice"/"عملي" — confirm which is meant.
+- **Row label format.** The frame shows a rounded **"80%"**; we render the server's own
+  **"{answered} / {total} questions"**, matching school's lesson rows (see #16). One format across
+  both tracks, and no extra client math either way. Confirm.
+- **Search field `180:5232`** carries the placeholder **"Search Chapters"** on a screen that lists
+  lectures — the same unreviewed-paste problem as #17, one level over. Not built.
+
+## 19. 🟡 Arabic renders Latin digits
+**Where:** every numbered row (`337:5926`, `309:5713`) and every counter caption.
+**What:** the numbers go through `MaterialLocalizations.formatDecimal`, i.e. the locale's own
+formatter — the app never interpolates raw digits. For Flutter's Arabic locale data that formatter
+produces **1, 2, 3**, not **١، ٢، ٣**. The Day-5 note assumed Arabic-Indic; it does not render that
+way, and hardcoding the glyphs would mean overriding the locale rather than following it.
+**Fix we need:** the designer confirms which digits Egyptian students should see. If Arabic-Indic is
+wanted, that is a deliberate app-wide numbering choice (counters, points, levels, leaderboard —
+not just these rows) and we will apply it in one place.
+
+## 20. 🟠 University Home's "Learning Tools" cards have nothing behind them
+**Where:** University Home `125:2373` — a section between Daily Tasks and Continue Learning, with
+five cards (Flash Card, Normal EX, Midterm, Final, Practices) and a premium crown.
+Code: `lib/features/home/screens/home_screen.dart`.
+
+**What:** these are shortcuts into quiz creation and flashcards. Quiz creation (`POST /quizzes`) is
+Day 7 and flashcards have no M1 content endpoint (#18), so every one of the five leads nowhere
+today. The crown also implies a paywall state that this section does not receive — entitlements come
+from `GET /me/entitlements`, and nothing in the frame says which of the five are gated.
+
+**Built as:** a header + "Coming soon" card, exactly like Daily Tasks / Continue Learning / Top
+Student, and only on the university track. Not drawn as five tappable cards that swallow a tap.
+
+**Fix we need:** confirm the section survives to M1, and which of the five are behind
+`baseSubscription` vs `flashcardSubscription`, so the crown reflects a real entitlement.
+
+**Also noted (Day 7):** the university frame's Continue Learning row reads **"12 lecture left"**
+where school reads "lesson". That noun lives inside the section's *content*, which is quiz-history
+data we deliberately do not invent — so it has nowhere to render today. Marked at the call site
+(`TODO(day7)`) so whoever builds the real card picks the noun by track instead of hardcoding
+"lesson".
+
+## 21. 🟠 The dark "Log In" button is the exact inverse of the dark Login screen
+**Where:** Onboarding dark `337:15650`. **What:** it is drawn as a **cream `#fcfbf9` fill** with a
+`#0e0e0e` label and an `#ae87e7` border. The dark Login screen's secondary button (`login_screen.dart`)
+is the opposite: `ext.fieldFill` (translucent dark) + `ext.textPrimary` (cream) +
+`ext.secondaryButtonBorder`. These are two consecutive pre-auth screens, so the inversion is visible
+in a single tap.
+
+**Why we read it as a paste, not an intent:** the same dark frame also leaves the status-bar clock
+(`337:15149`) as **black text on the `#232428` background** — unreadable, and certainly not
+deliberate. Both look like the light frame's values pasted onto the dark canvas.
+
+**Built as:** the established Login pattern, so the two screens match.
+**Fix we need:** confirm. If cream really was deliberate, it is a one-line change here — but then
+Login should change too, and that is a separate decision we did not take on your behalf.
+
+## 22. 🟡 That button's border is purple in the frame, green in the token
+**Where:** `337:15650` border `#ae87e7`; `ext.secondaryButtonBorder` is `Brand.greenPrimary` in
+**both** themes, sourced from dark Login `337:15652`. Same copy-paste family as #21.
+**Built as:** the existing token (green). **No second border token was added** — one accent
+disagreement should not fork the palette.
+**Fix we need:** confirm green, or change the token once and let both screens follow.
+
+## 23. 🟡 The sheet's dark fill is `#232628`, one digit off every neighbour
+**Where:** `337:15643` — `rgba(35,38,40,.2)`. Every other dark surface in the file is `#232428`
+(`rgba(35,36,40,…)`). The difference is the green channel: **38 vs 36**, i.e. 2/255 — invisible.
+**Built as:** the frame's own value, verbatim, in `AppColors.sheetFill`.
+**Fix we need:** if this was a slip, say so and we collapse it onto the existing dark surface value.
+
+## 24. 🟡 Five near-identical greys; consolidated to one token
+**Where:** onboarding + success frames introduce `#111`, `#7c7c7c`, `#858585`, `#ececec` and
+`#000000` alongside the already-approved `#0e0e0e` / `#2c2c2c` / `#696969` / `#dcdcdc` / `#b3b3b3`.
+
+**Built as:**
+- `#000000` ("Level Up", light) → **`ext.textPrimary`** (`#0e0e0e`). 6/255 apart.
+- `#111` ("Successful", light) → **`ext.textPrimary`**. 3/255 apart.
+- `#7c7c7c` (success subtitle) and `#858585` (onboarding tagline) → **one** new token
+  `ext.bodyMuted`, light value `#858585`. They are 9/255 apart and mean the same thing: muted body
+  copy on the cream canvas. `#ececec` is its dark value.
+
+**Fix we need:** confirm one muted grey. If the two really are meant to differ, tell us which
+surfaces get which and we will split the token — but three tokens for 9/255 is how a palette rots.
+
+## 25. 🟡 No dark OTP-success frame exists
+**Where:** `155:786` and `82:1596` are both light; there is no dark variant in the file. Same
+situation already noted for Home and Learn (see the comments in `app_colors.dart`).
+**Built as:** the screen renders in dark through the theme — every value it uses is a token, so
+nothing dark-only was invented.
+**Fix we need:** a dark success frame whenever the standing "missing dark frames" set is drawn.
+
+## 26. 🟡 "Achive" — a typo in BOTH onboarding frames
+**Where:** `459:43887` / `459:43877` — the tagline reads "Study. Compete. **Achive.**"
+**Built as:** **"Achieve"**. A design typo must never become user-facing copy, least of all on the
+first screen a student ever sees. `app_en.arb` carries the correction and the onboarding widget test
+asserts the misspelling never renders.
+**Fix we need:** correct it in the frame so the two stop disagreeing.
+
+## 27. 🟠 Onboarding has no language pill, but the next screen does
+**Where:** `337:15146` / `459:43873` draw no language control. Login (`82:819`) and OTP success
+(`155:809`) both do.
+**What:** onboarding is now the app's FIRST screen (route `/`). A student who opens the app in the
+wrong language has no way to change it until they have already tapped through to Login — on a screen
+whose entire job is to be understood.
+**Built as:** the shared `LanguagePill`, top-end, over the illustration, inside `SafeArea`.
+**Fix we need:** confirm placement, or supply the intended treatment over the illustration.
+
+## 28. 🟡 The success badge renders without its drop shadow
+**Where:** `82:1598`. The exported SVG carries the shadow as an SVG `<filter>` element, which
+`flutter_svg` does not implement — it logs `unhandled element <filter/>` and draws the shape only.
+**What:** the scallop and checkmark are exact; only the soft shadow underneath is missing. Barely
+perceptible against the cream canvas, which is why it was not worked around.
+**Fix we need — either:** (a) it does not matter, confirm and we close this; or (b) if the shadow is
+wanted, we can add it as a Flutter `BoxShadow` — but then the SVG should be re-exported *without* the
+filter so the two do not double up.
 
 ---
 

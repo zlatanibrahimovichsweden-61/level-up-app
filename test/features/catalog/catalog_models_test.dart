@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/features/catalog/models/subject.dart';
 import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
+import 'package:level_up_app/features/quiz/models/quiz_type.dart';
 
 import 'catalog_fixtures.dart';
 
@@ -101,6 +102,90 @@ void main() {
         }),
         throwsA(isA<ArgumentError>()),
       );
+    });
+  });
+
+  group('UniversitySubjectTree', () {
+    test('parses the university branch of the oneOf', () {
+      final tree = universityTree();
+
+      expect(tree.track, Track.university);
+      expect(tree.lectures.map((l) => l.name), [
+        'Upper Limb',
+        'Lower Limb',
+        'Thorax',
+      ]);
+      expect(tree.lectures.first.id, 'lec-1');
+    });
+
+    test('lectures carry a questionCounter — unlike school units/chapters', () {
+      final tree = universityTree();
+
+      expect(tree.lectures[0].questionCounter.answered, 0);
+      expect(tree.lectures[0].questionCounter.total, 60);
+      expect(tree.lectures[1].questionCounter.fraction, closeTo(0.5, 0.001));
+      expect(tree.lectures[2].questionCounter.fraction, 1.0);
+    });
+
+    test('quizTypes parse as the contract enum, in server order', () {
+      final tree = universityTree(
+        quizTypes: <String>['practicalRevision', 'normal'],
+      );
+
+      expect(tree.quizTypes, [QuizType.practicalRevision, QuizType.normal]);
+    });
+
+    test('a quiz type outside the contract enum throws', () {
+      // The contract does NOT mark this set extensible, so an unknown value is
+      // drift — it must not be silently dropped from the tab row.
+      expect(
+        () => universityTree(quizTypes: <String>['flashcard']),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('a subject with no lectures parses — that is EMPTY, not an error', () {
+      expect(universityTree(lectures: <dynamic>[]).lectures, isEmpty);
+    });
+
+    test('a missing required field throws', () {
+      expect(
+        () => UniversitySubjectTree.fromJson(<String, dynamic>{
+          'track': 'university',
+          'quizTypes': <dynamic>[],
+        }),
+        throwsA(isA<TypeError>()),
+      );
+    });
+  });
+
+  group('the sealed union', () {
+    test('both branches ARE a SubjectTree, and are told apart by type', () {
+      const SubjectTree school = SchoolSubjectTree(
+        track: Track.school,
+        units: [],
+      );
+      final SubjectTree university = universityTree();
+
+      expect(school, isA<SubjectTree>());
+      expect(university, isA<SubjectTree>());
+      expect(school, isNot(isA<UniversitySubjectTree>()));
+      expect(university, isNot(isA<SchoolSubjectTree>()));
+    });
+
+    test('the runtime type and the parsed track agree', () {
+      // Both are checked because the screens switch on the TYPE while the
+      // repository dispatched on the VALUE — if those two ever disagreed, a
+      // school payload could render as a lecture list.
+      for (final tree in <SubjectTree>[schoolTree(), universityTree()]) {
+        expect(
+          switch (tree) {
+            SchoolSubjectTree() => Track.school,
+            UniversitySubjectTree() => Track.university,
+          },
+          tree.track,
+        );
+      }
     });
   });
 }

@@ -36,6 +36,24 @@ final subjectsProvider = AsyncNotifierProvider<SubjectsNotifier, List<Subject>>(
 /// Returning `null` tells Riverpod not to schedule a retry.
 Duration? noCatalogRetry(int retryCount, Object error) => null;
 
+/// The subject's display name, read from the ALREADY-LOADED subjects list.
+///
+/// Every drill-down header is titled after its subject ("Biology Units",
+/// "Biology Lectures"), but the tree payload contains no subject name — only the
+/// track and its children. Rather than add a second request for one string, the
+/// name comes from the list the student just tapped through.
+///
+/// Returns null on a cold deep link, where that list was never fetched (or does
+/// not contain this id). Callers fall back to a bare title; inventing a name
+/// would be worse than showing none. Server copy, already in the content
+/// language (adr-018) — never translated client-side.
+String? cachedSubjectName(WidgetRef ref, String subjectId) {
+  for (final subject in ref.watch(subjectsProvider).value ?? const <Subject>[]) {
+    if (subject.id == subjectId) return subject.name;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Client-side search
 // ---------------------------------------------------------------------------

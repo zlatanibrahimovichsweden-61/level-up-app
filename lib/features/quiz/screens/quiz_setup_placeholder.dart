@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/quiz_setup_args.dart';
+import '../models/quiz_type.dart';
 
-/// `/quiz/setup` — the Day-6 hand-off point.
+/// `/quiz/setup` — the Day-7 hand-off point.
 ///
-/// Day 5 ends at the lesson. This screen exists so the browse stack terminates
-/// somewhere real and the arguments it passes are verifiable; the actual setup
-/// UI (length 10/30/50, `POST /quizzes`) is Day 6 and is NOT built here.
+/// Both tracks end here: school at a lesson, university at a lecture plus the
+/// quiz type chosen on the tab row. The screen exists so the browse stacks
+/// terminate somewhere real and the arguments they pass are verifiable; the
+/// actual setup UI (length 10/30/50, `POST /quizzes`) is Day 7 and is NOT built.
 ///
-/// It shows the lesson it was opened with — that is the contract between the two
-/// days, and the router test asserts it.
+/// It shows what it was opened with — that is the contract between the days, and
+/// the router tests assert it.
 class QuizSetupPlaceholderScreen extends StatelessWidget {
   const QuizSetupPlaceholderScreen({super.key, required this.args});
 
@@ -22,8 +24,10 @@ class QuizSetupPlaceholderScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
+    final quizType = args.quizType;
+
     return Scaffold(
-      appBar: AppBar(title: Text(args.lessonName)),
+      appBar: AppBar(title: Text(args.scopeName)),
       body: Center(
         child: Padding(
           padding: const EdgeInsetsDirectional.symmetric(horizontal: 24),
@@ -37,6 +41,15 @@ class QuizSetupPlaceholderScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: ext.textSecondary),
               ),
+              // University only — shown so the selection made on the Lectures
+              // tab row is visible end-to-end on device, not just in a test.
+              if (quizType != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  quizType.label(l10n),
+                  style: TextStyle(fontSize: 14, color: ext.mutedText),
+                ),
+              ],
             ],
           ),
         ),

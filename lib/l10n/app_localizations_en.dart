@@ -78,10 +78,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get onboardingTitle => 'Level Up';
+
+  @override
+  String get onboardingTaglineAccent => 'Your';
+
+  @override
+  String get onboardingTaglineRest => 'Learning Journey';
+
+  @override
+  String get onboardingSubtitle =>
+      'Study. Compete. Achieve.\nAll in one place.';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get logIn => 'Log In';
+
+  @override
   String get otpSuccessTitle => 'Successful';
 
   @override
-  String get otpSuccessSubtitle => 'You have been authenticated';
+  String get otpSuccessSubtitle =>
+      'Congratulations! You have been successfully authenticated';
 
   @override
   String get continueLabel => 'Continue';
@@ -321,6 +341,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyTasks => 'Daily Tasks';
 
   @override
+  String get learningTools => 'Learning Tools';
+
+  @override
   String get continueLearning => 'Continue Learning';
 
   @override
@@ -396,10 +419,33 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get lecturesTitle => 'Lectures';
+
+  @override
+  String lecturesTitleFor(String subject) {
+    return '$subject Lectures';
+  }
+
+  @override
+  String get quizTypeNormal => 'Normal';
+
+  @override
+  String get quizTypeMidterm => 'Midterm';
+
+  @override
+  String get quizTypeFinal => 'Final';
+
+  @override
+  String get quizTypePractice => 'Practice';
+
+  @override
   String get noSubjects => 'No subjects yet';
 
   @override
   String get noSubjectsMatch => 'No subjects match your search';
+
+  @override
+  String get noLectures => 'No lectures yet';
 
   @override
   String get nothingHere => 'Nothing here yet';

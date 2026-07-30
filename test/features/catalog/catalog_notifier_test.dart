@@ -109,7 +109,7 @@ void main() {
       container.read(subjectTreeProvider('sub-1'));
       final third = await container.read(subjectTreeProvider('sub-1').future);
 
-      expect(third.units, hasLength(2));
+      expect((third as SchoolSubjectTree).units, hasLength(2));
       verify(() => repo.getSubjectTree('sub-1')).called(1);
     });
 
@@ -138,7 +138,7 @@ void main() {
       await pumpEventQueue();
 
       final state = container.read(subjectTreeProvider('sub-9'));
-      expect(state, isA<AsyncError<SchoolSubjectTree>>());
+      expect(state, isA<AsyncError<SubjectTree>>());
       expect(
         (state.error! as ApiException).code,
         'insufficient_scope',

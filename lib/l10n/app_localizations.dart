@@ -230,16 +230,52 @@ abstract class AppLocalizations {
   /// **'Resend in {seconds}s'**
   String resendIn(int seconds);
 
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Level Up'**
+  String get onboardingTitle;
+
+  /// Figma 459:43876 — the ACCENTED span of 'Your Learning Journey'. Rendered in ext.accentSoft. Split from onboardingTaglineRest so the translator decides which word is accented AND in what order; the widget renders accent-then-rest, so a translation that needs the accent last must put it last by rewording. Do not concatenate these at the call site in a fixed order.
+  ///
+  /// In en, this message translates to:
+  /// **'Your'**
+  String get onboardingTaglineAccent;
+
+  /// Figma 459:43876 — the plain span, in ext.textPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning Journey'**
+  String get onboardingTaglineRest;
+
+  /// Figma 459:43887. The line break is deliberate — keep the \n. NOTE: the design misspells this as 'Achive' in BOTH frames (DESIGN_ISSUES #26); we ship the correct spelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Study. Compete. Achieve.\nAll in one place.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get logIn;
+
   /// No description provided for @otpSuccessTitle.
   ///
   /// In en, this message translates to:
   /// **'Successful'**
   String get otpSuccessTitle;
 
-  /// No description provided for @otpSuccessSubtitle.
+  /// Figma 82:1578 — the full sentence. The shipped copy was truncated to 'You have been authenticated' when the screen was built from a screenshot.
   ///
   /// In en, this message translates to:
-  /// **'You have been authenticated'**
+  /// **'Congratulations! You have been successfully authenticated'**
   String get otpSuccessSubtitle;
 
   /// No description provided for @continueLabel.
@@ -662,6 +698,12 @@ abstract class AppLocalizations {
   /// **'Daily Tasks'**
   String get dailyTasks;
 
+  /// University Home only (Figma 125:2373) — quiz-type and flashcard shortcuts. Stubbed: none of them has an endpoint in M1.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning Tools'**
+  String get learningTools;
+
   /// No description provided for @continueLearning.
   ///
   /// In en, this message translates to:
@@ -782,6 +824,42 @@ abstract class AppLocalizations {
   /// **'{chapter} Lessons'**
   String lessonsTitleFor(String chapter);
 
+  /// No description provided for @lecturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lectures'**
+  String get lecturesTitle;
+
+  /// University drill-down title, per Figma 180:5208 ("Biology Lectures"). The subject name is NOT in the tree payload — it comes from the cached subjects list, and the bare lecturesTitle is the cold-deep-link fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} Lectures'**
+  String lecturesTitleFor(String subject);
+
+  /// No description provided for @quizTypeNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get quizTypeNormal;
+
+  /// No description provided for @quizTypeMidterm.
+  ///
+  /// In en, this message translates to:
+  /// **'Midterm'**
+  String get quizTypeMidterm;
+
+  /// No description provided for @quizTypeFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Final'**
+  String get quizTypeFinal;
+
+  /// Contract value practicalRevision. The frame labels it "Practice", but the wire word is "practical" (lab/practical exam) — confirm with the designer, see DESIGN_ISSUES #18.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get quizTypePractice;
+
   /// No description provided for @noSubjects.
   ///
   /// In en, this message translates to:
@@ -793,6 +871,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No subjects match your search'**
   String get noSubjectsMatch;
+
+  /// No description provided for @noLectures.
+  ///
+  /// In en, this message translates to:
+  /// **'No lectures yet'**
+  String get noLectures;
 
   /// No description provided for @nothingHere.
   ///
