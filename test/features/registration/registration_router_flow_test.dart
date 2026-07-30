@@ -12,6 +12,7 @@ import 'package:level_up_app/features/auth/repository/auth_repository.dart';
 import 'package:level_up_app/features/auth/repository/device_info_provider.dart';
 import 'package:level_up_app/features/auth/screens/login_screen.dart';
 import 'package:level_up_app/features/auth/screens/otp_screen.dart';
+import 'package:level_up_app/features/onboarding/screens/onboarding_screen.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/screens/signup_identity_screen.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
@@ -121,8 +122,15 @@ void main() {
     }
   }
 
-  /// login → OTP → (registrationRequired) → `/register`, all via real navigation.
+  /// onboarding → login → OTP → (registrationRequired) → `/register`, all via
+  /// real navigation.
   Future<void> reachRegister(WidgetTester tester) async {
+    // A signed-out cold start now lands on onboarding (`/`), not `/login` —
+    // so the walk starts one screen earlier, exactly as a student's does.
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    await tester.tap(find.text('Log In'));
+    await tester.pumpAndSettle();
+
     expect(find.byType(LoginScreen), findsOneWidget);
     await tester.enterText(find.byType(TextField), _phoneDigits);
     await tester.tap(find.widgetWithText(FilledButton, 'Send OTP'));

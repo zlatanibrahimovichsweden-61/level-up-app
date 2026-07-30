@@ -8,9 +8,10 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/otp_screen.dart';
 import '../../features/catalog/screens/chapters_screen.dart';
 import '../../features/catalog/screens/lessons_screen.dart';
+import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
-import '../../features/catalog/screens/units_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/quiz/models/quiz_setup_args.dart';
 import '../../features/quiz/screens/quiz_setup_placeholder.dart';
 import '../../features/registration/models/registration_args.dart';
@@ -25,23 +26,40 @@ import '../../features/shell/screens/tab_placeholder.dart';
 /// The whole `/register` wizard is pre-auth: registration happens BEFORE any
 /// account/token exists, so every `/register*` sub-route must stay reachable
 /// while unauthenticated (see [_atAuthRoute]).
-const _authRoutes = {'/login', '/otp'};
+///
+/// `/` (onboarding) is in this set, and it has to be: without it a signed-out
+/// student landing on `/` is redirected to `/login` and never sees onboarding at
+/// all.
+const _authRoutes = {'/', '/login', '/otp'};
 
 /// A location is an auth route if it is a known signed-out route OR anywhere in
 /// the `/register` wizard (identity → track → Day-3 sub-flows).
 bool _atAuthRoute(String location) =>
     _authRoutes.contains(location) || location.startsWith('/register');
 
+/// The pre-auth landing routes an ALREADY-authenticated student must be bounced
+/// off. Onboarding sells the app to someone who has not signed up; showing "Get
+/// Started / Log In" to a student with a live session is worse than useless, and
+/// a returning student cold-starting at `/` would otherwise sit on it.
+///
+/// This is why no "onboarding seen" flag is stored: auth state already answers
+/// the question. First launch → unauthenticated → `/` renders. Returning →
+/// authenticated → `/home` before paint.
+const _signedInLandingRedirects = {'/', '/login'};
+
 /// Pure redirect decision (unit-tested directly). Returns the path to redirect
 /// to, or null to stay.
 /// - `unknown` (first frame, token read pending) → wait, don't redirect.
 /// - signed out on a protected route → /login.
-/// - signed in sitting on /login → /home.
+/// - signed in sitting on a pre-auth landing route (`/` or `/login`) → /home.
 String? authRedirect(AuthStatus status, String matchedLocation) {
   final atAuthRoute = _atAuthRoute(matchedLocation);
   if (status is AuthUnknown) return null;
   if (status is AuthUnauthenticated && !atAuthRoute) return '/login';
-  if (status is AuthAuthenticated && matchedLocation == '/login') return '/home';
+  if (status is AuthAuthenticated &&
+      _signedInLandingRedirects.contains(matchedLocation)) {
+    return '/home';
+  }
   return null;
 }
 
@@ -62,13 +80,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.onDispose(authListenable.dispose);
 
   return GoRouter(
-    // The guard decides; onboarding ('/') stays deferred behind the guard.
-    initialLocation: '/login',
+    initialLocation: '/',
     refreshListenable: authListenable,
     redirect: (context, state) =>
         authRedirect(ref.read(authControllerProvider), state.matchedLocation),
     routes: [
-      GoRoute(path: '/', builder: (_, _) => const _Placeholder('Onboarding')),
+      GoRoute(path: '/', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/otp',
@@ -133,9 +150,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/learn',
                 builder: (_, _) => const SubjectsScreen(),
                 routes: [
+                  // ONE route for both tracks: the screen loads the tree and
+                  // switches on the contract's `track` discriminator — school
+                  // continues into the nested unit/chapter/lesson routes below,
+                  // university stops here with a flat lecture list. The
+                  // university path is intentionally shorter, so those nested
+                  // routes are simply never reached on that track.
                   GoRoute(
                     path: 'subject/:subjectId',
-                    builder: (_, state) => UnitsScreen(
+                    builder: (_, state) => SubjectTreeScreen(
                       subjectId: state.pathParameters['subjectId']!,
                     ),
                     routes: [
@@ -181,7 +204,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // OUTSIDE the shell on purpose: taking a quiz is a full-screen task, not a
-      // tab. Day 5 only routes here; the setup UI itself is Day 6.
+      // tab. Both tracks only route here; the setup UI itself is Day 7.
       GoRoute(
         path: '/quiz/setup',
         builder: (_, state) =>

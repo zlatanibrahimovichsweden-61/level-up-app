@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -141,10 +142,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // TODO(design-asset): real bird logo (Figma node 82:849) — blocked by
-                    // export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
-                    // Swap this Icon for SvgPicture.asset('assets/images/logo.svg') once received.
-                    Icon(Icons.flutter_dash, size: 88, color: cs.primary),
+                    // The brand bird · Figma 82:849. Rendered at its own aspect
+                    // ratio (152.901 × 132.854 in the export) rather than forced
+                    // square, so it is not stretched.
+                    SvgPicture.asset(
+                      'assets/images/bird_logo.svg',
+                      height: 88,
+                      semanticsLabel: l10n.appTitle,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.welcomeBack,

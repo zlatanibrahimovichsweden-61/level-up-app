@@ -45,6 +45,24 @@ void main() {
       expect(authRedirect(const AuthAuthenticated(), '/login'), '/home');
     });
 
+    test('unauthenticated at / STAYS on / — onboarding must be reachable', () {
+      // The bug this guards: `/` not being in _authRoutes sends a signed-out
+      // student straight to /login, and onboarding is never seen at all.
+      expect(authRedirect(const AuthUnauthenticated(), '/'), isNull);
+    });
+
+    test('authenticated at / → /home, never the onboarding pitch', () {
+      // The other half: without this, a returning student cold-starting the app
+      // lands on "Get Started / Log In" despite having a live session. This is
+      // also what makes an "onboarding seen" flag unnecessary — auth state
+      // already answers it, so nothing is persisted.
+      expect(authRedirect(const AuthAuthenticated(), '/'), '/home');
+    });
+
+    test('unknown at / → wait; do not flash onboarding then bounce', () {
+      expect(authRedirect(const AuthUnknown(), '/'), isNull);
+    });
+
     test('authenticated on a protected route → stay', () {
       expect(authRedirect(const AuthAuthenticated(), '/home'), isNull);
     });
