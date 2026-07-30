@@ -1,0 +1,20 @@
+# Template for android/key.properties — COPY, don't edit this file.
+#
+#   cp android/key.properties.example android/key.properties
+#
+# key.properties is gitignored and must never be committed. This .example file is
+# the only one that is tracked; it exists so the required keys are discoverable.
+# See docs/RELEASE_SIGNING.md for how to generate the keystore.
+
+# Alias you passed to keytool -alias
+keyAlias=levelup
+
+# Password for that key entry
+keyPassword=CHANGE_ME
+
+# Absolute path to the .jks, or a path relative to android/app/
+# Keep the keystore OUTSIDE the repo — e.g. ~/keys/levelup-release.jks
+storeFile=/absolute/path/to/levelup-release.jks
+
+# Password for the keystore file itself
+storePassword=CHANGE_ME
