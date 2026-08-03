@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
@@ -136,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Language toggle — top-end (right in LTR, left in RTL).
                     Align(
                       alignment: AlignmentDirectional.centerEnd,
-                      child: _LanguagePill(
+                      child: LanguagePill(
                         label: l10n.switchLanguage,
                         onTap: () => ref.read(localeProvider.notifier).toggle(),
                       ),
@@ -300,40 +301,6 @@ class _OfflineBanner extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguagePill extends StatelessWidget {
-  const _LanguagePill({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: 14,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: ext.background,
-          border: Border.all(color: ext.secondaryButtonBorder),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.language, size: 18, color: ext.textPrimary),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: ext.textPrimary, fontSize: 14)),
           ],
         ),
       ),

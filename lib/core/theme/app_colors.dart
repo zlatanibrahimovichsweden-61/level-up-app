@@ -50,6 +50,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.navCentreIdleFill,
     required this.navCentreGlyphOn,
     required this.navShadow,
+    required this.languagePillBorder,
+    required this.languagePillContent,
   });
 
   final Color background;
@@ -238,6 +240,25 @@ class AppColors extends ThemeExtension<AppColors> {
   /// open question 2. 8% black is the current best reading, not a design value.
   final Color navShadow;
 
+  // --- Language pill (Figma 82:1093 light · 337:19693 dark) -----------------
+
+  /// The pill's outline — **`null` in dark, and that is the design**, not a
+  /// missing value: the frame draws the pill as `#232428` on a `#232428` page
+  /// with no outline at all. Widgets must skip the border when this is null
+  /// rather than substituting one.
+  ///
+  /// The light value is `#4B675E`, deliberately NOT
+  /// [secondaryButtonBorder] (`#384F47`): the frame uses two different greens
+  /// here, the lighter one for the outline and the darker for the content.
+  final Color? languagePillBorder;
+
+  /// The pill's glyph and label — `#384F47` light / `#FCFBF9` cream dark.
+  ///
+  /// Numerically identical to [legalText] today, but kept separate: restyling
+  /// the "By continuing…" paragraph must not silently restyle the language
+  /// toggle, and light [textPrimary] (`#0E0E0E`) is the wrong colour here.
+  final Color languagePillContent;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -273,6 +294,8 @@ class AppColors extends ThemeExtension<AppColors> {
     navCentreIdleFill: Color(0xFFF3F1F8), // Figma 59:1003
     navCentreGlyphOn: Color(0xFFFFFFFF), // Figma 59:1084 — white in both
     navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
+    languagePillBorder: Color(0xFF4B675E), // Figma 82:1093
+    languagePillContent: Brand.greenPrimary, // #384F47 — Figma 82:1098/82:1100
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -314,6 +337,8 @@ class AppColors extends ThemeExtension<AppColors> {
     navCentreIdleFill: Color(0xFF3E3E3E), // Figma 348:6686
     navCentreGlyphOn: Color(0xFFFFFFFF), // white in both canvases
     navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
+    languagePillBorder: null, // Figma 337:19693 — no outline in dark
+    languagePillContent: Color(0xFFFCFBF9), // Figma 337:19693
   );
 
   @override
@@ -351,6 +376,8 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? navCentreIdleFill,
     Color? navCentreGlyphOn,
     Color? navShadow,
+    Color? languagePillBorder,
+    Color? languagePillContent,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -386,6 +413,10 @@ class AppColors extends ThemeExtension<AppColors> {
       navCentreIdleFill: navCentreIdleFill ?? this.navCentreIdleFill,
       navCentreGlyphOn: navCentreGlyphOn ?? this.navCentreGlyphOn,
       navShadow: navShadow ?? this.navShadow,
+      // Note: `??` cannot CLEAR languagePillBorder — copyWith can only set one.
+      // Dark gets its null from the palette itself, not from a copyWith.
+      languagePillBorder: languagePillBorder ?? this.languagePillBorder,
+      languagePillContent: languagePillContent ?? this.languagePillContent,
     );
   }
 
@@ -435,6 +466,12 @@ class AppColors extends ThemeExtension<AppColors> {
       navCentreGlyphOn:
           Color.lerp(navCentreGlyphOn, other.navCentreGlyphOn, t)!,
       navShadow: Color.lerp(navShadow, other.navShadow, t)!,
+      // Nullable on purpose — Color.lerp fades to/from transparent when one end
+      // is null, which is exactly right for a border that only exists in light.
+      languagePillBorder:
+          Color.lerp(languagePillBorder, other.languagePillBorder, t),
+      languagePillContent:
+          Color.lerp(languagePillContent, other.languagePillContent, t)!,
     );
   }
 }
