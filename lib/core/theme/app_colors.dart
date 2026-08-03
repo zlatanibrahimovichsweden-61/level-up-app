@@ -36,6 +36,20 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.accentSoft,
     required this.bodyMuted,
     required this.successBadge,
+    required this.quizOptionFill,
+    required this.quizOptionBorder,
+    required this.quizDivider,
+    required this.quizCorrectFill,
+    required this.quizCorrectBorder,
+    required this.quizWrongFill,
+    required this.quizWrongBorder,
+    required this.quizWrongBadge,
+    required this.quizExplanationBody,
+    required this.navBarFill,
+    required this.navAccent,
+    required this.navCentreIdleFill,
+    required this.navCentreGlyphOn,
+    required this.navShadow,
   });
 
   final Color background;
@@ -138,6 +152,92 @@ class AppColors extends ThemeExtension<AppColors> {
   /// designer re-exports it, re-read the fill.
   final Color successBadge;
 
+  // --- Quiz tokens (Figma 135:1622 setup · 159:1851 options + AI panel) ------
+  //
+  // Only LIGHT quiz frames exist. The Day 7 brief says dark variants live in a
+  // sibling group, but the document has exactly one page (`0:1`) and no dark
+  // quiz frame was found on it — so this is the same situation as the Home and
+  // Learn tokens above, in reverse: light is Figma-verbatim, and dark reuses an
+  // already-approved dark token rather than an invented hex. Flagged in
+  // docs/DESIGN_ISSUES.md.
+  //
+  // The five SEMANTIC tokens (correct/wrong fills, borders, badge) are
+  // deliberately IDENTICAL in both palettes, for exactly the reason documented
+  // on [successBadge]: a correctness signal must never flip colour with the
+  // theme. A wrong answer is red in dark mode too.
+
+  /// The un-chosen option tile's surface, and the AI panel's own surface.
+  /// Figma light `#FCFBF9`; dark reuses [catalogCardFill], the file's approved
+  /// opaque raised surface.
+  final Color quizOptionFill;
+
+  /// Hairline around an ungraded option tile and the AI panel, and the colour
+  /// of the A/B/C/D badge ring. Figma `#4B675E`.
+  ///
+  /// Kept in BOTH palettes, the same way [secondaryButtonBorder] is — it is a
+  /// desaturated green that carries on either canvas, and splitting it would
+  /// mean inventing a dark value.
+  final Color quizOptionBorder;
+
+  /// The rule under the setup screen's scope header. Figma light `#CCD5D2`;
+  /// dark reuses [progressTrack], the approved dark hairline.
+  final Color quizDivider;
+
+  /// The revealed correct option. Figma `#BFFFC3` fill, `#00D33C` border; its
+  /// badge is [successBadge], the same `#22C55E` the OTP screen already uses.
+  final Color quizCorrectFill;
+  final Color quizCorrectBorder;
+
+  /// The student's own wrong choice. Figma `rgba(255,192,192,0.3)` fill,
+  /// `#921119` border, `#EF4444` badge.
+  ///
+  /// Note the fill is only 30% opaque — it composites over whatever is behind
+  /// it, so it reads correctly on both canvases without a second value.
+  final Color quizWrongFill;
+  final Color quizWrongBorder;
+  final Color quizWrongBadge;
+
+  /// AI explanation body copy. Figma `#7070A0` — the same value as the dark
+  /// [cardLabel], but kept separate because light [cardLabel] is `#696969` and
+  /// the quiz frame really does specify the purple-grey in the LIGHT canvas.
+  final Color quizExplanationBody;
+
+  // --- Bottom-nav tokens (Figma 59:1264 light · 348:6686 dark) --------------
+  //
+  // BOTH canvases exist for the nav, so every value below is Figma-verbatim.
+  // The nav DOES follow the green→purple accent flip (unlike Home, which is
+  // purple in both canvases), but its green is the LIGHTER `#4B675E`, not
+  // [Brand.greenPrimary], so `cs.primary` is the wrong source here.
+
+  /// The bar's own fill. Light `#FCFBF9` happens to equal [background]; dark
+  /// `#212226` does NOT equal the dark background `#232428` — the bar is a
+  /// slightly darker sheet than the page it floats over, which is why this is
+  /// its own token rather than a reuse.
+  final Color navBarFill;
+
+  /// Selected tab glyph, label and the 26×2 top rule. `#4B675E` light /
+  /// `#AE87E7` dark. Inactive tabs use [mutedText] (`#B3B3B3`, both canvases).
+  final Color navAccent;
+
+  /// The centre (Learn) tab's circle when it is NOT selected — `#F3F1F8`, the
+  /// first lavender wash in the light canvas, and `#3E3E3E` in dark. When the
+  /// tab IS selected the circle fills with [navAccent]: on the centre tab the
+  /// BACKGROUND carries selection, not the glyph tint (docs/DESIGN_ISSUES #38).
+  final Color navCentreIdleFill;
+
+  /// The centre tab's glyph while selected — white on the filled circle, in
+  /// both canvases. A token rather than a bare `Colors.white` so the pair
+  /// [navCentreIdleFill]/[navAccent]/[navCentreGlyphOn] reads as one rule.
+  final Color navCentreGlyphOn;
+
+  /// Drop shadow under the notched bar. The frame exports it as a filter, not a
+  /// token, so colour/opacity/blur are read off the filter bounds
+  /// (≈ blur 20, y+4, black 8%).
+  ///
+  /// TODO(design): confirm the real shadow token — docs/DESIGN_ISSUES.md #37,
+  /// open question 2. 8% black is the current best reading, not a design value.
+  final Color navShadow;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -159,6 +259,20 @@ class AppColors extends ThemeExtension<AppColors> {
     accentSoft: Color(0xFFA0B384), // Figma 459:43876 — sage, not greenPrimary
     bodyMuted: Color(0xFF858585), // Figma 459:43887
     successBadge: Color(0xFF22C55E), // from assets/images/success_badge.svg
+    quizOptionFill: Color(0xFFFCFBF9), // Figma 308:5153
+    quizOptionBorder: Color(0xFF4B675E), // Figma 308:5153
+    quizDivider: Color(0xFFCCD5D2), // Figma 146:2287
+    quizCorrectFill: Color(0xFFBFFFC3), // Figma 308:5166
+    quizCorrectBorder: Color(0xFF00D33C), // Figma 308:5166
+    quizWrongFill: Color(0x4DFFC0C0), // rgba(255,192,192,.3) — Figma 308:5158
+    quizWrongBorder: Color(0xFF921119), // Figma 308:5158
+    quizWrongBadge: Color(0xFFEF4444), // Figma 308:5160
+    quizExplanationBody: Color(0xFF7070A0), // Figma 159:1831
+    navBarFill: Color(0xFFFCFBF9), // Figma 59:1264
+    navAccent: Color(0xFF4B675E), // Figma 59:1264 — NOT Brand.greenPrimary
+    navCentreIdleFill: Color(0xFFF3F1F8), // Figma 59:1003
+    navCentreGlyphOn: Color(0xFFFFFFFF), // Figma 59:1084 — white in both
+    navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -184,6 +298,22 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to light ON PURPOSE — a success badge must not follow the
     // green→purple accent flip. See the field doc above.
     successBadge: Color(0xFF22C55E),
+    quizOptionFill: Color(0xFF27282C), // = dark catalogCardFill (no dark frame)
+    quizOptionBorder: Color(0xFF4B675E), // Figma — kept in both, like the border above
+    quizDivider: Color(0xFF2E2D32), // = dark progressTrack (no dark frame)
+    // The five semantic tokens below are IDENTICAL to light on purpose: a
+    // correct answer must not read purple and a wrong one must not read green.
+    quizCorrectFill: Color(0xFFBFFFC3),
+    quizCorrectBorder: Color(0xFF00D33C),
+    quizWrongFill: Color(0x4DFFC0C0),
+    quizWrongBorder: Color(0xFF921119),
+    quizWrongBadge: Color(0xFFEF4444),
+    quizExplanationBody: Color(0xFF7070A0),
+    navBarFill: Color(0xFF212226), // Figma 348:6686 — NOT the #232428 page fill
+    navAccent: Color(0xFFAE87E7), // Figma 348:6686
+    navCentreIdleFill: Color(0xFF3E3E3E), // Figma 348:6686
+    navCentreGlyphOn: Color(0xFFFFFFFF), // white in both canvases
+    navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
   );
 
   @override
@@ -207,6 +337,20 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? accentSoft,
     Color? bodyMuted,
     Color? successBadge,
+    Color? quizOptionFill,
+    Color? quizOptionBorder,
+    Color? quizDivider,
+    Color? quizCorrectFill,
+    Color? quizCorrectBorder,
+    Color? quizWrongFill,
+    Color? quizWrongBorder,
+    Color? quizWrongBadge,
+    Color? quizExplanationBody,
+    Color? navBarFill,
+    Color? navAccent,
+    Color? navCentreIdleFill,
+    Color? navCentreGlyphOn,
+    Color? navShadow,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -228,6 +372,20 @@ class AppColors extends ThemeExtension<AppColors> {
       accentSoft: accentSoft ?? this.accentSoft,
       bodyMuted: bodyMuted ?? this.bodyMuted,
       successBadge: successBadge ?? this.successBadge,
+      quizOptionFill: quizOptionFill ?? this.quizOptionFill,
+      quizOptionBorder: quizOptionBorder ?? this.quizOptionBorder,
+      quizDivider: quizDivider ?? this.quizDivider,
+      quizCorrectFill: quizCorrectFill ?? this.quizCorrectFill,
+      quizCorrectBorder: quizCorrectBorder ?? this.quizCorrectBorder,
+      quizWrongFill: quizWrongFill ?? this.quizWrongFill,
+      quizWrongBorder: quizWrongBorder ?? this.quizWrongBorder,
+      quizWrongBadge: quizWrongBadge ?? this.quizWrongBadge,
+      quizExplanationBody: quizExplanationBody ?? this.quizExplanationBody,
+      navBarFill: navBarFill ?? this.navBarFill,
+      navAccent: navAccent ?? this.navAccent,
+      navCentreIdleFill: navCentreIdleFill ?? this.navCentreIdleFill,
+      navCentreGlyphOn: navCentreGlyphOn ?? this.navCentreGlyphOn,
+      navShadow: navShadow ?? this.navShadow,
     );
   }
 
@@ -257,6 +415,26 @@ class AppColors extends ThemeExtension<AppColors> {
       // Lerps between two identical values — i.e. stays put across a theme
       // animation, which is the whole point.
       successBadge: Color.lerp(successBadge, other.successBadge, t)!,
+      quizOptionFill: Color.lerp(quizOptionFill, other.quizOptionFill, t)!,
+      quizOptionBorder: Color.lerp(quizOptionBorder, other.quizOptionBorder, t)!,
+      quizDivider: Color.lerp(quizDivider, other.quizDivider, t)!,
+      // Same as successBadge: identical endpoints, so these stay put across a
+      // theme animation.
+      quizCorrectFill: Color.lerp(quizCorrectFill, other.quizCorrectFill, t)!,
+      quizCorrectBorder:
+          Color.lerp(quizCorrectBorder, other.quizCorrectBorder, t)!,
+      quizWrongFill: Color.lerp(quizWrongFill, other.quizWrongFill, t)!,
+      quizWrongBorder: Color.lerp(quizWrongBorder, other.quizWrongBorder, t)!,
+      quizWrongBadge: Color.lerp(quizWrongBadge, other.quizWrongBadge, t)!,
+      quizExplanationBody:
+          Color.lerp(quizExplanationBody, other.quizExplanationBody, t)!,
+      navBarFill: Color.lerp(navBarFill, other.navBarFill, t)!,
+      navAccent: Color.lerp(navAccent, other.navAccent, t)!,
+      navCentreIdleFill:
+          Color.lerp(navCentreIdleFill, other.navCentreIdleFill, t)!,
+      navCentreGlyphOn:
+          Color.lerp(navCentreGlyphOn, other.navCentreGlyphOn, t)!,
+      navShadow: Color.lerp(navShadow, other.navShadow, t)!,
     );
   }
 }
