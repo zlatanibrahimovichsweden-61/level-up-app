@@ -143,7 +143,20 @@ void main() {
 
     // The real badge (82:1598), not the Icons.check_circle placeholder that
     // used to be tinted with colorScheme.primary — i.e. purple in dark.
-    expect(find.byType(SvgPicture), findsOneWidget);
+    //
+    // Matched by ASSET rather than by "the only SvgPicture on screen": since
+    // Day 7b the language pill carries an SVG glyph too, so a bare byType
+    // finder here counts two and says nothing about which.
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is SvgPicture &&
+            w.bytesLoader is SvgAssetLoader &&
+            (w.bytesLoader as SvgAssetLoader).assetName ==
+                'assets/images/success_badge.svg',
+      ),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.check_circle), findsNothing);
 
     // No AppBar in the success branch: "back" to the OTP input is meaningless

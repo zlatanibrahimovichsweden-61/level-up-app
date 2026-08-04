@@ -52,6 +52,11 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.navShadow,
     required this.languagePillBorder,
     required this.languagePillContent,
+    required this.trackCardBorderStart,
+    required this.trackCardBorderEnd,
+    required this.trackRadioRing,
+    required this.backChipFill,
+    required this.backChipGlyph,
   });
 
   final Color background;
@@ -259,6 +264,38 @@ class AppColors extends ThemeExtension<AppColors> {
   /// toggle, and light [textPrimary] (`#0E0E0E`) is the wrong colour here.
   final Color languagePillContent;
 
+  // --- Track picker (Figma 82:1785 light · 337:15947 dark) ------------------
+
+  /// The two stops of the track card's 1px GRADIENT outline, `#384F47` at the
+  /// top-end corner running to `#95CDBB` at the bottom-start one.
+  ///
+  /// Both are `null` in dark — the same light-only-border rule as
+  /// [languagePillBorder]. Flutter has no gradient `Border`, so the card paints
+  /// a gradient-filled box with a 1px-inset fill on top; a null pair means the
+  /// card skips that wrapper entirely rather than drawing a flat stand-in.
+  final Color? trackCardBorderStart;
+  final Color? trackCardBorderEnd;
+
+  /// The track card's r=9.5 radio ring — 1px, transparent fill.
+  /// `#384F47` light / `#FCFBF9` dark.
+  final Color trackRadioRing;
+
+  /// The 35×35 circular back chip's fill. Light `#FCFBF9` is Figma `90:208`;
+  /// the frame's ring around it reads as a shadow, not a stroke, so there is
+  /// no border token here.
+  ///
+  /// TODO(design): the dark canvas has no back-chip frame. `#232428` (the dark
+  /// page fill, matching how the language pill and track card behave in dark)
+  /// is a FALLBACK, not a measured value — docs/DESIGN_ISSUES.md #40.
+  final Color backChipFill;
+
+  /// The back chip's chevron. Light `#4B675E` is Figma `90:209`.
+  ///
+  /// TODO(design): dark is a FALLBACK — cream, following
+  /// [languagePillContent], because `#4B675E` on a `#232428` chip is too low
+  /// contrast for a navigation control. Not measured.
+  final Color backChipGlyph;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -296,6 +333,11 @@ class AppColors extends ThemeExtension<AppColors> {
     navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
     languagePillBorder: Color(0xFF4B675E), // Figma 82:1093
     languagePillContent: Brand.greenPrimary, // #384F47 — Figma 82:1098/82:1100
+    trackCardBorderStart: Brand.greenPrimary, // #384F47 — Figma 82:1785
+    trackCardBorderEnd: Color(0xFF95CDBB), // Figma 82:1785
+    trackRadioRing: Brand.greenPrimary, // #384F47 — Figma 82:1785
+    backChipFill: Color(0xFFFCFBF9), // Figma 90:208
+    backChipGlyph: Color(0xFF4B675E), // Figma 90:209
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -339,6 +381,11 @@ class AppColors extends ThemeExtension<AppColors> {
     navShadow: Color(0x14000000), // ~8% black — TODO(design), see field doc
     languagePillBorder: null, // Figma 337:19693 — no outline in dark
     languagePillContent: Color(0xFFFCFBF9), // Figma 337:19693
+    trackCardBorderStart: null, // Figma 337:15947 — no outline in dark
+    trackCardBorderEnd: null,
+    trackRadioRing: Color(0xFFFCFBF9), // Figma 337:15947
+    backChipFill: Color(0xFF232428), // TODO(design) fallback — see field doc
+    backChipGlyph: Color(0xFFFCFBF9), // TODO(design) fallback — see field doc
   );
 
   @override
@@ -378,6 +425,11 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? navShadow,
     Color? languagePillBorder,
     Color? languagePillContent,
+    Color? trackCardBorderStart,
+    Color? trackCardBorderEnd,
+    Color? trackRadioRing,
+    Color? backChipFill,
+    Color? backChipGlyph,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -417,6 +469,11 @@ class AppColors extends ThemeExtension<AppColors> {
       // Dark gets its null from the palette itself, not from a copyWith.
       languagePillBorder: languagePillBorder ?? this.languagePillBorder,
       languagePillContent: languagePillContent ?? this.languagePillContent,
+      trackCardBorderStart: trackCardBorderStart ?? this.trackCardBorderStart,
+      trackCardBorderEnd: trackCardBorderEnd ?? this.trackCardBorderEnd,
+      trackRadioRing: trackRadioRing ?? this.trackRadioRing,
+      backChipFill: backChipFill ?? this.backChipFill,
+      backChipGlyph: backChipGlyph ?? this.backChipGlyph,
     );
   }
 
@@ -472,6 +529,14 @@ class AppColors extends ThemeExtension<AppColors> {
           Color.lerp(languagePillBorder, other.languagePillBorder, t),
       languagePillContent:
           Color.lerp(languagePillContent, other.languagePillContent, t)!,
+      // Nullable for the same reason as languagePillBorder — light-only border.
+      trackCardBorderStart:
+          Color.lerp(trackCardBorderStart, other.trackCardBorderStart, t),
+      trackCardBorderEnd:
+          Color.lerp(trackCardBorderEnd, other.trackCardBorderEnd, t),
+      trackRadioRing: Color.lerp(trackRadioRing, other.trackRadioRing, t)!,
+      backChipFill: Color.lerp(backChipFill, other.backChipFill, t)!,
+      backChipGlyph: Color.lerp(backChipGlyph, other.backChipGlyph, t)!,
     );
   }
 }
