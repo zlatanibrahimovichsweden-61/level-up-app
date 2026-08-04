@@ -1,21 +1,36 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Home header · Figma `337:5323` — avatar + "Welcome back, {name}" + bell,
-/// over a hairline bottom rule.
+/// Home header · Figma `59:1439` (light) / `337:5323` (dark) — avatar +
+/// "Welcome back, {name}" + the bell chip, over a hairline bottom rule.
 ///
 /// The bell is intentionally INERT: there is no notifications endpoint in the
-/// contract and no inbox screen yet, so it renders without a badge and does
-/// nothing. It is not wired to a dead route on purpose — a tap that navigates
-/// nowhere is worse than a tap that visibly does nothing.
+/// contract and no inbox screen yet, so it does nothing. It is not wired to a
+/// dead route on purpose — a tap that navigates nowhere is worse than a tap
+/// that visibly does nothing.
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key, required this.name, required this.avatarUrl});
+  const HomeHeader({
+    super.key,
+    required this.name,
+    required this.avatarUrl,
+    this.hasUnreadNotifications = false,
+  });
 
   final String name;
   final String avatarUrl;
+
+  /// Whether to draw the unread dot over the bell.
+  ///
+  /// TODO(contract): permanently `false` — there is no notifications endpoint
+  /// in the contract, so nothing can set it. The frame draws the dot, but
+  /// rendering it unconditionally would be a permanent "you have mail" lie.
+  /// Confirm with Seif whether an unread count is coming
+  /// (docs/DESIGN_ISSUES.md #41).
+  final bool hasUnreadNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -57,15 +72,74 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // TODO(design-asset): real bell glyph (Figma node 337:5330,
-          // mingcute:notification-fill) — blocked by export-disabled + View-only
-          // seat. See docs/DESIGN_ISSUES.md #1.
-          Icon(
-            Icons.notifications,
-            size: 36,
-            color: ext.textPrimary,
+          _BellChip(
+            hasUnread: hasUnreadNotifications,
             semanticLabel: l10n.notifications,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The bell · Figma `59:1466`. Three parts, only one of which is the asset:
+/// a 36.5 ring, the `mingcute:notification-fill` glyph, and the unread dot.
+///
+/// The ring and the dot are drawn in Flutter rather than baked into the SVG on
+/// purpose — the ring is decoration and the dot is STATE. Keeping the asset's
+/// own 37 viewBox as the layout box means the frame's dot centre (23.5, 11.5)
+/// drops in without rescaling.
+class _BellChip extends StatelessWidget {
+  const _BellChip({required this.hasUnread, required this.semanticLabel});
+
+  final bool hasUnread;
+  final String semanticLabel;
+
+  static const _box = 37.0;
+  static const _ring = 36.5;
+  static const _dotRadius = 3.0;
+  static const _dotCentreX = 23.5;
+  static const _dotCentreY = 11.5;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppColors>()!;
+
+    return SizedBox(
+      width: _box,
+      height: _box,
+      child: Stack(
+        alignment: AlignmentDirectional.center,
+        children: [
+          Container(
+            width: _ring,
+            height: _ring,
+            decoration: BoxDecoration(
+              color: ext.background,
+              shape: BoxShape.circle,
+              border: Border.all(color: ext.bellRing, width: 0.5),
+            ),
+          ),
+          SvgPicture.asset(
+            'assets/icons/notification.svg',
+            width: _box,
+            height: _box,
+            colorFilter: ColorFilter.mode(ext.bellGlyph, BlendMode.srcIn),
+            semanticsLabel: semanticLabel,
+          ),
+          if (hasUnread)
+            PositionedDirectional(
+              start: _dotCentreX - _dotRadius,
+              top: _dotCentreY - _dotRadius,
+              child: Container(
+                width: _dotRadius * 2,
+                height: _dotRadius * 2,
+                decoration: BoxDecoration(
+                  color: ext.bellUnreadDot,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -28,8 +28,13 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.legalText,
     required this.cardFill,
     required this.cardLabel,
+    required this.cardValue,
+    required this.homeAccent,
     required this.mutedText,
     required this.progressTrack,
+    required this.bellRing,
+    required this.bellGlyph,
+    required this.bellUnreadDot,
     required this.catalogCardFill,
     required this.catalogTrack,
     required this.sheetFill,
@@ -72,28 +77,73 @@ class AppColors extends ThemeExtension<AppColors> {
   /// (the LINK spans use [link]).
   final Color legalText;
 
-  // --- Home tokens (Figma 337:5303 / nav 59:1264) --------------------------
+  // --- Home tokens (Figma 59:1439 light · 337:5303 dark) --------------------
   //
-  // Only a DARK Home frame exists in the design file; there is no light-canvas
-  // Home to read light values from. So: every dark value below is Figma-verbatim,
-  // and each light value reuses an already-approved light token rather than a
-  // hex invented to fill the gap. Flagged to the designer — a light Home frame
-  // replaces these three light values, not the widgets.
+  // A light Home frame DOES exist — `59:1439`. Day 7b re-derived these against
+  // it (docs/DESIGN_ISSUES.md #42). What that turned up is not one wrong
+  // colour but a wrong RULE: **Home is exempt from the green-in-light /
+  // purple-in-dark accent flip.** Its accent is `#AE87E7` on both canvases —
+  // see [homeAccent] — so `colorScheme.primary` must not appear anywhere under
+  // lib/features/home/.
+  //
+  // [cardFill]'s light value is the one token here still carrying the old
+  // "no light Home frame" derivation: the frame says `#FCFBF9`, the palette
+  // says `#FDFDFD`. Left alone deliberately — it was outside Day 7b's D1
+  // change list — and reported rather than silently corrected.
 
   /// Raised card surface (level card, section cards).
+  ///
+  /// TODO(design): light is `#FDFDFD`, derived from `fieldFill` back when no
+  /// light Home frame was known. `59:1439` says `#FCFBF9`. Not changed in
+  /// Day 7b — see the block comment above.
   final Color cardFill;
 
   /// The small label above a card's headline value ("current level", "Pts
-  /// Balance"). Figma dark `#7070A0`.
+  /// Balance"). Figma `#7070A0` — the SAME on both canvases (`59:1439` and
+  /// `337:5340`). The light value used to be `#696969`, derived from `hint`.
   final Color cardLabel;
+
+  /// A card's headline value ("LEVEL 8", the points balance). Figma light
+  /// `#393939` / dark `#FCFBF9` — deliberately NOT [textPrimary], whose light
+  /// value `#0E0E0E` is considerably harder than the frame's.
+  final Color cardValue;
+
+  /// Home's accent: the level progress bar's fill and the divider between the
+  /// two stats. `#AE87E7` in BOTH canvases.
+  ///
+  /// **This is the app's one documented exemption from the accent flip.** The
+  /// rest of the app runs [Brand.greenPrimary] in light and
+  /// [Brand.purplePrimary] in dark via `colorScheme.primary`; the light Home
+  /// frame `59:1439` draws purple. It is a distinct token rather than a
+  /// `Brand.purplePrimary` reference at the call site so the exemption is
+  /// visible in the palette instead of hidden in a widget.
+  final Color homeAccent;
 
   /// De-emphasised small text: the level-range row, "x / y" progress caption,
   /// and INACTIVE bottom-nav labels. `#B3B3B3` in BOTH canvases — the light nav
   /// frame (59:1264) and the dark Home frame agree on it, so it is not a guess.
   final Color mutedText;
 
-  /// The unfilled part of a progress bar. Figma dark `#2E2D32`.
+  /// The unfilled part of a progress bar. Figma light `#ECECEC` (`59:1439`) /
+  /// dark `#2E2D32` (`337:5350`). The light value used to be `#D1D1D1`,
+  /// derived from `fieldBorder`.
   final Color progressTrack;
+
+  // --- Home header bell (Figma 59:1466 light · 337:5330 dark) --------------
+
+  /// The bell chip's 0.5px ring. `#4B675E` on both canvases.
+  final Color bellRing;
+
+  /// The bell glyph itself. `#4B675E` light / `#FCFBF9` dark.
+  final Color bellGlyph;
+
+  /// The unread dot over the bell — `#E67E22` light / `#AE87E7` dark. Note it
+  /// changes hue between canvases: it is not a fixed "notification orange",
+  /// even though it happens to share both values with [link].
+  ///
+  /// The dot is STATE, not decoration, and there is no notifications endpoint
+  /// in the contract — see the gate on `HomeHeader`.
+  final Color bellUnreadDot;
 
   // --- Catalog tokens (Figma Learn/Subjects 337:5702) -----------------------
   //
@@ -307,10 +357,15 @@ class AppColors extends ThemeExtension<AppColors> {
     link: Color(0xFFE67E22), // orange
     secondaryButtonBorder: Brand.greenPrimary,
     legalText: Brand.greenPrimary, // #384F47 green
-    cardFill: Color(0xFFFDFDFD), // = light fieldFill (no light Home frame)
-    cardLabel: Color(0xFF696969), // = light hint (no light Home frame)
+    cardFill: Color(0xFFFDFDFD), // TODO(design): 59:1439 says #FCFBF9
+    cardLabel: Color(0xFF7070A0), // Figma 59:1439 — same in both canvases
+    cardValue: Color(0xFF393939), // Figma 59:1439
+    homeAccent: Brand.purplePrimary, // #AE87E7 — Figma 59:1439, PURPLE in light
     mutedText: Color(0xFFB3B3B3), // Figma — same in both canvases
-    progressTrack: Color(0xFFD1D1D1), // = light fieldBorder (no light Home frame)
+    progressTrack: Color(0xFFECECEC), // Figma 59:1439
+    bellRing: Color(0xFF4B675E), // Figma 59:1466 — same in both canvases
+    bellGlyph: Color(0xFF4B675E), // Figma 59:1466
+    bellUnreadDot: Color(0xFFE67E22), // Figma 59:1466
     catalogCardFill: Color(0xFFFDFDFD), // = light fieldFill (no light Learn frame)
     catalogTrack: Color(0xFFD1D1D1), // = light fieldBorder (no light Learn frame)
     sheetFill: Color(0x33FCFBF9), // rgba(252,251,249,0.2) — Figma 459:43873
@@ -353,8 +408,13 @@ class AppColors extends ThemeExtension<AppColors> {
     legalText: Color(0xFFFCFBF9), // #FCFBF9 cream
     cardFill: Color(0x33232428), // rgba(35,36,40,0.2) — Figma 337:5336
     cardLabel: Color(0xFF7070A0), // Figma 337:5340
+    cardValue: Color(0xFFFCFBF9), // Figma 337:5342
+    homeAccent: Brand.purplePrimary, // #AE87E7 — Figma 337:5350
     mutedText: Color(0xFFB3B3B3), // Figma 337:5346
     progressTrack: Color(0xFF2E2D32), // Figma 337:5350
+    bellRing: Color(0xFF4B675E), // Figma 337:5330
+    bellGlyph: Color(0xFFFCFBF9), // Figma 337:5330
+    bellUnreadDot: Brand.purplePrimary, // #AE87E7 — Figma 337:5330
     catalogCardFill: Color(0xFF27282C), // Figma 337:5732
     catalogTrack: Color(0xFFECECEC), // Figma 337:5744
     sheetFill: Color(0x33232628), // rgba(35,38,40,0.2) — Figma 337:15643
@@ -401,8 +461,13 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? legalText,
     Color? cardFill,
     Color? cardLabel,
+    Color? cardValue,
+    Color? homeAccent,
     Color? mutedText,
     Color? progressTrack,
+    Color? bellRing,
+    Color? bellGlyph,
+    Color? bellUnreadDot,
     Color? catalogCardFill,
     Color? catalogTrack,
     Color? sheetFill,
@@ -443,8 +508,13 @@ class AppColors extends ThemeExtension<AppColors> {
       legalText: legalText ?? this.legalText,
       cardFill: cardFill ?? this.cardFill,
       cardLabel: cardLabel ?? this.cardLabel,
+      cardValue: cardValue ?? this.cardValue,
+      homeAccent: homeAccent ?? this.homeAccent,
       mutedText: mutedText ?? this.mutedText,
       progressTrack: progressTrack ?? this.progressTrack,
+      bellRing: bellRing ?? this.bellRing,
+      bellGlyph: bellGlyph ?? this.bellGlyph,
+      bellUnreadDot: bellUnreadDot ?? this.bellUnreadDot,
       catalogCardFill: catalogCardFill ?? this.catalogCardFill,
       catalogTrack: catalogTrack ?? this.catalogTrack,
       sheetFill: sheetFill ?? this.sheetFill,
@@ -493,8 +563,15 @@ class AppColors extends ThemeExtension<AppColors> {
       legalText: Color.lerp(legalText, other.legalText, t)!,
       cardFill: Color.lerp(cardFill, other.cardFill, t)!,
       cardLabel: Color.lerp(cardLabel, other.cardLabel, t)!,
+      cardValue: Color.lerp(cardValue, other.cardValue, t)!,
+      // Identical endpoints — Home's accent does not move across a theme
+      // animation, which is the exemption made visible.
+      homeAccent: Color.lerp(homeAccent, other.homeAccent, t)!,
       mutedText: Color.lerp(mutedText, other.mutedText, t)!,
       progressTrack: Color.lerp(progressTrack, other.progressTrack, t)!,
+      bellRing: Color.lerp(bellRing, other.bellRing, t)!,
+      bellGlyph: Color.lerp(bellGlyph, other.bellGlyph, t)!,
+      bellUnreadDot: Color.lerp(bellUnreadDot, other.bellUnreadDot, t)!,
       catalogCardFill: Color.lerp(catalogCardFill, other.catalogCardFill, t)!,
       catalogTrack: Color.lerp(catalogTrack, other.catalogTrack, t)!,
       sheetFill: Color.lerp(sheetFill, other.sheetFill, t)!,

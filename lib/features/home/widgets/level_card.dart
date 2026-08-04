@@ -54,7 +54,6 @@ class LevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
 
     final nextLevel = level >= kMaxLevel ? kMaxLevel : level + 1;
@@ -75,10 +74,18 @@ class LevelCard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               children: [
-                // TODO(design-asset): real level medallion (Figma node 337:5338
-                // "Level badges") — blocked by export-disabled + View-only seat.
-                // See docs/DESIGN_ISSUES.md #1.
-                Icon(Icons.emoji_events, size: 56, color: cs.primary),
+                // TODO(design-asset): real level medallion (Figma `308:4217`
+                // "Level badges") — a 91×91 gold 3D badge with DIFFERENT
+                // artwork per level, filled with raster PNGs, so it can neither
+                // be exported as SVG nor tinted. Up to 12 images at @3x,
+                // selected by level, once the designer ships the set; shipping
+                // one badge for all twelve looks correct and is wrong.
+                //
+                // It has no server source either: the contract's `badges` is a
+                // post-level-12 milestone COUNTER, not artwork — a name
+                // collision with the Figma component, raised with Seif.
+                // See docs/DESIGN_ISSUES.md #43.
+                Icon(Icons.emoji_events, size: 56, color: ext.homeAccent),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _Stat(
@@ -86,8 +93,13 @@ class LevelCard extends StatelessWidget {
                     value: l10n.levelLabel(level),
                   ),
                 ),
-                // The frame's 0.3px divider between the two stats.
-                VerticalDivider(width: 21, thickness: 0.3, color: cs.primary),
+                // The frame's 0.3px divider between the two stats — purple on
+                // BOTH canvases, like the progress fill below.
+                VerticalDivider(
+                  width: 21,
+                  thickness: 0.3,
+                  color: ext.homeAccent,
+                ),
                 Expanded(
                   child: _Stat(
                     label: l10n.pointsBalance,
@@ -122,7 +134,9 @@ class LevelCard extends StatelessWidget {
             value: fraction,
             minHeight: 10,
             backgroundColor: ext.progressTrack,
-            color: cs.primary,
+            // NOT colorScheme.primary: Home is exempt from the green/purple
+            // accent flip and is purple in the light frame too (59:1439).
+            color: ext.homeAccent,
             borderRadius: BorderRadius.circular(52),
           ),
           const SizedBox(height: 8),
@@ -167,7 +181,7 @@ class _Stat extends StatelessWidget {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: ext.textPrimary,
+            color: ext.cardValue,
           ),
         ),
       ],

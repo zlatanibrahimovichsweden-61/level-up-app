@@ -20,7 +20,6 @@ class HomeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
 
     return Container(
@@ -30,11 +29,15 @@ class HomeBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: ext.cardFill,
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: cs.primary, width: 0.5),
+        // Home's accent, not colorScheme.primary — this placeholder sits on
+        // Home, which is exempt from the green/purple flip (59:1439). The
+        // frame gives no value for THIS box, so the token follows the
+        // surface's rule rather than inventing a second one.
+        border: Border.all(color: ext.homeAccent, width: 0.5),
       ),
       child: Row(
         children: [
-          Icon(Icons.auto_stories_outlined, size: 32, color: cs.primary),
+          Icon(Icons.auto_stories_outlined, size: 32, color: ext.homeAccent),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
