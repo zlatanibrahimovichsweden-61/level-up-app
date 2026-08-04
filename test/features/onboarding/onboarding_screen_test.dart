@@ -95,7 +95,17 @@ void main() {
         (tester) async {
       await pumpOnboarding(tester);
 
-      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      // Matched by ASSET: since Day 7b the language pill carries an SVG glyph
+      // too, so `find.byType(SvgPicture)` resolves to two here.
+      final svg = tester.widget<SvgPicture>(
+        find.byWidgetPredicate(
+          (w) =>
+              w is SvgPicture &&
+              w.bytesLoader is SvgAssetLoader &&
+              (w.bytesLoader as SvgAssetLoader).assetName ==
+                  'assets/images/onboarding_illustration.svg',
+        ),
+      );
       expect(svg.fit, BoxFit.cover);
       expect(svg.alignment, Alignment.topCenter);
     });
