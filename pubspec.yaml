@@ -94,6 +94,8 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    # Flutter asset dirs are NOT recursive — nested folders need their own line.
+    - assets/icons/nav/
 
   # Bundled fonts (NOT google_fonts) — no runtime fetch, works offline, and
   # Arabic renders from Tajawal/Cairo. Inter has NO Arabic glyphs, so Arabic
