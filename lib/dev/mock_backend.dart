@@ -66,6 +66,36 @@ class MockBackendInterceptor extends Interceptor {
 
   bool get _isUniversity => _track == 'university';
 
+  // ---- quiz session state -------------------------------------------------
+  //
+  // In production every one of these lives server-side; they are here because
+  // the quiz endpoints are the first stateful thing this harness has had to
+  // fake. See the trigger table on [_createQuiz] for how to reach each error.
+
+  /// Live quizzes by id, holding the correct option per question (which the
+  /// client is never told until it submits) and the answers so far.
+  final _quizzes = <String, _MockQuiz>{};
+
+  /// Free plan: 50 questions/WEEK. Incremented by each quiz's length, so the
+  /// second 30-question quiz in a session trips `weekly_question_limit_reached`
+  /// and the limit sheet is reachable without editing anything.
+  int _questionsUsedThisWeek = 0;
+
+  /// Mutable so `finish` can move it and `GET /me` reflects the award — the
+  /// only way to see on device that finishing invalidates the profile. Starts
+  /// where [_profile] starts.
+  int _totalPoints = 1250;
+
+  /// Questions this student has answered, in any quiz. `GET
+  /// /questions/{id}/explanation` 403s for anything not in here, which is the
+  /// contract's own rule ("question not yet answered by the caller").
+  final _answeredQuestions = <String>{};
+
+  /// How many times each question's explanation has been requested. The FIRST
+  /// request answers `202 generating`; every later one answers `200 ready` —
+  /// so the polling path is walked every single time, not just occasionally.
+  final _explanationRequests = <String, int>{};
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -138,9 +168,11 @@ class MockBackendInterceptor extends Interceptor {
         handler,
         options,
         200,
+        // Reads the LIVE total, which `finish` moves. Re-fetching after a quiz
+        // therefore shows the award, exactly as it will in production.
         _isUniversity
-            ? _universityProfile(phone: phone)
-            : _schoolProfile(phone: phone),
+            ? _universityProfile(phone: phone, totalPoints: _totalPoints)
+            : _schoolProfile(phone: phone, totalPoints: _totalPoints),
       );
     }
 
@@ -182,6 +214,34 @@ class MockBackendInterceptor extends Interceptor {
         );
       }
       return _ok(handler, options, 200, body);
+    }
+
+    // ---- quiz -------------------------------------------------------------
+    // The whole Day 7 engine. `AppConfig.baseUrl` is still TBD, so without
+    // these four handlers no quiz screen can be run on a device at all.
+    //
+    // Unlike the catalog handlers above, these are STATEFUL: a quiz remembers
+    // which option is correct, which questions have been answered, and whether
+    // it has been finished — because that is the only way the idempotency
+    // guarantee, the graded state and the summary can be exercised for real.
+    if (method == 'POST' && path == '/quizzes') {
+      return _createQuiz(handler, options, body);
+    }
+
+    final answers = RegExp(r'^/quizzes/([^/]+)/answers$').firstMatch(path);
+    if (method == 'POST' && answers != null) {
+      return _submitAnswer(handler, options, answers.group(1)!, body);
+    }
+
+    final finish = RegExp(r'^/quizzes/([^/]+)/finish$').firstMatch(path);
+    if (method == 'POST' && finish != null) {
+      return _finishQuiz(handler, options, finish.group(1)!);
+    }
+
+    final explanation =
+        RegExp(r'^/questions/([^/]+)/explanation$').firstMatch(path);
+    if (method == 'GET' && explanation != null) {
+      return _explanation(handler, options, explanation.group(1)!);
     }
 
     // ---- reference --------------------------------------------------------
@@ -226,6 +286,225 @@ class MockBackendInterceptor extends Interceptor {
     // Anything not mocked fails loudly as a contract-shaped 404 rather than
     // hanging on a socket — an unmocked call should be obvious, not silent.
     return _problem(handler, options, 404, 'not_found', 'No mock for $method $path');
+  }
+
+  /// `POST /quizzes` → `201 Quiz`, or one of the three failures below.
+  ///
+  /// **Trigger table — how to reach each error path on a device:**
+  ///
+  /// | Outcome | How to reach it |
+  /// |---|---|
+  /// | `201` | any lesson/lecture whose pool ≥ the chosen length |
+  /// | `422 not_enough_questions` | pick a scope whose counter total is smaller than the length — e.g. any `0 / 0` lesson at any length, or a `20`-question lesson at 30 |
+  /// | `403 weekly_question_limit_reached` | start quizzes until 50 questions are used in the session (two 30s, or five 10s) |
+  /// | `403 subscription_required` | any lesson under **الكيمياء** (school) or **الفسيولوجي** (university) — those two subjects are the mock's paid scopes |
+  ///
+  /// The pool size is read from the SAME `questionCounter.total` the catalog
+  /// screens just showed the student, so a 422 always agrees with the number
+  /// on the row they tapped. That is deliberate: a mock that disagreed with
+  /// its own catalog would teach the wrong lesson about the 422.
+  void _createQuiz(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    Map<String, dynamic> body,
+  ) {
+    final lessonId = body['lessonId'] as String?;
+    final lectureId = body['lectureId'] as String?;
+    final length = (body['length'] as num?)?.toInt() ?? 10;
+    final scopeId = lessonId ?? lectureId;
+
+    // The mock's paid scopes. In production this is an entitlement check the
+    // server makes; here it is a documented prefix so the sheet's second copy
+    // variant is reachable.
+    if (scopeId != null &&
+        (scopeId.startsWith('chem-') || scopeId.startsWith('physio-'))) {
+      return _problem(
+        handler,
+        options,
+        403,
+        'subscription_required',
+        'This scope needs an active base_subscription',
+      );
+    }
+
+    // Free plan: baseSubscription is inactive in [_entitlements], so the weekly
+    // cap applies. Checked BEFORE the pool so the limit sheet wins over a 422,
+    // which is the order that matters to a student who has run out.
+    if (_questionsUsedThisWeek + length > _kFreeWeeklyQuestions) {
+      return _problem(
+        handler,
+        options,
+        403,
+        'weekly_question_limit_reached',
+        'Free plan allows $_kFreeWeeklyQuestions questions per week',
+      );
+    }
+
+    final pool = _poolSize(scopeId, isUniversity: _isUniversity);
+    if (pool < length) {
+      return _problem(
+        handler,
+        options,
+        422,
+        'not_enough_questions',
+        'Scope pool holds $pool questions, $length were requested',
+      );
+    }
+
+    _questionsUsedThisWeek += length;
+
+    final quiz = _MockQuiz.build(
+      id: 'quiz-${_quizzes.length + 1}',
+      mode: body['mode'] as String? ?? 'normal',
+      quizType: body['quizType'] as String?,
+      scopeName: _scopeName(scopeId, isUniversity: _isUniversity),
+      length: length,
+    );
+    _quizzes[quiz.id] = quiz;
+
+    return _ok(handler, options, 201, quiz.toJson());
+  }
+
+  /// `POST /quizzes/{quizId}/answers` → `200 AnswerResult`.
+  ///
+  /// Idempotent on `(quizId, questionId)`, exactly as the contract specifies:
+  /// a replay returns the ORIGINAL `correct`/`correctOptionId`, and
+  /// `pointsDelta` is `0` because nothing new was awarded — the contract's own
+  /// wording for the field is "0 on retry replay".
+  void _submitAnswer(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String quizId,
+    Map<String, dynamic> body,
+  ) {
+    final quiz = _quizzes[quizId];
+    if (quiz == null) {
+      return _problem(handler, options, 404, 'not_found', 'No quiz $quizId');
+    }
+    if (quiz.finished) {
+      return _problem(
+        handler,
+        options,
+        409,
+        'quiz_already_finished',
+        'Quiz $quizId is closed',
+      );
+    }
+
+    final questionId = body['questionId'] as String? ?? '';
+    final optionId = body['optionId'] as String? ?? '';
+    final correctOptionId = quiz.correctOption[questionId];
+    if (correctOptionId == null) {
+      return _problem(
+        handler,
+        options,
+        404,
+        'not_found',
+        'Question $questionId is not in quiz $quizId',
+      );
+    }
+
+    final replay = quiz.answers.containsKey(questionId);
+    if (!replay) quiz.answers[questionId] = optionId;
+    _answeredQuestions.add(questionId);
+
+    // The grade is always the ORIGINAL choice's grade — a replay that sent a
+    // different optionId does not get re-marked.
+    final correct = quiz.answers[questionId] == correctOptionId;
+
+    return _ok(handler, options, 200, <String, dynamic>{
+      'correct': correct,
+      'correctOptionId': correctOptionId,
+      'pointsDelta': replay ? 0 : (correct ? 1 : 0),
+      // Every third question has no explanation, so the "panel not offered"
+      // path is visible on device too.
+      'explanationAvailable': quiz.explanationAvailable(questionId),
+    });
+  }
+
+  /// `POST /quizzes/{quizId}/finish` → `200 QuizSummary`. Idempotent — the
+  /// summary is computed once and replayed, so points cannot be awarded twice.
+  void _finishQuiz(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String quizId,
+  ) {
+    final quiz = _quizzes[quizId];
+    if (quiz == null) {
+      return _problem(handler, options, 404, 'not_found', 'No quiz $quizId');
+    }
+
+    if (quiz.summary == null) {
+      final score = quiz.answers.entries
+          .where((e) => quiz.correctOption[e.key] == e.value)
+          .length;
+      final before = _totalPoints;
+      // +1 per correct, server-side — the ONLY place points are decided.
+      _totalPoints += score;
+
+      quiz.finished = true;
+      quiz.summary = <String, dynamic>{
+        'quizId': quiz.id,
+        'score': score,
+        'totalQuestions': quiz.questions.length,
+        'answeredCount': quiz.answers.length,
+        'pointsAwarded': score,
+        'totalPoints': _totalPoints,
+        'level': _levelFor(_totalPoints),
+        'leveledUp': _levelFor(_totalPoints) > _levelFor(before),
+        'newBadge': false,
+        'questions': <dynamic>[
+          for (final question in quiz.questions)
+            <String, dynamic>{
+              'questionId': question['id'],
+              'answered': quiz.answers.containsKey(question['id']),
+              'correct': quiz.answers.containsKey(question['id'])
+                  ? quiz.answers[question['id']] ==
+                      quiz.correctOption[question['id']]
+                  : null,
+            },
+        ],
+      };
+    }
+
+    return _ok(handler, options, 200, quiz.summary);
+  }
+
+  /// `GET /questions/{questionId}/explanation` → `403`, `202`, then `200`.
+  ///
+  /// The three states in the order a student meets them: asking before
+  /// answering is refused, the first request after answering is still
+  /// generating, and the poll two seconds later succeeds. Nothing here is
+  /// random — the polling path is walked on every question, every run.
+  void _explanation(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String questionId,
+  ) {
+    if (!_answeredQuestions.contains(questionId)) {
+      return _problem(
+        handler,
+        options,
+        403,
+        'insufficient_scope',
+        'Question $questionId has not been answered by the caller',
+      );
+    }
+
+    final hits = (_explanationRequests[questionId] ?? 0) + 1;
+    _explanationRequests[questionId] = hits;
+
+    if (hits == 1) {
+      return _ok(handler, options, 202, <String, dynamic>{
+        'status': 'generating',
+      });
+    }
+    return _ok(handler, options, 200, <String, dynamic>{
+      'status': 'ready',
+      'text': 'الإجابة الصحيحة تعتمد على أن $questionId يقيس فهم المفهوم '
+          'الأساسي في هذا الدرس. الخيارات الأخرى تبدو معقولة لكنها تخلط بين '
+          'تعريفين مختلفين.',
+    });
   }
 
   void _ok(
@@ -642,6 +921,182 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
   ),
 };
 
+// ---------------------------------------------------------------------------
+// Quiz
+// ---------------------------------------------------------------------------
+
+/// The contract's free-plan cap: "Free plan: 50 questions/WEEK". The error code
+/// is `weekly_question_limit_reached` — weekly, not daily, whatever the limit
+/// frame says (docs/seif_fight.md S16).
+const _kFreeWeeklyQuestions = 50;
+
+/// 12 levels, 500 points apart. Mirrored here ONLY so the mock's `finish` can
+/// move `level` truthfully when points cross a boundary; the app itself never
+/// computes this — it renders `QuizSummary.level`.
+int _levelFor(int totalPoints) => (totalPoints ~/ 500 + 1).clamp(1, 12);
+
+/// How many questions a scope actually holds — read from the SAME
+/// `questionCounter.total` the catalog handed the Learn screens, so a 422 never
+/// contradicts the row the student just tapped.
+int _poolSize(String? scopeId, {required bool isUniversity}) {
+  if (scopeId == null) return 0;
+
+  if (isUniversity) {
+    for (final tree in _universitySubjectTrees.values) {
+      for (final lecture in (tree['lectures']! as List<dynamic>)
+          .cast<Map<String, dynamic>>()) {
+        if (lecture['id'] == scopeId) {
+          return (lecture['questionCounter']! as Map<String, dynamic>)['total']
+              as int;
+        }
+      }
+    }
+    return 0;
+  }
+
+  for (final units in _subjectTrees.values) {
+    for (final unit in units.cast<Map<String, dynamic>>()) {
+      for (final chapter
+          in (unit['chapters']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+        for (final lesson
+            in (chapter['lessons']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+          if (lesson['id'] == scopeId) {
+            return (lesson['questionCounter']! as Map<String, dynamic>)['total']
+                as int;
+          }
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+/// `Quiz.scopeName` — server copy, already in the content language. Looked up
+/// from the same catalog data, so the quiz titles itself with the lesson name
+/// the student tapped rather than an id.
+String _scopeName(String? scopeId, {required bool isUniversity}) {
+  if (scopeId == null) return 'مراجعة';
+
+  if (isUniversity) {
+    for (final tree in _universitySubjectTrees.values) {
+      for (final lecture in (tree['lectures']! as List<dynamic>)
+          .cast<Map<String, dynamic>>()) {
+        if (lecture['id'] == scopeId) return lecture['name']! as String;
+      }
+    }
+    return 'محاضرة';
+  }
+
+  for (final units in _subjectTrees.values) {
+    for (final unit in units.cast<Map<String, dynamic>>()) {
+      for (final chapter
+          in (unit['chapters']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+        for (final lesson
+            in (chapter['lessons']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+          if (lesson['id'] == scopeId) return lesson['name']! as String;
+        }
+      }
+    }
+  }
+  return 'درس';
+}
+
+/// One live quiz, holding the thing the client is never sent: which option is
+/// correct.
+///
+/// This is the whole reason the harness is stateful. If the correct option were
+/// generated at answer time, a replay could grade differently and the
+/// idempotency guarantee would be untestable on device.
+class _MockQuiz {
+  _MockQuiz({
+    required this.id,
+    required this.questions,
+    required this.correctOption,
+    required this.body,
+  });
+
+  /// Builds [length] questions. Every fourth carries an `imageUrl` so the
+  /// "with photo" variant is reachable, and the correct option rotates so a
+  /// student cannot pass by always tapping A.
+  factory _MockQuiz.build({
+    required String id,
+    required String mode,
+    required String? quizType,
+    required String scopeName,
+    required int length,
+  }) {
+    final questions = <Map<String, dynamic>>[];
+    final correct = <String, String>{};
+
+    for (var i = 1; i <= length; i++) {
+      final questionId = '$id-q$i';
+      final correctIndex = i % 4;
+      correct[questionId] = '$questionId-o$correctIndex';
+      questions.add(<String, dynamic>{
+        'id': questionId,
+        'order': i,
+        'text': 'السؤال $i: أي من الخيارات التالية يصف <u>التركيب</u> بشكل صحيح؟',
+        // Every fourth question has a photo — the `159:1852` variant.
+        'imageUrl': i % 4 == 0
+            ? 'https://picsum.photos/seed/levelup-q$i/640/360'
+            : null,
+        'thumbnailUrl': null,
+        'options': <dynamic>[
+          for (var o = 0; o < 4; o++)
+            <String, dynamic>{
+              'id': '$questionId-o$o',
+              'text': 'الخيار رقم ${o + 1} للسؤال $i',
+            },
+        ],
+        // Parsed by the model, rendered nowhere — see CONFLICT 4 / S11. Varied
+        // anyway so the field is not accidentally constant in the harness.
+        'isFavorite': i % 5 == 0,
+      });
+    }
+
+    return _MockQuiz(
+      id: id,
+      questions: questions,
+      correctOption: correct,
+      body: <String, dynamic>{
+        'id': id,
+        'mode': mode,
+        // Null-aware element: the key is omitted entirely for a school quiz,
+        // rather than sent as an explicit null.
+        'quizType': ?quizType,
+        'scopeName': scopeName,
+        'questions': questions,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  final String id;
+  final List<Map<String, dynamic>> questions;
+
+  /// questionId → the correct optionId. Never serialized into [body].
+  final Map<String, String> correctOption;
+  final Map<String, dynamic> body;
+
+  /// questionId → the optionId the student committed to.
+  final answers = <String, String>{};
+
+  bool finished = false;
+
+  /// Cached so repeat `finish` calls replay the same summary, as the contract
+  /// promises — and so points are awarded exactly once.
+  Map<String, dynamic>? summary;
+
+  /// Every third question has no explanation, so the app's "panel not offered"
+  /// branch is reachable without waiting for a server that never says no.
+  bool explanationAvailable(String questionId) {
+    final index = questions.indexWhere((q) => q['id'] == questionId);
+    return index >= 0 && (index + 1) % 3 != 0;
+  }
+
+  Map<String, dynamic> toJson() => body;
+}
+
 /// NOTE: these are remote URLs — the only thing in this harness that is not
 /// offline. Nothing renders them today (the avatar grid was deliberately not
 /// built), so the mock is still fully usable on a plane.
@@ -695,8 +1150,13 @@ Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
   );
 }
 
-Map<String, dynamic> _schoolProfile({required String phone}) => _profile(
+Map<String, dynamic> _schoolProfile({
+  required String phone,
+  int totalPoints = 1250,
+}) =>
+    _profile(
       track: 'school',
+      totalPoints: totalPoints,
       name: 'طالب تجريبي',
       phone: phone,
       dateOfBirth: '2008-05-14',
@@ -712,8 +1172,13 @@ Map<String, dynamic> _schoolProfile({required String phone}) => _profile(
 
 /// The university counterpart — a first-year medical student. `school` is null
 /// and the `university` block is populated, exactly as the contract specifies.
-Map<String, dynamic> _universityProfile({required String phone}) => _profile(
+Map<String, dynamic> _universityProfile({
+  required String phone,
+  int totalPoints = 1250,
+}) =>
+    _profile(
       track: 'university',
+      totalPoints: totalPoints,
       name: 'طالب جامعي تجريبي',
       phone: phone,
       dateOfBirth: '2005-03-02',
@@ -742,6 +1207,7 @@ Map<String, dynamic> _profile({
   required String countryCode,
   required Map<String, dynamic>? school,
   required Map<String, dynamic>? university,
+  int totalPoints = 1250,
 }) {
   return <String, dynamic>{
     'id': '0197b2f3-9999-7cc3-9b4e-000000000001',
@@ -765,12 +1231,16 @@ Map<String, dynamic> _profile({
     // Server-authoritative — the app must display these, never recompute them.
     // The pools are per-track (adr-003), so the points sit in the one the
     // student actually earns in; `total` is the server's own sum.
+    //
+    // [totalPoints] MOVES when a quiz is finished. That is what makes "finish
+    // invalidates /me so Home shows the new points" something you can watch
+    // happen on a device rather than something a test asserts in the dark.
     'points': <String, dynamic>{
-      'school': track == 'school' ? 1250 : 0,
-      'university': track == 'university' ? 1250 : 0,
-      'total': 1250,
+      'school': track == 'school' ? totalPoints : 0,
+      'university': track == 'university' ? totalPoints : 0,
+      'total': totalPoints,
     },
-    'level': 3,
+    'level': _levelFor(totalPoints),
     'badges': 0,
     'privacy': <String, dynamic>{'leaderboardVisible': true, 'scoreHidden': false},
     'entitlements': _entitlements,

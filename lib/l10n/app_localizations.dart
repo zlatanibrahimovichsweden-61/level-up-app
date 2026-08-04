@@ -890,11 +890,287 @@ abstract class AppLocalizations {
   /// **'This subject isn\'t part of your course.'**
   String get subjectUnavailable;
 
-  /// No description provided for @quizSetupComingSoon.
+  /// No description provided for @quizSetupTitle.
   ///
   /// In en, this message translates to:
-  /// **'Quiz setup is coming soon'**
-  String get quizSetupComingSoon;
+  /// **'Quiz Setup'**
+  String get quizSetupTitle;
+
+  /// No description provided for @selectQuizSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Quiz Size'**
+  String get selectQuizSize;
+
+  /// Length picker chip, Figma 146:2315. The three values are the contract's own enum (10/30/50) — never other numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Questions'**
+  String quizSizeOption(int count);
+
+  /// No description provided for @quizTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get quizTitle;
+
+  /// The n/total counter, Figma 308:5261. `total` is the questions DELIVERED, not the length requested — a short pool reads 1/7.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}/{total}'**
+  String quizProgress(int position, int total);
+
+  /// No description provided for @questionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'QUESTION {position}'**
+  String questionLabel(int position);
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @finishQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finishQuiz;
+
+  /// No description provided for @answerCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct answer'**
+  String get answerCorrect;
+
+  /// No description provided for @answerWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer, incorrect'**
+  String get answerWrong;
+
+  /// Screen-reader label on the revealed correct option when the student got it wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'The correct answer'**
+  String get correctAnswerRevealed;
+
+  /// No description provided for @questionImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Question image'**
+  String get questionImage;
+
+  /// No description provided for @aiExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'AI EXPLANATION'**
+  String get aiExplanation;
+
+  /// No description provided for @showExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Show explanation'**
+  String get showExplanation;
+
+  /// No description provided for @explanationGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating your explanation…'**
+  String get explanationGenerating;
+
+  /// Covers every failure of GET /questions/{id}/explanation, including the contract's expected 403 before answering. An explanation is an extra — losing it must never read as a broken quiz.
+  ///
+  /// In en, this message translates to:
+  /// **'No explanation is available for this question.'**
+  String get explanationUnavailable;
+
+  /// No description provided for @exitQuizTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this quiz?'**
+  String get exitQuizTitle;
+
+  /// Confirm-on-exit. Truthful on both counts: submitted answers are committed server-side, and the session cannot be rebuilt because GET /quizzes/{id} is draft (seif_fight S2).
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers so far are saved, but this quiz cannot be reopened.'**
+  String get exitQuizBody;
+
+  /// No description provided for @exitQuizStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get exitQuizStay;
+
+  /// No description provided for @exitQuizLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get exitQuizLeave;
+
+  /// No description provided for @quizCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz Complete!'**
+  String get quizCompleteTitle;
+
+  /// No description provided for @resultCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get resultCorrect;
+
+  /// No description provided for @resultWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong'**
+  String get resultWrong;
+
+  /// The third bucket the design has no room for. Rendered only when answeredCount < totalQuestions; wrong is answeredCount - score, NOT totalQuestions - score.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get resultSkipped;
+
+  /// No description provided for @rewardsEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'REWARDS EARNED'**
+  String get rewardsEarned;
+
+  /// QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12).
+  ///
+  /// In en, this message translates to:
+  /// **'+{points} Points'**
+  String pointsAwarded(int points);
+
+  /// The result card's level section heading. Distinct from the Home `levelProgress` key, which is the parameterised "Level {level}" medallion label.
+  ///
+  /// In en, this message translates to:
+  /// **'Level Progress'**
+  String get resultLevelProgress;
+
+  /// Numbers, not a proportion: the contract exposes level and totalPoints but NO level threshold, so a progress fraction cannot be drawn (seif_fight S3).
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level} · {points} points'**
+  String levelAndPoints(int level, int points);
+
+  /// No description provided for @reviewQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Questions'**
+  String get reviewQuestions;
+
+  /// No description provided for @reviewQuestionsComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing your answers is coming soon.'**
+  String get reviewQuestionsComingSoon;
+
+  /// No description provided for @backToLearn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Learn'**
+  String get backToLearn;
+
+  /// No description provided for @freeUsageReachedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Usage Reached'**
+  String get freeUsageReachedTitle;
+
+  /// WEEKLY, not daily — the contract says "Free plan: 50 questions/WEEK" and the code is weekly_question_limit_reached. The frame's wording is flagged in DESIGN_ISSUES (seif_fight S16).
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used all your free questions for this week. Upgrade for unlimited practice.'**
+  String get weeklyLimitBody;
+
+  /// No description provided for @subscriptionRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription Required'**
+  String get subscriptionRequiredTitle;
+
+  /// No description provided for @subscriptionRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This lesson is part of the paid plan. Subscribe to start practising.'**
+  String get subscriptionRequiredBody;
+
+  /// No description provided for @benefitUnlimitedQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited quiz questions'**
+  String get benefitUnlimitedQuestions;
+
+  /// No description provided for @benefitAiExplanations.
+  ///
+  /// In en, this message translates to:
+  /// **'AI-powered explanations'**
+  String get benefitAiExplanations;
+
+  /// No description provided for @benefitPrioritySupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority support'**
+  String get benefitPrioritySupport;
+
+  /// No description provided for @benefitNoAds.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all ads'**
+  String get benefitNoAds;
+
+  /// The frame says "Upgrade To Premium", but the glossary forbids "premium" for base_subscription. Neutral copy until the designer confirms wording.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get upgradeCta;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// 422 not_enough_questions. Never silently retried with a smaller length — the student chooses.
+  ///
+  /// In en, this message translates to:
+  /// **'This lesson doesn\'t have enough questions for that quiz size. Try a shorter quiz.'**
+  String get errorNotEnoughQuestions;
+
+  /// No description provided for @errorWeeklyQuestionLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached your free weekly question limit.'**
+  String get errorWeeklyQuestionLimitReached;
+
+  /// No description provided for @errorSubscriptionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'This content needs an active subscription.'**
+  String get errorSubscriptionRequired;
+
+  /// No description provided for @errorQuizAlreadyFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'This quiz has already been submitted.'**
+  String get errorQuizAlreadyFinished;
+
+  /// No description provided for @errorInsufficientScope.
+  ///
+  /// In en, this message translates to:
+  /// **'This content isn\'t part of your course.'**
+  String get errorInsufficientScope;
 }
 
 class _AppLocalizationsDelegate

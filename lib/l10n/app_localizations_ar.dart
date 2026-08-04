@@ -454,5 +454,158 @@ class AppLocalizationsAr extends AppLocalizations {
   String get subjectUnavailable => 'هذه المادة ليست ضمن مقررك.';
 
   @override
-  String get quizSetupComingSoon => 'إعداد الاختبار قريبًا';
+  String get quizSetupTitle => 'إعداد الاختبار';
+
+  @override
+  String get selectQuizSize => 'اختر عدد الأسئلة';
+
+  @override
+  String quizSizeOption(int count) {
+    return '$count سؤال';
+  }
+
+  @override
+  String get quizTitle => 'الاختبار';
+
+  @override
+  String quizProgress(int position, int total) {
+    return '$position/$total';
+  }
+
+  @override
+  String questionLabel(int position) {
+    return 'السؤال $position';
+  }
+
+  @override
+  String get confirm => 'تأكيد';
+
+  @override
+  String get next => 'التالي';
+
+  @override
+  String get finishQuiz => 'إنهاء';
+
+  @override
+  String get answerCorrect => 'إجابة صحيحة';
+
+  @override
+  String get answerWrong => 'إجابتك، غير صحيحة';
+
+  @override
+  String get correctAnswerRevealed => 'الإجابة الصحيحة';
+
+  @override
+  String get questionImage => 'صورة السؤال';
+
+  @override
+  String get aiExplanation => 'شرح الذكاء الاصطناعي';
+
+  @override
+  String get showExplanation => 'اعرض الشرح';
+
+  @override
+  String get explanationGenerating => 'جارٍ تجهيز الشرح…';
+
+  @override
+  String get explanationUnavailable => 'لا يوجد شرح متاح لهذا السؤال.';
+
+  @override
+  String get exitQuizTitle => 'هل تريد الخروج من الاختبار؟';
+
+  @override
+  String get exitQuizBody =>
+      'إجاباتك حتى الآن محفوظة، لكن لا يمكن فتح هذا الاختبار مرة أخرى.';
+
+  @override
+  String get exitQuizStay => 'أكمل الاختبار';
+
+  @override
+  String get exitQuizLeave => 'خروج';
+
+  @override
+  String get quizCompleteTitle => 'أنهيت الاختبار!';
+
+  @override
+  String get resultCorrect => 'صحيحة';
+
+  @override
+  String get resultWrong => 'خاطئة';
+
+  @override
+  String get resultSkipped => 'متروكة';
+
+  @override
+  String get rewardsEarned => 'النقاط المكتسبة';
+
+  @override
+  String pointsAwarded(int points) {
+    return '+$points نقطة';
+  }
+
+  @override
+  String get resultLevelProgress => 'تقدّم المستوى';
+
+  @override
+  String levelAndPoints(int level, int points) {
+    return 'المستوى $level · $points نقطة';
+  }
+
+  @override
+  String get reviewQuestions => 'مراجعة الأسئلة';
+
+  @override
+  String get reviewQuestionsComingSoon => 'مراجعة إجاباتك قريبًا.';
+
+  @override
+  String get backToLearn => 'العودة إلى التعلّم';
+
+  @override
+  String get freeUsageReachedTitle => 'انتهت أسئلتك المجانية';
+
+  @override
+  String get weeklyLimitBody =>
+      'استخدمت كل أسئلتك المجانية لهذا الأسبوع. اشترك للحصول على تدريب بلا حدود.';
+
+  @override
+  String get subscriptionRequiredTitle => 'الاشتراك مطلوب';
+
+  @override
+  String get subscriptionRequiredBody =>
+      'هذا الدرس ضمن الخطة المدفوعة. اشترك لتبدأ التدريب.';
+
+  @override
+  String get benefitUnlimitedQuestions => 'أسئلة بلا حدود';
+
+  @override
+  String get benefitAiExplanations => 'شرح بالذكاء الاصطناعي';
+
+  @override
+  String get benefitPrioritySupport => 'دعم ذو أولوية';
+
+  @override
+  String get benefitNoAds => 'إزالة كل الإعلانات';
+
+  @override
+  String get upgradeCta => 'اشترك الآن';
+
+  @override
+  String get notNow => 'ليس الآن';
+
+  @override
+  String get errorNotEnoughQuestions =>
+      'لا يحتوي هذا الدرس على أسئلة كافية لهذا العدد. جرّب اختبارًا أقصر.';
+
+  @override
+  String get errorWeeklyQuestionLimitReached =>
+      'وصلت إلى حدّ الأسئلة المجانية الأسبوعي.';
+
+  @override
+  String get errorSubscriptionRequired => 'هذا المحتوى يحتاج إلى اشتراك فعّال.';
+
+  @override
+  String get errorQuizAlreadyFinished => 'تم تسليم هذا الاختبار بالفعل.';
+
+  @override
+  String get errorInsufficientScope => 'هذا المحتوى ليس ضمن مقررك.';
 }

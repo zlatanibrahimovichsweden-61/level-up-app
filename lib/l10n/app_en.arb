@@ -288,5 +288,133 @@
   "@subjectUnavailable": {
     "description": "403 insufficient_scope — the subject is outside the student's server-derived scope."
   },
-  "quizSetupComingSoon": "Quiz setup is coming soon"
+  "quizSetupTitle": "Quiz Setup",
+  "selectQuizSize": "Select Quiz Size",
+  "quizSizeOption": "{count} Questions",
+  "@quizSizeOption": {
+    "description": "Length picker chip, Figma 146:2315. The three values are the contract's own enum (10/30/50) — never other numbers.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "quizTitle": "Quiz",
+  "quizProgress": "{position}/{total}",
+  "@quizProgress": {
+    "description": "The n/total counter, Figma 308:5261. `total` is the questions DELIVERED, not the length requested — a short pool reads 1/7.",
+    "placeholders": {
+      "position": {
+        "type": "int",
+        "example": "1"
+      },
+      "total": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "questionLabel": "QUESTION {position}",
+  "@questionLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "confirm": "Confirm",
+  "next": "Next",
+  "finishQuiz": "Finish",
+  "answerCorrect": "Correct answer",
+  "answerWrong": "Your answer, incorrect",
+  "correctAnswerRevealed": "The correct answer",
+  "@correctAnswerRevealed": {
+    "description": "Screen-reader label on the revealed correct option when the student got it wrong."
+  },
+  "questionImage": "Question image",
+
+  "aiExplanation": "AI EXPLANATION",
+  "showExplanation": "Show explanation",
+  "explanationGenerating": "Generating your explanation…",
+  "explanationUnavailable": "No explanation is available for this question.",
+  "@explanationUnavailable": {
+    "description": "Covers every failure of GET /questions/{id}/explanation, including the contract's expected 403 before answering. An explanation is an extra — losing it must never read as a broken quiz."
+  },
+
+  "exitQuizTitle": "Leave this quiz?",
+  "exitQuizBody": "Your answers so far are saved, but this quiz cannot be reopened.",
+  "@exitQuizBody": {
+    "description": "Confirm-on-exit. Truthful on both counts: submitted answers are committed server-side, and the session cannot be rebuilt because GET /quizzes/{id} is draft (seif_fight S2).",
+    "placeholders": {}
+  },
+  "exitQuizStay": "Keep going",
+  "exitQuizLeave": "Leave",
+
+  "quizCompleteTitle": "Quiz Complete!",
+  "resultCorrect": "Correct",
+  "resultWrong": "Wrong",
+  "resultSkipped": "Skipped",
+  "@resultSkipped": {
+    "description": "The third bucket the design has no room for. Rendered only when answeredCount < totalQuestions; wrong is answeredCount - score, NOT totalQuestions - score."
+  },
+  "rewardsEarned": "REWARDS EARNED",
+  "pointsAwarded": "+{points} Points",
+  "@pointsAwarded": {
+    "description": "QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12).",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "resultLevelProgress": "Level Progress",
+  "@resultLevelProgress": {
+    "description": "The result card's level section heading. Distinct from the Home `levelProgress` key, which is the parameterised \"Level {level}\" medallion label."
+  },
+  "levelAndPoints": "Level {level} · {points} points",
+  "@levelAndPoints": {
+    "description": "Numbers, not a proportion: the contract exposes level and totalPoints but NO level threshold, so a progress fraction cannot be drawn (seif_fight S3).",
+    "placeholders": {
+      "level": {
+        "type": "int",
+        "example": "3"
+      },
+      "points": {
+        "type": "int",
+        "example": "1255"
+      }
+    }
+  },
+  "reviewQuestions": "Review Questions",
+  "reviewQuestionsComingSoon": "Reviewing your answers is coming soon.",
+  "backToLearn": "Back to Learn",
+
+  "freeUsageReachedTitle": "Free Usage Reached",
+  "weeklyLimitBody": "You've used all your free questions for this week. Upgrade for unlimited practice.",
+  "@weeklyLimitBody": {
+    "description": "WEEKLY, not daily — the contract says \"Free plan: 50 questions/WEEK\" and the code is weekly_question_limit_reached. The frame's wording is flagged in DESIGN_ISSUES (seif_fight S16)."
+  },
+  "subscriptionRequiredTitle": "Subscription Required",
+  "subscriptionRequiredBody": "This lesson is part of the paid plan. Subscribe to start practising.",
+  "benefitUnlimitedQuestions": "Unlimited quiz questions",
+  "benefitAiExplanations": "AI-powered explanations",
+  "benefitPrioritySupport": "Priority support",
+  "benefitNoAds": "Remove all ads",
+  "upgradeCta": "Upgrade",
+  "@upgradeCta": {
+    "description": "The frame says \"Upgrade To Premium\", but the glossary forbids \"premium\" for base_subscription. Neutral copy until the designer confirms wording."
+  },
+  "notNow": "Not now",
+
+  "errorNotEnoughQuestions": "This lesson doesn't have enough questions for that quiz size. Try a shorter quiz.",
+  "@errorNotEnoughQuestions": {
+    "description": "422 not_enough_questions. Never silently retried with a smaller length — the student chooses."
+  },
+  "errorWeeklyQuestionLimitReached": "You've reached your free weekly question limit.",
+  "errorSubscriptionRequired": "This content needs an active subscription.",
+  "errorQuizAlreadyFinished": "This quiz has already been submitted.",
+  "errorInsufficientScope": "This content isn't part of your course."
 }

@@ -12,8 +12,11 @@ import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
+import '../../features/quiz/models/quiz.dart';
 import '../../features/quiz/models/quiz_setup_args.dart';
-import '../../features/quiz/screens/quiz_setup_placeholder.dart';
+import '../../features/quiz/screens/quiz_result_screen.dart';
+import '../../features/quiz/screens/quiz_screen.dart';
+import '../../features/quiz/screens/quiz_setup_screen.dart';
 import '../../features/registration/models/registration_args.dart';
 import '../../features/registration/screens/school_detail_screen.dart';
 import '../../features/registration/screens/signup_identity_screen.dart';
@@ -21,6 +24,7 @@ import '../../features/registration/screens/signup_track_screen.dart';
 import '../../features/registration/screens/university_detail_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/screens/tab_placeholder.dart';
+import '../../l10n/app_localizations.dart';
 
 /// The auth routes — reachable while signed out. Everything else requires auth.
 /// The whole `/register` wizard is pre-auth: registration happens BEFORE any
@@ -204,13 +208,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // OUTSIDE the shell on purpose: taking a quiz is a full-screen task, not a
-      // tab. Both tracks only route here; the setup UI itself is Day 7.
+      // tab. (The frames draw the nav bar; the routing decision predates them
+      // and stands.) Both tracks route here — the only difference is which
+      // QuizSetupArgs constructor the Learn stack used.
       GoRoute(
         path: '/quiz/setup',
-        builder: (_, state) =>
-            QuizSetupPlaceholderScreen(args: state.extra! as QuizSetupArgs),
+        builder: (_, state) => QuizSetupScreen(args: state.extra! as QuizSetupArgs),
       ),
-      GoRoute(path: '/quiz/:quizId', builder: (_, _) => const _Placeholder('Quiz')),
+      // The `Quiz` rides as `extra` because quiz state is IN MEMORY ONLY:
+      // questions are never cached, and `GET /quizzes/{quizId}` is `draft`, so
+      // a cold deep-link to this path has nothing to rebuild from. It says so
+      // rather than rendering an empty quiz.
+      GoRoute(
+        path: '/quiz/:quizId',
+        builder: (_, state) => switch (state.extra) {
+          final Quiz quiz => QuizScreen(quiz: quiz),
+          _ => const _QuizUnavailableScreen(),
+        },
+        routes: [
+          // Nested so the result belongs to its quiz, but pushed with
+          // `pushReplacement` — the finished session must not sit under it for
+          // Back to land on, and the screen's own PopScope sends Back to
+          // /learn.
+          GoRoute(
+            path: 'result',
+            builder: (_, state) =>
+                QuizResultScreen(args: state.extra! as QuizResultArgs),
+          ),
+        ],
+      ),
       GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),
       GoRoute(path: '/subscription/return', builder: (_, _) => const _Placeholder('Paymob return')),
       GoRoute(path: '/profile', builder: (_, _) => const _Placeholder('Profile')),
@@ -218,6 +244,42 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// A cold deep-link to `/quiz/:quizId` with no `Quiz` in `extra`.
+///
+/// Unrecoverable by design, not by omission: quiz state is in memory only
+/// (questions are never cached — the contract frames the bank as the product),
+/// and the endpoint that could rebuild a session, `GET /quizzes/{quizId}`, is
+/// `x-stability: draft`. So this says so and offers the way back, rather than
+/// rendering an empty quiz or spinning forever.
+class _QuizUnavailableScreen extends StatelessWidget {
+  const _QuizUnavailableScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.quizTitle)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsetsDirectional.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.genericError, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => context.go('/learn'),
+                child: Text(l10n.backToLearn),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// Temporary destination so the skeleton runs. Replaced screen-by-screen.
 class _Placeholder extends StatelessWidget {

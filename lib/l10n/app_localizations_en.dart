@@ -454,5 +454,163 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subjectUnavailable => 'This subject isn\'t part of your course.';
 
   @override
-  String get quizSetupComingSoon => 'Quiz setup is coming soon';
+  String get quizSetupTitle => 'Quiz Setup';
+
+  @override
+  String get selectQuizSize => 'Select Quiz Size';
+
+  @override
+  String quizSizeOption(int count) {
+    return '$count Questions';
+  }
+
+  @override
+  String get quizTitle => 'Quiz';
+
+  @override
+  String quizProgress(int position, int total) {
+    return '$position/$total';
+  }
+
+  @override
+  String questionLabel(int position) {
+    return 'QUESTION $position';
+  }
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get finishQuiz => 'Finish';
+
+  @override
+  String get answerCorrect => 'Correct answer';
+
+  @override
+  String get answerWrong => 'Your answer, incorrect';
+
+  @override
+  String get correctAnswerRevealed => 'The correct answer';
+
+  @override
+  String get questionImage => 'Question image';
+
+  @override
+  String get aiExplanation => 'AI EXPLANATION';
+
+  @override
+  String get showExplanation => 'Show explanation';
+
+  @override
+  String get explanationGenerating => 'Generating your explanation…';
+
+  @override
+  String get explanationUnavailable =>
+      'No explanation is available for this question.';
+
+  @override
+  String get exitQuizTitle => 'Leave this quiz?';
+
+  @override
+  String get exitQuizBody =>
+      'Your answers so far are saved, but this quiz cannot be reopened.';
+
+  @override
+  String get exitQuizStay => 'Keep going';
+
+  @override
+  String get exitQuizLeave => 'Leave';
+
+  @override
+  String get quizCompleteTitle => 'Quiz Complete!';
+
+  @override
+  String get resultCorrect => 'Correct';
+
+  @override
+  String get resultWrong => 'Wrong';
+
+  @override
+  String get resultSkipped => 'Skipped';
+
+  @override
+  String get rewardsEarned => 'REWARDS EARNED';
+
+  @override
+  String pointsAwarded(int points) {
+    return '+$points Points';
+  }
+
+  @override
+  String get resultLevelProgress => 'Level Progress';
+
+  @override
+  String levelAndPoints(int level, int points) {
+    return 'Level $level · $points points';
+  }
+
+  @override
+  String get reviewQuestions => 'Review Questions';
+
+  @override
+  String get reviewQuestionsComingSoon =>
+      'Reviewing your answers is coming soon.';
+
+  @override
+  String get backToLearn => 'Back to Learn';
+
+  @override
+  String get freeUsageReachedTitle => 'Free Usage Reached';
+
+  @override
+  String get weeklyLimitBody =>
+      'You\'ve used all your free questions for this week. Upgrade for unlimited practice.';
+
+  @override
+  String get subscriptionRequiredTitle => 'Subscription Required';
+
+  @override
+  String get subscriptionRequiredBody =>
+      'This lesson is part of the paid plan. Subscribe to start practising.';
+
+  @override
+  String get benefitUnlimitedQuestions => 'Unlimited quiz questions';
+
+  @override
+  String get benefitAiExplanations => 'AI-powered explanations';
+
+  @override
+  String get benefitPrioritySupport => 'Priority support';
+
+  @override
+  String get benefitNoAds => 'Remove all ads';
+
+  @override
+  String get upgradeCta => 'Upgrade';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get errorNotEnoughQuestions =>
+      'This lesson doesn\'t have enough questions for that quiz size. Try a shorter quiz.';
+
+  @override
+  String get errorWeeklyQuestionLimitReached =>
+      'You\'ve reached your free weekly question limit.';
+
+  @override
+  String get errorSubscriptionRequired =>
+      'This content needs an active subscription.';
+
+  @override
+  String get errorQuizAlreadyFinished =>
+      'This quiz has already been submitted.';
+
+  @override
+  String get errorInsufficientScope =>
+      'This content isn\'t part of your course.';
 }

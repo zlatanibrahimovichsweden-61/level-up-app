@@ -15,7 +15,7 @@ import 'package:level_up_app/features/catalog/widgets/quiz_type_tabs.dart';
 import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/quiz/models/quiz_type.dart';
-import 'package:level_up_app/features/quiz/screens/quiz_setup_placeholder.dart';
+import 'package:level_up_app/features/quiz/screens/quiz_setup_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'catalog_fixtures.dart';
@@ -96,7 +96,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Straight to the quiz hand-off; there is no chapter/lesson level.
-      expect(find.byType(QuizSetupPlaceholderScreen), findsOneWidget);
+      expect(find.byType(QuizSetupScreen), findsOneWidget);
     });
   });
 
@@ -273,7 +273,7 @@ void main() {
       // Prove it on the FINISHED one by actually opening it.
       await tester.tap(find.text('Thorax'));
       await tester.pumpAndSettle();
-      expect(find.byType(QuizSetupPlaceholderScreen), findsOneWidget);
+      expect(find.byType(QuizSetupScreen), findsOneWidget);
     });
 
     testWidgets('row numbers go through the locale, not string interpolation',
@@ -325,8 +325,8 @@ void main() {
       await tester.tap(find.text('Lower Limb'));
       await tester.pumpAndSettle();
 
-      final screen = tester.widget<QuizSetupPlaceholderScreen>(
-        find.byType(QuizSetupPlaceholderScreen),
+      final screen = tester.widget<QuizSetupScreen>(
+        find.byType(QuizSetupScreen),
       );
       expect(screen.args.lectureId, 'lec-2');
       expect(screen.args.scopeName, 'Lower Limb');
@@ -345,8 +345,8 @@ void main() {
       await tester.tap(find.text('Upper Limb'));
       await tester.pumpAndSettle();
 
-      final screen = tester.widget<QuizSetupPlaceholderScreen>(
-        find.byType(QuizSetupPlaceholderScreen),
+      final screen = tester.widget<QuizSetupScreen>(
+        find.byType(QuizSetupScreen),
       );
       expect(screen.args.quizType, QuizType.finalRevision);
       expect(screen.args.lectureId, 'lec-1');
@@ -365,8 +365,8 @@ void main() {
       await tester.tap(find.text('Upper Limb'));
       await tester.pumpAndSettle();
 
-      final screen = tester.widget<QuizSetupPlaceholderScreen>(
-        find.byType(QuizSetupPlaceholderScreen),
+      final screen = tester.widget<QuizSetupScreen>(
+        find.byType(QuizSetupScreen),
       );
       expect(screen.args.quizType, QuizType.normal);
     });

@@ -11,7 +11,7 @@ import 'package:level_up_app/features/catalog/screens/subjects_screen.dart';
 import 'package:level_up_app/features/catalog/screens/units_screen.dart';
 import 'package:level_up_app/features/catalog/widgets/catalog_states.dart';
 import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
-import 'package:level_up_app/features/quiz/screens/quiz_setup_placeholder.dart';
+import 'package:level_up_app/features/quiz/screens/quiz_setup_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'catalog_fixtures.dart';
@@ -105,12 +105,14 @@ void main() {
     await tester.tap(find.text('Cell Division'));
     await tester.pumpAndSettle();
 
-    final screen = tester.widget<QuizSetupPlaceholderScreen>(
-      find.byType(QuizSetupPlaceholderScreen),
+    final screen = tester.widget<QuizSetupScreen>(
+      find.byType(QuizSetupScreen),
     );
     expect(screen.args.lessonId, 'lesson-2');
     expect(screen.args.scopeName, 'Cell Division');
-    expect(find.text('Quiz setup is coming soon'), findsOneWidget);
+    // The real setup screen titles itself with the scope it was handed — the
+    // hand-off is visible end to end, not just in the args.
+    expect(find.text('Select Quiz Size'), findsOneWidget);
   });
 
   testWidgets('questionCounter never disables or hides a lesson row',
@@ -132,7 +134,7 @@ void main() {
     // Open the FINISHED one — a retake must be reachable.
     await tester.tap(find.text('Cell Division'));
     await tester.pumpAndSettle();
-    expect(find.byType(QuizSetupPlaceholderScreen), findsOneWidget);
+    expect(find.byType(QuizSetupScreen), findsOneWidget);
   });
 
   testWidgets('an empty level shows the empty state, not an error',

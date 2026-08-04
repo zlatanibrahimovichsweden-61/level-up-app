@@ -17,7 +17,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 1.0.0-m1
+  version: 1.1.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -164,9 +164,10 @@ paths:
       description: >
         Single endpoint per contract session 2026-07-19; `track` discriminates the body.
         University is Egypt-only BY SHAPE (no country field — adr-010). School: `country` drives
-        conditionality — Egypt requires governorateId+cityId+schoolId (coded list); other countries
-        require cityId, school is optional free text, never blocked. Must be called from the same
-        device that verified the OTP.
+        `governorateId` conditionality (EG only). City is `cityId` OR `cityName`, at least one
+        required (adr-028 — registration is never blocked by a missing city row); `schoolId` is
+        optional for every school-track student, Egypt included, and free-text `schoolName` does
+        not exist on this contract. Must be called from the same device that verified the OTP.
       security: []
       requestBody:
         required: true
@@ -415,6 +416,9 @@ paths:
                     nameEn: { type: string, example: "Egypt" }
                     requiresGovernorate: { type: boolean, description: true only for EG — drives the registration UI branch. }
                   required: [code, nameAr, nameEn, requiresGovernorate]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/countries/{countryCode}/governorates:
     get:
       tags: [reference]
@@ -432,6 +436,15 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/NamedRef' }
+        '400':
+          description: "`validation_failed` (malformed countryCode — not ISO 3166-1 alpha-2 shape). A well-formed but unrecognised code is `404`, not `400`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`country_not_found` (unrecognised countryCode — adr-028 §3)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/cities:
     get:
       tags: [reference]
@@ -452,7 +465,13 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/NamedRef' }
         '400':
-          description: "`validation_failed` (EG without governorateId)"
+          description: "`validation_failed` — EG without governorateId (field map names `governorateId`), a malformed countryCode, or a governorateId that is not a UUID"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`country_not_found` (unrecognised countryCode — adr-028 §3)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/schools:
     get:
@@ -596,7 +615,7 @@ paths:
               description: All fields optional; absent = unchanged.
               properties:
                 name: { type: string, maxLength: 100 }
-                email: { type: [string, "null"], format: email, description: null clears it (email is optional, never a login channel — adr-019). }
+                email: { type: [string, "null"], format: email, description: "null clears it (email is optional, never a login channel — adr-019)." }
                 avatarId: { $ref: '#/components/schemas/Uuid' }
                 leaderboardVisible: { type: boolean }
                 scoreHidden: { type: boolean }
@@ -1198,7 +1217,7 @@ components:
     TokenPair:
       type: object
       properties:
-        accessToken: { type: string, description: JWT, ~15 min. }
+        accessToken: { type: string, description: "JWT, ~15 min." }
         accessExpiresInSeconds: { type: integer, example: 900 }
         refreshToken: { type: string, description: Rotates on every refresh; TTL 60 days. }
         refreshExpiresInSeconds: { type: integer, example: 5184000 }
@@ -1228,10 +1247,21 @@ components:
     SchoolRegistration:
       type: object
       description: >
-        Geography conditionality (adr-010): country EG → governorateId, cityId, schoolId ALL
-        required (schoolName forbidden). Other countries → cityId required, schoolName optional
-        free text (schoolId forbidden), governorateId forbidden. Violations → validation_failed
-        with a field map.
+        City (adr-028 §1 — supersedes adr-010's rejection of free-text city): `cityId` (coded,
+        from `/reference/cities`, preferred) OR `cityName` (free text, max 100 — the "my city
+        isn't listed" fallback). At least one is required; supplying both → `validation_failed`.
+        Registration is never blocked by a missing city row.
+
+
+        School (adr-028 §2 — supersedes adr-010's Egypt-required schoolId): `schoolId` is
+        OPTIONAL for every school-track student, Egypt included — pick from the coded list
+        (`/reference/schools`) if the school is there, omit it if not. Free-text `schoolName`
+        does not exist on this contract; unverifiable strings buy no feature.
+
+
+        `governorateId` conditionality is unchanged from adr-010: required when `countryCode` is
+        EG (`requiresGovernorate: true` on `/reference/countries`), forbidden otherwise.
+        Violations → `validation_failed` with a field map.
       properties:
         track: { type: string, enum: [school] }
         registrationToken: { type: string }
@@ -1239,18 +1269,25 @@ components:
         dateOfBirth: { type: string, format: date }
         countryCode: { type: string, example: "EG" }
         governorateId: { $ref: '#/components/schemas/Uuid' }
-        cityId: { $ref: '#/components/schemas/Uuid' }
-        schoolId: { $ref: '#/components/schemas/Uuid' }
-        schoolName: { type: string, maxLength: 200, description: Non-Egypt only; optional; never blocks registration. }
+        cityId: { $ref: '#/components/schemas/Uuid', description: Coded city (preferred). At least one of cityId/cityName required; both → validation_failed. }
+        cityName: { type: string, maxLength: 100, description: Free-text city fallback (adr-028 §1) — used when the student's city isn't in the coded list. At least one of cityId/cityName required; both → validation_failed. }
+        schoolId: { $ref: '#/components/schemas/Uuid', description: Optional for every school student (adr-028 §2 — no longer Egypt-required). Omit if the school isn't in the coded list — including when the student is outside Egypt. }
         stage: { $ref: '#/components/schemas/Stage' }
         educationSystem: { $ref: '#/components/schemas/EducationSystem' }
         parentPhone: { $ref: '#/components/schemas/Phone' }
-        email: { type: string, format: email, description: Optional — receipts/notifications only, never login (adr-019). }
+        email: { type: string, format: email, description: "Optional — receipts/notifications only, never login (adr-019)." }
         avatarId: { $ref: '#/components/schemas/Uuid', description: One of the 20 defaults; omit for server default. }
-      required: [track, registrationToken, name, dateOfBirth, countryCode, cityId, stage, educationSystem, parentPhone]
+      required: [track, registrationToken, name, dateOfBirth, countryCode, stage, educationSystem, parentPhone]
+      anyOf:
+        - required: [cityId]
+        - required: [cityName]
     UniversityRegistration:
       type: object
-      description: Egypt-only by shape (no country field — adr-010). Years/faculties are data-driven ids from /reference/universities.
+      description: >
+        Egypt-only by shape (no country field — adr-010). Years/faculties are data-driven ids
+        from /reference/universities. City (adr-028 §1 — same rule as SchoolRegistration):
+        `cityId` (coded, preferred) OR `cityName` (free text, max 100 — "my city isn't listed"
+        fallback). At least one is required; supplying both → `validation_failed`.
       properties:
         track: { type: string, enum: [university] }
         registrationToken: { type: string }
@@ -1260,11 +1297,15 @@ components:
         facultyId: { $ref: '#/components/schemas/Uuid' }
         studyYearId: { $ref: '#/components/schemas/Uuid', description: Must be an `active` year (soon → validation_failed). }
         governorateId: { $ref: '#/components/schemas/Uuid' }
-        cityId: { $ref: '#/components/schemas/Uuid' }
+        cityId: { $ref: '#/components/schemas/Uuid', description: Coded city (preferred). At least one of cityId/cityName required; both → validation_failed. }
+        cityName: { type: string, maxLength: 100, description: Free-text city fallback (adr-028 §1) — used when the student's city isn't in the coded list. At least one of cityId/cityName required; both → validation_failed. }
         parentPhone: { $ref: '#/components/schemas/Phone' }
         email: { type: string, format: email }
         avatarId: { $ref: '#/components/schemas/Uuid' }
-      required: [track, registrationToken, name, dateOfBirth, universityId, facultyId, studyYearId, governorateId, cityId, parentPhone]
+      required: [track, registrationToken, name, dateOfBirth, universityId, facultyId, studyYearId, governorateId, parentPhone]
+      anyOf:
+        - required: [cityId]
+        - required: [cityName]
     NamedRef:
       type: object
       description: Generic bilingual reference row (governorate, city, school).
@@ -1294,14 +1335,23 @@ components:
           properties:
             countryCode: { type: string, example: "EG" }
             governorate: { oneOf: [{ $ref: '#/components/schemas/NamedRef' }, { type: "null" }] }
-            city: { $ref: '#/components/schemas/NamedRef' }
+            city:
+              description: >
+                Union (adr-028 §1): a `NamedRef` (has `id`) when the student picked a coded
+                city, or `{ name }` free text when they used the "my city isn't listed"
+                fallback. Always present — every student has a city, one way or the other.
+              oneOf:
+                - $ref: '#/components/schemas/NamedRef'
+                - type: object
+                  properties:
+                    name: { type: string, maxLength: 100 }
+                  required: [name]
           required: [countryCode, city]
         school:
           type: [object, "null"]
           description: School-track block (null for university students).
           properties:
-            school: { oneOf: [{ $ref: '#/components/schemas/NamedRef' }, { type: "null" }] }
-            schoolName: { type: [string, "null"], description: Free-text school (non-Egypt). }
+            school: { oneOf: [{ $ref: '#/components/schemas/NamedRef' }, { type: "null" }], description: Coded school (adr-028 §2 — optional; null if the student didn't pick one — Egypt included). }
             stage: { $ref: '#/components/schemas/Stage' }
             educationSystem: { $ref: '#/components/schemas/EducationSystem' }
           required: [stage, educationSystem]
@@ -1322,7 +1372,7 @@ components:
             total: { type: integer }
           required: [school, university, total]
         level: { type: integer, description: "1–12, thresholds every 500 points; static, not configurable." }
-        badges: { type: integer, description: Post-level-12 badges (every 5,000 points; first at 11,000). }
+        badges: { type: integer, description: "Post-level-12 badges (every 5,000 points; first at 11,000)." }
         privacy:
           type: object
           description: adr-023 toggles; defaults preserve visible behavior.
@@ -1410,7 +1460,7 @@ components:
         id: { $ref: '#/components/schemas/Uuid' }
         order: { type: integer }
         text: { type: string, description: Plain text; only <u>…</u> markup allowed. }
-        imageUrl: { type: [string, "null"], format: uri, description: Full image (DO Spaces CDN, WebP). }
+        imageUrl: { type: [string, "null"], format: uri, description: "Full image (DO Spaces CDN, WebP)." }
         thumbnailUrl: { type: [string, "null"], format: uri }
         options:
           type: array
