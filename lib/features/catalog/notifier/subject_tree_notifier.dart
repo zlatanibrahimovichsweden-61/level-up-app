@@ -1,0 +1,51 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/subject_tree.dart';
+import '../repository/catalog_repository.dart';
+import 'subjects_notifier.dart' show noCatalogRetry;
+
+/// `GET /catalog/subjects/{subjectId}/tree`, cached per subject.
+///
+/// **This is the whole architecture of the drill-down.** The endpoint returns
+/// the subject's entire tree in ONE payload, so:
+/// - every level of the stack watches this one provider;
+/// - opening a subject fetches once, and every level below it reads the cached
+///   object — no second request, no spinner between levels;
+/// - the family is keyed by `subjectId` and is NOT autoDispose, so walking back
+///   up and into another subject keeps the first tree warm for the session.
+///
+/// Re-fetching per level would be the obvious-looking mistake: three extra
+/// round trips for data the client already has.
+///
+/// The state is the sealed [SubjectTree], not one track's shape: the same
+/// provider serves a school student (units → chapters → lessons) and a
+/// university one (a flat lecture list), and the screens switch on the parsed
+/// discriminator. Selecting a quiz type on the Lectures screen is local UI
+/// state — it must never invalidate this provider.
+class SubjectTreeNotifier extends AsyncNotifier<SubjectTree> {
+  SubjectTreeNotifier(this.subjectId);
+
+  final String subjectId;
+
+  @override
+  Future<SubjectTree> build() =>
+      ref.watch(catalogRepositoryProvider).getSubjectTree(subjectId);
+
+  /// User-tapped retry only — see [subjectTreeProvider].
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(catalogRepositoryProvider).getSubjectTree(subjectId),
+    );
+  }
+}
+
+/// `retry: noCatalogRetry` for the same reason as `subjectsProvider`: Riverpod 3
+/// would otherwise auto-retry a failed build and hold the state in
+/// `AsyncLoading`, so the screen would show an endless skeleton instead of the
+/// error/offline view.
+final subjectTreeProvider =
+    AsyncNotifierProvider.family<SubjectTreeNotifier, SubjectTree, String>(
+  SubjectTreeNotifier.new,
+  retry: noCatalogRetry,
+);

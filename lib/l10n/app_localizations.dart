@@ -230,16 +230,52 @@ abstract class AppLocalizations {
   /// **'Resend in {seconds}s'**
   String resendIn(int seconds);
 
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Level Up'**
+  String get onboardingTitle;
+
+  /// Figma 459:43876 — the ACCENTED span of 'Your Learning Journey'. Rendered in ext.accentSoft. Split from onboardingTaglineRest so the translator decides which word is accented AND in what order; the widget renders accent-then-rest, so a translation that needs the accent last must put it last by rewording. Do not concatenate these at the call site in a fixed order.
+  ///
+  /// In en, this message translates to:
+  /// **'Your'**
+  String get onboardingTaglineAccent;
+
+  /// Figma 459:43876 — the plain span, in ext.textPrimary.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning Journey'**
+  String get onboardingTaglineRest;
+
+  /// Figma 459:43887. The line break is deliberate — keep the \n. NOTE: the design misspells this as 'Achive' in BOTH frames (DESIGN_ISSUES #26); we ship the correct spelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Study. Compete. Achieve.\nAll in one place.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @getStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get getStarted;
+
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get logIn;
+
   /// No description provided for @otpSuccessTitle.
   ///
   /// In en, this message translates to:
   /// **'Successful'**
   String get otpSuccessTitle;
 
-  /// No description provided for @otpSuccessSubtitle.
+  /// Figma 82:1578 — the full sentence. The shipped copy was truncated to 'You have been authenticated' when the screen was built from a screenshot.
   ///
   /// In en, this message translates to:
-  /// **'You have been authenticated'**
+  /// **'Congratulations! You have been successfully authenticated'**
   String get otpSuccessSubtitle;
 
   /// No description provided for @continueLabel.
@@ -607,6 +643,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your registration session expired. Please start again.'**
   String get registrationTokenInvalid;
+
+  /// No description provided for @homeWelcome.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back,'**
+  String get homeWelcome;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @currentLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'current level'**
+  String get currentLevel;
+
+  /// No description provided for @levelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LEVEL {level}'**
+  String levelLabel(int level);
+
+  /// No description provided for @pointsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pts Balance'**
+  String get pointsBalance;
+
+  /// No description provided for @levelProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String levelProgress(int level);
+
+  /// Points earned toward the next level. The target comes from a CLIENT constant — see DESIGN_ISSUES #13.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} / {target}'**
+  String levelProgressPoints(int points, int target);
+
+  /// A points figure on its own, locale-grouped (2,450 / ٢٬٤٥٠).
+  ///
+  /// In en, this message translates to:
+  /// **'{points}'**
+  String pointsValue(int points);
+
+  /// No description provided for @dailyTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Tasks'**
+  String get dailyTasks;
+
+  /// University Home only (Figma 125:2373) — quiz-type and flashcard shortcuts. Stubbed: none of them has an endpoint in M1.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning Tools'**
+  String get learningTools;
+
+  /// No description provided for @continueLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Learning'**
+  String get continueLearning;
+
+  /// No description provided for @topStudent.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Student'**
+  String get topStudent;
+
+  /// No description provided for @seeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See All'**
+  String get seeAll;
+
+  /// No description provided for @comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// No description provided for @learnTodayLeadTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn Today, Lead Tomorrow'**
+  String get learnTodayLeadTomorrow;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// No description provided for @navLeaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get navLeaderboard;
+
+  /// No description provided for @navLearn.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn'**
+  String get navLearn;
+
+  /// No description provided for @navMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get navMessage;
+
+  /// No description provided for @navAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get navAccount;
+
+  /// No description provided for @subjectsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get subjectsTitle;
+
+  /// No description provided for @searchSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Subjects'**
+  String get searchSubjects;
+
+  /// No description provided for @mistakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistakes'**
+  String get mistakes;
+
+  /// The contract's questionCounter. DISPLAY ONLY — it never gates or hides content.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} / {total} questions'**
+  String questionsCount(int answered, int total);
+
+  /// No description provided for @unitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get unitsTitle;
+
+  /// No description provided for @chaptersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chapters'**
+  String get chaptersTitle;
+
+  /// No description provided for @lessonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lessons'**
+  String get lessonsTitle;
+
+  /// Drill-down title carrying the parent's name, per Figma 337:5894 ("Biology Units"). The bare unitsTitle is the fallback before the name is known.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} Units'**
+  String unitsTitleFor(String subject);
+
+  /// Figma 337:6047 draws the singular "Chapter"; built plural — this is a list. Confirm with the designer.
+  ///
+  /// In en, this message translates to:
+  /// **'{unit} Chapters'**
+  String chaptersTitleFor(String unit);
+
+  /// No description provided for @lessonsTitleFor.
+  ///
+  /// In en, this message translates to:
+  /// **'{chapter} Lessons'**
+  String lessonsTitleFor(String chapter);
+
+  /// No description provided for @lecturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lectures'**
+  String get lecturesTitle;
+
+  /// University drill-down title, per Figma 180:5208 ("Biology Lectures"). The subject name is NOT in the tree payload — it comes from the cached subjects list, and the bare lecturesTitle is the cold-deep-link fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} Lectures'**
+  String lecturesTitleFor(String subject);
+
+  /// No description provided for @quizTypeNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get quizTypeNormal;
+
+  /// No description provided for @quizTypeMidterm.
+  ///
+  /// In en, this message translates to:
+  /// **'Midterm'**
+  String get quizTypeMidterm;
+
+  /// No description provided for @quizTypeFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Final'**
+  String get quizTypeFinal;
+
+  /// Contract value practicalRevision. The frame labels it "Practice", but the wire word is "practical" (lab/practical exam) — confirm with the designer, see DESIGN_ISSUES #18.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get quizTypePractice;
+
+  /// No description provided for @noSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects yet'**
+  String get noSubjects;
+
+  /// No description provided for @noSubjectsMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects match your search'**
+  String get noSubjectsMatch;
+
+  /// No description provided for @noLectures.
+  ///
+  /// In en, this message translates to:
+  /// **'No lectures yet'**
+  String get noLectures;
+
+  /// No description provided for @nothingHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get nothingHere;
+
+  /// 403 insufficient_scope — the subject is outside the student's server-derived scope.
+  ///
+  /// In en, this message translates to:
+  /// **'This subject isn\'t part of your course.'**
+  String get subjectUnavailable;
+
+  /// No description provided for @quizSetupComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz setup is coming soon'**
+  String get quizSetupComingSoon;
 }
 
 class _AppLocalizationsDelegate

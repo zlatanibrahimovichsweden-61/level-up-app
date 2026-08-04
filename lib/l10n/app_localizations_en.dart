@@ -78,10 +78,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get onboardingTitle => 'Level Up';
+
+  @override
+  String get onboardingTaglineAccent => 'Your';
+
+  @override
+  String get onboardingTaglineRest => 'Learning Journey';
+
+  @override
+  String get onboardingSubtitle =>
+      'Study. Compete. Achieve.\nAll in one place.';
+
+  @override
+  String get getStarted => 'Get Started';
+
+  @override
+  String get logIn => 'Log In';
+
+  @override
   String get otpSuccessTitle => 'Successful';
 
   @override
-  String get otpSuccessSubtitle => 'You have been authenticated';
+  String get otpSuccessSubtitle =>
+      'Congratulations! You have been successfully authenticated';
 
   @override
   String get continueLabel => 'Continue';
@@ -273,4 +293,166 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get registrationTokenInvalid =>
       'Your registration session expired. Please start again.';
+
+  @override
+  String get homeWelcome => 'Welcome back,';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get currentLevel => 'current level';
+
+  @override
+  String levelLabel(int level) {
+    return 'LEVEL $level';
+  }
+
+  @override
+  String get pointsBalance => 'Pts Balance';
+
+  @override
+  String levelProgress(int level) {
+    return 'Level $level';
+  }
+
+  @override
+  String levelProgressPoints(int points, int target) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+    final intl.NumberFormat targetNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String targetString = targetNumberFormat.format(target);
+
+    return '$pointsString / $targetString';
+  }
+
+  @override
+  String pointsValue(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString';
+  }
+
+  @override
+  String get dailyTasks => 'Daily Tasks';
+
+  @override
+  String get learningTools => 'Learning Tools';
+
+  @override
+  String get continueLearning => 'Continue Learning';
+
+  @override
+  String get topStudent => 'Top Student';
+
+  @override
+  String get seeAll => 'See All';
+
+  @override
+  String get comingSoon => 'Coming soon';
+
+  @override
+  String get learnTodayLeadTomorrow => 'Learn Today, Lead Tomorrow';
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navLeaderboard => 'Leaderboard';
+
+  @override
+  String get navLearn => 'Learn';
+
+  @override
+  String get navMessage => 'Message';
+
+  @override
+  String get navAccount => 'Account';
+
+  @override
+  String get subjectsTitle => 'Subjects';
+
+  @override
+  String get searchSubjects => 'Search Subjects';
+
+  @override
+  String get mistakes => 'Mistakes';
+
+  @override
+  String questionsCount(int answered, int total) {
+    final intl.NumberFormat answeredNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String answeredString = answeredNumberFormat.format(answered);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$answeredString / $totalString questions';
+  }
+
+  @override
+  String get unitsTitle => 'Units';
+
+  @override
+  String get chaptersTitle => 'Chapters';
+
+  @override
+  String get lessonsTitle => 'Lessons';
+
+  @override
+  String unitsTitleFor(String subject) {
+    return '$subject Units';
+  }
+
+  @override
+  String chaptersTitleFor(String unit) {
+    return '$unit Chapters';
+  }
+
+  @override
+  String lessonsTitleFor(String chapter) {
+    return '$chapter Lessons';
+  }
+
+  @override
+  String get lecturesTitle => 'Lectures';
+
+  @override
+  String lecturesTitleFor(String subject) {
+    return '$subject Lectures';
+  }
+
+  @override
+  String get quizTypeNormal => 'Normal';
+
+  @override
+  String get quizTypeMidterm => 'Midterm';
+
+  @override
+  String get quizTypeFinal => 'Final';
+
+  @override
+  String get quizTypePractice => 'Practice';
+
+  @override
+  String get noSubjects => 'No subjects yet';
+
+  @override
+  String get noSubjectsMatch => 'No subjects match your search';
+
+  @override
+  String get noLectures => 'No lectures yet';
+
+  @override
+  String get nothingHere => 'Nothing here yet';
+
+  @override
+  String get subjectUnavailable => 'This subject isn\'t part of your course.';
+
+  @override
+  String get quizSetupComingSoon => 'Quiz setup is coming soon';
 }

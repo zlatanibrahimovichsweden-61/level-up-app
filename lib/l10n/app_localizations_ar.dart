@@ -78,10 +78,29 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get onboardingTitle => 'ليفل أب';
+
+  @override
+  String get onboardingTaglineAccent => 'رحلتك';
+
+  @override
+  String get onboardingTaglineRest => 'التعليمية';
+
+  @override
+  String get onboardingSubtitle =>
+      'ذاكر. نافس. حقّق أهدافك.\nكل ذلك في مكان واحد.';
+
+  @override
+  String get getStarted => 'ابدأ الآن';
+
+  @override
+  String get logIn => 'تسجيل الدخول';
+
+  @override
   String get otpSuccessTitle => 'تم بنجاح';
 
   @override
-  String get otpSuccessSubtitle => 'تم تسجيل دخولك بنجاح';
+  String get otpSuccessSubtitle => 'تهانينا! تم تسجيل دخولك بنجاح';
 
   @override
   String get continueLabel => 'متابعة';
@@ -274,4 +293,166 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get registrationTokenInvalid =>
       'انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.';
+
+  @override
+  String get homeWelcome => 'أهلًا بعودتك،';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get currentLevel => 'المستوى الحالي';
+
+  @override
+  String levelLabel(int level) {
+    return 'المستوى $level';
+  }
+
+  @override
+  String get pointsBalance => 'رصيد النقاط';
+
+  @override
+  String levelProgress(int level) {
+    return 'المستوى $level';
+  }
+
+  @override
+  String levelProgressPoints(int points, int target) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+    final intl.NumberFormat targetNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String targetString = targetNumberFormat.format(target);
+
+    return '$pointsString / $targetString';
+  }
+
+  @override
+  String pointsValue(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString';
+  }
+
+  @override
+  String get dailyTasks => 'المهام اليومية';
+
+  @override
+  String get learningTools => 'أدوات التعلّم';
+
+  @override
+  String get continueLearning => 'أكمل التعلم';
+
+  @override
+  String get topStudent => 'الأوائل';
+
+  @override
+  String get seeAll => 'عرض الكل';
+
+  @override
+  String get comingSoon => 'قريبًا';
+
+  @override
+  String get learnTodayLeadTomorrow => 'تعلّم اليوم، تصدّر غدًا';
+
+  @override
+  String get navHome => 'الرئيسية';
+
+  @override
+  String get navLeaderboard => 'المتصدرون';
+
+  @override
+  String get navLearn => 'تعلّم';
+
+  @override
+  String get navMessage => 'الرسائل';
+
+  @override
+  String get navAccount => 'حسابي';
+
+  @override
+  String get subjectsTitle => 'المواد';
+
+  @override
+  String get searchSubjects => 'ابحث عن مادة';
+
+  @override
+  String get mistakes => 'أخطائي';
+
+  @override
+  String questionsCount(int answered, int total) {
+    final intl.NumberFormat answeredNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String answeredString = answeredNumberFormat.format(answered);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$answeredString / $totalString سؤال';
+  }
+
+  @override
+  String get unitsTitle => 'الوحدات';
+
+  @override
+  String get chaptersTitle => 'الفصول';
+
+  @override
+  String get lessonsTitle => 'الدروس';
+
+  @override
+  String unitsTitleFor(String subject) {
+    return 'وحدات $subject';
+  }
+
+  @override
+  String chaptersTitleFor(String unit) {
+    return 'فصول $unit';
+  }
+
+  @override
+  String lessonsTitleFor(String chapter) {
+    return 'دروس $chapter';
+  }
+
+  @override
+  String get lecturesTitle => 'المحاضرات';
+
+  @override
+  String lecturesTitleFor(String subject) {
+    return 'محاضرات $subject';
+  }
+
+  @override
+  String get quizTypeNormal => 'عادي';
+
+  @override
+  String get quizTypeMidterm => 'منتصف الترم';
+
+  @override
+  String get quizTypeFinal => 'نهائي';
+
+  @override
+  String get quizTypePractice => 'عملي';
+
+  @override
+  String get noSubjects => 'لا توجد مواد بعد';
+
+  @override
+  String get noSubjectsMatch => 'لا توجد مواد مطابقة لبحثك';
+
+  @override
+  String get noLectures => 'لا توجد محاضرات بعد';
+
+  @override
+  String get nothingHere => 'لا يوجد شيء هنا بعد';
+
+  @override
+  String get subjectUnavailable => 'هذه المادة ليست ضمن مقررك.';
+
+  @override
+  String get quizSetupComingSoon => 'إعداد الاختبار قريبًا';
 }

@@ -20,13 +20,15 @@ import 'registration_expired_view.dart';
 /// accumulates them into [RegistrationController] before advancing to the track
 /// picker. No network call on this screen.
 ///
-/// Reachable only with a valid `registrationToken` (seeded from [args]); if the
-/// draft is missing or the token has expired, the expiry guard renders instead.
+/// Reachable only with a valid `registrationToken`; if the draft is missing or
+/// the token has expired, the expiry guard renders instead.
 class SignupIdentityScreen extends ConsumerStatefulWidget {
   const SignupIdentityScreen({super.key, this.args});
 
-  /// Carried from OTP via router `extra`. Null on re-entry (e.g. back from the
-  /// track screen), when the already-seeded draft is used instead.
+  /// Carried from OTP via router `extra`, and null on re-entry (e.g. back from
+  /// the track screen). Kept as the route payload only — the draft it describes
+  /// is already seeded by `OtpScreen` before it navigates here, so this screen
+  /// reads [registrationControllerProvider] and never seeds from it.
   final RegistrationArgs? args;
 
   @override
@@ -45,12 +47,9 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
   @override
   void initState() {
     super.initState();
-    // Seed the draft synchronously (before first build) when arriving from OTP.
-    // Idempotent: re-entry with the same token keeps the accumulated fields.
-    final args = widget.args;
-    if (args != null) {
-      ref.read(registrationControllerProvider.notifier).start(args);
-    }
+    // READ ONLY. The draft is seeded at the OTP step, before navigation; this
+    // screen must never mutate a provider here — initState runs inside element
+    // mount (the build phase), which Riverpod asserts on (BUG-001).
     // Pre-fill from the draft so back-navigation preserves what was typed.
     final draft = ref.read(registrationControllerProvider);
     _nameController.text = draft?.name ?? '';

@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+.claude/settings.local.json
+
+# Release signing artefacts (key.properties, *.jks, *.keystore) are ignored by
+# android/.gitignore — do not duplicate the patterns here. See docs/RELEASE_SIGNING.md.

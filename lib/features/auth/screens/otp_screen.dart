@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pinput/pinput.dart';
 
 import '../../../core/providers/core_providers.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
+import '../../registration/notifier/registration_controller.dart';
 import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/auth_outcome.dart';
@@ -58,27 +62,47 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     ref.listen(otpProvider(widget.args), (prev, next) {
       final outcome = next.outcome;
       if (outcome is RegistrationRequiredOutcome) {
-        // Seed the registration wizard with the token, its TTL, and the proven
+        // The registration wizard's seed: the token, its TTL, and the proven
         // phone (shown read-only on Sign Up_1; never re-submitted).
-        context.go(
-          '/register',
-          extra: RegistrationArgs(
-            registrationToken: outcome.registrationToken,
-            expiresInSeconds: outcome.expiresInSeconds,
-            phone: widget.args.phone,
-          ),
+        final args = RegistrationArgs(
+          registrationToken: outcome.registrationToken,
+          expiresInSeconds: outcome.expiresInSeconds,
+          phone: widget.args.phone,
         );
+        // Seed HERE, not in SignupIdentityScreen.initState. A ref.listen
+        // callback runs outside the build phase, so mutating a provider is
+        // legal; initState is part of element mount, and Riverpod asserts on
+        // it — which red-screened the whole wizard (BUG-001).
+        ref.read(registrationControllerProvider.notifier).start(args);
+        context.go('/register', extra: args);
       }
     });
 
+    final succeeded = state.outcome is AuthenticatedOutcome;
+
     return Scaffold(
-      appBar: AppBar(),
+      // No AppBar on the success frame (155:786) — and no back button is right:
+      // once tokens are stored, "back" to the OTP input is meaningless.
+      appBar: succeeded ? null : AppBar(),
       body: SafeArea(
         child: Column(
           children: [
             if (offline) const _OfflineBanner(),
+            // The frame carries the language pill (155:809); the input view
+            // doesn't have one because the AppBar occupies that row.
+            if (succeeded)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 0),
+                child: Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: LanguagePill(
+                    label: l10n.switchLanguage,
+                    onTap: () => ref.read(localeProvider.notifier).toggle(),
+                  ),
+                ),
+              ),
             Expanded(
-              child: state.outcome is AuthenticatedOutcome
+              child: succeeded
                   ? _SuccessView(onContinue: () => context.go('/home'))
                   : _InputView(
                       l10n: l10n,
@@ -343,35 +367,40 @@ class _SuccessView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
 
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
+      // Figma puts this block at x17.5/w363 of 402; built at 20, the app-wide
+      // horizontal padding.
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
       child: Column(
+        // The frame top-anchors the block at y245 of 878 (28%), which reads as
+        // optically centred now that the AppBar is gone.
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // TODO(design-asset): real OTP success badge (green scalloped check, Figma node
-          // 155:786) — blocked by export-disabled + View-only seat. See docs/DESIGN_ISSUES.md #1.
-          Icon(Icons.check_circle, size: 96, color: cs.primary),
-          const SizedBox(height: 24),
+          const _SuccessBadge(),
+          const SizedBox(height: 18),
           Text(
             l10n.otpSuccessTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: ext.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Text(
             l10n.otpSuccessSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: ext.textSecondary),
+            style: TextStyle(
+              fontSize: 20,
+              height: 1.3,
+              color: ext.bodyMuted,
+            ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 60),
           FilledButton(
             onPressed: onContinue,
             child: Text(
@@ -380,6 +409,42 @@ class _SuccessView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The scalloped emerald check · Figma `82:1598`.
+///
+/// Carries its own emerald — `#22C55E`, the value `AppColors.successBadge`
+/// records — and is deliberately NOT tinted at the call site.
+///
+/// The brief asks for the badge to be tinted with the token instead of
+/// `colorScheme.primary`, and the *intent* (a success signal must not follow the
+/// green→purple accent flip, which is why it used to render purple in dark) is
+/// exactly right. But a `ColorFilter` is single-channel: the badge is two
+/// colours — an emerald scallop and a WHITE checkmark — so any `srcIn` tint
+/// flattens the check into the fill and leaves a green blob. The asset already
+/// holds the correct colours, so it renders unfiltered, and
+/// `otp_success_badge_test.dart` asserts the SVG's fill still equals the token
+/// in both palettes — which catches a re-export drifting away from it.
+///
+/// **Sized 152×148, not the design's 144×140, and that is correct.** Figma's
+/// export pads the canvas by the drop shadow's bleed (the frame's own
+/// `inset[-1.79% -4.17% -3.93% -1.39%]` = 8dp on each axis), so the scalloped
+/// shape lands at exactly 144×140 inside a 152×148 box. Sizing the box to
+/// 144×140 would shrink the badge itself to ~136×132.
+class _SuccessBadge extends StatelessWidget {
+  const _SuccessBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SvgPicture.asset(
+        'assets/images/success_badge.svg',
+        width: 152,
+        height: 148,
+        semanticsLabel: AppLocalizations.of(context).otpSuccessTitle,
       ),
     );
   }

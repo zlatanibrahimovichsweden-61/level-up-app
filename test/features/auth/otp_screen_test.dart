@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/language_pill.dart';
 import 'package:level_up_app/features/auth/models/auth_result.dart';
 import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/auth/models/otp_args.dart';
@@ -130,5 +132,24 @@ void main() {
 
     expect(find.text('Successful'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Continue'), findsOneWidget);
+
+    // Figma 82:1578 — the FULL sentence. The shipped copy was truncated to
+    // "You have been authenticated" when this screen was built from a
+    // screenshot, before the frame could be pulled.
+    expect(
+      find.text('Congratulations! You have been successfully authenticated'),
+      findsOneWidget,
+    );
+
+    // The real badge (82:1598), not the Icons.check_circle placeholder that
+    // used to be tinted with colorScheme.primary — i.e. purple in dark.
+    expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsNothing);
+
+    // No AppBar in the success branch: "back" to the OTP input is meaningless
+    // once tokens are stored, and the frame (155:786) draws none.
+    expect(find.byType(AppBar), findsNothing);
+    // …but the frame's language pill (155:809) is present.
+    expect(find.byType(LanguagePill), findsOneWidget);
   });
 }

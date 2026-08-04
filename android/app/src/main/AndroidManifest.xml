@@ -1,8 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backup is disabled on purpose. This app holds minors' PII (date of birth,
+         school, governorate) and auth material. allowBackup=false stops Google
+         auto-backup to the user's Drive; on Android 12+ that flag does NOT cover
+         device-to-device transfer, which is why dataExtractionRules is also set.
+         fullBackupContent=false covers pre-12 devices. -->
     <application
         android:label="level_up_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
