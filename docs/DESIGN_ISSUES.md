@@ -400,6 +400,124 @@ filter so the two do not double up.
 
 ---
 
+## 29. 🟠 The result screen has two buckets; a quiz can end with three
+
+**Where:** result `159:1964` / `309:6375` — **Correct** and **Wrong**, side by side.
+
+**What:** the contract separates `answeredCount` from `totalQuestions` precisely because
+*"unanswered questions are recorded unanswered (not counted wrong)"*. A student who finishes a
+10-question quiz after 8 answers with 5 correct got **5 correct, 3 wrong and 2 skipped** — and the
+frame has nowhere to put the last two. Filling Wrong from `totalQuestions - score` would print 5 and
+call two questions they never reached mistakes.
+
+**Built as:** a third **Skipped** card, rendered only when `answeredCount < totalQuestions`, so a
+fully-answered quiz still matches the frame exactly.
+
+**Fix we need:** a three-bucket layout, or confirmation that Skipped folding into a footnote is
+preferred. The two-card row gets cramped at three on a small screen.
+
+---
+
+## 30. 🟡 The limit sheet says "Daily"; the cap is weekly, and its bar has no data
+
+**Where:** `199:2335` / `225:6634` / `225:7001`.
+
+**Two separate things:**
+1. The heading family says *"Daily Limit Reached"*. The contract says *"Free plan: 50 questions per
+   WEEK"* and the error code is `weekly_question_limit_reached`. We ship **weekly** copy.
+2. The sheet draws a **QUESTIONS 50/50** progress bar. Nothing in the contract exposes questions
+   used or the cap — the 403 arrives with no numbers at all. Same situation as the setup screen's
+   pool card (#31), so the bar is **not built**.
+
+**Also:** the CTA reads **"Upgrade To Premium"**. The glossary is explicit that `base_subscription`
+is never called "premium" (nor "plan", nor "pro"). Shipped as neutral **"Upgrade"** copy pending a
+wording decision.
+
+**Fix we need:** confirm weekly; drop the bar or tell us where its numbers come from; and an
+approved CTA string that is not "Premium".
+
+---
+
+## 31. 🟠 The setup screen's pool card and points chip have no data behind them
+
+**Where:** setup `135:1622` / `309:5771`.
+
+- **QUESTION POOL PROGRESS — "45 out of 100 questions, 55 remaining in pool"** (`146:2293`). No
+  contract field exposes a per-scope pool size or a student's consumption of it. `POST /quizzes`
+  only reveals the pool was too small *after the fact*, via `422 not_enough_questions`.
+- **"Questions: 10 · Points: +30"** (`146:2343`). The contract awards `0 or 1` per question, so a
+  10-question quiz can award at most 10. The chip also contradicts itself — it reads "10" while
+  the 30-question size is the one selected in the frame.
+
+**Built as:** both omitted.
+
+**Fix we need:** drop both, or specify the endpoints that would feed them.
+
+---
+
+## 32. 🟡 No level-up or badge celebration state exists, but the contract announces both
+
+**Where:** result `159:1964` / `309:6375`.
+
+**What:** `QuizSummary` carries `leveledUp: bool` and `newBadge: bool`, both **required**. The
+server goes to the trouble of telling the app that a student just crossed a level or earned a badge,
+and the frame has no state that says anything about it — the result screen is identical either way.
+
+Confirmed by inspecting the frame: there is no variant, no overlay, no alternate rewards card.
+
+**Built as:** both fields parsed, nothing rendered (owner decision — no celebration UI this ticket).
+
+**Fix we need:** a level-up state and a badge state for this screen, or confirmation that the Home
+level card is the only place either is acknowledged.
+
+---
+
+## 33. 🟡 The quiz option tile has no "selected but not yet confirmed" state
+
+**Where:** options container `308:5152`.
+
+**What:** the frame draws three presentations — idle (`308:5153`), the student's wrong choice
+(`308:5158`) and the revealed correct answer (`308:5166`). There is no design for the state between
+tapping an option and tapping Confirm, which is the one the student spends the most time looking at.
+
+**Built as:** Material's selection convention in existing tokens — the primary accent as a thicker
+border and a filled badge. No new colour was invented.
+
+**Fix we need:** a selected-state design, or confirmation that the accent treatment is right.
+
+---
+
+## 34. 🟡 Only LIGHT quiz frames exist
+
+**Where:** the whole Day 7 set — setup `135:1622`, quiz `159:845`/`159:1695`/`159:1852`, result
+`159:1964`, limit `199:2335`.
+
+**What:** the Day 7 brief says dark variants live in a sibling "Dark mode" group, but the document
+has exactly **one** page (`0:1`) and no dark quiz frame was found on it. This is the Home/Learn
+situation (#12-family) in reverse.
+
+**Built as:** light values Figma-verbatim; dark values reuse already-approved dark tokens
+(`catalogCardFill` for the option surface, `progressTrack` for the divider). The five **semantic**
+tokens — correct/wrong fills, borders and badge — are deliberately identical in both palettes, for
+the same reason as `successBadge`: a correctness signal must not flip colour with the theme.
+
+**Fix we need:** dark quiz frames, or confirmation that the reused tokens are right.
+
+---
+
+## 35. 🟡 The quiz frames draw the bottom nav bar; the quiz is not a tab
+
+**Where:** every Day 7 frame includes the 5-tab nav bar.
+
+**What:** `/quiz/setup`, `/quiz/:quizId` and the result route live **outside** the nav shell — a
+routing decision that predates Day 7 (taking a quiz is a full-screen task). Rendering the nav bar
+would let a student tab away mid-question into a session they cannot return to, since quiz state is
+in memory only.
+
+**Built as:** full-screen, no nav bar. Noted rather than treated as a bug.
+
+---
+
 ## Code markers to grep
 Run these to find every design-linked placeholder in the code:
 ```
@@ -408,3 +526,358 @@ grep -rn "TODO(design)"       lib/   # design gaps built to the contract
 grep -rn "TODO(contract)"     lib/   # fields with no backend (referral)
 grep -rn "TODO(legal)"        lib/   # legal URLs
 ```
+
+---
+
+## 36. ✅ RESOLVED — the five nav-bar glyphs were Flutter Material icons
+
+**Where:** nav bar `59:1264` (component set) — variants `59:1263` Home · `59:1260` leaderboard ·
+`59:1259` learn · `59:1262` message · `59:1261` Account. Code: `lib/features/shell/main_shell.dart:41-47`.
+
+**What:** the shell renders `Icons.home / leaderboard / menu_book / chat_bubble / person` — five
+placeholders standing in for the real glyphs while export was blocked
+(`TODO(design-asset)` at `main_shell.dart:67`). Every one of them is a different shape from the
+frame. The design mixes two icon sets: **MingCute filled** (`user_2_fill` for Account, and the
+same family for Home / Learn / Message) and **Material Symbols** (`material-symbols:social-leaderboard`
+— a rosette/medal, nothing like Flutter's bar-chart `Icons.leaderboard`).
+
+**Status: RESOLVED (assets landed).** Export is working again (see #1), so all five were pulled and
+committed as `currentColor` SVGs:
+
+| Tab | Asset | Figma node | viewBox |
+|---|---|---|---|
+| Home | `assets/icons/nav/home.svg` | `59:1007` › icon/footer/home | 0 0 18 18.75 |
+| Leaderboard | `assets/icons/nav/leaderboard.svg` | `59:1043` material-symbols:social-leaderboard | 0 0 24 24 |
+| Learn | `assets/icons/nav/learn.svg` | `59:1031` icon/footer/course/off | 0 0 16 20 |
+| Message | `assets/icons/nav/message.svg` | `59:1205` icon/footer/notification/off | 0 0 20 17.9495 |
+| Account | `assets/icons/nav/account.svg` | `59:1254` icon/footer/account/off | 0 0 24 24 |
+
+There is **no separate on/off glyph** — the design keeps one shape per tab and only changes its
+fill, so each SVG paints `currentColor` and is tinted at the call site with `flutter_svg`'s
+`colorFilter`. `pubspec.yaml` now lists `assets/icons/nav/` explicitly (Flutter asset dirs are not
+recursive).
+
+**Wired 2026-08-04 (Day 7b A1).** `main_shell.dart` now paints all five through `flutter_svg` with
+a `colorFilter`, fitted `BoxFit.contain` into the frame's 24×24 slot — **not** forced square, since
+Home is 18×18.75 and Message 20×17.9495 and both stretch if boxed. The `TODO(design-asset)` marker
+is deleted and `Icons.*` no longer appears in the file. Guarded by ten nav goldens
+(`test/goldens/nav_bar_*.png`).
+
+**Fix we need:** none from the designer. Confirm only that mixing MingCute + Material Symbols in
+one bar is intentional — **still open**.
+
+---
+
+## 37. ✅ RESOLVED — the bar was a flat rectangle; the design is a notched sheet
+
+**Where:** `Union` boolean op inside every nav variant (`59:1000` on the Home variant).
+Code: `lib/features/shell/main_shell.dart:51-57`.
+
+**What:** the frame's bar is a single Union of a **64×64 circle** and a **375×96 rounded rect**, so
+the Learn tab sits in a raised bump that is *part of the bar's outline*, with the bar's corners
+rounded and a drop shadow underneath. The build is a plain `Container` with a 0.5px top
+`BorderSide` — no notch, no corner radius, no shadow — and the elevated centre is faked with a
+separate circle that overlaps a square bar. That is the "curve over the Learn tab is different".
+
+Exact geometry (normalised to a 375×111 box, y=0 at the top of the bump):
+
+```
+M187 0 C198.426 0 208.452 5.99 214.113 15
+H345 C361.569 15 375 28.4315 375 45
+V111 H0 V45 C0 28.4315 13.4315 15 30 15
+H159.887 C165.548 5.99 175.574 0 187 0 Z
+```
+
+- bar top edge `y = 15`, bar height **96**, total **111**
+- corner radius **30**
+- notch: circle **r = 32** centred at **(187, 32)** — i.e. horizontal centre, rising **15px** above
+  the bar; tangents at `x = 159.887` and `x = 214.113`
+- fill `#FCFBF9` (= `ext.background` light) with a drop shadow (filter bounds x −15, y −13,
+  405×141 around the 375×111 box → roughly `blur 20, y-offset 4, black ~8%`)
+- the Learn circle is **r = 26** concentric with the notch → a **6px** ring of bar showing around it
+
+**Built 2026-08-04 (Day 7b A2).** `main_shell.dart` paints the shape with a `CustomPainter` and
+clips the ripple to it with a `CustomClipper<Path>`. The 0.5px top border is gone.
+
+`navBarPath()` rebuilds the outline **parametrically** rather than replaying the export scaled by
+`width / 375`: scaling x alone turns the notch into an ellipse on a tablet and breaks concentricity
+with the fixed r=26 centre button, so instead the radii and the bump stay fixed and only the
+straight runs grow. At 375pt the two agree to within Figma's own rounding of the centre (187 vs
+187.5). One derived value: the frame gives the notch geometry and the 96 bar height but no label
+baseline, so all five labels share one row anchored to the centre button.
+
+**Fix we need:** the shadow's exact colour/opacity/blur — **still open**. Built as ~8% black,
+blur 20, y+4 behind the `navShadow` token, which carries a `TODO(design)`.
+
+---
+
+## 38. ✅ RESOLVED — selecting the Learn tab fills the circle; the build tinted the icon
+
+**Where:** `Search` frame — `59:1003` (idle) vs `59:1084` (selected).
+Code: `lib/features/shell/main_shell.dart:107,125-134`.
+
+**What:** the centre tab is the one tab whose **background** carries the selected state:
+
+| | circle r=26 fill | glyph | label |
+|---|---|---|---|
+| idle | `#F3F1F8` (lavender) | `#B3B3B3` | `#B3B3B3` |
+| selected | `#4B675E` (green) | `white` | `#4B675E` |
+
+The build paints the circle `ext.cardFill` in **both** states, adds a 0.5px border the frame does
+not have, and recolours the glyph to `cs.primary` — the inverse of the design. The other four tabs
+do behave as built (glyph + label `#B3B3B3` → `#4B675E`, plus the 26×2 top rule).
+
+`#F3F1F8` has no token yet — it is the first use of a lavender wash in the light canvas.
+
+**Inverted 2026-08-04 (Day 7b A3).** The circle now animates `navCentreIdleFill` → `navAccent` and
+the glyph goes `mutedText` → white; the 0.5px border the frame does not have is deleted. The dark
+equivalent of `#F3F1F8` was measured off `348:6686` as `#3E3E3E`, so the token pair
+`navCentreIdleFill` is real in both palettes.
+
+`test/features/shell/nav_centre_tab_test.dart` states the rule directly: the accent lands on the
+CIRCLE, and the glyph never takes the accent at all.
+
+**Fix we need:** confirmation that the idle lavender is a real design token rather than a one-off —
+**still open**, but no longer blocking.
+
+---
+
+## 39. ✅ RESOLVED (glyph + box) — the pill used a Material globe; the design is a translate glyph
+
+**Where:** `Button / Light` **`82:1093`** (on Log in `82:819`), icon child `82:1100`
+`meteor-icons:language`, label `82:1098`.
+Code: `lib/core/widgets/language_pill.dart` **and** a duplicate `_LanguagePill` at
+`lib/features/auth/screens/login_screen.dart:310-342`.
+
+**What:** three separate deviations in one small widget.
+
+1. **Icon.** The build uses Flutter's `Icons.language` (a filled globe/meridian). The frame uses
+   **`meteor-icons:language`** — the 文A translate glyph, stroke-drawn, not a globe. Exported and
+   committed as `assets/icons/language.svg` (`currentColor` stroke, viewBox `0 0 20.129 20.129`,
+   `stroke-width 1.67742`, round caps/joins).
+2. **Label.** The build shows the *other* language's endonym — `switchLanguage` = "العربية" in
+   `app_en.arb`, "English" in `app_ar.arb`. The frame shows a **2-letter code, `EN`**, in a 19×21
+   box. It also reads as the **current** language, not the one being switched to (the Log in frame
+   is an English screen and the pill says EN) — see the open question below.
+3. **Metrics and colours.** Measured off the frame:
+
+| | design | built |
+|---|---|---|
+| pill | 78.13 × 36.10, radius 18.05 (full) | hug, radius 24 |
+| fill | `#FCFBF9` | `ext.background` ✔ (= `#FCFBF9` light) |
+| border | `#4B675E` | `ext.secondaryButtonBorder` = `#384F47` ✗ |
+| icon | 20.13, stroke `#384F47` | `Icons.language` at 18, `ext.textPrimary` |
+| label | `#384F47`, ~14/21 | `ext.textPrimary`, 14 |
+| padding | 14.47 start / 14.47 end, 10.07 gap | 14 / 14, 6 gap |
+| position (Log in) | end inset ≈ 24, top 64.89 | — |
+
+Note the design deliberately uses **two different greens**: border `#4B675E`, content `#384F47`.
+The build collapses both onto `#384F47`.
+
+**Fixed 2026-08-04 (Day 7b B).** Deviations 1 and 3 are closed:
+
+- `assets/icons/language.svg` replaces `Icons.language` at 20.13, tinted via `colorFilter` and left
+  **stroke**-drawn — the 1.67742 hairline is the whole look.
+- Height 36.10, radius 18.05 (a true stadium — exactly half the height), 14.47 start/end inset,
+  10.07 icon→label gap, label 14/21.
+- Border is the lighter `#4B675E` in light and **absent in dark**: `languagePillBorder` is nullable
+  per canvas, so dark draws none instead of substituting one. Content is `languagePillContent`
+  (`#384F47` / `#FCFBF9`) — the build had collapsed the frame's two greens onto one.
+- The duplicate `_LanguagePill` in `login_screen.dart` is deleted; all six call sites use the shared
+  widget.
+
+**Deviation:** the frame's **78.13 width is not applied.** It was measured around the 2-letter "EN"
+label, and the wording deliberately stays "English" / "العربية" (Day 7b assumption 3), which does
+not fit in 78.13 at 14px. Everything else holds and the width hugs.
+
+**Fix we need — still open:** deviation 2, the **label**. The frame shows a 2-letter code reading
+the CURRENT language; the build shows the endonym of the language you switch TO. Confirm which is
+intended, and the Arabic form (`ع`? `AR`? `عر`?). Nothing was changed here — an ARB edit was
+explicitly out of scope.
+
+---
+
+## 40. ✅ RESOLVED (rendering) — Sign Up_2 was correctly wired but rendered with stand-in art
+
+**Where:** **`82:1785`** `Sign Up_2` (light) — the light twin of `337:15947`, which
+`signup_track_screen.dart` was built against. Cards `125:862` / `125:959`, back button `90:208`.
+Code: `lib/features/registration/screens/signup_track_screen.dart`, route `/register/track`.
+
+**Not a routing bug.** The screen exists and sits in the right place:
+`/register` (identity) → `context.push('/register/track')` (`signup_identity_screen.dart:90`) →
+`/register/school` | `/register/university`. What is wrong is everything visual.
+
+| element | design (`82:1785`) | built |
+|---|---|---|
+| track card | 363×112, radius **25**, fill `#FCFBF9`, **1px gradient** border `#384F47` → `#95CDBB` (top-right → bottom-left) | radius 20, `ext.fieldFill`, flat `ext.fieldBorder` 1.17px |
+| card art | **98×98 3D illustration** — a stack of books / a graduation cap | `Icons.menu_book_outlined` / `Icons.school_outlined` at 32 |
+| card label | x=107, ~20 semibold | 20 w600 ✔, but no 107 offset (icon is only 32 wide) |
+| radio | circle **r=9.5**, 1px `#384F47` outline, no fill | `Icons.radio_button_unchecked` |
+| back button | **35×35 circle**, fill `#FCFBF9`, no stroke, holding `weui:arrow-filled` (15×30 chevron, `#4B675E`) | bare Material `IconButton(Icons.arrow_back)` |
+| header block | title + subtitle at y=146, 20px side inset | 24px inset |
+
+The chevron is exported and committed (`assets/icons/chevron.svg`, `currentColor`, points **right** —
+mirror it for back / let RTL flip it).
+
+**Illustrations: RESOLVED 2026-08-03.** Exported by the owner and committed as
+`assets/images/track_school.svg` (99×101) and `assets/images/track_university.svg` (98×97). Note
+`track_school.svg` carries a Figma `feGaussianBlur` drop-shadow filter that `flutter_svg` cannot
+render — see `day7b_design_fixes_brief.md` C1 before shipping it.
+
+**Rendered 2026-08-04 (Day 7b C).**
+
+- Illustrations in a 99-wide leading slot so the label starts at x=107, drawn with **no**
+  `colorFilter` — the only two assets in this pass rendered untinted.
+- **`track_school.svg` is edited relative to the owner's export.** `flutter_svg` logs
+  `unhandled element <filter/>` and paints the `<g opacity="0.53" filter="url(#filter0_f_771_4476)">`
+  shadow paths *crisp* at 0.53 × 0.25 black — a hard grey duplicate offset right and below the
+  books, confirmed by rendering the asset at 6×. That group and the now-unused `<defs>` filter are
+  deleted; the illustration is complete without them. Same class of problem as #28.
+- Card 112 tall, radius 25, page-fill surface, 1px gradient `#384F47` → `#95CDBB` top-end to
+  bottom-start in light and **none** in dark (`trackCardBorderStart`/`End` are nullable and both
+  null there). Flutter has no gradient `Border`, so the outline is a gradient-filled box with the
+  surface inset 1px.
+- Radio is a real r=9.5 hollow ring.
+- New shared `core/widgets/circle_back_button.dart`: 35×35 filled circle, no stroke, chevron
+  mirrored for back and un-mirrored under RTL.
+- Side inset 20.
+
+**Deviation:** the frame's **363 card width is not applied** — 363 + 2×20 exceeds the 375 frame, so
+the inset (explicit in the brief) wins and the card stretches to the available width.
+
+**Fix we need — both still open:**
+1. The **selected** state of the track card. The frame draws both cards unselected, so the shipped
+   `cs.primary` @ 8% + 2px border + filled radio is a Day-2 invention. It was **deliberately left
+   untouched** — replacing one guess with a better-looking second guess would only move the problem.
+2. Whether the ring around the back button is a shadow or a stroke. Built with **no** stroke.
+
+Also unmeasured: the **dark** back chip. `backChipFill` and `backChipGlyph` carry `TODO(design)` —
+their dark values are fallbacks (page fill; cream, because `#4B675E` on `#232428` is too low
+contrast for a navigation control), not read off a frame.
+
+---
+
+## 41. ✅ RESOLVED (chip built, dot gated) — the bell was a bare Material icon
+
+**Where:** **`59:1466`** `mingcute:notification-fill` (36×36) on Home `59:1439` — the light twin of
+`337:5330`. Code: `lib/features/home/widgets/home_header.dart:60-67`.
+
+**What:** the build renders `Icons.notifications` on its own. The frame draws a three-part chip:
+
+| part | spec |
+|---|---|
+| ring | 36.5 circle, fill `#FCFBF9`, **0.5px stroke `#4B675E`** |
+| glyph | `mingcute:notification-fill`, `#4B675E`, centred in a 37 box |
+| unread dot | circle **r = 3**, fill **`#E67E22`** (orange), centre (23.5, 11.5) — i.e. over the bell's top-right |
+
+Neither the ring nor the dot exists in code, and the glyph itself was a placeholder.
+
+**Status: glyph RESOLVED** — exported to `assets/icons/notification.svg` (`currentColor`, viewBox
+`0 0 37 37`, so the ring and dot coordinates above drop straight onto it). The ring and dot are
+decoration/state, not art — build them in Flutter, not in the asset.
+
+**Built 2026-08-04 (Day 7b D2).** `home_header.dart` draws all three parts: a 36.5 ring with a 0.5px
+`#4B675E` stroke on both canvases, the glyph tinted `#4B675E` / `#FCFBF9`, and the r=3 dot at the
+frame's (23.5, 11.5) — laid out in the asset's own 37 viewBox, so those coordinates need no
+rescaling. Ring and dot are drawn in Flutter rather than baked into the SVG: the ring is decoration
+and the dot is state. Note the dot changes hue between canvases (`#E67E22` / `#AE87E7`), so it is
+not a fixed "notification orange".
+
+**The dot is GATED and currently never renders.** `HomeHeader.hasUnreadNotifications` defaults to
+`false`, is marked `TODO(contract)`, and nothing sets it. Rendering it unconditionally to match the
+frame would be a permanent "you have mail" lie. `test/features/home/home_header_unread_test.dart`
+pins that: absent when false, false by DEFAULT, and correct in either hue when eventually forced
+true.
+
+**Fix we need — still open:** confirm with Seif whether an unread count is coming. Until it does,
+the dot has no data source.
+
+---
+
+## 42. ✅ RESOLVED — a light Home frame **does exist** (`59:1439`) and contradicted the palette
+
+**Where:** `59:1439` Home (light) · level card `308:4209` · bar `308:4221`.
+Code: `lib/core/theme/app_colors.dart:212-214`, `lib/features/home/widgets/level_card.dart:78-137`.
+
+**What:** several light-theme tokens carry the comment `// = light hint (no light Home frame)` /
+`// = light fieldBorder (no light Home frame)` — they were **derived** on the assumption that Home
+was only ever drawn in dark. That assumption is wrong; `59:1439` is a full light Home frame, and it
+does **not** follow the green-in-light / purple-in-dark accent flip the rest of the app uses.
+
+Measured off the frame:
+
+| element | design (light `59:1439`) | built (light) |
+|---|---|---|
+| level progress **fill** | **`#AE87E7`** (purple) | `cs.primary` → `#384F47` green |
+| level progress **track** | **`#ECECEC`** | `ext.progressTrack` → `#D1D1D1` |
+| stat label ("current level", "Pts Balance") | **`#7070A0`** | `ext.cardLabel` → `#696969` |
+| stat value ("LEVEL 8") | `#393939` | `ext.textPrimary` |
+| divider between the two stats | **`#AE87E7`** | `cs.primary` green |
+| card | 362×171, radius **15**, `#FCFBF9` | radius 15 ✔, `ext.cardFill` |
+
+Note `#7070A0` is already in the palette as the **dark** `cardLabel` (`app_colors.dart:244`, Figma
+`337:5340`) — light and dark use the same value here, which is exactly what "no light frame" made
+us fail to see.
+
+**This is the highest-value item in this pass**: it is not one wrong colour, it is a wrong *rule*.
+Every place that assumed "no light Home frame" needs re-deriving against `59:1439`.
+
+**Re-derived 2026-08-04 (Day 7b D1).** New token `homeAccent` (`#AE87E7`, both canvases) carries the
+exemption **in the palette** rather than as a `Brand.purplePrimary` reference at a call site, which
+would have hidden the rule change behind a colour swap. `colorScheme.primary` now appears nowhere
+under `lib/features/home/`.
+
+| token / element | was | now |
+|---|---|---|
+| level progress fill | `cs.primary` | `homeAccent` |
+| stat divider | `cs.primary` | `homeAccent` |
+| `progressTrack` (light) | `#D1D1D1` | `#ECECEC` |
+| `cardLabel` (light) | `#696969` | `#7070A0` — same as dark |
+| stat value | `textPrimary` | new `cardValue` `#393939` / `#FCFBF9` |
+
+`home_banner.dart` is included although the brief's section D does not name it: it is on Home and
+was drawing `cs.primary`. The frame gives no value for that placeholder box, so it follows the
+surface's rule rather than a second invented one. It stays an acknowledged `TODO(design-asset)`.
+
+The **dark** palette needed no change — `#2E2D32`, `#7070A0`, `#B3B3B3` already matched `337:5303`.
+
+**Still wrong, and deliberately NOT changed:** `cardFill` light is `#FDFDFD`, derived from
+`fieldFill` back when no light Home frame was known; `59:1439` says **`#FCFBF9`**. It sits outside
+the brief's D1 change list, so it carries a `TODO(design)` in `app_colors.dart` and is reported
+rather than silently corrected. It is the last surviving "no light Home frame" derivation.
+
+**Fix we need — still open:** confirm the exemption is deliberate, i.e. that Home is meant to be
+purple-accented in light too. Everything above assumes the frame is right.
+
+---
+
+## 43. ⛔ BLOCKED — the level medallion is a per-level raster illustration, not a tintable icon
+
+**Where:** **`308:4217`** `Level badges`, an instance 91×91 whose only child is named **`Level= 8`**
+— a component with a `Level` variant property, filled with **two raster PNGs**.
+Code: `lib/features/home/widgets/level_card.dart:78-81` (`TODO(design-asset)`).
+
+**What:** the build draws `Icons.emoji_events` at 56px tinted `cs.primary` — a flat green trophy.
+The design has a **gold, shaded 3D medallion at 91×91** that is **different artwork per level**, not
+one glyph recoloured. `kMaxLevel = 12` (`level_card.dart:24`), so this is potentially **12 assets**,
+selected at runtime by the student's level.
+
+Because the badge is raster (PNG image fills, not vectors) it cannot be exported as SVG and cannot
+be tinted — it has to ship as images.
+
+**Fix we need — designer:**
+1. How many distinct badges exist? One per level 1–12, or tiers (bronze / silver / gold)?
+2. Export the full set at **@3x**, named `level_badge_01.png` … `level_badge_12.png` (or by tier).
+3. Confirm the fallback when a level has no artwork.
+
+Until the set lands, keep the Material trophy and the `TODO(design-asset)` marker — do not ship a
+single badge for all levels.
+
+**Day 7b (2026-08-04): no code, by design.** The placeholder and its marker stay; the marker's
+comment now spells out why, so the next person does not re-litigate it. Its tint moved
+`cs.primary` → `homeAccent` with the rest of Home (#42) — a token change, not an implementation.
+
+**Also for Seif, not the designer:** the Figma component `Level badges` is keyed `Level= 1…12` and
+driven by `level`, while the contract's `badges` is an **integer counter of post-level-12
+milestones** (every 5,000 points, first at 11,000). They are different concepts sharing a name.
+Which drives the Home medallion, and is any badge imagery ever served by the API?
