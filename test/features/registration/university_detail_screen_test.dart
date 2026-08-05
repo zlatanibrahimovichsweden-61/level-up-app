@@ -264,6 +264,49 @@ void main() {
         () => reference.getCities(countryCode: 'EG', governorateId: 'gov-giza'),
       ).called(1);
     });
+
+    // adr-028 §1 applies to BOTH tracks — university registration collects a
+    // city too. No frame draws this; see DESIGN_ISSUES #44.
+    testWidgets('the city escape swaps the picker for free text here too',
+        (tester) async {
+      final container = await pump(tester);
+      container
+          .read(registrationControllerProvider.notifier)
+          .setGovernorate('gov-giza');
+      await tester.pumpAndSettle();
+
+      final link = find.widgetWithText(TextButton, "My city isn't listed");
+      await tester.ensureVisible(link);
+      await tester.pumpAndSettle();
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('field-cityName')), findsOneWidget);
+      expect(find.byKey(const Key('field-cityId')), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const Key('field-cityName')),
+        'Somewhere Uncoded',
+      );
+      await tester.pumpAndSettle();
+
+      final draft = container.read(registrationControllerProvider)!;
+      expect(draft.cityName, 'Somewhere Uncoded');
+      expect(draft.cityId, isNull);
+    });
+
+    testWidgets('the escape is reachable even while the picker is GATED',
+        (tester) async {
+      // The picker needs a governorate; a student whose city is missing from
+      // the coded list must not also be blocked by the list's own scoping.
+      await pump(tester);
+
+      expect(find.text('Choose a governorate first'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextButton, "My city isn't listed"),
+        findsOneWidget,
+      );
+    });
   });
 
   group('picker states', () {

@@ -136,6 +136,11 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
   void setSchool(String schoolId) =>
       _update((draft) => draft.copyWith(schoolId: schoolId));
 
+  /// adr-028 §2 — "I can't find my school". Drops any previously-picked id so
+  /// the body omits `schoolId` entirely; the screen tracks that the student
+  /// answered rather than just left it blank.
+  void clearSchool() => _update((draft) => draft.copyWith(schoolId: null));
+
   // --- School academic -----------------------------------------------------
 
   /// The design labels this "Grade"; the contract field is `stage`.

@@ -14,6 +14,7 @@ import '../notifier/reference_providers.dart';
 import '../notifier/registration_controller.dart';
 import '../notifier/registration_submit_notifier.dart';
 import '../registration_error_copy.dart';
+import '../widgets/city_field.dart';
 import '../widgets/date_of_birth_field.dart';
 import '../widgets/reference_dropdown.dart';
 import '../widgets/registration_chrome.dart';
@@ -44,6 +45,18 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
   /// The chosen school row, kept locally so the field can show its NAME while
   /// the draft carries only the opaque id that gets submitted.
   NamedRef? _selectedSchool;
+
+  /// adr-028 §2 — the student used "I can't find my school". Distinct from
+  /// "nothing chosen yet": both submit without a `schoolId`, but only this one
+  /// should render as a resolved field.
+  bool _schoolSkipped = false;
+
+  /// Anything that invalidates the school scope drops both the selection and
+  /// the skip: the field is scoped by city, so a new city means a new question.
+  void _clearSchool() => setState(() {
+        _selectedSchool = null;
+        _schoolSkipped = false;
+      });
 
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
@@ -138,7 +151,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           countryCode: country.code,
                           requiresGovernorate: country.requiresGovernorate,
                         );
-                        setState(() => _selectedSchool = null);
+                        _clearSchool();
                       }),
                     ),
                     const SizedBox(height: 16),
@@ -167,19 +180,22 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 
                     // 3 — City. Egypt must scope by governorate (the contract
                     // 400s on `/reference/cities?countryCode=EG` without one),
-                    // so the picker stays gated until one is chosen.
-                    ReferenceDropdown(
-                      fieldKey: 'field-cityId',
-                      label: l10n.cityLabel,
-                      value: draft.cityId,
-                      options: _cityOptions(draft.countryCode, draft.governorateId,
-                          requiresGovernorate),
+                    // so the picker stays gated until one is chosen. The
+                    // adr-028 §1 free-text escape is NOT gated by that — a
+                    // missing city row must not be compounded by the list's
+                    // own scoping.
+                    CityField(
+                      cityId: draft.cityId,
+                      cityName: draft.cityName,
+                      options: _cityOptions(draft.countryCode,
+                          draft.governorateId, requiresGovernorate),
                       enabled: draft.countryCode != null &&
                           (!requiresGovernorate || draft.governorateId != null),
                       disabledHint: requiresGovernorate
                           ? l10n.selectGovernorateFirst
                           : l10n.selectCountryFirst,
-                      errorText: errorFor(RegFields.cityId),
+                      errorText: errorFor(RegFields.cityId) ??
+                          errorFor(RegFields.cityName),
                       onRetry: () => ref.invalidate(
                         citiesProvider(
                           (
@@ -188,9 +204,13 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           ),
                         ),
                       ),
-                      onSelected: (id) => _edit(() {
+                      onCitySelected: (id) => _edit(() {
                         controller.setCity(id);
-                        setState(() => _selectedSchool = null);
+                        _clearSchool();
+                      }),
+                      onCityNameChanged: (name) => _edit(() {
+                        controller.setCityName(name);
+                        _clearSchool();
                       }),
                     ),
                     const SizedBox(height: 16),
@@ -228,12 +248,25 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                     if (requiresGovernorate)
                       SchoolPickerField(
                         governorateId: draft.governorateId,
+                        // Null under a free-text city — the search then scopes
+                        // by governorate alone rather than being disabled.
                         cityId: draft.cityId,
                         selected: _selectedSchool,
+                        skipped: _schoolSkipped,
                         errorText: errorFor(RegFields.schoolId),
                         onSelected: (school) => _edit(() {
-                          setState(() => _selectedSchool = school);
+                          setState(() {
+                            _selectedSchool = school;
+                            _schoolSkipped = false; // picking un-skips
+                          });
                           controller.setSchool(school.id);
+                        }),
+                        onSkip: () => _edit(() {
+                          setState(() {
+                            _selectedSchool = null;
+                            _schoolSkipped = true;
+                          });
+                          controller.clearSchool();
                         }),
                       ),
 

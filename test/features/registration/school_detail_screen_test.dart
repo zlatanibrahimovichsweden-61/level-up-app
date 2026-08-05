@@ -7,6 +7,7 @@ import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
+import 'package:level_up_app/features/registration/models/registration_validation.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/repository/reference_repository.dart';
 import 'package:level_up_app/features/registration/screens/school_detail_screen.dart';
@@ -349,6 +350,234 @@ void main() {
       await pump(tester, locale: const Locale('ar'));
 
       expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
+    });
+
+    testWidgets('both adr-028 escapes carry Seif\'s Arabic copy',
+        (tester) async {
+      final container = await pump(tester, locale: const Locale('ar'));
+      container
+          .read(registrationControllerProvider.notifier)
+          .setGovernorate('gov-cairo');
+      await tester.pumpAndSettle();
+
+      expect(find.text('مدينتي غير موجودة'), findsOneWidget);
+      expect(find.text('لم أجد مدرستي'), findsOneWidget);
+    });
+  });
+
+  // adr-028 §1. No Figma frame draws this — see DESIGN_ISSUES #44. The spec is
+  // Seif's partner notice of 2026-07-30, quoted in the Day 7c brief.
+  group('city escape — "my city isn\'t listed"', () {
+    /// The governorate has to be set AFTER the first frame: `_seedDefaultCountry`
+    /// runs post-frame and `setCountry` clears the whole geography branch, so a
+    /// value seeded before the pump is wiped.
+    Future<ProviderContainer> pumpWithGovernorate(WidgetTester tester) async {
+      final container = await pump(tester);
+      container
+          .read(registrationControllerProvider.notifier)
+          .setGovernorate('gov-cairo');
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('the picker is the default; the escape is a link under it',
+        (tester) async {
+      await pumpWithGovernorate(tester);
+
+      expect(find.byKey(const Key('field-cityId')), findsOneWidget);
+      expect(find.byKey(const Key('field-cityName')), findsNothing);
+      // Low visual weight on purpose: a TextButton, not a FilledButton.
+      final link = find.widgetWithText(TextButton, "My city isn't listed");
+      expect(link, findsOneWidget);
+      expect(
+        tester.getTopLeft(link).dy,
+        greaterThan(tester.getTopLeft(find.byKey(const Key('field-cityId'))).dy),
+      );
+    });
+
+    testWidgets('tapping it SWAPS the dropdown for a text field in place',
+        (tester) async {
+      await pumpWithGovernorate(tester);
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "My city isn't listed"),
+      );
+
+      expect(find.byKey(const Key('field-cityName')), findsOneWidget);
+      expect(find.byKey(const Key('field-cityId')), findsNothing);
+      // Label + placeholder both read "City name".
+      expect(find.text('City name'), findsWidgets);
+    });
+
+    testWidgets('typing lands on the controller and clears the coded id',
+        (tester) async {
+      final container = await pumpWithGovernorate(tester);
+      container.read(registrationControllerProvider.notifier)
+        ..setCity('city-nasr')
+        ..setSchool('school-42');
+
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "My city isn't listed"),
+      );
+      await tester.enterText(
+        find.byKey(const Key('field-cityName')),
+        'Somewhere Uncoded',
+      );
+      await tester.pumpAndSettle();
+
+      final draft = container.read(registrationControllerProvider)!;
+      expect(draft.cityName, 'Somewhere Uncoded');
+      expect(draft.cityId, isNull);
+      // The school search is scoped by city, so the selection cannot survive.
+      expect(draft.schoolId, isNull);
+    });
+
+    testWidgets('"Choose from the list" returns AND clears the free text',
+        (tester) async {
+      final container = await pumpWithGovernorate(tester);
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "My city isn't listed"),
+      );
+      await tester.enterText(
+        find.byKey(const Key('field-cityName')),
+        'Somewhere Uncoded',
+      );
+      await tester.pumpAndSettle();
+
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, 'Choose from the list'),
+      );
+
+      expect(find.byKey(const Key('field-cityId')), findsOneWidget);
+      expect(find.byKey(const Key('field-cityName')), findsNothing);
+      // Leaving it on the draft would make the body factory throw on "both".
+      expect(container.read(registrationControllerProvider)!.cityName, isNull);
+    });
+
+    testWidgets('a free-text city still permits a school search',
+        (tester) async {
+      // The consequence that is easy to miss: the coded search is filtered by
+      // governorateId + cityId, and a free-text city has no cityId. It must
+      // fall back to governorate-only, not be disabled and not send an empty
+      // string.
+      final container = await pumpWithGovernorate(tester);
+      container
+          .read(registrationControllerProvider.notifier)
+          .setCityName('Somewhere Uncoded');
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('field-schoolId')), findsOneWidget);
+      await tapVisible(tester, find.byKey(const Key('field-schoolId')));
+      await tester.tap(find.text('Nile School'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(registrationControllerProvider)!.schoolId,
+          'school-42');
+      verify(
+        () => reference.searchSchools(
+          q: any(named: 'q'),
+          governorateId: 'gov-cairo',
+          cityId: null,
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        ),
+      ).called(greaterThanOrEqualTo(1));
+    });
+  });
+
+  // adr-028 §2, same provenance as the city escape above.
+  group('school step — Egypt only, and skippable', () {
+    /// After the first frame, for the same reason as the city group above.
+    Future<ProviderContainer> pumpEgypt(WidgetTester tester) async {
+      final container = await pump(tester);
+      container.read(registrationControllerProvider.notifier)
+        ..setGovernorate('gov-cairo')
+        ..setCity('city-nasr');
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('the skip affordance sits under the Egyptian picker',
+        (tester) async {
+      await pumpEgypt(tester);
+
+      final link = find.widgetWithText(TextButton, "I can't find my school");
+      expect(link, findsOneWidget);
+      expect(
+        tester.getTopLeft(link).dy,
+        greaterThan(
+          tester.getTopLeft(find.byKey(const Key('field-schoolId'))).dy,
+        ),
+      );
+    });
+
+    testWidgets('skipping marks the field RESOLVED, not blank', (tester) async {
+      final container = await pumpEgypt(tester);
+      container
+          .read(registrationControllerProvider.notifier)
+          .setSchool('school-42');
+      await tester.pumpAndSettle();
+
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "I can't find my school"),
+      );
+
+      // Not the hint, and not empty: the student answered the question.
+      expect(find.text('No school selected'), findsOneWidget);
+      expect(find.text('Search for your school'), findsNothing);
+      expect(container.read(registrationControllerProvider)!.schoolId, isNull);
+      // The link is gone once the field reads as resolved.
+      expect(
+        find.widgetWithText(TextButton, "I can't find my school"),
+        findsNothing,
+      );
+    });
+
+    testWidgets('an Egyptian student can submit having skipped it',
+        (tester) async {
+      final container = await pumpEgypt(tester);
+      container.read(registrationControllerProvider.notifier)
+        ..setDateOfBirth(DateTime(2009, 5, 1))
+        ..setEducationSystem('ig')
+        ..setStage('secondary1');
+      await tester.pumpAndSettle();
+
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "I can't find my school"),
+      );
+
+      // No blocking issue anywhere in the pre-flight — under v1.0 schoolId
+      // would have been `missing` here.
+      expect(
+        validateDraft(container.read(registrationControllerProvider)!),
+        isEmpty,
+      );
+    });
+
+    testWidgets('picking a school afterwards un-skips the field',
+        (tester) async {
+      final container = await pumpEgypt(tester);
+      await tapVisible(
+        tester,
+        find.widgetWithText(TextButton, "I can't find my school"),
+      );
+      expect(find.text('No school selected'), findsOneWidget);
+
+      await tapVisible(tester, find.byKey(const Key('field-schoolId')));
+      await tester.tap(find.text('Nile School'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nile School'), findsOneWidget);
+      expect(find.text('No school selected'), findsNothing);
+      expect(
+        container.read(registrationControllerProvider)!.schoolId,
+        'school-42',
+      );
     });
   });
 }

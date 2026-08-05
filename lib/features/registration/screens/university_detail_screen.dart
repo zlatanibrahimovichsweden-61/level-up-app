@@ -12,6 +12,7 @@ import '../notifier/reference_providers.dart';
 import '../notifier/registration_controller.dart';
 import '../notifier/registration_submit_notifier.dart';
 import '../registration_error_copy.dart';
+import '../widgets/city_field.dart';
 import '../widgets/date_of_birth_field.dart';
 import '../widgets/reference_dropdown.dart';
 import '../widgets/registration_chrome.dart';
@@ -217,15 +218,18 @@ class _UniversityDetailScreenState
                     ),
                     const SizedBox(height: 16),
 
-                    // 5 — City, scoped by governorate (Egypt 400s without one).
-                    ReferenceDropdown(
-                      fieldKey: 'field-cityId',
-                      label: l10n.cityLabel,
-                      value: draft.cityId,
+                    // 5 — City, scoped by governorate (Egypt 400s without one),
+                    // with the adr-028 §1 escape. The notice applies it to
+                    // BOTH tracks — university registration collects a city
+                    // too, and the coded list is just as capable of missing it.
+                    CityField(
+                      cityId: draft.cityId,
+                      cityName: draft.cityName,
                       enabled: draft.governorateId != null,
                       disabledHint: l10n.selectGovernorateFirst,
                       options: _cityOptions(draft.governorateId),
-                      errorText: errorFor(RegFields.cityId),
+                      errorText: errorFor(RegFields.cityId) ??
+                          errorFor(RegFields.cityName),
                       onRetry: () => ref.invalidate(
                         citiesProvider(
                           (
@@ -234,7 +238,10 @@ class _UniversityDetailScreenState
                           ),
                         ),
                       ),
-                      onSelected: (id) => _edit(() => controller.setCity(id)),
+                      onCitySelected: (id) =>
+                          _edit(() => controller.setCity(id)),
+                      onCityNameChanged: (name) =>
+                          _edit(() => controller.setCityName(name)),
                     ),
 
                     if (submitState.hasError &&

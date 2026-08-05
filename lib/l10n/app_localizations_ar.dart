@@ -213,10 +213,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get schoolLabel => 'اسم المدرسة';
 
   @override
-  String get schoolNameOptional => 'اسم المدرسة (اختياري)';
+  String get cityNotListed => 'مدينتي غير موجودة';
 
   @override
-  String get schoolNameHint => 'أدخل اسم مدرستك';
+  String get chooseFromList => 'اختر من القائمة';
+
+  @override
+  String get cityNameLabel => 'اسم المدينة';
+
+  @override
+  String get schoolNotFound => 'لم أجد مدرستي';
+
+  @override
+  String get schoolSkipped => 'لم يتم اختيار مدرسة';
 
   @override
   String get universityLabel => 'اسم الجامعة';

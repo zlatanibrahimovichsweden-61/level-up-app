@@ -9,6 +9,7 @@ import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/reference_models.dart';
 import '../notifier/school_search_notifier.dart';
+import 'city_field.dart';
 import 'reference_dropdown.dart';
 
 /// The Egyptian coded-school picker (`GET /reference/schools`).
@@ -28,10 +29,16 @@ class SchoolPickerField extends ConsumerWidget {
     required this.cityId,
     required this.selected,
     required this.onSelected,
+    required this.skipped,
+    required this.onSkip,
     this.errorText,
   });
 
   /// Scope filters — both may be null, in which case the search is unscoped.
+  ///
+  /// A free-text city has no `cityId`, so the search falls back to
+  /// governorate-only scoping rather than being disabled: an Egyptian student
+  /// whose city is missing from the coded list can still find their school.
   final String? governorateId;
   final String? cityId;
 
@@ -40,6 +47,13 @@ class SchoolPickerField extends ConsumerWidget {
   final NamedRef? selected;
 
   final ValueChanged<NamedRef> onSelected;
+
+  /// True once the student has used the skip affordance. The field then reads
+  /// as RESOLVED rather than as an empty field they left unfinished — an
+  /// optional step that still looks blank is one students go back and worry at.
+  final bool skipped;
+  final VoidCallback onSkip;
+
   final String? errorText;
 
   @override
@@ -47,6 +61,15 @@ class SchoolPickerField extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
     final school = selected;
+
+    final (String text, Color colour) = switch (school) {
+      final NamedRef row => (
+          localizedRefName(context, row.nameAr, row.nameEn),
+          ext.textPrimary,
+        ),
+      null when skipped => (l10n.schoolSkipped, ext.textSecondary),
+      null => (l10n.searchSchoolsHint, ext.hint),
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,19 +90,16 @@ class SchoolPickerField extends ConsumerWidget {
                 cityId: cityId,
               ),
             );
+            // Picking a school after skipping un-skips — the caller clears its
+            // own `skipped` flag in `onSelected`.
             if (picked != null) onSelected(picked);
           },
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  school == null
-                      ? l10n.searchSchoolsHint
-                      : localizedRefName(context, school.nameAr, school.nameEn),
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: school == null ? ext.hint : ext.textPrimary,
-                  ),
+                  text,
+                  style: TextStyle(fontSize: 18, color: colour),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -88,6 +108,11 @@ class SchoolPickerField extends ConsumerWidget {
           ),
         ),
         if (errorText != null) InlineFieldError(errorText!),
+        // adr-028 §2. Hidden once skipped: the field already says so, and a
+        // live "I can't find my school" under a resolved field reads as an
+        // action still outstanding.
+        if (!skipped)
+          RegistrationEscapeLink(label: l10n.schoolNotFound, onTap: onSkip),
       ],
     );
   }

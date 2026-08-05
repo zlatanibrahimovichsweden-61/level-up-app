@@ -103,11 +103,26 @@
     "description": "The design labels this field 'Grade'; the contract field is `stage`."
   },
   "schoolLabel": "School Name",
-  "schoolNameOptional": "School Name (Optional)",
-  "@schoolNameOptional": {
-    "description": "Non-Egypt only — free text, never blocks registration (adr-010)."
+  "cityNotListed": "My city isn't listed",
+  "@cityNotListed": {
+    "description": "adr-028 §1 — the escape link under the city picker that swaps it for a free-text field. Deliberately low visual weight: the coded list stays the primary path."
   },
-  "schoolNameHint": "Enter your school name",
+  "chooseFromList": "Choose from the list",
+  "@chooseFromList": {
+    "description": "adr-028 §1 — returns the free-text city field to the coded picker."
+  },
+  "cityNameLabel": "City name",
+  "@cityNameLabel": {
+    "description": "adr-028 §1 — the free-text city field's caption (contract `cityName`, maxLength 100)."
+  },
+  "schoolNotFound": "I can't find my school",
+  "@schoolNotFound": {
+    "description": "adr-028 §2 — skips the optional school step. Blameless framing over a bare 'Skip', and it mirrors the city escape one field above."
+  },
+  "schoolSkipped": "No school selected",
+  "@schoolSkipped": {
+    "description": "Shown in the school field after the student skips it, so the field reads as resolved rather than unfinished."
+  },
   "universityLabel": "University Name",
   "facultyLabel": "Faculty",
   "studyYearLabel": "Academic Year",

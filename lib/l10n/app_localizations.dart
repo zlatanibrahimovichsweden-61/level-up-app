@@ -488,17 +488,35 @@ abstract class AppLocalizations {
   /// **'School Name'**
   String get schoolLabel;
 
-  /// Non-Egypt only — free text, never blocks registration (adr-010).
+  /// adr-028 §1 — the escape link under the city picker that swaps it for a free-text field. Deliberately low visual weight: the coded list stays the primary path.
   ///
   /// In en, this message translates to:
-  /// **'School Name (Optional)'**
-  String get schoolNameOptional;
+  /// **'My city isn\'t listed'**
+  String get cityNotListed;
 
-  /// No description provided for @schoolNameHint.
+  /// adr-028 §1 — returns the free-text city field to the coded picker.
   ///
   /// In en, this message translates to:
-  /// **'Enter your school name'**
-  String get schoolNameHint;
+  /// **'Choose from the list'**
+  String get chooseFromList;
+
+  /// adr-028 §1 — the free-text city field's caption (contract `cityName`, maxLength 100).
+  ///
+  /// In en, this message translates to:
+  /// **'City name'**
+  String get cityNameLabel;
+
+  /// adr-028 §2 — skips the optional school step. Blameless framing over a bare 'Skip', and it mirrors the city escape one field above.
+  ///
+  /// In en, this message translates to:
+  /// **'I can\'t find my school'**
+  String get schoolNotFound;
+
+  /// Shown in the school field after the student skips it, so the field reads as resolved rather than unfinished.
+  ///
+  /// In en, this message translates to:
+  /// **'No school selected'**
+  String get schoolSkipped;
 
   /// No description provided for @universityLabel.
   ///

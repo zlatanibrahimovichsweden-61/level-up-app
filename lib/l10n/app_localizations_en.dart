@@ -213,10 +213,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get schoolLabel => 'School Name';
 
   @override
-  String get schoolNameOptional => 'School Name (Optional)';
+  String get cityNotListed => 'My city isn\'t listed';
 
   @override
-  String get schoolNameHint => 'Enter your school name';
+  String get chooseFromList => 'Choose from the list';
+
+  @override
+  String get cityNameLabel => 'City name';
+
+  @override
+  String get schoolNotFound => 'I can\'t find my school';
+
+  @override
+  String get schoolSkipped => 'No school selected';
 
   @override
   String get universityLabel => 'University Name';
