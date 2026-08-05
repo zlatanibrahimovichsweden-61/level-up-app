@@ -16,6 +16,7 @@ abstract final class RegFields {
   static const countryCode = 'countryCode';
   static const governorateId = 'governorateId';
   static const cityId = 'cityId';
+  static const cityName = 'cityName';
   static const schoolId = 'schoolId';
   static const stage = 'stage';
   static const educationSystem = 'educationSystem';
@@ -44,12 +45,16 @@ enum RegFieldIssue {
   rejected,
 }
 
-/// School track, with the adr-010 geography conditionality.
+/// School track: the adr-010 governorate conditionality, plus the adr-028 city
+/// union and optional school.
 ///
-/// - `requiresGovernorate == true` (EG) → `governorateId` + `cityId` +
-///   `schoolId` all required; `schoolName` forbidden.
-/// - otherwise → `cityId` required; `schoolName` optional free text;
-///   `governorateId` + `schoolId` forbidden.
+/// - city (adr-028 §1) → `cityId` OR `cityName`, at least one. Neither → both
+///   are `missing`. Both → `cityName` is `forbidden` (the coded value is the
+///   one the backend can filter on, so the free text is the half that gives).
+/// - `schoolId` (adr-028 §2) → **never required**, Egypt included; still
+///   forbidden outside Egypt, where the step does not exist at all.
+/// - `governorateId` → **unchanged**: required for EG, forbidden otherwise.
+///   adr-028 does not touch adr-010's governorate rule.
 ///
 /// Non-geography required fields (`dateOfBirth`, `stage`, `educationSystem`,
 /// `countryCode`) are checked too. `name`/`parentPhone` come from Sign Up_1 and
@@ -74,13 +79,14 @@ Map<String, RegFieldIssue> validateSchoolDraft(RegistrationDraft draft) {
   requireValue(RegFields.parentPhone, draft.parentPhone);
   requireValue(RegFields.dateOfBirth, draft.dateOfBirth);
   requireValue(RegFields.countryCode, draft.countryCode);
-  requireValue(RegFields.cityId, draft.cityId);
+  _checkCityUnion(draft, issues);
   requireValue(RegFields.stage, draft.stage);
   requireValue(RegFields.educationSystem, draft.educationSystem);
 
   if (draft.requiresGovernorate ?? false) {
     requireValue(RegFields.governorateId, draft.governorateId);
-    requireValue(RegFields.schoolId, draft.schoolId);
+    // schoolId is deliberately NOT required here — adr-028 §2 lets an Egyptian
+    // student who cannot find their school register without one.
   } else {
     forbidValue(RegFields.governorateId, draft.governorateId);
     forbidValue(RegFields.schoolId, draft.schoolId);
@@ -89,8 +95,36 @@ Map<String, RegFieldIssue> validateSchoolDraft(RegistrationDraft draft) {
   return issues;
 }
 
-/// University track — Egypt-only by shape, no geography branch: every contract
-/// field is unconditionally required. The `universityId → facultyId →
+/// The adr-028 §1 union, shared by both tracks: exactly one of
+/// `cityId` / `cityName`.
+///
+/// The contract expresses "at least one" as an `anyOf`, and forbids both in
+/// prose (`openapi.yaml:1272-1273`). Both-present is reported against
+/// `cityName` so the inline error lands on the field the student can clear by
+/// going back to the picker.
+void _checkCityUnion(
+  RegistrationDraft draft,
+  Map<String, RegFieldIssue> issues,
+) {
+  final coded = draft.cityId?.trim();
+  final free = draft.cityName?.trim();
+  final hasCoded = coded != null && coded.isNotEmpty;
+  final hasFree = free != null && free.isNotEmpty;
+
+  if (hasCoded && hasFree) {
+    issues[RegFields.cityName] = RegFieldIssue.forbidden;
+  } else if (!hasCoded && !hasFree) {
+    // Neither half answered: report both, since either one would resolve it
+    // and the screen decides which field is currently on show.
+    issues[RegFields.cityId] = RegFieldIssue.missing;
+    issues[RegFields.cityName] = RegFieldIssue.missing;
+  }
+}
+
+/// University track — Egypt-only by shape and still no geography branch: every
+/// contract field below is unconditionally required, and there is no school
+/// step to be optional. The only adr-028 change here is the city, which is the
+/// same union as the school track. The `universityId → facultyId →
 /// studyYearId` cascade is enforced by the UI gating; this only checks presence.
 Map<String, RegFieldIssue> validateUniversityDraft(RegistrationDraft draft) {
   final issues = <String, RegFieldIssue>{};
@@ -108,7 +142,7 @@ Map<String, RegFieldIssue> validateUniversityDraft(RegistrationDraft draft) {
   requireValue(RegFields.facultyId, draft.facultyId);
   requireValue(RegFields.studyYearId, draft.studyYearId);
   requireValue(RegFields.governorateId, draft.governorateId);
-  requireValue(RegFields.cityId, draft.cityId);
+  _checkCityUnion(draft, issues);
 
   return issues;
 }

@@ -201,6 +201,42 @@ void main() {
       expect(json.containsKey('schoolId'), isFalse);
       expect(json.containsKey('schoolName'), isFalse);
     });
+
+    test('a free-text city passes the pre-flight and reaches the wire',
+        () async {
+      // End to end for adr-028 §1: the escape's controller state clears the
+      // coded id, the validator accepts the free text in its place, and the
+      // body carries cityName with no cityId key at all.
+      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
+      final c = seededSchool(requiresGovernorate: false);
+      c.read(registrationControllerProvider.notifier).setCityName('Al Ain');
+
+      await c.read(registrationSubmitProvider.notifier).submit();
+
+      final json = (verify(() => repo.register(captureAny())).captured.single
+              as SchoolRegistration)
+          .toJson();
+      expect(json['cityName'], 'Al Ain');
+      expect(json.containsKey('cityId'), isFalse);
+    });
+
+    test('an Egyptian student can submit with no school at all', () async {
+      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
+      final c = seededSchool();
+      // Changing governorate clears the previously-picked school; under v1.0
+      // that alone made the draft unsubmittable.
+      c.read(registrationControllerProvider.notifier)
+        ..setGovernorate('gov-giza')
+        ..setCity('city-dokki');
+
+      await c.read(registrationSubmitProvider.notifier).submit();
+
+      final json = (verify(() => repo.register(captureAny())).captured.single
+              as SchoolRegistration)
+          .toJson();
+      expect(json.containsKey('schoolId'), isFalse);
+      expect(json['cityId'], 'city-dokki');
+    });
   });
 
   group('failures surface as typed errors the screen branches on', () {
@@ -318,9 +354,10 @@ void main() {
       final error = c.read(registrationSubmitProvider).error;
       expect(error, isA<DraftValidationFailure>());
       final issues = (error! as DraftValidationFailure).issues;
-      // Changing governorate cleared city + school.
+      // Changing governorate cleared city + school. Only the city blocks now:
+      // adr-028 §2 made schoolId optional, so its absence is not an issue.
       expect(issues[RegFields.cityId], RegFieldIssue.missing);
-      expect(issues[RegFields.schoolId], RegFieldIssue.missing);
+      expect(issues.containsKey(RegFields.schoolId), isFalse);
     });
 
     test('a forbidden field is caught client-side too (adr-010)', () async {

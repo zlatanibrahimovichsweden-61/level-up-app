@@ -375,7 +375,7 @@ void main() {
       expect(validateSchoolDraft(_egyptSchoolDraft()), isEmpty);
     });
 
-    test('Egypt REQUIRES governorate + city + school', () {
+    test('Egypt REQUIRES governorate + a city, but NOT a school', () {
       final issues = validateSchoolDraft(
         _egyptSchoolDraft().copyWith(
           governorateId: null,
@@ -385,14 +385,23 @@ void main() {
       );
       expect(issues[RegFields.governorateId], RegFieldIssue.missing);
       expect(issues[RegFields.cityId], RegFieldIssue.missing);
-      expect(issues[RegFields.schoolId], RegFieldIssue.missing);
+      // adr-028 §2 — this used to be `missing` and was the rule that blocked a
+      // registration the server now accepts.
+      expect(issues.containsKey(RegFields.schoolId), isFalse);
+    });
+
+    test('an Egyptian student with no school passes the pre-flight', () {
+      expect(
+        validateSchoolDraft(_egyptSchoolDraft(schoolId: null)),
+        isEmpty,
+      );
     });
 
     test('a complete non-Egypt draft is valid', () {
       expect(validateSchoolDraft(_foreignSchoolDraft()), isEmpty);
     });
 
-    test('non-Egypt REQUIRES city only', () {
+    test('non-Egypt REQUIRES a city only', () {
       final issues =
           validateSchoolDraft(_foreignSchoolDraft().copyWith(cityId: null));
       expect(issues[RegFields.cityId], RegFieldIssue.missing);
@@ -419,6 +428,52 @@ void main() {
       expect(issues[RegFields.dateOfBirth], RegFieldIssue.missing);
       expect(issues[RegFields.stage], RegFieldIssue.missing);
       expect(issues[RegFields.educationSystem], RegFieldIssue.missing);
+    });
+  });
+
+  group('the city union in the validator (adr-028 §1), both tracks', () {
+    test('a free-text city satisfies the requirement on its own', () {
+      expect(
+        validateSchoolDraft(
+          _foreignSchoolDraft(cityId: null, cityName: 'Al Ain'),
+        ),
+        isEmpty,
+      );
+      expect(
+        validateUniversityDraft(
+          _universityDraft(cityId: null, cityName: 'Dokki'),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('neither half answered reports BOTH fields as missing', () {
+      final issues = validateSchoolDraft(_foreignSchoolDraft(cityId: null));
+      expect(issues[RegFields.cityId], RegFieldIssue.missing);
+      expect(issues[RegFields.cityName], RegFieldIssue.missing);
+    });
+
+    test('both halves populated is FORBIDDEN, reported on cityName', () {
+      // The coded value is what the backend can filter and report on, so when
+      // the two disagree it is the free text that gives.
+      final issues =
+          validateSchoolDraft(_egyptSchoolDraft(cityName: 'Nasr City'));
+      expect(issues[RegFields.cityName], RegFieldIssue.forbidden);
+      expect(issues.containsKey(RegFields.cityId), isFalse);
+    });
+
+    test('a blank free-text city does not count as answered', () {
+      final issues = validateSchoolDraft(
+        _foreignSchoolDraft(cityId: null, cityName: '   '),
+      );
+      expect(issues[RegFields.cityId], RegFieldIssue.missing);
+    });
+
+    test('the university track carries the same rule', () {
+      final issues = validateUniversityDraft(
+        _universityDraft(cityName: 'Dokki'),
+      );
+      expect(issues[RegFields.cityName], RegFieldIssue.forbidden);
     });
   });
 
