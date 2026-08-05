@@ -13,9 +13,15 @@
 /// `lib/core` knows this file exists; injection happens through a single
 /// `dioProvider` override in that entrypoint's `ProviderScope`.
 ///
-/// Shapes are taken from `contract/openapi.yaml` (commit 23f0535) so the canned
-/// JSON parses into the REAL freezed models — if a model changes and the mock
-/// stops parsing, that is the harness doing its job.
+/// Shapes are taken from `contract/openapi.yaml` (pinned `ee2ed8f`,
+/// v1.1.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
+/// REAL freezed models — if a model changes and the mock stops parsing, that is
+/// the harness doing its job.
+///
+/// The harness is deliberately STRICT where the server is strict, not merely
+/// permissive: it rejects `schoolName` and both-cities the way v1.1 does. A
+/// mock that echoed whatever it was handed would let a device walkthrough
+/// confirm the OLD contract.
 library;
 
 import 'dart:convert';
@@ -96,6 +102,11 @@ class MockBackendInterceptor extends Interceptor {
   /// so the polling path is walked every single time, not just occasionally.
   final _explanationRequests = <String, int>{};
 
+  /// The `geography.city` this session registered with, in whichever arm of the
+  /// adr-028 §1 union it used. Null until a registration happens, in which case
+  /// `GET /me` falls back to the coded fixture.
+  Map<String, dynamic>? _registeredCity;
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -140,10 +151,22 @@ class MockBackendInterceptor extends Interceptor {
     }
 
     if (method == 'POST' && path == '/auth/register') {
+      // v1.1 rejects these server-side; the mock's job is to be strict exactly
+      // where the server is strict, or a device walkthrough would confirm the
+      // OLD contract and hide every fix this day made.
+      final rejected = _registerViolations(body);
+      if (rejected != null) {
+        return _validationFailed(handler, options, rejected);
+      }
+
       // Registering as a university student makes the rest of the session
       // university — otherwise the Learn tab would contradict what you just
       // signed up as.
       _track = body['track'] == 'university' ? 'university' : 'school';
+      // Remembered so a LATER `GET /me` echoes the city the student actually
+      // registered with. A free-text registration whose profile comes back
+      // coded on the next fetch would prove nothing.
+      _registeredCity = _cityFromRegistration(body);
       return _ok(handler, options, 201, <String, dynamic>{
         'result': 'authenticated',
         'tokens': _tokenPair(),
@@ -171,8 +194,16 @@ class MockBackendInterceptor extends Interceptor {
         // Reads the LIVE total, which `finish` moves. Re-fetching after a quiz
         // therefore shows the award, exactly as it will in production.
         _isUniversity
-            ? _universityProfile(phone: phone, totalPoints: _totalPoints)
-            : _schoolProfile(phone: phone, totalPoints: _totalPoints),
+            ? _universityProfile(
+                phone: phone,
+                totalPoints: _totalPoints,
+                city: _registeredCity,
+              )
+            : _schoolProfile(
+                phone: phone,
+                totalPoints: _totalPoints,
+                city: _registeredCity,
+              ),
       );
     }
 
@@ -251,21 +282,36 @@ class MockBackendInterceptor extends Interceptor {
 
     final governorates = RegExp(r'^/reference/countries/([^/]+)/governorates$').firstMatch(path);
     if (method == 'GET' && governorates != null) {
-      final code = governorates.group(1);
+      // Codes normalize case-insensitively, so `eg` is accepted as `EG`
+      // (contract-changelog 2026-07-30). Comparing the raw path segment would
+      // hand `eg` an empty governorate list instead of Cairo.
+      final code = governorates.group(1)?.toUpperCase();
+      final failure = _referenceCountryFailure(handler, options, code);
+      if (failure) return;
       // Contract: bare array, EMPTY for non-EG.
       return _ok(handler, options, 200, code == 'EG' ? _egGovernorates : <dynamic>[]);
     }
 
     if (method == 'GET' && path == '/reference/cities') {
+      final code = (query['countryCode'] as String?)?.toUpperCase();
+      final failure = _referenceCountryFailure(handler, options, code);
+      if (failure) return;
       return _ok(handler, options, 200, _citiesFor(
-        countryCode: query['countryCode'] as String?,
+        countryCode: code,
         governorateId: query['governorateId'] as String?,
       ));
     }
 
     if (method == 'GET' && path == '/reference/schools') {
+      final q = query['q'] as String?;
+      // The school search has no countryCode to key a failure off, so its
+      // trigger is the search box itself — see the table on
+      // [_referenceCountryFailure].
+      if (q != null && q.trim() == _kRateLimitTrigger) {
+        return _rateLimited(handler, options);
+      }
       return _ok(handler, options, 200, _schoolPage(
-        q: query['q'] as String?,
+        q: q,
         cursor: query['cursor'] as String?,
         limit: query['limit'] as int? ?? 20,
       ));
@@ -287,6 +333,157 @@ class MockBackendInterceptor extends Interceptor {
     // hanging on a socket — an unmocked call should be obvious, not silent.
     return _problem(handler, options, 404, 'not_found', 'No mock for $method $path');
   }
+
+  /// The adr-028 rules `POST /auth/register` now enforces, as a
+  /// `ProblemDetails.errors` field map — or null when the body is acceptable.
+  ///
+  /// Everything here is a rule the REAL server applies. Under v1.0 the mock
+  /// echoed whatever it was sent, so a body that v1.1 rejects would have
+  /// sailed through a device walkthrough.
+  Map<String, List<String>>? _registerViolations(Map<String, dynamic> body) {
+    final errors = <String, List<String>>{};
+
+    // `schoolName` was removed from the contract entirely — it is now an
+    // UNKNOWN PROPERTY, and unknown properties are rejected, not ignored.
+    if (body.containsKey('schoolName')) {
+      errors['schoolName'] = ['Unknown property (removed in v1.1, adr-028 §2)'];
+    }
+
+    // adr-028 §1: exactly one of cityId / cityName.
+    final hasCityId = (body['cityId'] as String?)?.isNotEmpty ?? false;
+    final hasCityName = (body['cityName'] as String?)?.isNotEmpty ?? false;
+    if (hasCityId && hasCityName) {
+      errors['cityName'] = ['Supply cityId OR cityName, not both'];
+    } else if (!hasCityId && !hasCityName) {
+      errors['cityId'] = ['At least one of cityId / cityName is required'];
+    }
+    if (hasCityName && (body['cityName']! as String).length > 100) {
+      errors['cityName'] = ['maxLength 100'];
+    }
+
+    if (body['track'] == 'school') {
+      // adr-010, UNCHANGED by adr-028.
+      final requiresGovernorate = body['countryCode'] == 'EG';
+      final hasGovernorate =
+          (body['governorateId'] as String?)?.isNotEmpty ?? false;
+      if (requiresGovernorate && !hasGovernorate) {
+        errors['governorateId'] = ['Required when countryCode is EG'];
+      }
+      if (!requiresGovernorate && hasGovernorate) {
+        errors['governorateId'] = ['Not allowed outside Egypt'];
+      }
+      // adr-028 §2: schoolId is accepted-or-absent for Egypt. Outside Egypt
+      // the coded list is empty, so an id there cannot refer to anything.
+      final hasSchool = (body['schoolId'] as String?)?.isNotEmpty ?? false;
+      if (!requiresGovernorate && hasSchool) {
+        errors['schoolId'] = ['The coded school list is Egypt-only'];
+      }
+    }
+
+    return errors.isEmpty ? null : errors;
+  }
+
+  /// `400 validation_failed` carrying the contract's field map, so the screens'
+  /// per-field inline errors are exercised rather than just the banner.
+  void _validationFailed(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    Map<String, List<String>> errors,
+  ) {
+    handler.reject(
+      DioException(
+        requestOptions: options,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: options,
+          statusCode: 400,
+          data: <String, dynamic>{
+            'title': 'Validation failed',
+            'status': 400,
+            'code': 'validation_failed',
+            'errors': errors,
+          },
+        ),
+      ),
+      true,
+    );
+  }
+
+  /// The `/reference/*` failure paths v1.1 added, keyed off `countryCode` so
+  /// every one is reachable from the registration form itself. Returns true
+  /// when it has answered the request.
+  ///
+  /// **Trigger table — how to reach each error path on a device:**
+  ///
+  /// | Outcome | How to reach it |
+  /// |---|---|
+  /// | `404 country_not_found` | pick **Unknown Country** in the Country dropdown — a well-formed code (`XX`) that is not in the coded list |
+  /// | `400 validation_failed` | pick **Bad Country Code** — a malformed code (`EGY`, not ISO 3166-1 alpha-2 shape). The 400/404 split is the contract's, and it is easy to get backwards |
+  /// | `429 rate_limited` | pick **Rate Limited** — governorates AND cities then answer 429 with `Retry-After: 30` |
+  /// | `429` on schools | type `429` in the school search box |
+  ///
+  /// The first two rows are the REAL server behaviour, not invented triggers:
+  /// they are what `XX` and `EGY` genuinely return. They are reachable here
+  /// only because the mock's country list carries those rows, since the picker
+  /// never lets a student type a code.
+  bool _referenceCountryFailure(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String? countryCode,
+  ) {
+    // Codes normalize case-insensitively (`eg` is accepted as `EG`).
+    final code = countryCode?.trim().toUpperCase();
+    if (code == null) return false;
+
+    if (code == _kRateLimitedCountry) {
+      _rateLimited(handler, options);
+      return true;
+    }
+    // Malformed — NOT ISO 3166-1 alpha-2 shape. This is the 400, not the 404.
+    if (code.length != 2 || !RegExp(r'^[A-Z]{2}$').hasMatch(code)) {
+      _problem(
+        handler,
+        options,
+        400,
+        'validation_failed',
+        '"$countryCode" is not an ISO 3166-1 alpha-2 country code',
+      );
+      return true;
+    }
+    // Well-formed but unrecognised — this one is the 404 (adr-028 §3).
+    // Checked against the REAL launch set, not `_countries`: the trigger rows
+    // live in that list so the picker can offer them, and would otherwise
+    // recognise themselves.
+    if (!_kLaunchCountries.contains(code)) {
+      _problem(
+        handler,
+        options,
+        404,
+        'country_not_found',
+        'Country "$code" is not in the coded list',
+      );
+      return true;
+    }
+    return false;
+  }
+
+  /// `429 rate_limited` + `Retry-After`, the unauthenticated per-IP limit on
+  /// `/reference/*`. The header is sent as delta-seconds, the only form the
+  /// client parses (a date form would mean trusting the device clock).
+  void _rateLimited(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+  ) =>
+      _problem(
+        handler,
+        options,
+        429,
+        'rate_limited',
+        'Too many requests to /reference/* from this IP',
+        headers: <String, List<String>>{
+          'retry-after': ['30'],
+        },
+      );
 
   /// `POST /quizzes` → `201 Quiz`, or one of the three failures below.
   ///
@@ -526,8 +723,9 @@ class MockBackendInterceptor extends Interceptor {
     RequestOptions options,
     int status,
     String code,
-    String detail,
-  ) {
+    String detail, {
+    Map<String, List<String>>? headers,
+  }) {
     handler.reject(
       DioException(
         requestOptions: options,
@@ -541,6 +739,9 @@ class MockBackendInterceptor extends Interceptor {
             'code': code,
             'detail': detail,
           },
+          // Carried so `Retry-After` reaches the real ErrorInterceptor's
+          // parser rather than being invented on the client side.
+          headers: headers == null ? null : Headers.fromMap(headers),
         ),
       ),
       true,
@@ -555,6 +756,17 @@ const _kAuthenticatedCode = '000000';
 /// Same, but as a UNIVERSITY student — the whole session (Home's Learning Tools
 /// section, the Learn tab's lecture trees) follows from this one code.
 const _kUniversityCode = '111111';
+
+/// The mock's real launch countries. The rows beyond these in [_countries]
+/// exist only to make v1.1's new `/reference/*` failures reachable from the
+/// picker; see [MockBackendInterceptor._referenceCountryFailure].
+const _kLaunchCountries = {'EG', 'AE'};
+
+/// Country code whose geography lookups answer `429 rate_limited`.
+const _kRateLimitedCountry = 'ZZ';
+
+/// Type this in the school search box to get the same 429 there.
+const _kRateLimitTrigger = '429';
 
 // ---------------------------------------------------------------------------
 // Canned data
@@ -578,6 +790,30 @@ final _countries = <dynamic>[
     'code': 'AE',
     'nameAr': 'الإمارات العربية المتحدة',
     'nameEn': 'United Arab Emirates',
+    'requiresGovernorate': false,
+  },
+  // --- v1.1 error-path triggers (see _referenceCountryFailure) -------------
+  //
+  // Not real countries. A student never types a country code — the picker is
+  // the only way in — so the only way to reach the new 400/404/429 responses on
+  // a device is to put a row in this list for each. They sort last and say what
+  // they do.
+  <String, dynamic>{
+    'code': _kRateLimitedCountry,
+    'nameAr': 'محدود المعدل (تجريبي: 429)',
+    'nameEn': 'Rate Limited (mock: 429)',
+    'requiresGovernorate': true,
+  },
+  <String, dynamic>{
+    'code': 'XX',
+    'nameAr': 'دولة غير معروفة (تجريبي: 404)',
+    'nameEn': 'Unknown Country (mock: 404)',
+    'requiresGovernorate': false,
+  },
+  <String, dynamic>{
+    'code': 'EGY',
+    'nameAr': 'رمز دولة غير صالح (تجريبي: 400)',
+    'nameEn': 'Bad Country Code (mock: 400)',
     'requiresGovernorate': false,
   },
 ];
@@ -1114,6 +1350,23 @@ final _avatars = <dynamic>[
 
 /// Echoes the submitted registration back as a `StudentProfile`, so what lands
 /// on `/home` reflects what you actually typed.
+/// The adr-028 §1 union, echoed back in the arm the registration actually used.
+///
+/// The coded arm is a full `NamedRef`; the free-text arm is `{ name }` and
+/// carries NO id, which is the only thing `ProfileCity.fromJson` discriminates
+/// on. Echoing a coded city for a free-text registration would make the union's
+/// second arm unreachable on a device — the exact case that used to throw.
+Map<String, dynamic> _cityFromRegistration(Map<String, dynamic> body) {
+  final cityName = body['cityName'] as String?;
+  if (cityName != null && cityName.isNotEmpty) {
+    return <String, dynamic>{'name': cityName};
+  }
+  final cityId = body['cityId'] as String?;
+  return cityId == null
+      ? _codedCity
+      : _named(cityId, 'مدينة مختارة', 'Selected City');
+}
+
 Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
   final isUniversity = body['track'] == 'university';
   return _profile(
@@ -1122,13 +1375,15 @@ Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
     phone: '+201001234567',
     dateOfBirth: body['dateOfBirth'] as String? ?? '2008-01-01',
     countryCode: isUniversity ? 'EG' : (body['countryCode'] as String? ?? 'EG'),
+    city: _cityFromRegistration(body),
     school: isUniversity
         ? null
         : <String, dynamic>{
+            // Null when the student skipped it — Egypt included since
+            // adr-028 §2. There is no `schoolName` counterpart any more.
             'school': body['schoolId'] == null
                 ? null
                 : _named(body['schoolId']! as String, 'مدرسة مختارة', 'Selected School'),
-            'schoolName': body['schoolName'],
             'stage': body['stage'] ?? 'secondary1',
             'educationSystem': body['educationSystem'] ?? 'nationalLanguages',
           },
@@ -1150,9 +1405,15 @@ Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
   );
 }
 
+/// The coded arm of the city union — a full `NamedRef`, the default for a
+/// session that did not register (the magic OTP codes).
+final _codedCity =
+    _named('0197b2f3-0002-7cc3-9b4e-000000000001', 'مدينة نصر', 'Nasr City');
+
 Map<String, dynamic> _schoolProfile({
   required String phone,
   int totalPoints = 1250,
+  Map<String, dynamic>? city,
 }) =>
     _profile(
       track: 'school',
@@ -1161,9 +1422,9 @@ Map<String, dynamic> _schoolProfile({
       phone: phone,
       dateOfBirth: '2008-05-14',
       countryCode: 'EG',
+      city: city,
       school: <String, dynamic>{
         'school': _named('0197b2f3-0004-7cc3-9b4e-000000000001', 'مدرسة رقم ١', 'Al Nasr Language School 1'),
-        'schoolName': null,
         'stage': 'secondary2',
         'educationSystem': 'nationalLanguages',
       },
@@ -1175,6 +1436,7 @@ Map<String, dynamic> _schoolProfile({
 Map<String, dynamic> _universityProfile({
   required String phone,
   int totalPoints = 1250,
+  Map<String, dynamic>? city,
 }) =>
     _profile(
       track: 'university',
@@ -1183,6 +1445,7 @@ Map<String, dynamic> _universityProfile({
       phone: phone,
       dateOfBirth: '2005-03-02',
       countryCode: 'EG',
+      city: city,
       school: null,
       university: <String, dynamic>{
         'university': _named(
@@ -1207,6 +1470,7 @@ Map<String, dynamic> _profile({
   required String countryCode,
   required Map<String, dynamic>? school,
   required Map<String, dynamic>? university,
+  Map<String, dynamic>? city,
   int totalPoints = 1250,
 }) {
   return <String, dynamic>{
@@ -1224,7 +1488,9 @@ Map<String, dynamic> _profile({
     'geography': <String, dynamic>{
       'countryCode': countryCode,
       'governorate': countryCode == 'EG' ? _egGovernorates.first : null,
-      'city': _named('0197b2f3-0002-7cc3-9b4e-000000000001', 'مدينة نصر', 'Nasr City'),
+      // adr-028 §1 union — a NamedRef when the student picked from the list,
+      // `{ name }` when they used the "my city isn't listed" fallback.
+      'city': city ?? _codedCity,
     },
     'school': school,
     'university': university,
