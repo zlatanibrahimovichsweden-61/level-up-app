@@ -146,7 +146,7 @@ void main() {
         _mapped(
           const ValidationException(
             errors: {
-              'schoolName': ['not allowed when countryCode is EG'],
+              'governorateId': ['required when countryCode is EG'],
             },
           ),
         ),
@@ -156,7 +156,7 @@ void main() {
         repo.register(_schoolBody),
         throwsA(
           isA<ValidationException>()
-              .having((e) => e.fields, 'fields', contains('schoolName')),
+              .having((e) => e.fields, 'fields', contains('governorateId')),
         ),
       );
     });

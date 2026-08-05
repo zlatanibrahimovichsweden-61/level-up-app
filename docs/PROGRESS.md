@@ -95,6 +95,62 @@ Left deliberately unfixed and flagged: the track card's **selected** state (a Da
 frame does not draw — replacing one guess with another is worse), the level medallion (#43), the
 pill's label wording, and `cardFill` light `#FDFDFD` vs the frame's `#FCFBF9`.
 
+## Day 7c — contract v1.1 reconciliation (brief: `docs/day7c_contract_v11_brief.md`) — built, awaiting review
+Not a feature day and not a design day. **No new endpoint is consumed; coverage stays 21/36.** It
+closes the gap between the vendored contract — re-pinned to **v1.1.0-m1 (`ee2ed8f`)** during the Day 7
+commit and never reconciled — and the registration/profile code, which was still v1.0. Seven commits,
+one per section. The 563-test suite was **green and wrong** walking in: every registration test
+asserted the dead rules.
+
+**Section 0 found no seventh drift, and proved it.** The changelog is Seif's summary of his own
+change, not a diff, so the vendored file was diffed across the re-pin (`git diff 7dff9e5~1 7dff9e5 --
+contract/openapi.yaml`) — fourteen hunks, every one accounted for by the brief's six-row table plus
+five description repairs. Three *contract-internal* inconsistencies did surface and are logged as
+`seif_fight.md` **S21**: the city union is `anyOf` (which permits both) while the prose forbids both;
+`/reference/schools` still describes free-text school as the non-Egypt path; and `429` is declared on
+only 3 of the 6 `/reference/*` paths.
+
+**Request bodies + validation.** `cityId` **OR** `cityName` (free text, max 100), resolved once by a
+shared `cityUnionFromDraft` — exactly one key is serialized and the other is **omitted, not nulled**,
+because on this wire those are different things. Neither throws; **both** throws rather than letting
+the server catch it. `schoolName` is deleted everywhere — model, widget, setter, ARB, tests, mock.
+`schoolId` is never required, Egypt included. `governorateId` is untouched: adr-028 does not touch
+adr-010.
+
+**The one that could throw.** `StudentProfile.geography.city` was a bare `NamedRef` with a non-null
+`id`, so a free-text city would have **crashed a well-formed `GET /me`**. Now a sealed
+`ProfileCity.coded/.freeText` union discriminated on the presence of `id`, chosen over optional
+fields for compiler-enforced exhaustiveness at the Day 8 call sites that do not exist yet
+(`DECISIONS.md` D-004). Fixed while `ProfileGeography.city` still had **zero** call sites in `lib/`.
+`ProfileSchool.school` needed no change for a skipped school — it was already nullable, which we got
+right by luck, not by design.
+
+**Two new registration states, built ahead of the design** (`DECISIONS.md` D-003, `DESIGN_ISSUES.md`
+#44). Day 7b's "do not invent states the design does not draw" rule was suspended by owner decision:
+the backend is the restricting authority this day, and Seif's partner notice of 2026-07-30 is the
+spec of record. A city escape link on **both** tracks swaps the dropdown for a text field in place;
+the school step is Egypt-only and skippable, reading *"لم أجد مدرستي"* and rendering as **resolved**
+rather than blank. Behaviour is invented; styling is not — every colour, size and component already
+existed on those screens. The consequence easiest to miss is covered: a free-text city has no
+`cityId`, so the Egyptian school search falls back to **governorate-only** scoping rather than being
+disabled.
+
+**Error mapping.** `429 rate_limited` becomes a typed `RateLimitedException` carrying a defensively
+parsed `Retry-After` (delta-seconds only — a date form would mean trusting the device clock). It is
+deliberately **not** `otp_throttled`, which would show an OTP message for a geography lookup.
+`404 country_not_found` gets the code and nothing else: no subclass, no new UI, per Seif's notice §3.
+
+**Mock backend** is now strict where the server is strict — it rejects `schoolName` and both-cities,
+emits both arms of the city union, and carries device-reachable triggers for the new 400/404/429
+paths (three rows in the country picker, plus typing `429` in the school search).
+
+**Tests:** 625 green, `flutter analyze` clean. No new goldens by design — the two new states have no
+approved frame, and a golden would freeze a look we invented.
+
+> ⚠️ **Contract pin references in every brief predating this one are STALE.** Days 00–7b all say
+> `pinned 23f0535`, which is two versions old. **`contract/SOURCE.md` is authoritative** — it pins
+> `ee2ed8f` (v1.1.0-m1), vendored 2026-08-03. Do not trust a contract reference in an older brief.
+
 ## Endpoint coverage (21 stable / 36 total)
 Done: auth otp/request, otp/verify, refresh, logout (4). After Day 2: +7 reference = 11/21 (52%).
 **Quiz x4 are now done** — `POST /quizzes`, `POST /quizzes/{id}/answers`,
@@ -130,7 +186,8 @@ Sign Up_1 337:15875 · Sign Up_2 (track) 337:15947 · bird logo 82:849 · file k
 `docs/day00_onboarding_brief.md` · `docs/day1_login_otp_brief.md` · `docs/day1b_forced_logout_brief.md` ·
 `docs/day2_registration_brief.md` · `docs/day3_registration_complete_brief.md` ·
 `docs/day4_home_brief.md` · `docs/day5_learn_brief.md` · `docs/day6_university_brief.md` ·
-`docs/day7_quiz_brief.md` · `docs/day7b_design_fixes_brief.md`
+`docs/day7_quiz_brief.md` · `docs/day7b_design_fixes_brief.md` ·
+`docs/day7c_contract_v11_brief.md`
 
 > ⚠️ The section headers above ("In progress — Day 2", "Next — Day 3", the endpoint-coverage
 > percentages) are stale as of 2026-07-30: Days 3–6 are built, and Day 00 landed the onboarding

@@ -36,6 +36,8 @@
 | S17 | AI explanation is drawn as TWO sections; the endpoint returns ONE string | 🟠 | Open, built around (Day 7) | `ai_explanation_panel.dart:9` |
 | S18 | `AnswerResult.pointsDelta` — "original result" vs "0 on retry replay" | 🟢 | Open, no impact | `mock_backend.dart:_submitAnswer` |
 | S19 | No quiz endpoint returns a subject name; two frames show one | 🟡 | Open, built around (Day 7) | `quiz.dart:32` |
+| S20 | `PATCH /me` cannot edit school or geography — one design option you offered is unbuildable | 🟠 | Open (Day 7c) | `openapi.yaml:614-624` |
+| S21 | v1.1 internal inconsistencies found by diffing the vendored contract | 🟡 | Open (Day 7c) | `openapi.yaml:483`, `:1281` |
 
 ---
 
@@ -343,6 +345,81 @@ gets it forwarded from the `Quiz` in the route's `extra`.
 
 **Ask:** add `subjectName` to `Quiz` and to `QuizSummary` (it is already on two sibling schemas), or
 confirm scope-only titling and the designer drops the subject line.
+
+---
+
+## S20. 🟠 `PATCH /me` cannot edit school or geography — so one of the three options you offered the designer is unbuildable
+
+**Where:** your partner notice of 2026-07-30 asks the UI/UX partner: *"How does the profile screen
+render a student with no school? Blank row, hidden row, or an 'أضف مدرستك' prompt?"*
+
+**Contract:** `PATCH /me` accepts exactly five fields — `name`, `email`, `avatarId`,
+`leaderboardVisible`, `scoreHidden` (`openapi.yaml:614-624`). There is no school field, no
+geography field, and no other endpoint that writes either. **School and geography are immutable
+after registration in v1.1.**
+
+So the third option is not implementable. If the designer picks "أضف مدرستك", we will be asked to
+build a prompt with nothing behind it — a button that can only ever open a dead end. The first two
+options (blank row / hidden row) are both fine and cost nothing.
+
+This is worth answering **before** the design revision rather than after, because it is cheaper to
+remove an option from a question than to remove a screen from a build.
+
+**Ask — two questions:**
+1. Is post-registration school selection intended at all in M1? (adr-028 §2 makes the field
+   optional at registration, which is exactly the situation that creates students who might want to
+   add one later.)
+2. If yes: does `PATCH /me` gain `schoolId`, or does a separate endpoint appear? Either way it
+   needs a pinned contract commit before we build against it.
+
+The same question applies, more weakly, to the free-text city: a student who used the adr-028 §1
+fallback has no way to upgrade to a coded city once their city is added to the list.
+
+---
+
+## S21. 🟡 Three internal inconsistencies in v1.1, found by diffing `23f0535..ee2ed8f`
+
+None of these blocks Day 7c — all three were built around, following the prose over the schema.
+Listed so the document and the implementation do not drift apart.
+
+**1. `anyOf` permits what the prose forbids.** `SchoolRegistration` (`:1281-1283`) and
+`UniversityRegistration` (`:1306-1308`) express the city union as:
+
+```yaml
+anyOf:
+  - required: [cityId]
+  - required: [cityName]
+```
+
+`anyOf` is *at least one* — a body carrying **both** satisfies this schema. The prose on both
+fields says both → `validation_failed`. A strict schema validator and the server would disagree.
+`oneOf` says what the descriptions say. **We built the prose:** the body factory throws on both,
+so it never reaches you.
+
+**2. `/reference/schools` still describes free-text school as the non-Egypt path** (`:483-484`):
+*"non-Egypt students use optional free text in registration instead (adr-010, never blocked)"* —
+which adr-028 §2 cancelled outright three lines of diff earlier
+(`SchoolRegistration`, `:1258`: *"Free-text `schoolName` does not exist on this contract"*). The
+path description was not updated. Harmless to us; misleading to the next reader.
+
+**3. `rate_limited` is documented on 3 of the 6 `/reference/*` paths.** The changelog says these
+paths carry a per-IP limit because they are unauthenticated by design, and the response
+descriptions themselves say *"unauthenticated per-IP limit on /reference/\*"* — but the `429` is
+only declared on `/reference/countries`, `.../governorates` and `/reference/cities`.
+`/reference/schools`, `/reference/education-systems` and `/reference/universities` have none.
+`/reference/schools` is the one that matters: it is the only *paginated* reference endpoint, so it
+is the one a client can hammer. **We handle 429 on all of them** (the interceptor is path-agnostic)
+and the mock triggers it on schools too.
+
+**Ask:** confirm the limiter covers all six, and declare the `429` on the other three — or say it
+is genuinely scoped to three and we will stop expecting it elsewhere.
+
+**Also worth noting, not a defect:** the changelog says *"six corrupted schema descriptions
+fixed"*; the diff contains **five** (`TokenPair.accessToken`, `SchoolRegistration.email`,
+`StudentProfile.badges`, `PATCH /me`'s `email`, `QuizQuestion.imageUrl`). `StudentProfile.email`
+had no description in v1.0 and has none in v1.1, so there was nothing there to repair. No impact —
+we hand-write models rather than generating from the document, and none of the five was
+transcribed from the corrupted text (verified field-by-field in Day 7c section 0).
 
 ---
 

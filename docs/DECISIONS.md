@@ -101,3 +101,106 @@ button stays **disabled**, since it implies the text-level review we still canno
 **Process note.** Both D-001 and D-002 came from Claude Code checking the brief against the
 contract rather than trusting it. That check should stay in the Day-N prompt: *"read the relevant
 contract section directly — do not work from the brief's summary of it."*
+
+---
+
+## Registration — contract v1.1 (adr-028)
+
+### D-003 · Built two registration states ahead of the design
+**Feature:** Registration (Day 7c) · **Date:** 2026-08-05 · **Status:** Accepted · **Raised by:** owner, at the start of Day 7c
+
+**Context.** Contract v1.1.0-m1 (`ee2ed8f`, vendored 2026-08-03) makes two configurations valid and
+expected that the approved Figma has no path for: a student whose city is not in the coded list
+(adr-028 §1), and a school-track student with no school (adr-028 §2). Seif's partner notice of
+2026-07-30 flags both to the UI/UX partner. No revised frames exist, and none is promised for a
+date we could wait for. Day 7b's standing rule was the opposite of this: *do not invent a state the
+design does not draw.*
+
+**Options.**
+- **Wait for the frames.** Keeps the design as the single source of truth, but leaves the app
+  unable to complete a registration the server accepts, for an unknown number of days.
+- **Build the escape as a separate step** so it reads as obviously provisional. Costs a wizard step
+  the design will almost certainly not have, making the eventual reconciliation *harder*, not
+  easier.
+- **Build in place, from the notice, using existing tokens.** Chosen.
+
+**Decision.** Day 7b's rule is suspended for Day 7c by owner decision. The backend is the
+restricting authority this day; where the contract is silent on what a state must *do*, Seif's
+notice governs. Both states are built in place — an escape link under the city field, a skip link
+under the school field — using the components, tokens and copy conventions already on those screens.
+
+**Invent behaviour, not styling.** Nothing new visually: no new colour, no new spacing scale, no new
+component. The escape links are `TextButton`s using `textSecondary`, and both affordances are
+literally the same widget so they cannot drift apart.
+
+**Consequences.** Registration works against v1.1 now. The cost is that the design revision, when it
+lands, is a **comparison** rather than a discovery — and it might disagree, in which case restyling
+two links is cheap. `DESIGN_ISSUES.md` #44 records exactly what was built and from what source so
+that comparison is possible without archaeology.
+
+**Revisit when.** The design revision lands. The states are then **re-verified against the frames,
+not rebuilt** — the behaviour is contract-driven and does not change; only the presentation is up
+for revision.
+
+---
+
+### D-004 · `ProfileCity` is a sealed union, not a flat class with optional fields
+**Feature:** Profile models (Day 7c) · **Date:** 2026-08-05 · **Status:** Accepted
+
+**Context.** v1.1 turned `StudentProfile.geography.city` into a union: a `NamedRef` when the student
+picked a coded city, `{ name }` when they used the adr-028 §1 fallback. Under v1.0 our model had it
+as a bare `NamedRef` with a non-null `id`, so a free-text city would have **thrown on a well-formed
+`GET /me`** — the only drift in this contract bump that was a runtime crash rather than a wrong
+message. It was free to fix on Day 7c because `ProfileGeography.city` had zero call sites anywhere
+in `lib/`; Day 8 is the day that stops being true.
+
+**Options.**
+- **Flat class with optional fields** (`String? id, String? nameAr, String? nameEn, String? name`).
+  Smallest diff. Compiles everywhere, and reintroduces exactly the failure being fixed: a call site
+  can read `.id!` and crash on the arm it forgot.
+- **Relax `NamedRef.id` to nullable.** Smaller still, and pushes nullability into the six reference
+  pickers that legitimately always have an id, to serve one union that does not.
+- **Sealed freezed union.** Chosen.
+
+**Decision.** `ProfileCity.coded(NamedRef)` / `ProfileCity.freeText(String)`, discriminated on the
+**presence of `id`** per the contract's own wording at `openapi.yaml:1340` — there is no
+discriminator field on the wire. `NamedRef` is left alone.
+
+The point is compiler-enforced exhaustiveness **at call sites that do not exist yet**. Every Day 8
+screen that renders a city will be forced by a `switch` to answer "and what if there is no id?"
+before it can compile. That is the whole value; a runtime failure on a student's phone is the
+alternative.
+
+**Two consequences worth stating.**
+- **No display-name getter on the union**, deliberately. Choosing `nameAr` vs `nameEn` needs the
+  current locale, which is presentation, not model. Adding `.displayName` would let a call site skip
+  the decision the union exists to force.
+- **`toJson` is hand-written** (`@Freezed(toJson: false)`). freezed's generated union serializer
+  emits its own envelope — `{ref: {...}, runtimeType: 'coded'}` — a shape this API never sends and
+  would never accept. Left generated, the union would have had a parser that could not round-trip
+  its own input.
+
+**Revisit when.** The contract adds a third city arm, or a discriminator field appears on the wire
+(at which point `fromJson` should key off it rather than off `id`).
+
+---
+
+### D-005 · "لم أجد مدرستي" over "تخطي" for the school skip
+**Feature:** Registration (Day 7c) · **Date:** 2026-08-05 · **Status:** Accepted
+
+**Context.** Seif's notice asks whether the skip affordance should read *"تخطي"* (Skip) or
+*"لم أجد مدرستي"* (I can't find my school) and does not answer. His own guidance is that it must read
+as blameless rather than as a failure.
+
+**Decision.** *"لم أجد مدرستي"* / *"I can't find my school"*, for two reasons. It states the
+student's situation rather than labelling their action as skipping something they were supposed to
+do — a student whose school is genuinely absent from our list has not skipped anything. And it
+mirrors the city escape one field above (*"مدينتي غير موجودة"*), so the student meets the same
+affordance twice in the same shape, in the same place, in the same weight.
+
+**Consequences.** One extra ARB pair beyond the four Seif's notice specifies — `schoolSkipped` /
+*"لم يتم اختيار مدرسة"* — because a skipped field has to read as **resolved**, not blank. An optional
+step that still looks empty is one students go back and worry at. That copy is ours and is a
+candidate for the designer to overrule.
+
+**Revisit when.** The design revision lands, or the wording is user-tested.

@@ -243,9 +243,11 @@ void main() {
     test('400 validation_failed keeps the ValidationException field map',
         () async {
       when(() => repo.register(any())).thenThrow(
+        // adr-028 §1's own violation. `schoolName` used to be the sample here;
+        // the server can never name that field again.
         const ValidationException(
           errors: {
-            'schoolName': ['not allowed'],
+            'cityName': ['not allowed together with cityId'],
           },
         ),
       );
@@ -255,7 +257,7 @@ void main() {
 
       final error = c.read(registrationSubmitProvider).error;
       expect(error, isA<ValidationException>());
-      expect((error! as ValidationException).fields, contains('schoolName'));
+      expect((error! as ValidationException).fields, contains('cityName'));
     });
 
     test('401 registration_token_invalid surfaces for the /login restart',

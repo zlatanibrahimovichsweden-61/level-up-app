@@ -881,3 +881,61 @@ comment now spells out why, so the next person does not re-litigate it. Its tint
 driven by `level`, while the contract's `badges` is an **integer counter of post-level-12
 milestones** (every 5,000 points, first at 11,000). They are different concepts sharing a name.
 Which drives the Home medallion, and is any badge imagery ever served by the API?
+
+---
+
+## 44. 🔴 The approved registration Figma has no path for either state contract v1.1 made valid
+
+**Where:** School Registration `337:5269`, University Registration `337:10373`.
+Code: `lib/features/registration/widgets/city_field.dart`,
+`lib/features/registration/widgets/school_picker_field.dart`.
+
+**What.** Contract v1.1.0-m1 (adr-028, vendored 2026-08-03) makes two registration configurations
+valid, expected and — on the school track — reachable by an ordinary student:
+
+1. **A city that is not in our coded list.** `cityId` **OR** `cityName` (free text, max 100), at
+   least one required. Applies to **both** tracks.
+2. **A school-track student with no school.** `schoolId` is now optional for **every** school
+   student, Egypt included. And free-text `schoolName` was removed from the contract outright, so
+   the non-Egypt school field the frames draw has nothing behind it at all.
+
+The frames draw neither. They draw a required city dropdown and a school field that is either a
+coded picker (Egypt) or a free-text input (elsewhere) — the second of which is now unbuildable.
+
+The rule the whole change descends from, in Seif's words: **"A student is never blocked from
+registering because a list we control is incomplete."**
+
+**What was built (Day 7c, 2026-08-05), and from what source.** Seif's partner notice of 2026-07-30
+is the spec of record; there was no frame to work from and none is promised. Recorded here so the
+design revision is a **comparison, not a discovery**. See `DECISIONS.md` D-003 (build-ahead-of-design)
+and D-005 (the wording).
+
+| Element | What ships today |
+|---|---|
+| City escape link | Under the city dropdown, both tracks. `TextButton`, 14pt w500, `textSecondary`, underlined, start-aligned. Copy: *"مدينتي غير موجودة"* / *"My city isn't listed"* |
+| Free-text city | An **in-place swap** — the dropdown is replaced by a `PlainTextField` in the same slot, not a new step. Label *"اسم المدينة"* / *"City name"*, `maxLength: 100` |
+| Return link | *"اختر من القائمة"* / *"Choose from the list"*, same styling, returns to the picker and clears the typed value |
+| School skip link | Under the Egyptian picker only. Identical widget to the city escape. Copy: *"لم أجد مدرستي"* / *"I can't find my school"* |
+| Skipped school field | Reads *"لم يتم اختيار مدرسة"* / *"No school selected"* in `textSecondary` — **resolved, not blank**. The skip link disappears once used; picking a school un-skips |
+| Non-Egypt school | **Removed entirely.** No picker, no text field, no label — structurally symmetric with the governorate branch |
+
+Nothing new visually: every colour, size and component is already on those screens. The city escape
+and the school skip are literally the same widget, so they cannot drift apart.
+
+**Fix we need — designer.** Three questions, the first Seif's, the last two his and unanswered
+anywhere:
+
+1. **Where does the escape link sit** so it is findable but does not tempt students away from the
+   picker? Most students *should* use the list — the coded id is the only value the backend can
+   filter and report on. Our placement (directly under the field, low weight) is a guess in the
+   right direction, not a design.
+2. **How does the profile screen render a free-text city?** It has no `nameAr`/`nameEn` — one
+   string, in whatever language the student typed, shown in both locales. **Day 8's problem, and
+   answered nowhere.**
+3. **How does the profile screen render a missing school?** Seif offers the designer "blank row,
+   hidden row, or an 'أضف مدرستك' prompt" — but see `seif_fight.md` **S20**: `PATCH /me` cannot
+   write a school, so the third option has no endpoint behind it and should be withdrawn before the
+   designer picks it. **Also Day 8's problem.**
+
+**When the revision lands:** re-verify these states against the frames, do not rebuild them. The
+behaviour is contract-driven and will not change; only the presentation is up for revision.
