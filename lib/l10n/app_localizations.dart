@@ -122,6 +122,18 @@ abstract class AppLocalizations {
   /// **'Something went wrong'**
   String get genericError;
 
+  /// 429 `rate_limited` on the unauthenticated /reference/* pickers. Shown in the picker's EXISTING error slot with its existing Retry button — no countdown, no gating, no auto-retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please try again shortly.'**
+  String get rateLimited;
+
+  /// The same message when the server sent a usable Retry-After. Interpolated only; still no countdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests. Please try again in {seconds} seconds.'**
+  String rateLimitedIn(int seconds);
+
   /// Language-toggle pill label. Shows the OTHER language's endonym: in English it offers Arabic.
   ///
   /// In en, this message translates to:

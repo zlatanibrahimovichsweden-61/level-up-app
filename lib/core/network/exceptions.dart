@@ -62,6 +62,26 @@ class ValidationException extends ApiException {
   Iterable<String> get fields => errors.keys;
 }
 
+/// 429 — the unauthenticated per-IP limit on `/reference/*` (error-codes.md,
+/// `rate_limited` row; documented on countries/governorates/cities).
+///
+/// Deliberately NOT `otp_throttled`: that code is OTP-specific and reusing it
+/// would make a geography lookup show an OTP message. Seif split them for
+/// exactly this reason.
+class RateLimitedException extends ApiException {
+  const RateLimitedException({this.retryAfter, super.detail})
+      : super(status: 429, code: 'rate_limited');
+
+  /// Parsed from the `Retry-After` response header. Null when the header is
+  /// absent or unparseable — it is not guaranteed by the contract (only the
+  /// response descriptions mention it, there is no `headers:` block), so no
+  /// call site may assume a duration.
+  ///
+  /// Carried but not yet rendered as a countdown: the point is that a later day
+  /// can build one without re-plumbing the interceptor.
+  final Duration? retryAfter;
+}
+
 class UnknownException extends AppException {
   const UnknownException({super.detail}) : super('unknown');
 }

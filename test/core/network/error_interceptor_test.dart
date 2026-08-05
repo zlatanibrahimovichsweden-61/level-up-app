@@ -22,15 +22,29 @@ class _CaptureHandler extends ErrorInterceptorHandler {
       onReject(error);
 }
 
-DioException _response(int status, Object? body) => DioException(
+DioException _response(int status, Object? body, {Headers? headers}) =>
+    DioException(
       requestOptions: RequestOptions(path: '/auth/register'),
       response: Response<Object?>(
         requestOptions: RequestOptions(path: '/auth/register'),
         statusCode: status,
         data: body,
+        headers: headers,
       ),
       type: DioExceptionType.badResponse,
     );
+
+/// A `429 rate_limited` off `/reference/cities` with the given `Retry-After`
+/// header value verbatim (null = the header is absent).
+RateLimitedException _rateLimited(String? retryAfter) => _map(
+      _response(
+        429,
+        {'code': 'rate_limited', 'title': 'Too Many Requests', 'status': 429},
+        headers: Headers.fromMap(<String, List<String>>{
+          if (retryAfter != null) 'retry-after': [retryAfter],
+        }),
+      ),
+    ) as RateLimitedException;
 
 void main() {
   group('400 validation_failed → ValidationException', () {
@@ -45,7 +59,10 @@ void main() {
           'code': 'validation_failed',
           'errors': {
             'governorateId': ['governorateId is required when countryCode is EG'],
-            'schoolName': ['schoolName is not allowed when countryCode is EG'],
+            // adr-028 §1's own violation, replacing the schoolName sample:
+            // that field no longer exists on the contract, so the server can
+            // never name it again.
+            'cityName': ['cityName is not allowed together with cityId'],
           },
         }),
       );
@@ -54,7 +71,7 @@ void main() {
       final validation = mapped as ValidationException;
       expect(validation.status, 400);
       expect(validation.code, 'validation_failed');
-      expect(validation.fields, containsAll(['governorateId', 'schoolName']));
+      expect(validation.fields, containsAll(['governorateId', 'cityName']));
       expect(validation.errors['governorateId'], hasLength(1));
     });
 
@@ -120,6 +137,81 @@ void main() {
         ),
       );
       expect(mapped, isA<NetworkException>());
+    });
+  });
+
+  /// adr-028 §3 + the `rate_limited` row of error-codes.md. Neither code
+  /// existed anywhere in lib/ before Day 7c; both fell through to the default
+  /// arm and surfaced as a generic error.
+  group('429 rate_limited → RateLimitedException', () {
+    test('is typed, and is NOT otp_throttled', () {
+      final mapped = _rateLimited('30');
+
+      expect(mapped, isA<RateLimitedException>());
+      expect(mapped.status, 429);
+      // Reusing otp_throttled here would make a geography lookup show an OTP
+      // message; Seif split the two codes for exactly that reason.
+      expect(mapped.code, 'rate_limited');
+      expect(mapped.code, isNot('otp_throttled'));
+    });
+
+    test('a delta-seconds Retry-After parses', () {
+      expect(_rateLimited('30').retryAfter, const Duration(seconds: 30));
+      expect(_rateLimited(' 5 ').retryAfter, const Duration(seconds: 5));
+      expect(_rateLimited('0').retryAfter, Duration.zero);
+    });
+
+    test('an ABSENT header yields null — and does not throw', () {
+      // The contract only mentions Retry-After in prose; there is no `headers:`
+      // block on the 429, so it is not guaranteed to arrive at all.
+      expect(_rateLimited(null).retryAfter, isNull);
+    });
+
+    test('a GARBAGE header yields null — and does not throw', () {
+      for (final value in ['soon', '', '  ', '-1', '3.5', '1,2']) {
+        expect(
+          _rateLimited(value).retryAfter,
+          isNull,
+          reason: 'Retry-After: "$value" must degrade, not crash',
+        );
+      }
+    });
+
+    test('an HTTP-date Retry-After yields null rather than a guess', () {
+      // Converting a date means trusting the device clock against the
+      // server's. A wrong countdown is worse than no countdown.
+      expect(
+        _rateLimited('Wed, 05 Aug 2026 07:28:00 GMT').retryAfter,
+        isNull,
+      );
+    });
+
+    test('a 429 with a DIFFERENT code stays a plain ApiException', () {
+      // `otp_throttled` is still 429 and must keep its own handling.
+      final mapped = _map(_response(429, {'code': 'otp_throttled'}));
+      expect(mapped, isNot(isA<RateLimitedException>()));
+      expect(mapped.code, 'otp_throttled');
+    });
+  });
+
+  group('404 country_not_found', () {
+    test('maps to an ApiException carrying that code, not `unknown`', () {
+      // No subclass and no new UI by design — Seif's notice §3 says the
+      // geography pickers' generic error state stays as-is. The point is only
+      // that the code survives as itself.
+      final mapped = _map(_response(404, {'code': 'country_not_found'}));
+
+      expect(mapped, isA<ApiException>());
+      expect((mapped as ApiException).status, 404);
+      expect(mapped.code, 'country_not_found');
+      expect(mapped.code, isNot('unknown'));
+    });
+
+    test('a malformed countryCode is the 400, not the 404', () {
+      // Worth pinning because the split is easy to get backwards: `EGY`/`1`/``
+      // are validation_failed; a well-formed but unrecognised `XX` is the 404.
+      final mapped = _map(_response(400, {'code': 'validation_failed'}));
+      expect(mapped, isA<ValidationException>());
     });
   });
 }

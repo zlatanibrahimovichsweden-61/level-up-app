@@ -9,6 +9,7 @@ import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/reference_models.dart';
 import '../notifier/school_search_notifier.dart';
+import '../registration_error_copy.dart';
 import 'city_field.dart';
 import 'reference_dropdown.dart';
 
@@ -216,8 +217,7 @@ class _SchoolSearchSheetState extends ConsumerState<_SchoolSearchSheet> {
                 AsyncLoading() =>
                   const Center(child: CircularProgressIndicator()),
                 AsyncError(:final error) => _SheetFailure(
-                    message:
-                        isOffline(error) ? l10n.offline : l10n.genericError,
+                    message: referenceErrorMessage(l10n, error),
                     isOffline: isOffline(error),
                     onRetry: () => ref
                         .read(schoolSearchProvider(_filter).notifier)

@@ -21,6 +21,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get genericError => 'Something went wrong';
 
   @override
+  String get rateLimited => 'Too many requests. Please try again shortly.';
+
+  @override
+  String rateLimitedIn(int seconds) {
+    return 'Too many requests. Please try again in $seconds seconds.';
+  }
+
+  @override
   String get switchLanguage => 'العربية';
 
   @override

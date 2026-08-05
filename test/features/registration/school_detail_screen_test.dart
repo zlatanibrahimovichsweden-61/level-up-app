@@ -225,6 +225,58 @@ void main() {
     });
   });
 
+  group('rate limiting (429 rate_limited)', () {
+    testWidgets('renders in the picker\'s EXISTING error slot, with Retry',
+        (tester) async {
+      // No new widget and no gating: the same failure state every other
+      // picker error uses, just with copy that does not invite the student to
+      // hammer Retry against a limiter.
+      when(reference.getEducationSystems).thenThrow(
+        const RateLimitedException(retryAfter: Duration(seconds: 30)),
+      );
+      await pump(tester);
+
+      expect(
+        find.text('Too many requests. Please try again in 30 seconds.'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextButton, 'Retry'), findsWidgets);
+      // Definitively not the offline branch — a limiter is not a lost signal.
+      expect(find.text('You are offline'), findsNothing);
+    });
+
+    testWidgets('the message stands alone when Retry-After was unusable',
+        (tester) async {
+      when(reference.getEducationSystems)
+          .thenThrow(const RateLimitedException());
+      await pump(tester);
+
+      expect(
+        find.text('Too many requests. Please try again shortly.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('and is localized', (tester) async {
+      when(reference.getEducationSystems)
+          .thenThrow(const RateLimitedException());
+      await pump(tester, locale: const Locale('ar'));
+
+      expect(find.text('طلبات كثيرة. حاول مرة أخرى بعد قليل.'), findsOneWidget);
+    });
+
+    testWidgets('country_not_found still shows the GENERIC geography error',
+        (tester) async {
+      // Seif's notice §3 — map the code, render nothing new.
+      when(() => reference.getGovernorates(any())).thenThrow(
+        const ApiException(status: 404, code: 'country_not_found'),
+      );
+      await pump(tester);
+
+      expect(find.text('Something went wrong'), findsWidgets);
+    });
+  });
+
   group('picker states', () {
     testWidgets('loading → an in-field progress indicator', (tester) async {
       final completer = stubCountriesPending(reference);

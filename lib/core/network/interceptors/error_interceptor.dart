@@ -30,6 +30,11 @@ class ErrorInterceptor extends Interceptor {
         401 => UnauthorizedException(code: code),
         400 when code == 'validation_failed' =>
           ValidationException(errors: _fieldMap(data)),
+        429 when code == 'rate_limited' =>
+          RateLimitedException(retryAfter: _retryAfter(res)),
+        // `404 country_not_found` (adr-028 §3) needs no subclass and no new UI:
+        // the geography pickers' existing error state stands. It is listed here
+        // only so the code is carried through as itself rather than `unknown`.
         _ => ApiException(status: status, code: code),
       };
     } else {
@@ -44,6 +49,22 @@ class ErrorInterceptor extends Interceptor {
         error: mapped,
       ),
     );
+  }
+
+  /// `Retry-After`, parsed as defensively as [_fieldMap]: absent, non-numeric,
+  /// negative or HTTP-date values all yield null rather than throwing. A
+  /// rate-limit error must still surface as a rate-limit error even when the
+  /// hint that accompanies it is unusable.
+  ///
+  /// **Delta-seconds only.** The HTTP-date form is deliberately not supported:
+  /// converting it means trusting the device clock against the server's, and a
+  /// wrong countdown is worse than no countdown.
+  static Duration? _retryAfter(Response<dynamic> response) {
+    final raw = response.headers.value('retry-after')?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    final seconds = int.tryParse(raw);
+    if (seconds == null || seconds < 0) return null;
+    return Duration(seconds: seconds);
   }
 
   /// `ProblemDetails.errors` — `field -> [messages]`. Parsed defensively (a

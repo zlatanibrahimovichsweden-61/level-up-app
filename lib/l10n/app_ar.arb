@@ -4,6 +4,8 @@
   "retry": "إعادة المحاولة",
   "offline": "أنت غير متصل بالإنترنت",
   "genericError": "حدث خطأ ما",
+  "rateLimited": "طلبات كثيرة. حاول مرة أخرى بعد قليل.",
+  "rateLimitedIn": "طلبات كثيرة. حاول مرة أخرى بعد {seconds} ثانية.",
 
   "switchLanguage": "English",
 

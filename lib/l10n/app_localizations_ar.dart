@@ -21,6 +21,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get genericError => 'حدث خطأ ما';
 
   @override
+  String get rateLimited => 'طلبات كثيرة. حاول مرة أخرى بعد قليل.';
+
+  @override
+  String rateLimitedIn(int seconds) {
+    return 'طلبات كثيرة. حاول مرة أخرى بعد $seconds ثانية.';
+  }
+
+  @override
   String get switchLanguage => 'English';
 
   @override

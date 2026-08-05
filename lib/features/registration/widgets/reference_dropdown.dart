@@ -5,6 +5,7 @@ import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
+import '../registration_error_copy.dart';
 
 /// One selectable row. Reference rows are bilingual (`nameAr`/`nameEn`) — the
 /// label is resolved by locale at the call site via [localizedRefName], and the
@@ -110,7 +111,7 @@ class ReferenceDropdown extends ConsumerWidget {
             ),
           ),
         AsyncError(:final error) => _PickerFailure(
-            message: isOffline(error) ? l10n.offline : l10n.genericError,
+            message: referenceErrorMessage(l10n, error),
             isOffline: isOffline(error),
             onRetry: onRetry,
           ),

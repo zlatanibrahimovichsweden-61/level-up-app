@@ -27,6 +27,30 @@ String registrationErrorMessage(AppLocalizations l10n, Object? error) {
   return l10n.genericError;
 }
 
+/// In-field copy for a failed `/reference/*` load, used by every picker.
+///
+/// Three outcomes, one slot. `429 rate_limited` gets its own line because the
+/// generic "something went wrong" invites the student to hammer Retry, which is
+/// the one thing that cannot help — but it is still just a message in the
+/// EXISTING error state, with the existing user-tapped Retry button. No
+/// countdown, no gating, no auto-retry.
+///
+/// `404 country_not_found` deliberately gets NO special copy (Seif's notice
+/// §3: the generic geography error state "stays as-is"). A student picks the
+/// country from a list, so it should be unreachable; mapping the code keeps it
+/// out of `unknown` without inventing UI for it.
+String referenceErrorMessage(AppLocalizations l10n, Object? error) {
+  if (isOffline(error)) return l10n.offline;
+  if (error is RateLimitedException) {
+    final retryAfter = error.retryAfter;
+    // The header is not guaranteed, so the message has to stand alone.
+    return retryAfter == null
+        ? l10n.rateLimited
+        : l10n.rateLimitedIn(retryAfter.inSeconds);
+  }
+  return l10n.genericError;
+}
+
 /// Copy for one field's inline error.
 String fieldIssueMessage(AppLocalizations l10n, RegFieldIssue issue) =>
     switch (issue) {
