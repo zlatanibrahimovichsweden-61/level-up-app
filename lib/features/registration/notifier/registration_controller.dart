@@ -85,8 +85,8 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
         requiresGovernorate: requiresGovernorate,
         governorateId: null,
         cityId: null,
+        cityName: null,
         schoolId: null,
-        schoolName: null,
       );
     });
   }
@@ -103,28 +103,38 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     });
   }
 
-  /// City picked — the school search is filtered by it.
+  /// Coded city picked — the school search is filtered by it. Clears the
+  /// free-text half of the adr-028 §1 union: the two are never both populated,
+  /// which is what makes `cityUnionFromDraft`'s "both → throw" unreachable.
   void setCity(String cityId) {
     _update((draft) {
-      if (draft.cityId == cityId) return draft;
-      return draft.copyWith(cityId: cityId, schoolId: null);
+      if (draft.cityId == cityId && draft.cityName == null) return draft;
+      return draft.copyWith(cityId: cityId, cityName: null, schoolId: null);
     });
   }
 
-  /// EG: the coded school id from the searchable list.
-  void setSchool(String schoolId) =>
-      _update((draft) => draft.copyWith(schoolId: schoolId));
-
-  /// Non-EG: optional free-text school name. Blank normalizes to null so it is
-  /// omitted from the body rather than sent empty.
-  void setSchoolName(String? schoolName) {
-    final trimmed = schoolName?.trim();
+  /// adr-028 §1 — the "my city isn't listed" fallback. Blank normalizes to null
+  /// so the key is omitted from the body rather than sent empty.
+  ///
+  /// Clears `cityId` (the other half of the union) AND `schoolId`: the school
+  /// search is scoped by city, so an uncoded city invalidates a school that was
+  /// chosen under the coded one.
+  void setCityName(String? cityName) {
+    final trimmed = cityName?.trim();
+    final normalized = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
     _update(
       (draft) => draft.copyWith(
-        schoolName: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+        cityName: normalized,
+        cityId: null,
+        schoolId: null,
       ),
     );
   }
+
+  /// EG: the coded school id from the searchable list. Optional since adr-028
+  /// §2 — a student who cannot find their school simply never calls this.
+  void setSchool(String schoolId) =>
+      _update((draft) => draft.copyWith(schoolId: schoolId));
 
   // --- School academic -----------------------------------------------------
 

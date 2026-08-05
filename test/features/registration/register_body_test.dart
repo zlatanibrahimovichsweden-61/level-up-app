@@ -13,8 +13,8 @@ RegistrationDraft _draft({
   bool? requiresGovernorate,
   String? governorateId,
   String? cityId,
+  String? cityName,
   String? schoolId,
-  String? schoolName,
   String? stage,
   String? educationSystem,
   String? universityId,
@@ -38,8 +38,8 @@ RegistrationDraft _draft({
     requiresGovernorate: requiresGovernorate,
     governorateId: governorateId,
     cityId: cityId,
+    cityName: cityName,
     schoolId: schoolId,
-    schoolName: schoolName,
     stage: stage,
     educationSystem: educationSystem,
     universityId: universityId,
@@ -48,42 +48,55 @@ RegistrationDraft _draft({
   );
 }
 
-/// A complete, valid EGYPTIAN school draft.
-RegistrationDraft _egyptSchoolDraft({String? schoolName}) => _draft(
+/// A complete, valid EGYPTIAN school draft — coded city, coded school.
+RegistrationDraft _egyptSchoolDraft({
+  String? cityId = 'city-nasr',
+  String? cityName,
+  String? schoolId = 'school-42',
+}) =>
+    _draft(
       countryCode: 'EG',
       requiresGovernorate: true,
       governorateId: 'gov-cairo',
-      cityId: 'city-nasr',
-      schoolId: 'school-42',
-      schoolName: schoolName,
+      cityId: cityId,
+      cityName: cityName,
+      schoolId: schoolId,
       stage: Stage.secondary1.wireValue,
       educationSystem: 'ig',
     );
 
-/// A complete, valid NON-Egyptian school draft (UAE — `requiresGovernorate` false).
+/// A complete, valid NON-Egyptian school draft (UAE — `requiresGovernorate`
+/// false). Since adr-028 §2 there is no school step at all on this flow, so the
+/// default draft carries no `schoolId`.
 RegistrationDraft _foreignSchoolDraft({
   String? governorateId,
   String? schoolId,
-  String? schoolName = 'Dubai British School',
+  String? cityId = 'city-dubai',
+  String? cityName,
 }) =>
     _draft(
       countryCode: 'AE',
       requiresGovernorate: false,
       governorateId: governorateId,
-      cityId: 'city-dubai',
+      cityId: cityId,
+      cityName: cityName,
       schoolId: schoolId,
-      schoolName: schoolName,
       stage: Stage.prep2.wireValue,
       educationSystem: 'american',
     );
 
-RegistrationDraft _universityDraft() => _draft(
+RegistrationDraft _universityDraft({
+  String? cityId = 'city-dokki',
+  String? cityName,
+}) =>
+    _draft(
       track: RegTrack.university,
       universityId: 'uni-cairo',
       facultyId: 'fac-medicine',
       studyYearId: 'year-2',
       governorateId: 'gov-giza',
-      cityId: 'city-dokki',
+      cityId: cityId,
+      cityName: cityName,
       dateOfBirth: DateTime(2004, 3, 7),
     );
 
@@ -105,14 +118,24 @@ void main() {
       expect(json['parentPhone'], '+201021871999');
     });
 
-    test('schoolName is FORBIDDEN — the key is absent, not null', () {
-      // Even when the draft still carries free text (e.g. typed before the
-      // student switched the country to Egypt), it must never reach the wire.
-      final json = SchoolRegistration.fromDraft(
-        _egyptSchoolDraft(schoolName: 'Leftover Free Text'),
-      ).toJson();
+    test('schoolName does not exist on this contract at all (adr-028 §2)', () {
+      // v1.1 removed the field outright; the server rejects it as an unknown
+      // property. There is no branch of any draft that can produce the key.
+      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
 
       expect(json.containsKey('schoolName'), isFalse);
+    });
+
+    test('schoolId is OPTIONAL here too — omitted, not defaulted', () {
+      // adr-028 §2: an Egyptian student who cannot find their school skips it
+      // and registers anyway. Under v1.0 this threw.
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(schoolId: null),
+      ).toJson();
+
+      expect(json.containsKey('schoolId'), isFalse);
+      expect(json['governorateId'], 'gov-cairo');
+      expect(json['cityId'], 'city-nasr');
     });
 
     test('unsent optional fields are omitted entirely', () {
@@ -123,37 +146,128 @@ void main() {
   });
 
   group('SchoolRegistration.toJson — non-Egypt', () {
-    test('city + optional free-text school, no coded geography', () {
+    test('city only — no coded geography, and no school of any kind', () {
       final json = SchoolRegistration.fromDraft(_foreignSchoolDraft()).toJson();
 
       expect(json['track'], 'school');
       expect(json['countryCode'], 'AE');
       expect(json['cityId'], 'city-dubai');
-      expect(json['schoolName'], 'Dubai British School');
+      expect(json.containsKey('schoolId'), isFalse);
+      expect(json.containsKey('schoolName'), isFalse);
       expect(json['stage'], 'prep2');
       expect(json['educationSystem'], 'american');
     });
 
-    test('governorateId + schoolId are FORBIDDEN — keys absent, not null', () {
-      // Stale ids left over from an Egypt selection must be dropped.
+    test('a stale governorateId is dropped — key absent, not null', () {
       final json = SchoolRegistration.fromDraft(
-        _foreignSchoolDraft(governorateId: 'gov-cairo', schoolId: 'school-42'),
+        _foreignSchoolDraft(governorateId: 'gov-cairo'),
       ).toJson();
 
       expect(json.containsKey('governorateId'), isFalse);
-      expect(json.containsKey('schoolId'), isFalse);
     });
 
-    test('schoolName never blocks: absent when blank, trimmed when present', () {
-      final blank =
-          SchoolRegistration.fromDraft(_foreignSchoolDraft(schoolName: '   '))
-              .toJson();
-      expect(blank.containsKey('schoolName'), isFalse);
+    test('a leftover schoolId THROWS — the step does not exist here', () {
+      // Not because v1.1 forbids schoolId (it does not), but because section C
+      // removes the school step outside Egypt, so an id here means a
+      // cascade-clear was missed.
+      expect(
+        () => SchoolRegistration.fromDraft(
+          _foreignSchoolDraft(schoolId: 'school-42'),
+        ),
+        throwsA(
+          isA<ForbiddenRegistrationField>()
+              .having((e) => e.field, 'field', 'schoolId'),
+        ),
+      );
+    });
+  });
 
-      final padded = SchoolRegistration.fromDraft(
-        _foreignSchoolDraft(schoolName: '  Al Ain Academy  '),
+  group('the adr-028 §1 city union — one key or the other, never both', () {
+    test('cityId only: cityName key is absent, not null', () {
+      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+
+      expect(json['cityId'], 'city-nasr');
+      expect(json.containsKey('cityName'), isFalse);
+    });
+
+    test('cityName only: cityId key is absent, not null', () {
+      final json = SchoolRegistration.fromDraft(
+        _foreignSchoolDraft(cityId: null, cityName: 'Al Ain'),
       ).toJson();
-      expect(padded['schoolName'], 'Al Ain Academy');
+
+      expect(json['cityName'], 'Al Ain');
+      expect(json.containsKey('cityId'), isFalse);
+    });
+
+    test('NEITHER throws, naming cityId', () {
+      expect(
+        () => SchoolRegistration.fromDraft(
+          _foreignSchoolDraft(cityId: null),
+        ),
+        throwsA(
+          isA<IncompleteRegistrationDraft>()
+              .having((e) => e.field, 'field', 'cityId'),
+        ),
+      );
+    });
+
+    test('BOTH throws rather than letting the server 400 it', () {
+      expect(
+        () => SchoolRegistration.fromDraft(
+          _egyptSchoolDraft(cityName: 'Nasr City'),
+        ),
+        throwsA(
+          isA<ForbiddenRegistrationField>()
+              .having((e) => e.field, 'field', 'cityName'),
+        ),
+      );
+    });
+
+    test('cityName is trimmed, and blank-after-trim counts as absent', () {
+      final padded = SchoolRegistration.fromDraft(
+        _foreignSchoolDraft(cityId: null, cityName: '  Al Ain  '),
+      ).toJson();
+      expect(padded['cityName'], 'Al Ain');
+
+      // Blank is not "a city" — it falls through to the neither-arm.
+      expect(
+        () => SchoolRegistration.fromDraft(
+          _foreignSchoolDraft(cityId: null, cityName: '   '),
+        ),
+        throwsA(isA<IncompleteRegistrationDraft>()),
+      );
+    });
+
+    test('cityName is capped at the contract maxLength of 100', () {
+      final json = SchoolRegistration.fromDraft(
+        _foreignSchoolDraft(cityId: null, cityName: 'x' * 140),
+      ).toJson();
+
+      expect((json['cityName'] as String).length, 100);
+    });
+
+    test('the same union rules apply on the university body', () {
+      final coded =
+          UniversityRegistration.fromDraft(_universityDraft()).toJson();
+      expect(coded['cityId'], 'city-dokki');
+      expect(coded.containsKey('cityName'), isFalse);
+
+      final free = UniversityRegistration.fromDraft(
+        _universityDraft(cityId: null, cityName: '  Dokki  '),
+      ).toJson();
+      expect(free['cityName'], 'Dokki');
+      expect(free.containsKey('cityId'), isFalse);
+
+      expect(
+        () => UniversityRegistration.fromDraft(
+          _universityDraft(cityName: 'Dokki'),
+        ),
+        throwsA(isA<ForbiddenRegistrationField>()),
+      );
+      expect(
+        () => UniversityRegistration.fromDraft(_universityDraft(cityId: null)),
+        throwsA(isA<IncompleteRegistrationDraft>()),
+      );
     });
   });
 
@@ -231,14 +345,14 @@ void main() {
       );
     });
 
-    test('Egypt without schoolId throws (coded list is mandatory there)', () {
+    test('Egypt without governorateId still throws (adr-010 is untouched)', () {
       expect(
         () => SchoolRegistration.fromDraft(
-          _egyptSchoolDraft().copyWith(schoolId: null),
+          _egyptSchoolDraft().copyWith(governorateId: null),
         ),
         throwsA(
           isA<IncompleteRegistrationDraft>()
-              .having((e) => e.field, 'field', 'schoolId'),
+              .having((e) => e.field, 'field', 'governorateId'),
         ),
       );
     });
@@ -274,14 +388,7 @@ void main() {
       expect(issues[RegFields.schoolId], RegFieldIssue.missing);
     });
 
-    test('Egypt FORBIDS schoolName', () {
-      final issues = validateSchoolDraft(
-        _egyptSchoolDraft(schoolName: 'Some Free Text'),
-      );
-      expect(issues[RegFields.schoolName], RegFieldIssue.forbidden);
-    });
-
-    test('a complete non-Egypt draft is valid (free-text school allowed)', () {
+    test('a complete non-Egypt draft is valid', () {
       expect(validateSchoolDraft(_foreignSchoolDraft()), isEmpty);
     });
 
@@ -291,13 +398,6 @@ void main() {
       expect(issues[RegFields.cityId], RegFieldIssue.missing);
       expect(issues.containsKey(RegFields.governorateId), isFalse);
       expect(issues.containsKey(RegFields.schoolId), isFalse);
-    });
-
-    test('non-Egypt allows an omitted schoolName — never blocks', () {
-      expect(
-        validateSchoolDraft(_foreignSchoolDraft(schoolName: null)),
-        isEmpty,
-      );
     });
 
     test('non-Egypt FORBIDS governorate + school', () {

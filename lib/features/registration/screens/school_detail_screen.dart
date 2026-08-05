@@ -41,24 +41,9 @@ class SchoolDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
-  final _schoolNameController = TextEditingController();
-
   /// The chosen school row, kept locally so the field can show its NAME while
   /// the draft carries only the opaque id that gets submitted.
   NamedRef? _selectedSchool;
-
-  @override
-  void initState() {
-    super.initState();
-    _schoolNameController.text =
-        ref.read(registrationControllerProvider)?.schoolName ?? '';
-  }
-
-  @override
-  void dispose() {
-    _schoolNameController.dispose();
-    super.dispose();
-  }
 
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
@@ -154,7 +139,6 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           requiresGovernorate: country.requiresGovernorate,
                         );
                         setState(() => _selectedSchool = null);
-                        _schoolNameController.clear();
                       }),
                     ),
                     const SizedBox(height: 16),
@@ -237,8 +221,10 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // 6 — School Name. The adr-010 fork: coded picker for
-                    // Egypt, optional free text everywhere else.
+                    // 6 — School. EGYPT ONLY (adr-028 §2): the coded list is
+                    // Egyptian, so outside Egypt there is nothing to choose
+                    // from and nothing to type — the block is absent, not
+                    // disabled, exactly like the governorate branch above.
                     if (requiresGovernorate)
                       SchoolPickerField(
                         governorateId: draft.governorateId,
@@ -249,12 +235,6 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           setState(() => _selectedSchool = school);
                           controller.setSchool(school.id);
                         }),
-                      )
-                    else
-                      SchoolNameField(
-                        controller: _schoolNameController,
-                        onChanged: (value) =>
-                            _edit(() => controller.setSchoolName(value)),
                       ),
 
                     if (submitState.hasError &&

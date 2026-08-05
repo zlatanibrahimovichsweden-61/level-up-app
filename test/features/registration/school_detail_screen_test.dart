@@ -144,11 +144,10 @@ void main() {
 
       expect(find.byKey(const Key('field-governorateId')), findsOneWidget);
       expect(find.byKey(const Key('field-schoolId')), findsOneWidget);
-      expect(find.byKey(const Key('field-schoolName')), findsNothing);
     });
 
     testWidgets(
-      'a non-Egypt country hides Governorate and swaps in free-text school',
+      'a non-Egypt country hides Governorate AND the school step entirely',
       (tester) async {
         final container = await pump(tester);
         container.read(registrationControllerProvider.notifier).setCountry(
@@ -159,9 +158,12 @@ void main() {
 
         // Governorate is FORBIDDEN there — absent, not merely disabled.
         expect(find.byKey(const Key('field-governorateId')), findsNothing);
+        // adr-028 §2: the coded list is Egyptian, so outside Egypt there is
+        // no school field of ANY kind — no picker, and no free-text
+        // replacement either (v1.1 cancelled that outright).
         expect(find.byKey(const Key('field-schoolId')), findsNothing);
-        expect(find.byKey(const Key('field-schoolName')), findsOneWidget);
-        expect(find.text('School Name (Optional)'), findsOneWidget);
+        expect(find.byKey(const Key('field-schoolName')), findsNothing);
+        expect(find.textContaining('School Name'), findsNothing);
       },
     );
 

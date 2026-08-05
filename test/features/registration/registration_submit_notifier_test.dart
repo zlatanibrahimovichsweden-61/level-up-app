@@ -156,7 +156,9 @@ void main() {
       expect(json['track'], 'school');
       expect(json['governorateId'], 'gov-cairo');
       expect(json['schoolId'], 'school-42');
-      expect(json.containsKey('schoolName'), isFalse); // forbidden for EG
+      expect(json['cityId'], isNotNull);
+      // adr-028 §2 — the field no longer exists on the contract at all.
+      expect(json.containsKey('schoolName'), isFalse);
     });
 
     test('builds the UNIVERSITY body from the draft', () async {
@@ -186,20 +188,18 @@ void main() {
       expect(json.values, isNot(contains('FRIEND50')));
     });
 
-    test('non-Egypt draft submits free text and omits the coded ids', () async {
+    test('non-Egypt draft omits the coded ids and every school key', () async {
       when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
       final c = seededSchool(requiresGovernorate: false);
-      c.read(registrationControllerProvider.notifier)
-          .setSchoolName('Dubai British School');
 
       await c.read(registrationSubmitProvider.notifier).submit();
 
       final json = (verify(() => repo.register(captureAny())).captured.single
               as SchoolRegistration)
           .toJson();
-      expect(json['schoolName'], 'Dubai British School');
       expect(json.containsKey('governorateId'), isFalse);
       expect(json.containsKey('schoolId'), isFalse);
+      expect(json.containsKey('schoolName'), isFalse);
     });
   });
 
@@ -324,16 +324,17 @@ void main() {
     });
 
     test('a forbidden field is caught client-side too (adr-010)', () async {
-      final c = seededSchool();
-      // Force the impossible combination the UI prevents: EG + free-text school.
-      c.read(registrationControllerProvider.notifier).setSchoolName('Free Text');
+      final c = seededSchool(requiresGovernorate: false);
+      // Force the combination the UI prevents: a non-Egypt draft still holding
+      // a coded schoolId from before the country was switched.
+      c.read(registrationControllerProvider.notifier).setSchool('school-42');
 
       await c.read(registrationSubmitProvider.notifier).submit();
 
       verifyNever(() => repo.register(any()));
       expect(
         (c.read(registrationSubmitProvider).error! as DraftValidationFailure)
-            .issues[RegFields.schoolName],
+            .issues[RegFields.schoolId],
         RegFieldIssue.forbidden,
       );
     });

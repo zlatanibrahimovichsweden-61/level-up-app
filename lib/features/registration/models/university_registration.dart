@@ -14,9 +14,11 @@ part 'university_registration.g.dart';
 /// That is why this is a separate class rather than a variant of
 /// [SchoolRegistration] — adding a country here would invent contract surface.
 ///
-/// Required: `track, registrationToken, name, dateOfBirth, universityId,
-/// facultyId, studyYearId, governorateId, cityId, parentPhone`.
-/// Optional: `email, avatarId` (not collected — see [SchoolRegistration]).
+/// Required (`:1305`): `track, registrationToken, name, dateOfBirth,
+/// universityId, facultyId, studyYearId, governorateId, parentPhone`, PLUS the
+/// `anyOf` at `:1306-1308` — at least one of `cityId` / `cityName`.
+/// Optional: `cityId, cityName, email, avatarId` (the last two not collected —
+/// see [SchoolRegistration]).
 ///
 /// Note `governorateId` is REQUIRED here (unlike the school body, where it is
 /// conditional). It is missing from the Figma frame —
@@ -37,7 +39,12 @@ abstract class UniversityRegistration
     required String facultyId,
     required String studyYearId,
     required String governorateId,
-    required String cityId,
+
+    /// adr-028 §1 — exactly one of these two reaches the wire, same rule as
+    /// the school body. Both nullable: the contract expresses "at least one"
+    /// as an `anyOf`, not by making either required.
+    @JsonKey(includeIfNull: false) String? cityId,
+    @JsonKey(includeIfNull: false) String? cityName,
     required String parentPhone,
     @JsonKey(includeIfNull: false) String? email,
     @JsonKey(includeIfNull: false) String? avatarId,
@@ -48,8 +55,10 @@ abstract class UniversityRegistration
   factory UniversityRegistration.fromJson(Map<String, dynamic> json) =>
       _$UniversityRegistrationFromJson(json);
 
-  /// Builds the body from the wizard draft. Every field is unconditionally
-  /// required here — there is no geography branch on this track.
+  /// Builds the body from the wizard draft. There is still no geography branch
+  /// on this track — every field below is unconditionally required — but the
+  /// city is now the adr-028 §1 union, resolved by [cityUnionFromDraft] exactly
+  /// as on the school body.
   ///
   /// `name` and `parentPhone` come from Sign Up_1 (never re-collected);
   /// `referralCode` is never submitted (no contract field — DESIGN_ISSUES #7).
@@ -57,6 +66,8 @@ abstract class UniversityRegistration
   /// Throws [IncompleteRegistrationDraft] if a required field is missing —
   /// callers must gate on `validateUniversityDraft` first.
   factory UniversityRegistration.fromDraft(RegistrationDraft draft) {
+    final city = cityUnionFromDraft(draft);
+
     return UniversityRegistration(
       registrationToken: draft.registrationToken,
       name: requireField(draft.name, 'name'),
@@ -65,7 +76,8 @@ abstract class UniversityRegistration
       facultyId: requireField(draft.facultyId, 'facultyId'),
       studyYearId: requireField(draft.studyYearId, 'studyYearId'),
       governorateId: requireField(draft.governorateId, 'governorateId'),
-      cityId: requireField(draft.cityId, 'cityId'),
+      cityId: city.cityId,
+      cityName: city.cityName,
       parentPhone: requireField(draft.parentPhone, 'parentPhone'),
     );
   }

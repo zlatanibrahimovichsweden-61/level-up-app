@@ -17,7 +17,6 @@ abstract final class RegFields {
   static const governorateId = 'governorateId';
   static const cityId = 'cityId';
   static const schoolId = 'schoolId';
-  static const schoolName = 'schoolName';
   static const stage = 'stage';
   static const educationSystem = 'educationSystem';
   static const universityId = 'universityId';
@@ -82,12 +81,9 @@ Map<String, RegFieldIssue> validateSchoolDraft(RegistrationDraft draft) {
   if (draft.requiresGovernorate ?? false) {
     requireValue(RegFields.governorateId, draft.governorateId);
     requireValue(RegFields.schoolId, draft.schoolId);
-    forbidValue(RegFields.schoolName, draft.schoolName);
   } else {
     forbidValue(RegFields.governorateId, draft.governorateId);
     forbidValue(RegFields.schoolId, draft.schoolId);
-    // schoolName is optional free text here — never blocks registration
-    // ("never blocked" is explicit in the contract).
   }
 
   return issues;

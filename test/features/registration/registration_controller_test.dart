@@ -181,8 +181,8 @@ void main() {
       final draft = container.read(registrationControllerProvider)!;
       expect(draft.governorateId, isNull);
       expect(draft.cityId, isNull);
+      expect(draft.cityName, isNull);
       expect(draft.schoolId, isNull);
-      expect(draft.schoolName, isNull);
     });
 
     test('re-selecting the SAME country preserves the branch', () {
@@ -213,19 +213,36 @@ void main() {
       expect(draft.schoolId, isNull);
     });
 
-    test('blank free-text schoolName normalizes to null (never sent empty)', () {
+    test('blank free-text cityName normalizes to null (never sent empty)', () {
+      // The normalization moved here from the deleted `setSchoolName` — same
+      // rule, applied to the field adr-028 §1 actually introduced.
       final container = _container();
       final controller = container.read(registrationControllerProvider.notifier)
         ..start(_args)
         ..setCountry(countryCode: 'AE', requiresGovernorate: false)
-        ..setSchoolName('   ');
-      expect(container.read(registrationControllerProvider)!.schoolName, isNull);
+        ..setCityName('   ');
+      expect(container.read(registrationControllerProvider)!.cityName, isNull);
 
-      controller.setSchoolName('  Al Ain Academy ');
+      controller.setCityName('  Al Ain ');
       expect(
-        container.read(registrationControllerProvider)!.schoolName,
-        'Al Ain Academy',
+        container.read(registrationControllerProvider)!.cityName,
+        'Al Ain',
       );
+    });
+
+    test('the city union is mutually exclusive on the controller', () {
+      final (container, controller) = seededEgypt();
+
+      controller.setCityName('Somewhere Uncoded');
+      var draft = container.read(registrationControllerProvider)!;
+      expect(draft.cityName, 'Somewhere Uncoded');
+      expect(draft.cityId, isNull, reason: 'free text clears the coded id');
+      expect(draft.schoolId, isNull, reason: 'schools are filtered by city');
+
+      controller.setCity('city-nasr');
+      draft = container.read(registrationControllerProvider)!;
+      expect(draft.cityId, 'city-nasr');
+      expect(draft.cityName, isNull, reason: 'the picker clears the free text');
     });
   });
 
@@ -302,7 +319,7 @@ void main() {
         ..setGovernorate('gov-cairo')
         ..setCity('city-nasr')
         ..setSchool('school-42')
-        ..setSchoolName('x')
+        ..setCityName('x')
         ..setStage('prep1')
         ..setEducationSystem('ib')
         ..setUniversity('uni-cairo')

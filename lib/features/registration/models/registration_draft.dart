@@ -45,9 +45,14 @@ abstract class RegistrationDraft with _$RegistrationDraft {
     String? countryCode,
     bool? requiresGovernorate,
     String? governorateId,
+
+    /// The adr-028 §1 city union, held as two fields because the wire has two
+    /// keys. Never both at once: every setter that populates one clears the
+    /// other, which is what makes `cityUnionFromDraft`'s "both → throw"
+    /// unreachable through the UI.
     String? cityId,
+    String? cityName,
     String? schoolId,
-    String? schoolName,
     // --- School academic ---
     String? stage,
     String? educationSystem,

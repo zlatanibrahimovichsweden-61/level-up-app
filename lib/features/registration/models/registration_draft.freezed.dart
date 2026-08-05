@@ -14,7 +14,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RegistrationDraft {
 
- String get registrationToken; DateTime get tokenExpiresAt; String get phone; String? get name; String? get parentPhone; String? get referralCode; RegTrack? get track; DateTime? get dateOfBirth; String? get countryCode; bool? get requiresGovernorate; String? get governorateId; String? get cityId; String? get schoolId; String? get schoolName; String? get stage; String? get educationSystem; String? get universityId; String? get facultyId; String? get studyYearId;
+ String get registrationToken; DateTime get tokenExpiresAt; String get phone; String? get name; String? get parentPhone; String? get referralCode; RegTrack? get track; DateTime? get dateOfBirth; String? get countryCode; bool? get requiresGovernorate; String? get governorateId;/// The adr-028 §1 city union, held as two fields because the wire has two
+/// keys. Never both at once: every setter that populates one clears the
+/// other, which is what makes `cityUnionFromDraft`'s "both → throw"
+/// unreachable through the UI.
+ String? get cityId; String? get cityName; String? get schoolId; String? get stage; String? get educationSystem; String? get universityId; String? get facultyId; String? get studyYearId;
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +29,16 @@ $RegistrationDraftCopyWith<RegistrationDraft> get copyWith => _$RegistrationDraf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.schoolName, schoolName) || other.schoolName == schoolName)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,schoolId,schoolName,stage,educationSystem,universityId,facultyId,studyYearId]);
+int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,stage,educationSystem,universityId,facultyId,studyYearId]);
 
 @override
 String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, schoolId: $schoolId, schoolName: $schoolName, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
+  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
 }
 
 
@@ -45,7 +49,7 @@ abstract mixin class $RegistrationDraftCopyWith<$Res>  {
   factory $RegistrationDraftCopyWith(RegistrationDraft value, $Res Function(RegistrationDraft) _then) = _$RegistrationDraftCopyWithImpl;
 @useResult
 $Res call({
- String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? schoolId, String? schoolName, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
+ String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
 });
 
 
@@ -62,7 +66,7 @@ class _$RegistrationDraftCopyWithImpl<$Res>
 
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? schoolId = freezed,Object? schoolName = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
   return _then(_self.copyWith(
 registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
 as String,tokenExpiresAt: null == tokenExpiresAt ? _self.tokenExpiresAt : tokenExpiresAt // ignore: cast_nullable_to_non_nullable
@@ -76,8 +80,8 @@ as DateTime?,countryCode: freezed == countryCode ? _self.countryCode : countryCo
 as String?,requiresGovernorate: freezed == requiresGovernorate ? _self.requiresGovernorate : requiresGovernorate // ignore: cast_nullable_to_non_nullable
 as bool?,governorateId: freezed == governorateId ? _self.governorateId : governorateId // ignore: cast_nullable_to_non_nullable
 as String?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,schoolId: freezed == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
-as String?,schoolName: freezed == schoolName ? _self.schoolName : schoolName // ignore: cast_nullable_to_non_nullable
 as String?,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String?,educationSystem: freezed == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String?,universityId: freezed == universityId ? _self.universityId : universityId // ignore: cast_nullable_to_non_nullable
@@ -168,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? schoolId,  String? schoolName,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RegistrationDraft() when $default != null:
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.schoolId,_that.schoolName,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
   return orElse();
 
 }
@@ -189,10 +193,10 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? schoolId,  String? schoolName,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)  $default,) {final _that = this;
 switch (_that) {
 case _RegistrationDraft():
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.schoolId,_that.schoolName,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +213,10 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? schoolId,  String? schoolName,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,) {final _that = this;
 switch (_that) {
 case _RegistrationDraft() when $default != null:
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.schoolId,_that.schoolName,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
   return null;
 
 }
@@ -224,7 +228,7 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 
 
 class _RegistrationDraft extends RegistrationDraft {
-  const _RegistrationDraft({required this.registrationToken, required this.tokenExpiresAt, required this.phone, this.name, this.parentPhone, this.referralCode, this.track, this.dateOfBirth, this.countryCode, this.requiresGovernorate, this.governorateId, this.cityId, this.schoolId, this.schoolName, this.stage, this.educationSystem, this.universityId, this.facultyId, this.studyYearId}): super._();
+  const _RegistrationDraft({required this.registrationToken, required this.tokenExpiresAt, required this.phone, this.name, this.parentPhone, this.referralCode, this.track, this.dateOfBirth, this.countryCode, this.requiresGovernorate, this.governorateId, this.cityId, this.cityName, this.schoolId, this.stage, this.educationSystem, this.universityId, this.facultyId, this.studyYearId}): super._();
   
 
 @override final  String registrationToken;
@@ -238,9 +242,13 @@ class _RegistrationDraft extends RegistrationDraft {
 @override final  String? countryCode;
 @override final  bool? requiresGovernorate;
 @override final  String? governorateId;
+/// The adr-028 §1 city union, held as two fields because the wire has two
+/// keys. Never both at once: every setter that populates one clears the
+/// other, which is what makes `cityUnionFromDraft`'s "both → throw"
+/// unreachable through the UI.
 @override final  String? cityId;
+@override final  String? cityName;
 @override final  String? schoolId;
-@override final  String? schoolName;
 @override final  String? stage;
 @override final  String? educationSystem;
 @override final  String? universityId;
@@ -257,16 +265,16 @@ _$RegistrationDraftCopyWith<_RegistrationDraft> get copyWith => __$RegistrationD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.schoolName, schoolName) || other.schoolName == schoolName)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,schoolId,schoolName,stage,educationSystem,universityId,facultyId,studyYearId]);
+int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,stage,educationSystem,universityId,facultyId,studyYearId]);
 
 @override
 String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, schoolId: $schoolId, schoolName: $schoolName, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
+  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
 }
 
 
@@ -277,7 +285,7 @@ abstract mixin class _$RegistrationDraftCopyWith<$Res> implements $RegistrationD
   factory _$RegistrationDraftCopyWith(_RegistrationDraft value, $Res Function(_RegistrationDraft) _then) = __$RegistrationDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? schoolId, String? schoolName, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
+ String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
 });
 
 
@@ -294,7 +302,7 @@ class __$RegistrationDraftCopyWithImpl<$Res>
 
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? schoolId = freezed,Object? schoolName = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
   return _then(_RegistrationDraft(
 registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
 as String,tokenExpiresAt: null == tokenExpiresAt ? _self.tokenExpiresAt : tokenExpiresAt // ignore: cast_nullable_to_non_nullable
@@ -308,8 +316,8 @@ as DateTime?,countryCode: freezed == countryCode ? _self.countryCode : countryCo
 as String?,requiresGovernorate: freezed == requiresGovernorate ? _self.requiresGovernorate : requiresGovernorate // ignore: cast_nullable_to_non_nullable
 as bool?,governorateId: freezed == governorateId ? _self.governorateId : governorateId // ignore: cast_nullable_to_non_nullable
 as String?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
+as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,schoolId: freezed == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
-as String?,schoolName: freezed == schoolName ? _self.schoolName : schoolName // ignore: cast_nullable_to_non_nullable
 as String?,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String?,educationSystem: freezed == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String?,universityId: freezed == universityId ? _self.universityId : universityId // ignore: cast_nullable_to_non_nullable

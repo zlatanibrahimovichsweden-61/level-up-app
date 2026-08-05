@@ -13,10 +13,12 @@ import 'reference_dropdown.dart';
 
 /// The Egyptian coded-school picker (`GET /reference/schools`).
 ///
-/// Egypt only, per adr-010: Egyptian students MUST pick from the coded list,
-/// so this is a searchable, cursor-paginated sheet rather than a dropdown —
-/// the list is far too large to load at once. Non-Egypt students get a free-text
-/// field instead (see `SchoolNameField`), which never blocks registration.
+/// Egypt only: the coded list is Egyptian, so this field exists on no other
+/// country's flow (adr-028 §2). It is a searchable, cursor-paginated sheet
+/// rather than a dropdown because the list is far too large to load at once.
+///
+/// Picking a school is OPTIONAL for everyone since adr-028 §2 — there is no
+/// free-text alternative anywhere, in or out of Egypt.
 ///
 /// The field itself shows the chosen school's name; tapping opens the sheet.
 class SchoolPickerField extends ConsumerWidget {
@@ -311,39 +313,6 @@ class _SheetFailure extends StatelessWidget {
           FilledButton(onPressed: onRetry, child: Text(l10n.retry)),
         ],
       ),
-    );
-  }
-}
-
-/// The non-Egypt counterpart: optional free text. Per adr-010 this NEVER blocks
-/// registration, so it carries no validation and no required marker.
-class SchoolNameField extends StatelessWidget {
-  const SchoolNameField({
-    super.key,
-    required this.controller,
-    required this.onChanged,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        FieldLabel(l10n.schoolNameOptional),
-        const SizedBox(height: 8),
-        PlainTextField(
-          key: const Key('field-schoolName'),
-          controller: controller,
-          hint: l10n.schoolNameHint,
-          // Contract: schoolName maxLength 200.
-          maxLength: 200,
-          onChanged: onChanged,
-        ),
-      ],
     );
   }
 }
