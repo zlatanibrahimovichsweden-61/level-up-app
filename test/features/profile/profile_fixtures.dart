@@ -32,8 +32,9 @@ Map<String, dynamic> schoolProfileJson() => <String, dynamic>{
         'city': namedRefJson('city-nasr'),
       },
       'school': <String, dynamic>{
+        // adr-028 §2 removed `schoolName` from the contract entirely; only the
+        // coded `school` (nullable) remains.
         'school': namedRefJson('school-42'),
-        'schoolName': null,
         'stage': 'secondary2',
         'educationSystem': 'nationalLanguages',
       },

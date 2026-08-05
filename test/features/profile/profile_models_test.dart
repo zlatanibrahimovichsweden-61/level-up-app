@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/features/profile/models/entitlement_state.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
+import 'package:level_up_app/features/registration/models/reference_models.dart';
 
 import 'profile_fixtures.dart';
 
@@ -26,6 +27,7 @@ void main() {
       expect(profile.school!.stage, 'secondary2');
       expect(profile.university, isNull);
       expect(profile.geography.governorate!.nameEn, 'Cairo');
+      expect(profile.geography.city, isA<CodedCity>());
       // format: date → calendar date, no timezone shift.
       expect(profile.dateOfBirth, DateTime(2008, 5, 14));
       expect(profile.entitlements.single.type, EntitlementType.baseSubscription);
@@ -52,6 +54,24 @@ void main() {
       expect(profile.school, isNull);
       expect(profile.university!.yearNumber, 2);
       expect(profile.geography.governorate, isNull);
+    });
+
+    test('a school student with NO school parses (adr-028 §2)', () {
+      // The skipped-school case: `school.school` is null but the block itself
+      // is present. This shape needed no model change — it was already
+      // nullable under v1.0, where it meant "non-Egypt, typed a name instead".
+      final json = schoolProfileJson()
+        ..['school'] = <String, dynamic>{
+          'school': null,
+          'stage': 'secondary2',
+          'educationSystem': 'nationalLanguages',
+        };
+
+      final profile = StudentProfile.fromJson(json);
+
+      expect(profile.school, isNotNull);
+      expect(profile.school!.school, isNull);
+      expect(profile.school!.stage, 'secondary2');
     });
 
     test('optional email may be absent entirely', () {
@@ -128,6 +148,76 @@ void main() {
 
       expect(response.items, hasLength(1));
       expect(response.items.single.active, isFalse);
+    });
+  });
+
+  /// adr-028 §1. Under v1.0 `geography.city` was a bare `NamedRef`, so the
+  /// free-text arm below would have thrown on a well-formed `GET /me` — the one
+  /// drift in this contract bump that was a runtime crash rather than a wrong
+  /// message.
+  group('ProfileCity — the city union', () {
+    Map<String, dynamic> withCity(Object city) => schoolProfileJson()
+      ..['geography'] = <String, dynamic>{
+        'countryCode': 'EG',
+        'governorate': namedRefJson('gov-cairo'),
+        'city': city,
+      };
+
+    test('the coded arm: discriminated by the PRESENCE of id', () {
+      final city = StudentProfile.fromJson(
+        withCity(namedRefJson('city-nasr')),
+      ).geography.city;
+
+      expect(city, isA<CodedCity>());
+      final ref = (city as CodedCity).ref;
+      expect(ref.id, 'city-nasr');
+      expect(ref.nameAr, 'القاهرة');
+      expect(ref.nameEn, 'Cairo');
+    });
+
+    test('the free-text arm: { name } only, no id', () {
+      final city = StudentProfile.fromJson(
+        withCity(<String, dynamic>{'name': 'Somewhere Uncoded'}),
+      ).geography.city;
+
+      expect(city, isA<FreeTextCity>());
+      expect((city as FreeTextCity).name, 'Somewhere Uncoded');
+    });
+
+    test('city is REQUIRED — an absent one throws, it is never defaulted', () {
+      final json = schoolProfileJson()
+        ..['geography'] = <String, dynamic>{'countryCode': 'EG'};
+
+      expect(() => StudentProfile.fromJson(json), throwsA(isA<Object>()));
+    });
+
+    test('a switch over the union is EXHAUSTIVE — no default arm needed', () {
+      // This is the whole reason for a sealed union rather than a flat class
+      // with optional fields: adding a third arm must break every call site at
+      // COMPILE time, not at runtime on a student's phone. If this stops
+      // compiling without a `default:`, the union grew and Day 8's screens
+      // need revisiting.
+      String label(ProfileCity city) => switch (city) {
+            CodedCity(:final ref) => ref.nameEn,
+            FreeTextCity(:final name) => name,
+          };
+
+      expect(label(ProfileCity.coded(NamedRef.fromJson(namedRefJson('c')))),
+          'Cairo');
+      expect(label(const ProfileCity.freeText('Al Ain')), 'Al Ain');
+    });
+
+    test('the union round-trips back to the shape it came from', () {
+      final coded = StudentProfile.fromJson(withCity(namedRefJson('city-nasr')))
+          .geography
+          .city
+          .toJson();
+      expect(coded['id'], 'city-nasr');
+
+      final free = StudentProfile.fromJson(
+        withCity(<String, dynamic>{'name': 'Al Ain'}),
+      ).geography.city.toJson();
+      expect(free['name'], 'Al Ain');
     });
   });
 }

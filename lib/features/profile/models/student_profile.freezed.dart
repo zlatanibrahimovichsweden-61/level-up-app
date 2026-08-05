@@ -738,7 +738,7 @@ as String,
 /// @nodoc
 mixin _$ProfileGeography {
 
- String get countryCode; NamedRef? get governorate; NamedRef get city;
+ String get countryCode; NamedRef? get governorate; ProfileCity get city;
 /// Create a copy of ProfileGeography
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -771,11 +771,11 @@ abstract mixin class $ProfileGeographyCopyWith<$Res>  {
   factory $ProfileGeographyCopyWith(ProfileGeography value, $Res Function(ProfileGeography) _then) = _$ProfileGeographyCopyWithImpl;
 @useResult
 $Res call({
- String countryCode, NamedRef? governorate, NamedRef city
+ String countryCode, NamedRef? governorate, ProfileCity city
 });
 
 
-$NamedRefCopyWith<$Res>? get governorate;$NamedRefCopyWith<$Res> get city;
+$NamedRefCopyWith<$Res>? get governorate;$ProfileCityCopyWith<$Res> get city;
 
 }
 /// @nodoc
@@ -793,7 +793,7 @@ class _$ProfileGeographyCopyWithImpl<$Res>
 countryCode: null == countryCode ? _self.countryCode : countryCode // ignore: cast_nullable_to_non_nullable
 as String,governorate: freezed == governorate ? _self.governorate : governorate // ignore: cast_nullable_to_non_nullable
 as NamedRef?,city: null == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
-as NamedRef,
+as ProfileCity,
   ));
 }
 /// Create a copy of ProfileGeography
@@ -812,9 +812,9 @@ $NamedRefCopyWith<$Res>? get governorate {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$NamedRefCopyWith<$Res> get city {
+$ProfileCityCopyWith<$Res> get city {
   
-  return $NamedRefCopyWith<$Res>(_self.city, (value) {
+  return $ProfileCityCopyWith<$Res>(_self.city, (value) {
     return _then(_self.copyWith(city: value));
   });
 }
@@ -899,7 +899,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String countryCode,  NamedRef? governorate,  NamedRef city)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String countryCode,  NamedRef? governorate,  ProfileCity city)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfileGeography() when $default != null:
 return $default(_that.countryCode,_that.governorate,_that.city);case _:
@@ -920,7 +920,7 @@ return $default(_that.countryCode,_that.governorate,_that.city);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String countryCode,  NamedRef? governorate,  NamedRef city)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String countryCode,  NamedRef? governorate,  ProfileCity city)  $default,) {final _that = this;
 switch (_that) {
 case _ProfileGeography():
 return $default(_that.countryCode,_that.governorate,_that.city);case _:
@@ -940,7 +940,7 @@ return $default(_that.countryCode,_that.governorate,_that.city);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String countryCode,  NamedRef? governorate,  NamedRef city)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String countryCode,  NamedRef? governorate,  ProfileCity city)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfileGeography() when $default != null:
 return $default(_that.countryCode,_that.governorate,_that.city);case _:
@@ -960,7 +960,7 @@ class _ProfileGeography implements ProfileGeography {
 
 @override final  String countryCode;
 @override final  NamedRef? governorate;
-@override final  NamedRef city;
+@override final  ProfileCity city;
 
 /// Create a copy of ProfileGeography
 /// with the given fields replaced by the non-null parameter values.
@@ -995,11 +995,11 @@ abstract mixin class _$ProfileGeographyCopyWith<$Res> implements $ProfileGeograp
   factory _$ProfileGeographyCopyWith(_ProfileGeography value, $Res Function(_ProfileGeography) _then) = __$ProfileGeographyCopyWithImpl;
 @override @useResult
 $Res call({
- String countryCode, NamedRef? governorate, NamedRef city
+ String countryCode, NamedRef? governorate, ProfileCity city
 });
 
 
-@override $NamedRefCopyWith<$Res>? get governorate;@override $NamedRefCopyWith<$Res> get city;
+@override $NamedRefCopyWith<$Res>? get governorate;@override $ProfileCityCopyWith<$Res> get city;
 
 }
 /// @nodoc
@@ -1017,7 +1017,7 @@ class __$ProfileGeographyCopyWithImpl<$Res>
 countryCode: null == countryCode ? _self.countryCode : countryCode // ignore: cast_nullable_to_non_nullable
 as String,governorate: freezed == governorate ? _self.governorate : governorate // ignore: cast_nullable_to_non_nullable
 as NamedRef?,city: null == city ? _self.city : city // ignore: cast_nullable_to_non_nullable
-as NamedRef,
+as ProfileCity,
   ));
 }
 
@@ -1037,21 +1037,360 @@ $NamedRefCopyWith<$Res>? get governorate {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$NamedRefCopyWith<$Res> get city {
+$ProfileCityCopyWith<$Res> get city {
   
-  return $NamedRefCopyWith<$Res>(_self.city, (value) {
+  return $ProfileCityCopyWith<$Res>(_self.city, (value) {
     return _then(_self.copyWith(city: value));
   });
 }
+}
+
+ProfileCity _$ProfileCityFromJson(
+  Map<String, dynamic> json
+) {
+        switch (json['runtimeType']) {
+                  case 'coded':
+          return CodedCity.fromJson(
+            json
+          );
+                case 'freeText':
+          return FreeTextCity.fromJson(
+            json
+          );
+        
+          default:
+            throw CheckedFromJsonException(
+  json,
+  'runtimeType',
+  'ProfileCity',
+  'Invalid union type "${json['runtimeType']}"!'
+);
+        }
+      
+}
+
+/// @nodoc
+mixin _$ProfileCity {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileCity);
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ProfileCity()';
+}
+
+
+}
+
+/// @nodoc
+class $ProfileCityCopyWith<$Res>  {
+$ProfileCityCopyWith(ProfileCity _, $Res Function(ProfileCity) __);
+}
+
+
+/// Adds pattern-matching-related methods to [ProfileCity].
+extension ProfileCityPatterns on ProfileCity {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CodedCity value)?  coded,TResult Function( FreeTextCity value)?  freeText,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case CodedCity() when coded != null:
+return coded(_that);case FreeTextCity() when freeText != null:
+return freeText(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CodedCity value)  coded,required TResult Function( FreeTextCity value)  freeText,}){
+final _that = this;
+switch (_that) {
+case CodedCity():
+return coded(_that);case FreeTextCity():
+return freeText(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CodedCity value)?  coded,TResult? Function( FreeTextCity value)?  freeText,}){
+final _that = this;
+switch (_that) {
+case CodedCity() when coded != null:
+return coded(_that);case FreeTextCity() when freeText != null:
+return freeText(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( NamedRef ref)?  coded,TResult Function( String name)?  freeText,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case CodedCity() when coded != null:
+return coded(_that.ref);case FreeTextCity() when freeText != null:
+return freeText(_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( NamedRef ref)  coded,required TResult Function( String name)  freeText,}) {final _that = this;
+switch (_that) {
+case CodedCity():
+return coded(_that.ref);case FreeTextCity():
+return freeText(_that.name);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( NamedRef ref)?  coded,TResult? Function( String name)?  freeText,}) {final _that = this;
+switch (_that) {
+case CodedCity() when coded != null:
+return coded(_that.ref);case FreeTextCity() when freeText != null:
+return freeText(_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable(createToJson: false)
+
+class CodedCity extends ProfileCity {
+  const CodedCity(this.ref, {final  String? $type}): $type = $type ?? 'coded',super._();
+  factory CodedCity.fromJson(Map<String, dynamic> json) => _$CodedCityFromJson(json);
+
+ final  NamedRef ref;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of ProfileCity
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CodedCityCopyWith<CodedCity> get copyWith => _$CodedCityCopyWithImpl<CodedCity>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CodedCity&&(identical(other.ref, ref) || other.ref == ref));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,ref);
+
+@override
+String toString() {
+  return 'ProfileCity.coded(ref: $ref)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CodedCityCopyWith<$Res> implements $ProfileCityCopyWith<$Res> {
+  factory $CodedCityCopyWith(CodedCity value, $Res Function(CodedCity) _then) = _$CodedCityCopyWithImpl;
+@useResult
+$Res call({
+ NamedRef ref
+});
+
+
+$NamedRefCopyWith<$Res> get ref;
+
+}
+/// @nodoc
+class _$CodedCityCopyWithImpl<$Res>
+    implements $CodedCityCopyWith<$Res> {
+  _$CodedCityCopyWithImpl(this._self, this._then);
+
+  final CodedCity _self;
+  final $Res Function(CodedCity) _then;
+
+/// Create a copy of ProfileCity
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? ref = null,}) {
+  return _then(CodedCity(
+null == ref ? _self.ref : ref // ignore: cast_nullable_to_non_nullable
+as NamedRef,
+  ));
+}
+
+/// Create a copy of ProfileCity
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NamedRefCopyWith<$Res> get ref {
+  
+  return $NamedRefCopyWith<$Res>(_self.ref, (value) {
+    return _then(_self.copyWith(ref: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable(createToJson: false)
+
+class FreeTextCity extends ProfileCity {
+  const FreeTextCity(this.name, {final  String? $type}): $type = $type ?? 'freeText',super._();
+  factory FreeTextCity.fromJson(Map<String, dynamic> json) => _$FreeTextCityFromJson(json);
+
+ final  String name;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of ProfileCity
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FreeTextCityCopyWith<FreeTextCity> get copyWith => _$FreeTextCityCopyWithImpl<FreeTextCity>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FreeTextCity&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,name);
+
+@override
+String toString() {
+  return 'ProfileCity.freeText(name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FreeTextCityCopyWith<$Res> implements $ProfileCityCopyWith<$Res> {
+  factory $FreeTextCityCopyWith(FreeTextCity value, $Res Function(FreeTextCity) _then) = _$FreeTextCityCopyWithImpl;
+@useResult
+$Res call({
+ String name
+});
+
+
+
+
+}
+/// @nodoc
+class _$FreeTextCityCopyWithImpl<$Res>
+    implements $FreeTextCityCopyWith<$Res> {
+  _$FreeTextCityCopyWithImpl(this._self, this._then);
+
+  final FreeTextCity _self;
+  final $Res Function(FreeTextCity) _then;
+
+/// Create a copy of ProfileCity
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+  return _then(FreeTextCity(
+null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 
 /// @nodoc
 mixin _$ProfileSchool {
 
-/// The coded school (Egypt). Null when the student typed a free-text name.
- NamedRef? get school;/// Free-text school name (non-Egypt).
- String? get schoolName; String get stage; String get educationSystem;
+/// The coded school. Null when the student did not pick one — **Egypt
+/// included** since adr-028 §2 made `schoolId` optional for everyone. There
+/// is no free-text counterpart: v1.1 removed `schoolName` from the contract
+/// outright, so a missing school is simply a missing school.
+///
+/// This field was already nullable under v1.0 (where null meant "non-Egypt,
+/// typed a name instead"), so the skipped-school case needed no change —
+/// the same shape now carries a different meaning.
+ NamedRef? get school; String get stage; String get educationSystem;
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1064,16 +1403,16 @@ $ProfileSchoolCopyWith<ProfileSchool> get copyWith => _$ProfileSchoolCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.schoolName, schoolName) || other.schoolName == schoolName)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,school,schoolName,stage,educationSystem);
+int get hashCode => Object.hash(runtimeType,school,stage,educationSystem);
 
 @override
 String toString() {
-  return 'ProfileSchool(school: $school, schoolName: $schoolName, stage: $stage, educationSystem: $educationSystem)';
+  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem)';
 }
 
 
@@ -1084,7 +1423,7 @@ abstract mixin class $ProfileSchoolCopyWith<$Res>  {
   factory $ProfileSchoolCopyWith(ProfileSchool value, $Res Function(ProfileSchool) _then) = _$ProfileSchoolCopyWithImpl;
 @useResult
 $Res call({
- NamedRef? school, String? schoolName, String stage, String educationSystem
+ NamedRef? school, String stage, String educationSystem
 });
 
 
@@ -1101,11 +1440,10 @@ class _$ProfileSchoolCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? school = freezed,Object? schoolName = freezed,Object? stage = null,Object? educationSystem = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,}) {
   return _then(_self.copyWith(
 school: freezed == school ? _self.school : school // ignore: cast_nullable_to_non_nullable
-as NamedRef?,schoolName: freezed == schoolName ? _self.schoolName : schoolName // ignore: cast_nullable_to_non_nullable
-as String?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as NamedRef?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String,educationSystem: null == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String,
   ));
@@ -1204,10 +1542,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef? school,  String? schoolName,  String stage,  String educationSystem)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfileSchool() when $default != null:
-return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem);case _:
   return orElse();
 
 }
@@ -1225,10 +1563,10 @@ return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem)
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef? school,  String? schoolName,  String stage,  String educationSystem)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem)  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSchool():
-return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1245,10 +1583,10 @@ return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem)
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef? school,  String? schoolName,  String stage,  String educationSystem)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef? school,  String stage,  String educationSystem)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSchool() when $default != null:
-return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem);case _:
   return null;
 
 }
@@ -1260,13 +1598,18 @@ return $default(_that.school,_that.schoolName,_that.stage,_that.educationSystem)
 @JsonSerializable()
 
 class _ProfileSchool implements ProfileSchool {
-  const _ProfileSchool({this.school, this.schoolName, required this.stage, required this.educationSystem});
+  const _ProfileSchool({this.school, required this.stage, required this.educationSystem});
   factory _ProfileSchool.fromJson(Map<String, dynamic> json) => _$ProfileSchoolFromJson(json);
 
-/// The coded school (Egypt). Null when the student typed a free-text name.
+/// The coded school. Null when the student did not pick one — **Egypt
+/// included** since adr-028 §2 made `schoolId` optional for everyone. There
+/// is no free-text counterpart: v1.1 removed `schoolName` from the contract
+/// outright, so a missing school is simply a missing school.
+///
+/// This field was already nullable under v1.0 (where null meant "non-Egypt,
+/// typed a name instead"), so the skipped-school case needed no change —
+/// the same shape now carries a different meaning.
 @override final  NamedRef? school;
-/// Free-text school name (non-Egypt).
-@override final  String? schoolName;
 @override final  String stage;
 @override final  String educationSystem;
 
@@ -1283,16 +1626,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.schoolName, schoolName) || other.schoolName == schoolName)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,school,schoolName,stage,educationSystem);
+int get hashCode => Object.hash(runtimeType,school,stage,educationSystem);
 
 @override
 String toString() {
-  return 'ProfileSchool(school: $school, schoolName: $schoolName, stage: $stage, educationSystem: $educationSystem)';
+  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem)';
 }
 
 
@@ -1303,7 +1646,7 @@ abstract mixin class _$ProfileSchoolCopyWith<$Res> implements $ProfileSchoolCopy
   factory _$ProfileSchoolCopyWith(_ProfileSchool value, $Res Function(_ProfileSchool) _then) = __$ProfileSchoolCopyWithImpl;
 @override @useResult
 $Res call({
- NamedRef? school, String? schoolName, String stage, String educationSystem
+ NamedRef? school, String stage, String educationSystem
 });
 
 
@@ -1320,11 +1663,10 @@ class __$ProfileSchoolCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? school = freezed,Object? schoolName = freezed,Object? stage = null,Object? educationSystem = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,}) {
   return _then(_ProfileSchool(
 school: freezed == school ? _self.school : school // ignore: cast_nullable_to_non_nullable
-as NamedRef?,schoolName: freezed == schoolName ? _self.schoolName : schoolName // ignore: cast_nullable_to_non_nullable
-as String?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as NamedRef?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String,educationSystem: null == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String,
   ));

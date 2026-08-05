@@ -80,7 +80,7 @@ _ProfileGeography _$ProfileGeographyFromJson(Map<String, dynamic> json) =>
       governorate: json['governorate'] == null
           ? null
           : NamedRef.fromJson(json['governorate'] as Map<String, dynamic>),
-      city: NamedRef.fromJson(json['city'] as Map<String, dynamic>),
+      city: ProfileCity.fromJson(json['city'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$ProfileGeographyToJson(_ProfileGeography instance) =>
@@ -90,12 +90,19 @@ Map<String, dynamic> _$ProfileGeographyToJson(_ProfileGeography instance) =>
       'city': instance.city,
     };
 
+CodedCity _$CodedCityFromJson(Map<String, dynamic> json) => CodedCity(
+  NamedRef.fromJson(json['ref'] as Map<String, dynamic>),
+  $type: json['runtimeType'] as String?,
+);
+
+FreeTextCity _$FreeTextCityFromJson(Map<String, dynamic> json) =>
+    FreeTextCity(json['name'] as String, $type: json['runtimeType'] as String?);
+
 _ProfileSchool _$ProfileSchoolFromJson(Map<String, dynamic> json) =>
     _ProfileSchool(
       school: json['school'] == null
           ? null
           : NamedRef.fromJson(json['school'] as Map<String, dynamic>),
-      schoolName: json['schoolName'] as String?,
       stage: json['stage'] as String,
       educationSystem: json['educationSystem'] as String,
     );
@@ -103,7 +110,6 @@ _ProfileSchool _$ProfileSchoolFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ProfileSchoolToJson(_ProfileSchool instance) =>
     <String, dynamic>{
       'school': instance.school,
-      'schoolName': instance.schoolName,
       'stage': instance.stage,
       'educationSystem': instance.educationSystem,
     };
