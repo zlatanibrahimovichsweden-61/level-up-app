@@ -12,6 +12,8 @@ import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
+import '../../features/profile/screens/edit_profile_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
 import '../../features/quiz/models/quiz.dart';
 import '../../features/quiz/models/quiz_setup_args.dart';
 import '../../features/quiz/screens/quiz_result_screen.dart';
@@ -197,11 +199,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Account — the tab root IS the Profile hub (Figma `166:4416`). One
+          // screen for both tracks, powered by the `/me` the Home tab already
+          // fetched: switching to this tab costs no request.
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/account',
-                builder: (_, _) => const AccountPlaceholderScreen(),
+                builder: (_, _) => const ProfileScreen(),
               ),
             ],
           ),
@@ -239,7 +244,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),
       GoRoute(path: '/subscription/return', builder: (_, _) => const _Placeholder('Paymob return')),
-      GoRoute(path: '/profile', builder: (_, _) => const _Placeholder('Profile')),
+      // `/profile` is the same hub as the `/account` tab, reachable outside the
+      // shell (deep links, and the parent of `/profile/edit`). `/profile/edit`
+      // is NESTED so the pencil pushes a child of the profile it came from.
+      //
+      // Note there is deliberately NO route for `Logout` or `Go to Uni`: their
+      // frames render Profile with a modal on top, so they are dialogs. Giving
+      // a modal a route would put it in the back stack and let a cold link land
+      // on a bare "are you sure?" with nothing behind it.
+      GoRoute(
+        path: '/profile',
+        builder: (_, _) => const ProfileScreen(),
+        routes: [
+          // TODO(day8-step2): EditProfileScreen is a placeholder until Step 2
+          // builds the real form against `PATCH /me`.
+          GoRoute(path: 'edit', builder: (_, _) => const EditProfileScreen()),
+        ],
+      ),
       GoRoute(path: '/settings', builder: (_, _) => const _Placeholder('Settings')),
     ],
   );

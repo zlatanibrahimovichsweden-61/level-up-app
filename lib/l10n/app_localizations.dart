@@ -1201,6 +1201,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This content isn\'t part of your course.'**
   String get errorInsufficientScope;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTitle;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get editProfile;
+
+  /// The stat card's label. Figma 661:8572 says "Points" — distinct from Home's "Pts Balance" (pointsBalance), which is the level card's caption for the same server field.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get profilePointsLabel;
+
+  /// No description provided for @profileSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get profileSettings;
+
+  /// No description provided for @profileFavoriteQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite questions'**
+  String get profileFavoriteQuestions;
+
+  /// No description provided for @profileYourProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Your progress'**
+  String get profileYourProgress;
+
+  /// No description provided for @profileReferAFriend.
+  ///
+  /// In en, this message translates to:
+  /// **'Refer a Friend'**
+  String get profileReferAFriend;
+
+  /// No description provided for @profileCustomerSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Support'**
+  String get profileCustomerSupport;
+
+  /// No description provided for @profileSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get profileSubscription;
+
+  /// The Profile menu row (Figma 170:4905). Deliberately NOT the `privacyPolicy` key, which is the Login screen's legal LINK — the two can be reworded independently.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & policy'**
+  String get profilePrivacyPolicy;
+
+  /// No description provided for @profileTermsConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Conditions'**
+  String get profileTermsConditions;
+
+  /// No description provided for @profileGoToUniversity.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to University'**
+  String get profileGoToUniversity;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get profileLogout;
+
+  /// Screen-reader hint on every DISABLED Profile menu row, so a student using TalkBack/VoiceOver is told why the row does nothing instead of being left to guess. Never rendered visually — the reduced opacity carries it on screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available yet'**
+  String get profileRowUnavailable;
+
+  /// Semantic label for the ✕ that dismisses the Profile dialogs (Figma 180:4539). It is the NEUTRAL dismiss — the only way out of the Logout dialog that does not log you out.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get dialogClose;
+
+  /// No description provided for @logoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logoutTitle;
+
+  /// No description provided for @logoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get logoutBody;
+
+  /// No description provided for @logoutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logoutConfirm;
+
+  /// No description provided for @goToUniTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Uni'**
+  String get goToUniTitle;
+
+  /// No description provided for @goToUniBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to convert to the University track?'**
+  String get goToUniBody;
+
+  /// No description provided for @goToUniWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t go back again.'**
+  String get goToUniWarning;
+
+  /// No description provided for @goToUniConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get goToUniConfirm;
+
+  /// Why the Go-to-Uni confirm is disabled. There is no track-switch endpoint, and adr-003's dual point pools make it a data-model question, not a UI one (seif_fight S31).
+  ///
+  /// In en, this message translates to:
+  /// **'Switching tracks isn\'t available yet.'**
+  String get goToUniUnavailable;
 }
 
 class _AppLocalizationsDelegate

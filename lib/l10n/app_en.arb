@@ -444,5 +444,45 @@
   "errorWeeklyQuestionLimitReached": "You've reached your free weekly question limit.",
   "errorSubscriptionRequired": "This content needs an active subscription.",
   "errorQuizAlreadyFinished": "This quiz has already been submitted.",
-  "errorInsufficientScope": "This content isn't part of your course."
+  "errorInsufficientScope": "This content isn't part of your course.",
+
+  "profileTitle": "Profile",
+  "editProfile": "Edit Profile",
+  "profilePointsLabel": "Points",
+  "@profilePointsLabel": {
+    "description": "The stat card's label. Figma 661:8572 says \"Points\" — distinct from Home's \"Pts Balance\" (pointsBalance), which is the level card's caption for the same server field."
+  },
+  "profileSettings": "Settings",
+  "profileFavoriteQuestions": "Favorite questions",
+  "profileYourProgress": "Your progress",
+  "profileReferAFriend": "Refer a Friend",
+  "profileCustomerSupport": "Customer Support",
+  "profileSubscription": "Subscription",
+  "profilePrivacyPolicy": "Privacy & policy",
+  "@profilePrivacyPolicy": {
+    "description": "The Profile menu row (Figma 170:4905). Deliberately NOT the `privacyPolicy` key, which is the Login screen's legal LINK — the two can be reworded independently."
+  },
+  "profileTermsConditions": "Terms & Conditions",
+  "profileGoToUniversity": "Go to University",
+  "profileLogout": "Logout",
+  "profileRowUnavailable": "Not available yet",
+  "@profileRowUnavailable": {
+    "description": "Screen-reader hint on every DISABLED Profile menu row, so a student using TalkBack/VoiceOver is told why the row does nothing instead of being left to guess. Never rendered visually — the reduced opacity carries it on screen."
+  },
+
+  "dialogClose": "Close",
+  "@dialogClose": {
+    "description": "Semantic label for the ✕ that dismisses the Profile dialogs (Figma 180:4539). It is the NEUTRAL dismiss — the only way out of the Logout dialog that does not log you out."
+  },
+  "logoutTitle": "Logout",
+  "logoutBody": "Are you sure you want to log out?",
+  "logoutConfirm": "Logout",
+  "goToUniTitle": "Go to Uni",
+  "goToUniBody": "Are you sure you want to convert to the University track?",
+  "goToUniWarning": "You can't go back again.",
+  "goToUniConfirm": "Confirm",
+  "goToUniUnavailable": "Switching tracks isn't available yet.",
+  "@goToUniUnavailable": {
+    "description": "Why the Go-to-Uni confirm is disabled. There is no track-switch endpoint, and adr-003's dual point pools make it a data-model question, not a UI one (seif_fight S31)."
+  }
 }

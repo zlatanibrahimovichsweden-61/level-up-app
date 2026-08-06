@@ -62,6 +62,12 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.trackRadioRing,
     required this.backChipFill,
     required this.backChipGlyph,
+    required this.profileRowBorder,
+    required this.profileStatLabel,
+    required this.profileStatValue,
+    required this.profileIconChip,
+    required this.destructive,
+    required this.dialogNote,
   });
 
   final Color background;
@@ -346,6 +352,53 @@ class AppColors extends ThemeExtension<AppColors> {
   /// contrast for a navigation control. Not measured.
   final Color backChipGlyph;
 
+  // --- Profile tokens (Figma 166:4416 · dialog 180:4445) --------------------
+  //
+  // Only a LIGHT Profile frame exists — the same situation as the Home, Learn
+  // and quiz tokens above. Light values are Figma-verbatim; each dark value
+  // reuses an already-approved dark token rather than an invented hex, and says
+  // which one. Flagged in docs/DESIGN_ISSUES.md.
+
+  /// The 0.5px outline around each Profile menu row. Figma `#7070A0`.
+  ///
+  /// Numerically equal to [cardLabel], and kept separate for the reason that
+  /// token's own doc gives: restyling Home's "current level" caption must not
+  /// silently restyle nine navigation rows.
+  final Color profileRowBorder;
+
+  /// A stat card's label ("Points"). Figma light `#384F47`; dark follows
+  /// [legalText]'s green→cream mapping, because `#384F47` on a `#232428` card
+  /// is unreadable.
+  final Color profileStatLabel;
+
+  /// A stat card's value (the points figure). Figma `#7070A0` — kept in both
+  /// canvases, like [cardLabel], which the file uses at the same value.
+  final Color profileStatValue;
+
+  /// The lavender circle behind the Go-to-University and Logout glyphs. Figma
+  /// light `#F4E6FF`; dark reuses [navCentreIdleFill] (`#3E3E3E`), the file's
+  /// approved dark chip fill.
+  final Color profileIconChip;
+
+  /// Destructive intent — the Logout row's outline and label, and the Logout
+  /// dialog's confirm button. Figma `#EF4444`.
+  ///
+  /// **Identical in both palettes on purpose**, for the reason documented on
+  /// [successBadge]: a destructive signal must not follow the green→purple
+  /// accent flip. It happens to equal [quizWrongBadge]; the two are separate
+  /// because "you got this one wrong" and "this button ends your session" are
+  /// different meanings that must be restylable independently.
+  final Color destructive;
+
+  /// A confirmation dialog's secondary caution line ("You can't go back
+  /// again") — Figma `180:4571`, `#AE87E7`.
+  ///
+  /// Purple in BOTH canvases, like [homeAccent] and for the same reason: the
+  /// value is what the light frame draws, and there is no dark frame that says
+  /// otherwise. Separate from [homeAccent] so restyling Home's progress bar
+  /// does not restyle a dialog's warning copy.
+  final Color dialogNote;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -393,6 +446,13 @@ class AppColors extends ThemeExtension<AppColors> {
     trackRadioRing: Brand.greenPrimary, // #384F47 — Figma 82:1785
     backChipFill: Color(0xFFFCFBF9), // Figma 90:208
     backChipGlyph: Color(0xFF4B675E), // Figma 90:209
+    profileRowBorder: Color(0xFF7070A0), // Figma 170:4790
+    profileStatLabel: Brand.greenPrimary, // #384F47 — Figma 661:8572
+    profileStatValue: Color(0xFF7070A0), // Figma 661:8573
+    profileIconChip: Color(0xFFF4E6FF), // Figma 176:1186
+    // Identical to dark ON PURPOSE — see the field doc.
+    destructive: Color(0xFFEF4444), // Figma 176:1191
+    dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -446,6 +506,13 @@ class AppColors extends ThemeExtension<AppColors> {
     trackRadioRing: Color(0xFFFCFBF9), // Figma 337:15947
     backChipFill: Color(0xFF232428), // TODO(design) fallback — see field doc
     backChipGlyph: Color(0xFFFCFBF9), // TODO(design) fallback — see field doc
+    profileRowBorder: Color(0xFF7070A0), // Figma — kept in both, like cardLabel
+    profileStatLabel: Color(0xFFFCFBF9), // = dark legalText (no dark frame)
+    profileStatValue: Color(0xFF7070A0), // Figma — kept in both
+    profileIconChip: Color(0xFF3E3E3E), // = navCentreIdleFill (no dark frame)
+    // Identical to light ON PURPOSE — see the field doc.
+    destructive: Color(0xFFEF4444),
+    dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
   );
 
   @override
@@ -495,6 +562,12 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? trackRadioRing,
     Color? backChipFill,
     Color? backChipGlyph,
+    Color? profileRowBorder,
+    Color? profileStatLabel,
+    Color? profileStatValue,
+    Color? profileIconChip,
+    Color? destructive,
+    Color? dialogNote,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -544,6 +617,12 @@ class AppColors extends ThemeExtension<AppColors> {
       trackRadioRing: trackRadioRing ?? this.trackRadioRing,
       backChipFill: backChipFill ?? this.backChipFill,
       backChipGlyph: backChipGlyph ?? this.backChipGlyph,
+      profileRowBorder: profileRowBorder ?? this.profileRowBorder,
+      profileStatLabel: profileStatLabel ?? this.profileStatLabel,
+      profileStatValue: profileStatValue ?? this.profileStatValue,
+      profileIconChip: profileIconChip ?? this.profileIconChip,
+      destructive: destructive ?? this.destructive,
+      dialogNote: dialogNote ?? this.dialogNote,
     );
   }
 
@@ -614,6 +693,14 @@ class AppColors extends ThemeExtension<AppColors> {
       trackRadioRing: Color.lerp(trackRadioRing, other.trackRadioRing, t)!,
       backChipFill: Color.lerp(backChipFill, other.backChipFill, t)!,
       backChipGlyph: Color.lerp(backChipGlyph, other.backChipGlyph, t)!,
+      profileRowBorder: Color.lerp(profileRowBorder, other.profileRowBorder, t)!,
+      profileStatLabel: Color.lerp(profileStatLabel, other.profileStatLabel, t)!,
+      profileStatValue: Color.lerp(profileStatValue, other.profileStatValue, t)!,
+      profileIconChip: Color.lerp(profileIconChip, other.profileIconChip, t)!,
+      // Identical endpoints — destructive does not move across a theme
+      // animation, which is the exemption made visible (as with successBadge).
+      destructive: Color.lerp(destructive, other.destructive, t)!,
+      dialogNote: Color.lerp(dialogNote, other.dialogNote, t)!,
     );
   }
 }

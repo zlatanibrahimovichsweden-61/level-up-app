@@ -8,6 +8,7 @@ import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/home/screens/home_screen.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
+import 'package:level_up_app/features/profile/screens/profile_screen.dart';
 import 'package:level_up_app/features/shell/main_shell.dart';
 import 'package:level_up_app/features/shell/screens/tab_placeholder.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
@@ -93,16 +94,16 @@ void main() {
     expect(shell.navigationShell.currentIndex, 0);
   });
 
-  testWidgets('the three unbuilt tabs are coming-soon placeholders',
+  testWidgets('the two unbuilt tabs are coming-soon placeholders',
       (tester) async {
     await pumpApp(tester);
 
-    // Learn is NOT in this list any more — Day 5 gave it the real
-    // SubjectsScreen (see catalog tests). Home and Learn are the built tabs.
+    // Learn left this list in Day 5 (real SubjectsScreen) and Account left it
+    // in Day 8 (real ProfileScreen) — Leaderboard and Message are what remain,
+    // and both are blocked on draft/absent endpoints.
     for (final (label, type) in <(String, Type)>[
       ('Leaderboard', LeaderboardPlaceholderScreen),
       ('Message', MessagePlaceholderScreen),
-      ('Account', AccountPlaceholderScreen),
     ]) {
       await tester.tap(find.text(label).last);
       await tester.pumpAndSettle();
@@ -110,6 +111,20 @@ void main() {
       expect(find.byType(type), findsOneWidget, reason: '$label tab');
       expect(find.text('Coming soon'), findsOneWidget);
     }
+  });
+
+  testWidgets('the Account tab is the real Profile hub, not a placeholder',
+      (tester) async {
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Account').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(find.text('Coming soon'), findsNothing);
+    // Rendered from the /me the Home tab already fetched — see the
+    // "switching tabs preserves Home" test below for the call count.
+    expect(find.text('Ahmed Mohamed'), findsOneWidget);
   });
 
   testWidgets('switching tabs preserves Home — /me is not re-fetched',

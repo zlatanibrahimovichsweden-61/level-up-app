@@ -59,11 +59,5 @@ class MessagePlaceholderScreen extends StatelessWidget {
       TabPlaceholder(title: AppLocalizations.of(context).navMessage);
 }
 
-/// `/account` — profile + settings + subscription entry point.
-class AccountPlaceholderScreen extends StatelessWidget {
-  const AccountPlaceholderScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) =>
-      TabPlaceholder(title: AppLocalizations.of(context).navAccount);
-}
+// The Account tab's placeholder was removed in Day 8 — `/account` now serves
+// the real ProfileScreen (see app_router.dart).

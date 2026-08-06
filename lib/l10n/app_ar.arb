@@ -202,5 +202,30 @@
   "errorWeeklyQuestionLimitReached": "وصلت إلى حدّ الأسئلة المجانية الأسبوعي.",
   "errorSubscriptionRequired": "هذا المحتوى يحتاج إلى اشتراك فعّال.",
   "errorQuizAlreadyFinished": "تم تسليم هذا الاختبار بالفعل.",
-  "errorInsufficientScope": "هذا المحتوى ليس ضمن مقررك."
+  "errorInsufficientScope": "هذا المحتوى ليس ضمن مقررك.",
+
+  "profileTitle": "الملف الشخصي",
+  "editProfile": "تعديل الملف الشخصي",
+  "profilePointsLabel": "النقاط",
+  "profileSettings": "الإعدادات",
+  "profileFavoriteQuestions": "الأسئلة المفضّلة",
+  "profileYourProgress": "تقدّمك",
+  "profileReferAFriend": "دعوة صديق",
+  "profileCustomerSupport": "دعم العملاء",
+  "profileSubscription": "الاشتراك",
+  "profilePrivacyPolicy": "سياسة الخصوصية",
+  "profileTermsConditions": "الشروط والأحكام",
+  "profileGoToUniversity": "التحويل إلى الجامعة",
+  "profileLogout": "تسجيل الخروج",
+  "profileRowUnavailable": "غير متاح بعد",
+
+  "dialogClose": "إغلاق",
+  "logoutTitle": "تسجيل الخروج",
+  "logoutBody": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
+  "logoutConfirm": "تسجيل الخروج",
+  "goToUniTitle": "التحويل إلى الجامعة",
+  "goToUniBody": "هل أنت متأكد أنك تريد التحويل إلى مسار الجامعة؟",
+  "goToUniWarning": "لا يمكنك الرجوع مرة أخرى.",
+  "goToUniConfirm": "تأكيد",
+  "goToUniUnavailable": "تغيير المسار غير متاح بعد."
 }

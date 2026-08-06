@@ -630,4 +630,74 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errorInsufficientScope =>
       'This content isn\'t part of your course.';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get profilePointsLabel => 'Points';
+
+  @override
+  String get profileSettings => 'Settings';
+
+  @override
+  String get profileFavoriteQuestions => 'Favorite questions';
+
+  @override
+  String get profileYourProgress => 'Your progress';
+
+  @override
+  String get profileReferAFriend => 'Refer a Friend';
+
+  @override
+  String get profileCustomerSupport => 'Customer Support';
+
+  @override
+  String get profileSubscription => 'Subscription';
+
+  @override
+  String get profilePrivacyPolicy => 'Privacy & policy';
+
+  @override
+  String get profileTermsConditions => 'Terms & Conditions';
+
+  @override
+  String get profileGoToUniversity => 'Go to University';
+
+  @override
+  String get profileLogout => 'Logout';
+
+  @override
+  String get profileRowUnavailable => 'Not available yet';
+
+  @override
+  String get dialogClose => 'Close';
+
+  @override
+  String get logoutTitle => 'Logout';
+
+  @override
+  String get logoutBody => 'Are you sure you want to log out?';
+
+  @override
+  String get logoutConfirm => 'Logout';
+
+  @override
+  String get goToUniTitle => 'Go to Uni';
+
+  @override
+  String get goToUniBody =>
+      'Are you sure you want to convert to the University track?';
+
+  @override
+  String get goToUniWarning => 'You can\'t go back again.';
+
+  @override
+  String get goToUniConfirm => 'Confirm';
+
+  @override
+  String get goToUniUnavailable => 'Switching tracks isn\'t available yet.';
 }

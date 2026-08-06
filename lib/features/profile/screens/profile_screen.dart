@@ -1,0 +1,417 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/models/screen_state.dart';
+import '../../../core/network/exceptions.dart';
+import '../../../core/providers/core_providers.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/offline_banner.dart';
+import '../../../core/widgets/state_widget.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../auth/notifier/auth_controller.dart';
+import '../models/student_profile.dart';
+import '../notifier/me_notifier.dart';
+import '../widgets/profile_confirm_dialog.dart';
+import '../widgets/profile_header_card.dart';
+import '../widgets/profile_menu_row.dart';
+import '../widgets/profile_stat_card.dart';
+
+/// Profile · Figma `166:4416`. The Account tab's root, and ONE screen for both
+/// tracks — the University Student Flow draws the identical hub, exactly as it
+/// did for Home and the quiz.
+///
+/// **This screen consumes no endpoint of its own.** It reads the existing
+/// [meProvider] (`GET /me`), which Home already populated; switching to the
+/// Account tab must not cost a second request, which is why the notifier is
+/// non-autoDispose and why nothing here calls the repository directly.
+///
+/// ## What the frame draws and this screen does not
+///
+/// The Account cluster was designed as a finished product. Most of it has no
+/// contract, and the honest response is to render the shape and disable it
+/// rather than hide it behind a placeholder:
+///
+/// - **Solved Questions** is omitted outright. `StudentProfile` has no
+///   answered/solved counter and `SubjectTree`'s per-node counts are per
+///   subject, not a lifetime figure. Summing them client-side would invent a
+///   number — `seif_fight.md` **S24**.
+/// - **Rank "HERO"** is omitted for the same reason: the contract has `level`
+///   (int) and `badges` (int), no tier string, and `GET /leaderboard/me` is
+///   draft — **S25**. A card showing "—" was the alternative and is worse; it
+///   invites someone to fill it in with a guess.
+/// - **Points** is real, and is `points.total` printed verbatim.
+///
+/// States: loading (a skeleton shaped like the real content) · error (retry
+/// re-calls `/me` on tap, never silently) · offline (its own view, plus a
+/// pinned banner when connectivity drops with data already on screen). There is
+/// no EMPTY state — `/me` either returns a profile or fails.
+class ProfileScreen extends ConsumerWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final me = ref.watch(meProvider);
+    // Distinct offline STATE: only when connectivity is definitively down
+    // (null = unknown/first frame → treated as online, don't block).
+    final offline = ref.watch(isOnlineProvider).value == false;
+
+    void retry() => ref.read(meProvider.notifier).refresh();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.profileTitle),
+        automaticallyImplyLeading: false,
+      ),
+      body: SafeArea(
+        bottom: false, // the nav shell owns the bottom inset
+        child: Column(
+          children: [
+            if (offline) const OfflineBanner(),
+            Expanded(
+              child: StateWidget<StudentProfile>(
+                state: profileScreenState(me),
+                onRetry: retry,
+                loading: const _Skeleton(),
+                error: _Message(
+                  icon: Icons.error_outline,
+                  text: l10n.genericError,
+                  onRetry: retry,
+                ),
+                offline: _Message(
+                  icon: Icons.wifi_off,
+                  text: l10n.offline,
+                  onRetry: retry,
+                ),
+                onLoaded: (profile) => _Loaded(profile: profile),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bridges `GET /me`'s [AsyncValue] onto the shared sealed [ScreenState].
+///
+/// Offline is chosen by EXCEPTION TYPE, not by a connectivity read, so a
+/// request that died on a dead network says so even if the stream has not
+/// caught up yet. Exposed (not private) so the mapping is unit-testable without
+/// pumping a widget.
+ScreenState<StudentProfile> profileScreenState(AsyncValue<StudentProfile> me) =>
+    me.when<ScreenState<StudentProfile>>(
+      data: ScreenLoaded<StudentProfile>.new,
+      loading: ScreenLoading<StudentProfile>.new,
+      error: (error, _) => isOffline(error)
+          ? const ScreenOffline<StudentProfile>()
+          // A localization KEY, not user-facing copy: the server's
+          // `title`/`detail` are developer-facing English and never shown.
+          : ScreenError<StudentProfile>('genericError', cause: error),
+    );
+
+class _Loaded extends ConsumerWidget {
+  const _Loaded({required this.profile});
+
+  final StudentProfile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ProfileHeaderCard(
+            name: profile.name,
+            avatarUrl: profile.avatar.url,
+            // Server-authoritative integer, formatted for display only.
+            levelLabel: l10n.levelProgress(profile.level),
+            editLabel: l10n.editProfile,
+            onEdit: () => context.push('/profile/edit'),
+          ),
+          const SizedBox(height: 20),
+          // The ONE stat card the contract can fill. `points.total` is the
+          // SERVER's sum of the dual pools (adr-003) — the app never adds
+          // `school + university` itself and never infers a level from it.
+          ProfileStatCard(
+            key: const Key('profile_points_card'),
+            label: l10n.profilePointsLabel,
+            value: l10n.pointsValue(profile.points.total),
+          ),
+          const SizedBox(height: 20),
+          _Menu(profile: profile),
+        ],
+      ),
+    );
+  }
+}
+
+/// The frame's ten rows: eight navigation rows, then the two action rows that
+/// open dialogs.
+///
+/// Exactly one of the eight has a destination in Step 1. The rest render at
+/// full fidelity and disabled — the Day 7 "Review Questions" treatment (S14)
+/// applied at scale — each with a stable `Key` and one `TODO(contract)` naming
+/// the `seif_fight.md` entry that tracks it.
+class _Menu extends ConsumerWidget {
+  const _Menu({required this.profile});
+
+  final StudentProfile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final unavailable = l10n.profileRowUnavailable;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The only live row in Step 1. `/settings` is still a placeholder;
+        // Step 3 replaces it with the real screen.
+        ProfileMenuRow(
+          key: const Key('profile_row_settings'),
+          icon: Icons.settings,
+          label: l10n.profileSettings,
+          onTap: () => context.push('/settings'),
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S11 — `/me/favorites` is
+        // `x-stability: draft`, so there is nothing to list. Enable when it
+        // stabilises.
+        ProfileMenuRow(
+          key: const Key('profile_row_favorites'),
+          icon: Icons.bookmark,
+          label: l10n.profileFavoriteQuestions,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S30 — "your progress" has no endpoint
+        // of any kind. `GET /me` carries points/level/badges but no history,
+        // and per-subject counters are not a progress timeline.
+        ProfileMenuRow(
+          key: const Key('profile_row_progress'),
+          icon: Icons.bar_chart,
+          label: l10n.profileYourProgress,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S5 — the referral code is collected at
+        // registration and thrown away; there is no referral endpoint, so the
+        // whole screen behind this row has nothing to render.
+        ProfileMenuRow(
+          key: const Key('profile_row_refer'),
+          icon: Icons.share,
+          label: l10n.profileReferAFriend,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S30 — customer support is fully
+        // designed (tickets, chat, message threads) and has no endpoint at all.
+        ProfileMenuRow(
+          key: const Key('profile_row_support'),
+          icon: Icons.headset_mic,
+          label: l10n.profileCustomerSupport,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S8 — `/checkout/sessions` is draft and
+        // the Paymob return deep link is undefined, so the subscription flow
+        // cannot be entered. The `/subscription` placeholder route exists; the
+        // row stays disabled until there is something behind it.
+        ProfileMenuRow(
+          key: const Key('profile_row_subscription'),
+          icon: Icons.credit_card,
+          label: l10n.profileSubscription,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S30 — no endpoint is needed, but the
+        // legal TEXT does not exist. Writing it is not this app's call.
+        ProfileMenuRow(
+          key: const Key('profile_row_privacy'),
+          icon: Icons.privacy_tip,
+          label: l10n.profilePrivacyPolicy,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // TODO(contract): seif_fight.md S30 — same as Privacy & policy above:
+        // no copy has been supplied.
+        ProfileMenuRow(
+          key: const Key('profile_row_terms'),
+          icon: Icons.privacy_tip,
+          label: l10n.profileTermsConditions,
+          disabledHint: unavailable,
+        ),
+        const SizedBox(height: 16),
+        // Go to Uni: the ROW opens the dialog; the dialog's confirm is what is
+        // disabled. Track switching has no endpoint and adr-003's dual point
+        // pools make it a data-model question — see the dialog below.
+        ProfileMenuRow(
+          key: const Key('profile_row_go_to_uni'),
+          icon: Icons.trending_up,
+          label: l10n.profileGoToUniversity,
+          tone: ProfileRowTone.emphasis,
+          onTap: () => _showGoToUni(context, l10n),
+        ),
+        const SizedBox(height: 16),
+        ProfileMenuRow(
+          key: const Key('profile_row_logout'),
+          icon: Icons.logout,
+          label: l10n.profileLogout,
+          tone: ProfileRowTone.destructive,
+          onTap: () => _confirmLogout(context, ref, l10n),
+        ),
+      ],
+    );
+  }
+
+  /// Conflict 9 — built, confirm disabled.
+  ///
+  /// TODO(contract): seif_fight.md S31 — there is no track-switch endpoint.
+  /// `POST /auth/register` sets the track through a discriminated body
+  /// (`SchoolRegistration` | `UniversityRegistration`) whose two arms have
+  /// different SHAPES (adr-010: university has no country field), and
+  /// `PATCH /me` cannot express it. The blocker is not the missing route: it is
+  /// that `points` are dual-pool per track (adr-003) and nobody has answered
+  /// what happens to the school pool on a switch. That is a data-model
+  /// question, not a UI one.
+  Future<void> _showGoToUni(BuildContext context, AppLocalizations l10n) {
+    return ProfileConfirmDialog.show(
+      context,
+      ProfileConfirmDialog(
+        title: l10n.goToUniTitle,
+        body: l10n.goToUniBody,
+        note: l10n.goToUniWarning,
+        confirmLabel: l10n.goToUniConfirm,
+        confirmKey: const Key('go_to_uni_confirm'),
+        // The default, spelled out: there is nothing for Confirm to call.
+        confirmEnabled: false,
+        disabledReason: l10n.goToUniUnavailable,
+      ),
+    );
+  }
+
+  /// Conflict 11 — the one thing on this screen that fully works.
+  ///
+  /// `POST /auth/logout` is stable and has been consumed since Day 1b;
+  /// [AuthController.logout] already does the best-effort revoke and clears
+  /// ONLY the tokens so `device_id` survives. Nothing is reimplemented here —
+  /// the dialog is new, the behaviour behind it is not, and the router's
+  /// redirect guard takes it from `AuthUnauthenticated` to `/login`.
+  Future<void> _confirmLogout(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) async {
+    // Resolved BEFORE the await: `ref` must not be reached across an async gap
+    // once the dialog has had a chance to unmount this widget.
+    final auth = ref.read(authControllerProvider.notifier);
+
+    final confirmed = await ProfileConfirmDialog.show(
+      context,
+      ProfileConfirmDialog(
+        title: l10n.logoutTitle,
+        body: l10n.logoutBody,
+        confirmLabel: l10n.logoutConfirm,
+        confirmKey: const Key('logout_confirm'),
+        tone: ProfileConfirmTone.destructive,
+        confirmEnabled: true,
+      ),
+    );
+    // Dismiss (the ✕, Back, or a barrier tap) resolves false and does NOTHING.
+    if (!confirmed) return;
+    await auth.logout();
+  }
+}
+
+/// Loading — grey blocks in the shape of the header, the stat card and the
+/// first rows, so the page does not jump when the real content lands.
+class _Skeleton extends StatelessWidget {
+  const _Skeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      // Scrolls for the same reason the loaded body does: the hub is taller
+      // than a phone, and a skeleton that overflows instead of scrolling would
+      // make the placeholder shape lie about the content it stands in for.
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _Block(height: 104, radius: 15),
+          const SizedBox(height: 20),
+          const _Block(height: 82, radius: 16),
+          const SizedBox(height: 20),
+          for (var i = 0; i < 5; i++) ...[
+            const _Block(height: 64, radius: 16),
+            const SizedBox(height: 16),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Block extends StatelessWidget {
+  const _Block({required this.height, this.radius = 6});
+
+  final double height;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppColors>()!;
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: ext.progressTrack,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+/// Centred icon + localized line + a USER-TAPPED retry. Shared by the error and
+/// offline slots so the two never drift apart visually.
+class _Message extends StatelessWidget {
+  const _Message({required this.icon, required this.text, this.onRetry});
+
+  final IconData icon;
+  final String text;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final ext = Theme.of(context).extension<AppColors>()!;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: ext.mutedText),
+            const SizedBox(height: 16),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: 20),
+              // Re-triggers the same request on tap — never a silent loop.
+              FilledButton(onPressed: onRetry, child: Text(l10n.retry)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

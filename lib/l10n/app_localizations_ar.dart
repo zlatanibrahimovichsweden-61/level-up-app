@@ -625,4 +625,73 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorInsufficientScope => 'هذا المحتوى ليس ضمن مقررك.';
+
+  @override
+  String get profileTitle => 'الملف الشخصي';
+
+  @override
+  String get editProfile => 'تعديل الملف الشخصي';
+
+  @override
+  String get profilePointsLabel => 'النقاط';
+
+  @override
+  String get profileSettings => 'الإعدادات';
+
+  @override
+  String get profileFavoriteQuestions => 'الأسئلة المفضّلة';
+
+  @override
+  String get profileYourProgress => 'تقدّمك';
+
+  @override
+  String get profileReferAFriend => 'دعوة صديق';
+
+  @override
+  String get profileCustomerSupport => 'دعم العملاء';
+
+  @override
+  String get profileSubscription => 'الاشتراك';
+
+  @override
+  String get profilePrivacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get profileTermsConditions => 'الشروط والأحكام';
+
+  @override
+  String get profileGoToUniversity => 'التحويل إلى الجامعة';
+
+  @override
+  String get profileLogout => 'تسجيل الخروج';
+
+  @override
+  String get profileRowUnavailable => 'غير متاح بعد';
+
+  @override
+  String get dialogClose => 'إغلاق';
+
+  @override
+  String get logoutTitle => 'تسجيل الخروج';
+
+  @override
+  String get logoutBody => 'هل أنت متأكد أنك تريد تسجيل الخروج؟';
+
+  @override
+  String get logoutConfirm => 'تسجيل الخروج';
+
+  @override
+  String get goToUniTitle => 'التحويل إلى الجامعة';
+
+  @override
+  String get goToUniBody => 'هل أنت متأكد أنك تريد التحويل إلى مسار الجامعة؟';
+
+  @override
+  String get goToUniWarning => 'لا يمكنك الرجوع مرة أخرى.';
+
+  @override
+  String get goToUniConfirm => 'تأكيد';
+
+  @override
+  String get goToUniUnavailable => 'تغيير المسار غير متاح بعد.';
 }
