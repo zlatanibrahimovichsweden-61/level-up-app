@@ -183,16 +183,35 @@ Logged as **S29**.
 
 ### 8. 🟠 Six of eight Profile menu rows have no destination
 
-| Row | Backing | Day 8 treatment |
-|---|---|---|
-| Settings | none needed | **live** → `/settings` |
-| Favorite questions | `/me/favorites` **draft** (S11) | disabled |
-| your progress | nothing | disabled |
-| Refer a Friend | nothing (S5) | **live → disabled shell screen** |
-| Customer Support | nothing | **live → disabled shell screen** |
-| Subscription | `/checkout/sessions` **draft** (S8) | routes to existing `/subscription` placeholder |
-| Privacy & policy | static content | **owner decision needed** — see below |
-| Terms & Conditions | static content | **owner decision needed** — see below |
+| Row | Backing | Tracked as | Step 1 | Step 3 |
+|---|---|---|---|---|
+| Settings | none needed | — | **live** → `/settings` | screen built |
+| Favorite questions | `/me/favorites` **draft** | **S11** | disabled | stays disabled |
+| your progress | nothing at all | **S32** | disabled | stays disabled |
+| Refer a Friend | nothing at all | **S5** | disabled | → disabled shell screen |
+| Customer Support | nothing at all | **S33** | disabled | → disabled shell screen |
+| Subscription | `/checkout/sessions` **draft** | **S8** | disabled | stays disabled |
+| Privacy & policy | no copy supplied | **S30** | disabled | → `TODO(content)` empty screen |
+| Terms & Conditions | no copy supplied | **S30** | disabled | → `TODO(content)` empty screen |
+
+**Corrected 2026-08-06 after Step 1.** Three fixes to this table, all defects in the brief rather
+than in the implementation:
+
+1. **`Subscription` is disabled, not routed.** An earlier draft of this table said "routes to the
+   existing `/subscription` placeholder" while the Step 1 body said "the other seven disabled".
+   Step 1 followed the body and flagged the contradiction. Disabled is correct — the placeholder has
+   nothing behind it and `/checkout/sessions` is draft. **Step 3 must not flip this back.**
+2. **`your progress` = S32 and `Customer Support` = S33.** Neither had a number, so Step 1 filed both
+   under S30 alongside Privacy/Terms. S30 is *only* the missing-legal-copy issue. Step 3 renumbers
+   the two `TODO(contract)` markers when it writes the entries.
+3. **The frame draws TEN rows, not eight.** `Go to University` and `Logout` are rows in the same
+   list, styled differently (black / red outline, lavender icon disc, no chevron) and opening
+   dialogs rather than navigating. Found in Step 1. No contract impact — recorded so the count
+   stops being wrong.
+
+**S24 and S25 have no code marker anywhere**, because Solved Questions and Rank are *omitted*
+(conflicts 2 and 3), not disabled. There is nothing in `lib/` to grep for. Step 3 writes them from
+this brief.
 
 **Privacy & policy / Terms & Conditions** need no endpoint but they do need *text*, and nobody has
 supplied any. Build the rows and route them to a screen that renders a single
@@ -308,8 +327,11 @@ render but never appear in the request; a free-text city renders; save invalidat
    Your job is not to write it. Your job is to **reconcile it**: if implementation turns up a gap it
    does not list, or proves one of its claims wrong, amend it and say so in the report. Treat a
    disagreement between the notice and what you find in the frames as a finding, not a typo.
-4. **`seif_fight.md`** — entries **S24–S31** per the conflicts above, each pointing at the notice.
+4. **`seif_fight.md`** — entries **S24–S33** per the conflicts above, each pointing at the notice.
    Upgrade **S5** (referral) — it now has a whole screen behind it, not a stray signup field.
+   **Renumber the four Step 1 `TODO(contract)` markers currently pointing at S30**: `your progress`
+   → **S32**, `Customer Support` → **S33**. Only Privacy & policy and Terms & Conditions keep S30.
+   Verify with `grep -rn "TODO(contract)" lib/features/profile/` — S30 must appear exactly twice.
 5. **`DESIGN_ISSUES.md`** — the third-theme conflict and the one-toggle-vs-two conflict.
 6. **`PROGRESS.md`** — Day 8 section, brief index, and the coverage line: **21/21 stable, 22/36
    total, every remaining endpoint draft.**
