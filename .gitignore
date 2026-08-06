@@ -47,3 +47,9 @@ app.*.map.json
 
 # Release signing artefacts (key.properties, *.jks, *.keystore) are ignored by
 # android/.gitignore — do not duplicate the patterns here. See docs/RELEASE_SIGNING.md.
+
+# On-device walkthrough screenshots. Kept on the machine that took them, never
+# committed: they are evidence for one debug session, not a repo artefact, and a
+# single pass is ~12 MB of PNGs that git can never shrink again. Findings that
+# matter from a pass belong in DESIGN_ISSUES.md / KNOWN_BUGS.md as text.
+docs/device_pass/

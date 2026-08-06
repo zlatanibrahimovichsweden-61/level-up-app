@@ -455,8 +455,9 @@ Keep `flutter analyze` clean and the existing 45 tests green.
 
 # Paste this into Claude Code
 
-> The full phased version lives in **`docs/day7b_claude_code_prompt.md`** — use that one. The block
-> below is the short form, kept here so the brief stays self-contained.
+> **Execution prompts are not kept as files** (owner decision, 2026-08-05) — a prompt is a chat
+> response you copy, and a stale copy in `docs/` is a second source of truth that drifts from the
+> brief. The block below is the whole prompt; the brief it points at is the spec.
 
 ```
 # ROLE
