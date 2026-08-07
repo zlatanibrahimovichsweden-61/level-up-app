@@ -25,6 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/config/app_config.dart';
 import 'core/providers/core_providers.dart';
+import 'core/storage/preferences_store.dart';
 import 'core/storage/secure_storage.dart';
 import 'dev/mock_backend.dart';
 
@@ -48,9 +49,20 @@ Future<void> main() async {
     await SecureStorage().clearTokens();
   }
 
+  // Loaded before runApp for the reason `bootstrap()` gives at length: the
+  // stored canvas and language have to be known by the first frame. Kept here
+  // too because this is the entrypoint a device walkthrough actually runs, so
+  // it is where "pick dark, force-kill, relaunch" gets checked. Note it is NOT
+  // reset by [kResetSessionOnLaunch] — that clears the session, and a theme
+  // choice surviving a forced logout is correct.
+  final preferences = await PreferencesStore.load();
+
   runApp(
     ProviderScope(
-      overrides: [dioProvider.overrideWith((ref) => buildMockDio())],
+      overrides: [
+        dioProvider.overrideWith((ref) => buildMockDio()),
+        preferencesStoreProvider.overrideWithValue(preferences),
+      ],
       child: const LevelUpApp(),
     ),
   );

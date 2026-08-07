@@ -15,6 +15,7 @@ import 'package:level_up_app/app.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/providers/locale_provider.dart';
 import 'package:level_up_app/core/router/app_router.dart';
+import 'package:level_up_app/core/storage/preferences_store.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/profile/models/profile_update.dart';
@@ -39,6 +40,7 @@ Future<ProviderContainer> pumpAppAt(
   String route, {
   MockProfileRepository? profile,
   String locale = 'en',
+  PreferencesStore? prefs,
   bool online = true,
 }) async {
   final container = ProviderContainer(
@@ -46,6 +48,9 @@ Future<ProviderContainer> pumpAppAt(
       secureStorageProvider.overrideWithValue(signedInStorage()),
       profileRepositoryProvider.overrideWithValue(profile ?? settingsRepo()),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
+      // Null unless a test supplies one — the default launch does not persist,
+      // which is what keeps every other test in this suite free of a plugin stub.
+      preferencesStoreProvider.overrideWithValue(prefs),
     ],
   );
   addTearDown(container.dispose);
@@ -59,7 +64,12 @@ Future<ProviderContainer> pumpAppAt(
 
   container.read(authControllerProvider.notifier).markAuthenticated();
   // AR is the app default; EN is set the way Settings itself sets it.
-  container.read(localeProvider.notifier).select(Locale(locale));
+  //
+  // Skipped when a store is supplied: in that case the STORE is the locale
+  // source under test, and selecting on top of it would prove nothing.
+  if (prefs == null) {
+    container.read(localeProvider.notifier).select(Locale(locale));
+  }
 
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const LevelUpApp()),

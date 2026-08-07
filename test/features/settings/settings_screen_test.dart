@@ -3,11 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/locale_provider.dart';
 import 'package:level_up_app/core/providers/theme_provider.dart';
+import 'package:level_up_app/core/storage/preferences_store.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/features/profile/models/profile_update.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/settings/screens/settings_screen.dart';
+import 'package:level_up_app/features/settings/widgets/settings_rows.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../profile/profile_fixtures.dart';
 import 'settings_harness.dart';
@@ -37,6 +40,9 @@ void main() {
   };
 
   Finder atSettings() => find.byType(SettingsScreen);
+
+  SettingsChoiceRow modeRow(WidgetTester tester, String key) =>
+      tester.widget<SettingsChoiceRow>(find.byKey(Key(key)));
 
   group('the screen replaces the placeholder', () {
     testWidgets('/settings renders the real screen', (tester) async {
@@ -264,6 +270,90 @@ void main() {
 
       expect(container.read(localeProvider), const Locale('en'),
           reason: 'select(), not toggle() — it must not flip away');
+    });
+  });
+
+  group('both choices survive a launch', () {
+    // `test/core/preferences_store_test.dart` proves the store and the two
+    // controllers. What is left to prove is the end of the wire: that the RUNNING
+    // APP is in the stored canvas and the stored language, on the frame the
+    // student first sees. These pump `LevelUpApp` with a pre-seeded store, which
+    // is exactly the shape `bootstrap()` builds.
+
+    Future<PreferencesStore> seeded(Map<String, Object> values) async {
+      SharedPreferences.setMockInitialValues(values);
+      return PreferencesStore.load();
+    }
+
+    testWidgets('a stored dark canvas is already painted, not flipped into',
+        (tester) async {
+      await pumpAppAt(
+        tester,
+        '/settings',
+        prefs: await seeded({'pref.theme_mode': 'dark'}),
+      );
+
+      expect(
+        paletteAt(tester, atSettings()).background,
+        AppColors.dark.background,
+        reason: 'nothing had to be tapped — the launch came up dark',
+      );
+      // …and the Mode section agrees with the canvas rather than showing Light
+      // selected over a dark page.
+      expect(modeRow(tester, 'settings_mode_dark').selected, isTrue);
+      expect(modeRow(tester, 'settings_mode_light').selected, isFalse);
+    });
+
+    testWidgets('a stored language is already in force, in the right direction',
+        (tester) async {
+      // No `locale:` argument — the store is the source, which is the whole
+      // point. The app default is AR, so EN here can only have come from disk.
+      await pumpAppAt(
+        tester,
+        '/settings',
+        prefs: await seeded({'pref.locale': 'en'}),
+      );
+
+      expect(Directionality.of(tester.element(atSettings())), TextDirection.ltr);
+      expect(find.text('Languages'), findsOneWidget);
+    });
+
+    testWidgets('picking a canvas writes it, so the next launch keeps it',
+        (tester) async {
+      final store = await seeded({});
+      await pumpAppAt(tester, '/settings', prefs: store);
+
+      await tester.tap(find.byKey(const Key('settings_mode_dark')));
+      await tester.pumpAndSettle();
+
+      expect(store.readThemeMode(), ThemeMode.dark);
+    });
+
+    testWidgets('picking a language writes it too', (tester) async {
+      // Nothing stored, so the app comes up on the AR default; English is
+      // therefore a real change rather than a no-op tap.
+      final store = await seeded({});
+      await pumpAppAt(tester, '/settings', prefs: store);
+
+      await tester.tap(find.byKey(const Key('settings_language_en')));
+      await tester.pumpAndSettle();
+
+      expect(store.readLocale(), const Locale('en'));
+    });
+
+    testWidgets('a corrupt file still boots, on the defaults', (tester) async {
+      // The startup path has no error handling above it. If a damaged
+      // preferences file could throw, this would be a crash on launch rather
+      // than a wrong colour.
+      await pumpAppAt(
+        tester,
+        '/settings',
+        prefs: await seeded({'pref.theme_mode': 3, 'pref.locale': 7}),
+      );
+
+      expect(paletteAt(tester, atSettings()).background,
+          AppColors.light.background);
+      expect(Directionality.of(tester.element(atSettings())), TextDirection.rtl);
     });
   });
 
