@@ -21,7 +21,7 @@
 | S2 | No way to resume an interrupted quiz — `GET /quizzes/{quizId}` is `draft` | 🟠 | Open (Day 7) | — |
 | S3 | Level thresholds: `GET /me` returns `level` but no target to progress toward | 🔴 | Open | `level_card.dart:8` |
 | S4 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Open | `tree_list_row.dart` |
-| S5 | Referral / invitation code has no backend field | 🟠 | Open | `registration_draft.dart:18` |
+| S5 | Referral is a designed SCREEN with no contract, not the stray signup field we filed | 🟠 | Open (upgraded Day 8) | `registration_draft.dart:18`, `refer_a_friend_screen.dart` |
 | S6 | Flashcards: full screen designed + sellable entitlement, zero contract support | 🔴 | Open | `quiz_type_tabs.dart` |
 | S7 | Quiz timer drawn in the design, no field in the contract | 🟠 | Open | — |
 | S8 | Paymob return deep-link scheme/host not specified | 🟠 | Open | `app_router.dart:72` |
@@ -38,6 +38,23 @@
 | S19 | No quiz endpoint returns a subject name; two frames show one | 🟡 | Open, built around (Day 7) | `quiz.dart:32` |
 | S20 | `PATCH /me` cannot edit school or geography — one design option you offered is unbuildable | 🟠 | Open (Day 7c) | `openapi.yaml:614-624` |
 | S21 | v1.1 internal inconsistencies found by diffing the vendored contract | 🟡 | Open (Day 7c) | `openapi.yaml:483`, `:1281` |
+| S24 | Solved Questions — no lifetime answered counter exists anywhere | 🔴 | Open (Day 8) | — (omitted) |
+| S25 | Rank "HERO" — no rank tier string; `level` is an int and `badges` is an int | 🔴 | Open (Day 8) | — (omitted) |
+| S26 | Settings Mode draws three themes; the app has two palettes | 🟠 | Open (Day 8) | `settings_screen.dart` |
+| S27 | Show Rank is one switch; the contract has two independent booleans | 🟠 | Open (Day 8) | `settings_screen.dart` |
+| S28 | Notification Preferences — four toggles, nothing persists them | 🟠 | Open (Day 8) | `settings_screen.dart` |
+| S29 | Upload photo — `PUT /me/avatar` is draft AND moderated | 🟠 | Open (Day 8) | `avatar_sheets.dart:121` |
+| S30 | Privacy & policy / Terms — no endpoint needed, but NO COPY SUPPLIED | 🟠 | Open (Day 8) | `profile_screen.dart` ×2, `legal_document_screen.dart` |
+| S31 | Go to Uni — track switching; no endpoint, and adr-003 makes it a data-model question | 🔴 | Open (Day 8) | `profile_screen.dart` |
+| S32 | "your progress" — a designed screen with no endpoint of any kind | 🟠 | Open (Day 8) | `profile_screen.dart` |
+| S33 | Customer Support — fully designed, zero endpoints | 🟠 | Open (Day 8) | `customer_support_screen.dart` |
+| S34 | **`parentPhone` is WRITE-ONLY** — required at registration, absent from `GET /me` | 🔴 | Open (Day 8) | — (row not built) |
+| S35 | `GET /me` returns raw wire codes with no display names | 🟠 | Open (Day 8) | `edit_profile_screen.dart` |
+| S36 | A `Friends` screen exists, with no endpoint and no entry point | 🟡 | Open (Day 8) | `friends_screen.dart` |
+
+> **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
+> the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
+> every `TODO(contract)` in `lib/` and the partner notice both cite these numbers.
 
 ---
 
@@ -91,14 +108,36 @@ the tree response carries per-unit or per-chapter completion.
 **Ask:** add per-node progress to the tree payload, or confirm the design should drop the bars.
 Currently built to render only when a value exists.
 
-## S5. 🟠 Referral / invitation code is collected and thrown away
+## S5. 🟠 Referral is a designed product surface, not a stray signup field
+
+> **Upgraded 2026-08-06 (Day 8).** This was filed as one orphaned input. It is bigger than that.
 
 **Where:** Sign Up_1 (`337:15875`) has an Invitation Code field. `POST /auth/register` has no
 matching property in either `SchoolRegistration` or `UniversityRegistration`.
 **What:** we render the field (design) but **never submit it** (contract). A student can type a
 referral code and it silently evaporates.
-**Ask (Seif + PM):** is referral in M1 scope? If yes we need the field on the register body and a
-validation error code. If no, the field should come off the design.
+
+**What Day 8 found.** The Account cluster contains a whole **`Refer a Friend`** screen. So referral
+is not a leftover field somebody forgot to delete — it is a feature with an entry point on the
+Profile hub, a screen, a sharing flow and an implied reward, and **none of it has a contract**.
+That changes the question from "should we keep this input" to "is this feature in milestone 1".
+
+There are three parts, and they are separable:
+
+| Part | What it needs |
+|---|---|
+| Accepting a code at signup | a field on `POST /auth/register` + an error code for an invalid one |
+| Handing a student their own code | something on `GET /me`, or an endpoint that mints one |
+| Paying the reward | an attribution model — who gets what, when it lands, which point pool (adr-003) |
+
+We are shipping `Refer a Friend` as a **disabled shell** (`lib/features/account_shells/screens/refer_a_friend_screen.dart`)
+— the screen renders, the share control is dead. Deliberately **no invented code**: a plausible
+string is the one thing on that screen a student would act on, and they would share something
+meaningless with their friends.
+
+**Ask (Seif + PM):** in or out. If in, all three rows above need answers and the middle one is the
+blocker for us. If out, the field comes off Sign Up_1 and the screen comes out of the design —
+either is fine; today's state is not, because we are asking students for something we discard.
 
 ## S6. 🔴 Flashcards: fully designed, sellable, and completely unimplementable
 
@@ -420,6 +459,247 @@ fixed"*; the diff contains **five** (`TokenPair.accessToken`, `SchoolRegistratio
 had no description in v1.0 and has none in v1.1, so there was nothing there to repair. No impact —
 we hand-write models rather than generating from the document, and none of the five was
 transcribed from the corrupted text (verified field-by-field in Day 7c section 0).
+
+---
+
+## S24. 🔴 "Solved Questions — 300" has no source anywhere in the contract
+
+**Where:** Profile (`166:4416`) draws a lifetime solved-questions counter.
+**What:** `StudentProfile` carries `points {school, university, total}`, `level` and `badges`. There
+is **no answered/solved counter**. `SubjectTree` has per-node `answered`/`total`, but that is per
+subject, per track, and summing it client-side would be both wrong (it counts nothing outside the
+loaded tree) and expensive (it needs every subject fetched).
+
+**What we built (Day 8 step 1): nothing.** The card is **omitted outright** — the rule since S12
+(quiz points off by 20×) is that a displayed number comes from the server verbatim or does not
+render. **There is no code marker to grep**, because there is no code: an omission leaves nothing
+behind.
+
+**Ask:** is this a real product concept? If yes it belongs on `GET /me` — it is a profile fact, not
+a leaderboard fact, and a student should see it from cache while offline. If no, it comes off the
+frame.
+
+## S25. 🔴 "Rank — HERO" is a tier name the contract cannot produce
+
+**Where:** Profile (`166:4416`) draws a rank *tier*.
+**What:** the contract has `level` (integer 1–12) and `badges` (integer, post-level-12 milestones).
+There is no rank string and no tier enum. `GET /leaderboard/me` is the only endpoint that might
+plausibly have carried one — it is `draft`, and its schema does not have it either.
+
+**What we built: nothing**, same as S24, and for the same reason. A card rendering "—" was the
+alternative and is worse: a visible blank invites the next person to fill it in with a guess. **No
+code marker.**
+
+**Ask:** is `HERO` a tier system (a mapping from level or points to a name, which the server must
+own so it can be changed without an app release), or is it design flavour text? If it is real it
+needs to be on `GET /me` next to `level`. Related and still open: **S3** — `level` has no threshold
+table, so we render level 8 with no way to say what reaches level 9.
+
+## S26. 🟠 Settings "Mode" draws three themes; the app has two
+
+**Where:** Setting (`176:1840`) draws three colour circles under **Mode**.
+**What:** `AppColors` has exactly two canvases — light `#FCFBF9` / green `#384F47` and dark
+`#232428` / purple `#AE87E7` — and the whole Day 7b fidelity pass was measured against those two.
+A third would mean inventing roughly fifty token values and calling the result a design.
+
+**What we built:** **two** options, wired to a real theme switch. Also in `DESIGN_ISSUES.md` #45,
+because this one is the designer's to answer, not Seif's.
+
+**Ask (designer):** what is the third circle? If it is "follow the system", that is a mode and not
+a palette and we will build it as one. If it is a third palette, it needs tokens.
+
+## S27. 🟠 "Show Rank" is one switch where the contract has two booleans
+
+**Where:** Setting (`176:1840`) draws a single **Show Rank** toggle.
+**What:** `PATCH /me` accepts **`leaderboardVisible`** (am I listed at all) and **`scoreHidden`**
+(listed, but with my score suppressed) — `openapi.yaml:620-621`, defaulted `true`/`false` by
+adr-023 at `:1380-1382`. They answer different questions and they default differently. One switch
+cannot express two independent booleans, and mapping one control onto both would mean **silently
+choosing a privacy policy on behalf of a minor**.
+
+**What we built:** **both** toggles, each labelled with a line explaining what it does, each
+sending only its own field. Also in `DESIGN_ISSUES.md` #46.
+
+**Ask (designer):** confirm two rows is right, or tell us which single policy the one switch was
+meant to express.
+
+## S28. 🟠 Notification Preferences — four toggles, nothing stores them
+
+**Where:** Setting (`176:1840`) — Announcements · Promotions · Support · System.
+**What:** nothing in the contract persists a notification preference. `PUT /me/fcm-token` is a
+**device token**, not a preference set, and it is `draft` besides.
+
+**What we built:** all four render **disabled and off**. Off rather than on because any value we
+displayed would be a state we invented; a switch that slides and then forgets is worse than one
+that visibly cannot move.
+
+**Ask:** if notification preferences are milestone 1, they need somewhere to live. The natural home
+is an object on `PATCH /me` beside the privacy toggles — same kind of per-student setting, same
+endpoint, no new path. Related: the Home bell's unread dot has been gated behind a permanently
+false flag since Day 7b pending any notifications endpoint, and there is a `Notifications` frame in
+this cluster we have not built.
+
+## S29. 🟠 "Upload photo" needs an endpoint that is draft *and* moderated
+
+**Where:** Edit Profile's avatar sheet (`180:3989` variants) offers **Upload photo** and **Use
+Avatar**. Code: `lib/features/profile/widgets/avatar_sheets.dart:121`.
+**What:** `GET /reference/avatars` + `PATCH /me { avatarId }` are both stable, so **Use Avatar
+works**. `PUT /me/avatar` is `draft`, and adr-021 makes it *moderated* (SafeSearch) — which means
+even once it stabilises, an upload is not synchronously "set". The UI has to express a pending
+state that nothing in the contract currently describes.
+
+**What we built:** Use Avatar opens the existing Day 2 picker; Upload photo renders disabled.
+
+**Ask:** two things, and the second is the one that will bite. (1) Is `PUT /me/avatar` milestone 1?
+(2) When it lands, **what does the client show between upload and approval** — does `GET /me`
+return the old avatar, the new one optimistically, or a status field? A moderated write needs a
+readable moderation state or the screen has to guess.
+
+## S30. 🟠 Privacy & policy and Terms & Conditions have no text
+
+**Where:** Profile (`166:4416`) rows 7 and 8. Code: `lib/features/profile/screens/profile_screen.dart`
+(both rows) and `lib/features/account_shells/screens/legal_document_screen.dart`.
+**What:** **not a contract gap** — neither document needs an endpoint. They need *text*, in Arabic
+and English, and nobody has supplied any or owns supplying it.
+
+This is in this file rather than only in `DESIGN_ISSUES.md` because it is a **milestone-1 blocker
+with no owner**, which is exactly the kind of item that drifts until it is a launch problem. An app
+for minors that ships without a privacy policy is not a design nit.
+
+**What we built:** both rows navigate to a shared screen carrying a `TODO(content)` and one line
+saying the document has not been published. **We did not write legal copy** — text that binds a
+minor's guardian is not something an implementer invents, and a plausible placeholder is more
+dangerous than an empty page because it looks reviewed.
+
+**Ask (PM/legal, not Seif):** who is writing these, and do they ship as bundled asset text or as
+something the server serves? If the latter it becomes a contract item and comes back to you.
+
+## S31. 🔴 "Go to Uni" switches track — and adr-003 makes that a data-model question
+
+**Where:** the `Go to Uni` dialog (`180:4301`): *"Are you sure you want to convert to Uni Track?"*
+Code: `lib/features/profile/screens/profile_screen.dart`.
+**What:** track is fixed at registration by a discriminated body (`SchoolRegistration` |
+`UniversityRegistration`) whose two arms have different **shapes** — adr-010 gives university no
+country field. There is no endpoint, and `PATCH /me` cannot express it.
+
+The missing route is the easy half. The hard half is **adr-003 dual point pools**:
+
+- Does the school pool survive, transfer, or reset?
+- `points.total` is your sum — does it keep counting the abandoned pool?
+- Does `level` recompute, and can a student's level go **down** as a result?
+- What happens to entitlements bought against the old track?
+
+**What we built:** the dialog, with **Confirm disabled**.
+
+**Ask:** this is a product decision before it is an endpoint. Even "not milestone 1" is an answer we
+can build to — we would then take the row off the hub rather than showing a dialog nobody can
+complete.
+
+## S32. 🟠 "your progress" — a designed screen with no endpoint of any kind
+
+**Where:** a `your progress` frame in the Account cluster, reached from the Profile hub.
+Code: `lib/features/profile/screens/profile_screen.dart`.
+**What:** `GET /me` carries points, level and badges — a **snapshot**, with no history. Nothing in
+the contract returns a time series, a per-day figure, or a streak record. Per-subject counters on
+`SubjectTree` are a position, not a progress timeline, and they are per subject.
+
+**What we built:** the row is **disabled**. Unlike Refer a Friend and Customer Support it gets no
+shell, because a progress screen with no data would be an empty chart — and an empty chart reads as
+"you have done nothing", which is a lie about the student rather than about the app.
+
+> Renumbered from S30 in Day 8 step 3. S30 is the missing-legal-copy issue alone.
+
+**Ask:** is there a progress/statistics endpoint planned? If yes, what is its grain — daily points,
+per-subject accuracy, streaks? The frame will answer it better than we can guess.
+
+## S33. 🟠 Customer Support is fully designed and has zero endpoints
+
+**Where:** `Customer Support` ×3, `Create Ticket`, `Customer support chat`, `Messages` ×2 — plus a
+whole Message **tab** in the nav bar. Code:
+`lib/features/account_shells/screens/customer_support_screen.dart`.
+**What:** there is **no endpoint of any kind** for support. Not draft — absent. This is a complete
+ticketing product in the design with nothing behind it.
+
+**What we built:** the Profile row navigates to a shell whose Create Ticket control is disabled.
+**No invented data** — no ticket list, no thread, no reference number. A support screen that
+accepts a message and drops it is worse than one that says it is not open, because the student
+walks away believing they have been heard.
+
+> Renumbered from S30 in Day 8 step 3.
+
+**Ask:** is support milestone 1, and is it in-app at all? A `mailto:` or a WhatsApp hand-off is a
+perfectly good milestone-1 answer and needs no contract — but it needs deciding, because the design
+promises a ticketing system.
+
+## S34. 🔴 `parentPhone` is WRITE-ONLY — we collect it and can never show it back
+
+> **Found in Day 8 step 2, while building Edit Profile.** This is worse than "another immutable
+> field", which is how the partner notice originally framed it.
+
+**Where:** `parentPhone` is **required** on both registration bodies — `openapi.yaml:1280`
+(`SchoolRegistration`) and `:1305` (`UniversityRegistration`). It is **absent from
+`StudentProfile`**. The Edit Profile frame (`180:3989`) draws the row.
+**What:** we compel a student to supply a parent's phone number at registration, and then there is
+no endpoint that will ever tell them what they gave us. Not read-only. Not masked. **Not at all.**
+
+The rest of Edit Profile's read-only block works because `GET /me` returns the values — phone, city,
+school, stage, education system are all there, and we render them locked. `parentPhone` is the one
+row we could not build, so **the frame's row is not rendered**, and a student cannot check whether
+the number they typed months ago was a typo.
+
+**The server clearly has it.** `POST /auth/recovery/start` returns **`parentPhoneMasked`**
+(`openapi.yaml:272`) — account recovery reads the value back to prove identity. So this is a
+missing *field on a response*, not a missing value in the database.
+
+**Ask:** put the same masked form on `GET /me`. Masked rather than raw is almost certainly the right
+answer for a minor's parent's number — it is enough for "yes, that is my mum's number" and it does
+not turn `GET /me` into a way to harvest guardian contacts from a stolen token. If you would rather
+it stay hidden entirely, say so and we will ask the designer to delete the row.
+
+## S35. 🟠 `GET /me` returns raw wire codes; a student sees `nationalLanguages`
+
+> **Found in Day 8 step 2**, same pass as S34.
+
+**Where:** Edit Profile's read-only block. Code:
+`lib/features/profile/screens/edit_profile_screen.dart`.
+**What:** the geography and academic values on `StudentProfile` arrive as **wire codes with no
+display names**. Rendered honestly, a student sees `nationalLanguages` and `secondary2` where the
+frame draws "American" and "Grade 11".
+
+Everything else on the profile carries both locales: `NamedRef` has `nameAr`/`nameEn`, so
+governorate, city, school, university and faculty all render properly. `stage` and
+`educationSystem` are bare strings.
+
+**Why we did not just map them client-side, which is the obvious fix:**
+
+1. `EducationSystem` is documented **extensible** — *"clients must tolerate unknown values"*. There
+   is no closed set to translate against, so any map we write goes stale the day you add a system,
+   and it fails by showing a raw code to exactly the students on the newest option.
+2. `Stage` does have ARB copy from the registration wizard, but translating one and not the other
+   would be worse than translating neither — the two rows sit adjacent.
+3. Fetching `/reference/education-systems` to label a **read-only** row is a network call for
+   cosmetics, on a screen that otherwise makes zero requests.
+
+**Ask:** return the display names you already have. Either `stage` and `educationSystem` become
+`NamedRef`-shaped (`{code, nameAr, nameEn}`) like everything else on the object, or `GET /me` gains
+a sibling block of resolved names. The first is more consistent with the rest of the schema.
+
+## S36. 🟡 A `Friends` screen exists, with no endpoint and no way in
+
+**Where:** a `Friends` frame in the Account cluster. Code:
+`lib/features/account_shells/screens/friends_screen.dart`.
+**What:** two separate gaps, and the second is the odd one.
+
+1. **No endpoint.** There is no friends list, no friend requests, no social graph of any kind in the
+   contract. Interestingly the *concept* is in the contract's prose — `scoreHidden`'s description
+   (`openapi.yaml:1094`) says it "affects profiles/friends" — so somebody has thought about it.
+2. **No entry point.** The Profile hub draws ten rows and none of them is Friends. Nothing anywhere
+   in the app navigates to this screen. We built it as a shell and routed it at `/friends`, but a
+   student cannot reach it, and we did **not** invent an eleventh row to give it a door.
+
+**Ask (designer first, then Seif):** where is this screen entered from? If the answer is "it is not
+milestone 1", it comes out of the cluster and we delete the shell. If it is real, it needs both a
+door and a contract, and the privacy toggles in S27 are already written as though it exists.
 
 ---
 

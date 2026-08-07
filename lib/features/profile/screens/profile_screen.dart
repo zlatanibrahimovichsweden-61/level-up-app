@@ -153,10 +153,23 @@ class _Loaded extends ConsumerWidget {
 /// The frame's ten rows: eight navigation rows, then the two action rows that
 /// open dialogs.
 ///
-/// Exactly one of the eight has a destination in Step 1. The rest render at
-/// full fidelity and disabled — the Day 7 "Review Questions" treatment (S14)
-/// applied at scale — each with a stable `Key` and one `TODO(contract)` naming
-/// the `seif_fight.md` entry that tracks it.
+/// Exactly one of the eight had a destination in Step 1. Step 3 gave four more
+/// a **shell** — a real screen, at the frame's shape, with every control
+/// disabled — because a row that opens something honest teaches a student more
+/// than a row that cannot be opened. The remaining three stay disabled: they
+/// have nowhere to lead even in shell form.
+///
+/// | Row | Step 3 |
+/// |---|---|
+/// | Settings | live → the real screen |
+/// | Refer a Friend · Customer Support | live → a disabled shell |
+/// | Privacy & policy · Terms & Conditions | live → a `TODO(content)` screen |
+/// | Favorite questions · your progress · Subscription | still disabled |
+///
+/// Every disabled row keeps its stable `Key` and its one `TODO(contract)`
+/// naming the `seif_fight.md` entry — and so does every row that now
+/// navigates, because arriving at a shell does not close the gap that made it
+/// a shell.
 class _Menu extends ConsumerWidget {
   const _Menu({required this.profile});
 
@@ -189,9 +202,11 @@ class _Menu extends ConsumerWidget {
           disabledHint: unavailable,
         ),
         const SizedBox(height: 16),
-        // TODO(contract): seif_fight.md S30 — "your progress" has no endpoint
+        // TODO(contract): seif_fight.md S32 — "your progress" has no endpoint
         // of any kind. `GET /me` carries points/level/badges but no history,
-        // and per-subject counters are not a progress timeline.
+        // and per-subject counters are not a progress timeline. No shell for
+        // this one: an empty chart reads as "you have done nothing", which is
+        // a lie about the student rather than about the app.
         ProfileMenuRow(
           key: const Key('profile_row_progress'),
           icon: Icons.bar_chart,
@@ -201,21 +216,25 @@ class _Menu extends ConsumerWidget {
         const SizedBox(height: 16),
         // TODO(contract): seif_fight.md S5 — the referral code is collected at
         // registration and thrown away; there is no referral endpoint, so the
-        // whole screen behind this row has nothing to render.
+        // screen behind this row is a SHELL with its share control disabled.
+        // The row navigates (Step 3) because a student who taps it learns the
+        // feature exists and is not open yet; a dead row teaches nothing.
         ProfileMenuRow(
           key: const Key('profile_row_refer'),
           icon: Icons.share,
           label: l10n.profileReferAFriend,
-          disabledHint: unavailable,
+          onTap: () => context.push('/refer'),
         ),
         const SizedBox(height: 16),
-        // TODO(contract): seif_fight.md S30 — customer support is fully
+        // TODO(contract): seif_fight.md S33 — customer support is fully
         // designed (tickets, chat, message threads) and has no endpoint at all.
+        // Same treatment as Refer a Friend: the row leads to a shell, not
+        // nowhere.
         ProfileMenuRow(
           key: const Key('profile_row_support'),
           icon: Icons.headset_mic,
           label: l10n.profileCustomerSupport,
-          disabledHint: unavailable,
+          onTap: () => context.push('/support'),
         ),
         const SizedBox(height: 16),
         // TODO(contract): seif_fight.md S8 — `/checkout/sessions` is draft and
@@ -230,12 +249,14 @@ class _Menu extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         // TODO(contract): seif_fight.md S30 — no endpoint is needed, but the
-        // legal TEXT does not exist. Writing it is not this app's call.
+        // legal TEXT does not exist. Writing it is not this app's call. The
+        // row leads to a `TODO(content)` screen that says so, which is more
+        // honest than a row that cannot be opened at all.
         ProfileMenuRow(
           key: const Key('profile_row_privacy'),
           icon: Icons.privacy_tip,
           label: l10n.profilePrivacyPolicy,
-          disabledHint: unavailable,
+          onTap: () => context.push('/legal/privacy'),
         ),
         const SizedBox(height: 16),
         // TODO(contract): seif_fight.md S30 — same as Privacy & policy above:
@@ -244,7 +265,7 @@ class _Menu extends ConsumerWidget {
           key: const Key('profile_row_terms'),
           icon: Icons.privacy_tip,
           label: l10n.profileTermsConditions,
-          disabledHint: unavailable,
+          onTap: () => context.push('/legal/terms'),
         ),
         const SizedBox(height: 16),
         // Go to Uni: the ROW opens the dialog; the dialog's confirm is what is

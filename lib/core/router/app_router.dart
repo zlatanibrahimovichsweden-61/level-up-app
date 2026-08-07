@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/account_shells/screens/customer_support_screen.dart';
+import '../../features/account_shells/screens/friends_screen.dart';
+import '../../features/account_shells/screens/legal_document_screen.dart';
+import '../../features/account_shells/screens/refer_a_friend_screen.dart';
 import '../../features/auth/models/otp_args.dart';
 import '../../features/auth/notifier/auth_controller.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -24,6 +28,7 @@ import '../../features/registration/screens/school_detail_screen.dart';
 import '../../features/registration/screens/signup_identity_screen.dart';
 import '../../features/registration/screens/signup_track_screen.dart';
 import '../../features/registration/screens/university_detail_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/screens/tab_placeholder.dart';
 import '../../l10n/app_localizations.dart';
@@ -261,7 +266,35 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'edit', builder: (_, _) => const EditProfileScreen()),
         ],
       ),
-      GoRoute(path: '/settings', builder: (_, _) => const _Placeholder('Settings')),
+      // The real Settings screen (Day 8 step 3). Languages and Mode are client
+      // preferences; Rank writes the two adr-023 privacy fields through the
+      // same `PATCH /me` Edit Profile uses.
+      GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      // The Account cluster's SHELLS — designed screens with no endpoint
+      // behind them. Each renders its frame's shape with every control
+      // disabled; none of them fetches anything, because there is nothing to
+      // fetch (seif_fight.md S5, S30, S33, S36).
+      //
+      // Outside the nav shell, like `/profile/edit`: they are pushed from the
+      // Account tab and cover the nav bar, rather than being tabs themselves.
+      GoRoute(path: '/refer', builder: (_, _) => const ReferAFriendScreen()),
+      GoRoute(path: '/support', builder: (_, _) => const CustomerSupportScreen()),
+      // No entry point in the app — the Profile frame draws no Friends row (see
+      // FriendsScreen). Routed so the built screen is reachable and testable
+      // the day a design gives it a door.
+      GoRoute(path: '/friends', builder: (_, _) => const FriendsScreen()),
+      // Two paths, one screen: the documents differ by title and by nothing
+      // else until somebody supplies the copy.
+      GoRoute(
+        path: '/legal/privacy',
+        builder: (_, _) =>
+            const LegalDocumentScreen(document: LegalDocument.privacy),
+      ),
+      GoRoute(
+        path: '/legal/terms',
+        builder: (_, _) =>
+            const LegalDocumentScreen(document: LegalDocument.terms),
+      ),
     ],
   );
 });

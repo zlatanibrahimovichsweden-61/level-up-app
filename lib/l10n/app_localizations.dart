@@ -1429,6 +1429,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discard'**
   String get discardChangesLeave;
+
+  /// No description provided for @settingsLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get settingsLanguages;
+
+  /// No description provided for @settingsMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get settingsMode;
+
+  /// No description provided for @settingsRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get settingsRank;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Preferences'**
+  String get settingsNotifications;
+
+  /// Written in Arabic in BOTH ARB files, on purpose. A student who has ended up in a script they can't read has to be able to recognise the row that gets them out; 'Arabic' in Latin script is no help to someone looking for العربية.
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get languageArabicName;
+
+  /// Written in English in BOTH ARB files — see languageArabicName.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglishName;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// The Settings Mode section offers TWO canvases. The frame draws three colour circles; AppColors has two palettes and the third has nothing behind it (seif_fight.md S26).
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @settingsLeaderboardVisible.
+  ///
+  /// In en, this message translates to:
+  /// **'Show me on the leaderboard'**
+  String get settingsLeaderboardVisible;
+
+  /// No description provided for @settingsLeaderboardVisibleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this off and you won\'t be listed at all.'**
+  String get settingsLeaderboardVisibleHelp;
+
+  /// No description provided for @settingsScoreHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide my points'**
+  String get settingsScoreHidden;
+
+  /// The frame draws ONE 'Show Rank' switch; the contract has two independent booleans with different adr-023 defaults (seif_fight.md S27). These two help lines are what makes the difference between them legible.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll still be listed — without your score.'**
+  String get settingsScoreHiddenHelp;
+
+  /// No description provided for @notifAnnouncements.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get notifAnnouncements;
+
+  /// No description provided for @notifPromotions.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotions'**
+  String get notifPromotions;
+
+  /// No description provided for @notifSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get notifSupport;
+
+  /// No description provided for @notifSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notifSystem;
+
+  /// Why all four notification toggles are disabled: nothing in the contract stores a notification preference (seif_fight.md S28).
+  ///
+  /// In en, this message translates to:
+  /// **'Notification settings aren\'t available yet.'**
+  String get settingsNotificationsUnavailable;
+
+  /// No description provided for @friendsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get friendsTitle;
+
+  /// No description provided for @friendsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends aren\'t available yet.'**
+  String get friendsUnavailable;
+
+  /// No description provided for @referUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Inviting friends isn\'t available yet.'**
+  String get referUnavailable;
+
+  /// No description provided for @shareInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Share invite'**
+  String get shareInvite;
+
+  /// No description provided for @supportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Support isn\'t available yet.'**
+  String get supportUnavailable;
+
+  /// No description provided for @createTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Ticket'**
+  String get createTicket;
+
+  /// Privacy & policy and Terms & Conditions need no endpoint — they need TEXT, and none has been supplied (seif_fight.md S30). Deliberately says the document is missing rather than inventing legal copy.
+  ///
+  /// In en, this message translates to:
+  /// **'This document hasn\'t been published yet.'**
+  String get legalNotPublished;
 }
 
 class _AppLocalizationsDelegate

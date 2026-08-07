@@ -28,16 +28,30 @@ import 'profile_harness.dart';
 ///    genuinely non-interactive — because a row that looks live and swallows
 ///    the tap is the failure mode being prevented.
 void main() {
-  /// Every row the frame draws that Step 1 cannot give a destination, by `Key`,
-  /// with the `seif_fight.md` entry that tracks it.
+  /// Rows with nowhere to go AT ALL, by `Key`, with the `seif_fight.md` entry
+  /// that tracks each.
+  ///
+  /// Shorter than it was in Step 1: four of the original seven now open a
+  /// SHELL (below). These three do not, because a shell for them would have to
+  /// invent the very thing that is missing — a favourites list, a progress
+  /// history, a checkout session.
   const disabledRows = <String, String>{
     'profile_row_favorites': 'S11 — /me/favorites is draft',
-    'profile_row_progress': 'S30 — "your progress" has no endpoint',
-    'profile_row_refer': 'S5 — referral code is collected and thrown away',
-    'profile_row_support': 'S30 — customer support has no endpoint',
+    'profile_row_progress': 'S32 — "your progress" has no endpoint',
     'profile_row_subscription': 'S8 — /checkout/sessions is draft',
-    'profile_row_privacy': 'S30 — no legal copy supplied',
-    'profile_row_terms': 'S30 — no legal copy supplied',
+  };
+
+  /// Rows that navigate to a disabled SHELL screen (Step 3), by `Key` → route.
+  ///
+  /// Live rows leading to honest dead ends. The gap each one represents is
+  /// unchanged — the `TODO(contract)` markers stay — but a student who taps
+  /// learns the feature exists and is not open yet, which a dead row cannot
+  /// tell them.
+  const shellRows = <String, String>{
+    'profile_row_refer': '/refer',
+    'profile_row_support': '/support',
+    'profile_row_privacy': '/legal/privacy',
+    'profile_row_terms': '/legal/terms',
   };
 
   group('loaded', () {
@@ -183,17 +197,22 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('the two live rows DO have a tap target', (tester) async {
+    testWidgets('every live row DOES have a tap target', (tester) async {
       await pumpProfileScreen(tester, profile: profileRepo());
 
-      for (final key in ['profile_row_settings', 'profile_row_logout']) {
+      final live = [
+        'profile_row_settings',
+        'profile_row_logout',
+        ...shellRows.keys,
+      ];
+      for (final key in live) {
         expect(
           find.descendant(
             of: find.byKey(Key(key)),
             matching: find.byType(InkWell),
           ),
           findsOneWidget,
-          reason: '$key is live in Step 1',
+          reason: '$key is live',
         );
       }
     });
@@ -226,6 +245,21 @@ void main() {
         // Nothing is expected to receive this tap — that IS the assertion.
         await tapProfileKey(tester, key, warnIfMissed: false);
         expect(locationOf(container), '/account', reason: '$key navigated');
+      }
+    });
+
+    testWidgets('each shell row lands on its own screen', (tester) async {
+      for (final entry in shellRows.entries) {
+        final container = await pumpProfileApp(tester, profile: profileRepo());
+        await openAccountTab(tester);
+
+        await tapProfileKey(tester, entry.key);
+
+        expect(
+          locationOf(container),
+          entry.value,
+          reason: '${entry.key} must open its shell',
+        );
       }
     });
 

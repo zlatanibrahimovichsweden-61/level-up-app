@@ -740,4 +740,78 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discardChangesLeave => 'تجاهل';
+
+  @override
+  String get settingsLanguages => 'اللغة';
+
+  @override
+  String get settingsMode => 'المظهر';
+
+  @override
+  String get settingsRank => 'الترتيب';
+
+  @override
+  String get settingsNotifications => 'تفضيلات الإشعارات';
+
+  @override
+  String get languageArabicName => 'العربية';
+
+  @override
+  String get languageEnglishName => 'English';
+
+  @override
+  String get themeLight => 'فاتح';
+
+  @override
+  String get themeDark => 'داكن';
+
+  @override
+  String get settingsLeaderboardVisible => 'أظهرني في لوحة المتصدرين';
+
+  @override
+  String get settingsLeaderboardVisibleHelp =>
+      'لو أوقفته، لن تظهر في القائمة نهائيًا.';
+
+  @override
+  String get settingsScoreHidden => 'إخفاء نقاطي';
+
+  @override
+  String get settingsScoreHiddenHelp => 'ستظل في القائمة — بدون ظهور نقاطك.';
+
+  @override
+  String get notifAnnouncements => 'الإعلانات';
+
+  @override
+  String get notifPromotions => 'العروض';
+
+  @override
+  String get notifSupport => 'الدعم';
+
+  @override
+  String get notifSystem => 'النظام';
+
+  @override
+  String get settingsNotificationsUnavailable =>
+      'إعدادات الإشعارات غير متاحة بعد.';
+
+  @override
+  String get friendsTitle => 'الأصدقاء';
+
+  @override
+  String get friendsUnavailable => 'الأصدقاء غير متاح بعد.';
+
+  @override
+  String get referUnavailable => 'دعوة الأصدقاء غير متاحة بعد.';
+
+  @override
+  String get shareInvite => 'مشاركة الدعوة';
+
+  @override
+  String get supportUnavailable => 'الدعم غير متاح بعد.';
+
+  @override
+  String get createTicket => 'إنشاء تذكرة';
+
+  @override
+  String get legalNotPublished => 'لم يتم نشر هذا المستند بعد.';
 }

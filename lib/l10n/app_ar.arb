@@ -243,5 +243,31 @@
   "discardChangesTitle": "تجاهل التغييرات؟",
   "discardChangesBody": "لم يتم حفظ تعديلاتك.",
   "discardChangesStay": "متابعة التعديل",
-  "discardChangesLeave": "تجاهل"
+  "discardChangesLeave": "تجاهل",
+
+  "settingsLanguages": "اللغة",
+  "settingsMode": "المظهر",
+  "settingsRank": "الترتيب",
+  "settingsNotifications": "تفضيلات الإشعارات",
+  "languageArabicName": "العربية",
+  "languageEnglishName": "English",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "settingsLeaderboardVisible": "أظهرني في لوحة المتصدرين",
+  "settingsLeaderboardVisibleHelp": "لو أوقفته، لن تظهر في القائمة نهائيًا.",
+  "settingsScoreHidden": "إخفاء نقاطي",
+  "settingsScoreHiddenHelp": "ستظل في القائمة — بدون ظهور نقاطك.",
+  "notifAnnouncements": "الإعلانات",
+  "notifPromotions": "العروض",
+  "notifSupport": "الدعم",
+  "notifSystem": "النظام",
+  "settingsNotificationsUnavailable": "إعدادات الإشعارات غير متاحة بعد.",
+
+  "friendsTitle": "الأصدقاء",
+  "friendsUnavailable": "الأصدقاء غير متاح بعد.",
+  "referUnavailable": "دعوة الأصدقاء غير متاحة بعد.",
+  "shareInvite": "مشاركة الدعوة",
+  "supportUnavailable": "الدعم غير متاح بعد.",
+  "createTicket": "إنشاء تذكرة",
+  "legalNotPublished": "لم يتم نشر هذا المستند بعد."
 }

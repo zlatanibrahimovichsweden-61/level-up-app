@@ -327,7 +327,13 @@ render but never appear in the request; a free-text city renders; save invalidat
    Your job is not to write it. Your job is to **reconcile it**: if implementation turns up a gap it
    does not list, or proves one of its claims wrong, amend it and say so in the report. Treat a
    disagreement between the notice and what you find in the frames as a finding, not a typo.
-4. **`seif_fight.md`** — entries **S24–S33** per the conflicts above, each pointing at the notice.
+4. **`seif_fight.md`** — entries **S24–S35** per the conflicts above, each pointing at the notice.
+   **Corrected 2026-08-07:** the range was S24–S33 when this brief was written. **Step 2 found two
+   more** while building Edit Profile — **S34** (`parentPhone` is write-only: required at
+   registration, absent from `GET /me`, so we can never show a student what they gave us) and
+   **S35** (`GET /me` returns raw wire codes, so a student reads `nationalLanguages` off their own
+   profile). **Step 3 then found S36** — a `Friends` screen with no endpoint *and* no entry point
+   anywhere in the app. Final range: **S24–S36**. Note S22 and S23 were never allocated.
    Upgrade **S5** (referral) — it now has a whole screen behind it, not a stray signup field.
    **Renumber the four Step 1 `TODO(contract)` markers currently pointing at S30**: `your progress`
    → **S32**, `Customer Support` → **S33**. Only Privacy & policy and Terms & Conditions keep S30.

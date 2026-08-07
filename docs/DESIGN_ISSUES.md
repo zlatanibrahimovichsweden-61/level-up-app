@@ -25,7 +25,7 @@
 | 7 | Referral / Invitation Code field has no backend field in the contract | 🟠 | PM + Seif | `TODO(contract)` |
 | 8 | Login "Create New Account" implies a direct-registration path that can't exist | 🟠 | Designer | Day-3 fix |
 | 9 | Legal URLs (User Agreement/Privacy/Cookie) not provided | 🟡 | Product/Legal | `TODO(legal)` |
-| 10 | No in-app theme toggle although a full dark theme exists | 🟡 | Designer/PM | default light |
+| 10 | ~~No in-app theme toggle although a full dark theme exists~~ — **RESOLVED** (Day 8 Settings) | ✅ | — | `theme_provider.dart` |
 | 11 | Student phone re-shown on Sign Up_1 (already bound to token) | 🟡 | Designer | built read-only |
 | 12 | Dark-mode primary accent flips green→purple — confirm intentional | 🟡 | Designer | — |
 | 13 | Level-progress bar has no threshold to progress toward | 🔴 | Seif + Designer | `TODO(contract)` |
@@ -139,10 +139,18 @@ thing, which is correct per the contract but reads oddly — this may want a sin
 **What:** User Agreement / Privacy Policy / Cookie Policy point at `levelup.example/...`.
 **Fix we need:** product/legal supply the real URLs.
 
-## 10. 🟡 No in-app theme toggle
-**What:** a full **dark** theme exists in Figma, but no screen has a control to switch themes.
-App currently **defaults to light** and follows nothing else. **Fix we need:** designer/PM decide
-whether a theme toggle belongs in Settings (later) — dark theme is wired and ready.
+## 10. ✅ RESOLVED (Day 8) — the theme toggle landed in Settings
+**What:** a full **dark** theme existed in Figma and in `AppColors` from Day 0, but no screen had a
+control to switch themes, so `MaterialApp.themeMode` was pinned to `ThemeMode.light` and **half the
+palette was unreachable on a device**.
+
+**Resolved 2026-08-07** by Settings' **Mode** section (Figma `176:1840`). `themeModeProvider`
+(`lib/core/providers/theme_provider.dart`) is shaped exactly like the existing `localeProvider` — a
+plain `Notifier`, light by default, no persistence across launches yet. `app.dart` watches it.
+Nothing about either palette changed; the switch is what was missing.
+
+**Two options, not the frame's three** — see #45 below, and `seif_fight.md` **S26**.
+**Not `ThemeMode.system`**: the frame draws a choice between canvases, not a follow-the-OS option.
 
 ## 11. 🟡 Student phone re-shown on Sign Up_1
 **What:** the student's phone is already proven and bound to the `registrationToken`; showing it as
@@ -939,3 +947,64 @@ anywhere:
 
 **When the revision lands:** re-verify these states against the frames, do not rebuild them. The
 behaviour is contract-driven and will not change; only the presentation is up for revision.
+
+---
+
+## 45. 🟠 Settings "Mode" draws three themes; the app has exactly two
+
+**Where:** Setting (`176:1840`) — three colour circles under **Mode**.
+Code: `lib/features/settings/screens/settings_screen.dart`.
+
+**What.** `AppColors` has two canvases and only two: light (`#FCFBF9` page, `#384F47` green accent)
+and dark (`#232428` page, `#AE87E7` purple accent). Every fidelity pass since Day 7b — the nav bar,
+the language pill, the track picker, Home, the whole Profile cluster — was measured against those
+two. There is no third palette anywhere in the file, and no set of variables that would define one.
+
+A third option would mean inventing roughly fifty token values and presenting the result as a
+design. That is the same class of decision as inventing a screen state, which Day 7b ruled out.
+
+**What ships (Day 8 step 3):** **two** rows, Light and Dark, each leading with a circle filled from
+that palette's own `background` — so the swatch cannot drift from the canvas it selects. Wired to
+the new `themeModeProvider`, which is what also closed #10.
+
+**Fix we need — designer.** What is the third circle? Two plausible answers and they are very
+different jobs:
+
+1. **"Follow the system."** That is a *mode*, not a palette, and Flutter has it built in
+   (`ThemeMode.system`) — a third row costs nothing. Say the word.
+2. **A third palette.** Then it needs tokens: page, card, field, text, accent, nav, and the nine
+   semantic colours that deliberately do not flip with the theme. Until those exist there is
+   nothing to build.
+
+Also `seif_fight.md` **S26**, because Seif's side sees it in the same screen.
+
+---
+
+## 46. 🟠 "Show Rank" is one switch where the contract has two independent booleans
+
+**Where:** Setting (`176:1840`) — a single **Show Rank** toggle.
+Code: `lib/features/settings/screens/settings_screen.dart`.
+
+**What.** `PATCH /me` accepts two privacy fields (`openapi.yaml:620-621`), and adr-023 defaults them
+differently (`:1380-1382`):
+
+| Field | Question it answers | Default |
+|---|---|---|
+| `leaderboardVisible` | am I on the leaderboard at all? | `true` |
+| `scoreHidden` | I am listed — is my score shown? | `false` |
+
+These are not two spellings of one setting. A student who wants to compete but not publish their
+score picks the second without the first; a student who wants out entirely picks the first. One
+switch cannot express the pair, and **mapping one control onto both would mean silently choosing a
+privacy policy on behalf of a minor** — which is the sort of default that gets noticed by a parent,
+not by us.
+
+**What ships (Day 8 step 3):** **two** rows in the frame's styling, each with a one-line explanation
+under the label, because four words cannot carry the difference. Each sends only its own field.
+
+**Fix we need — designer.** Confirm two rows is right and give them their copy, or tell us which
+single policy the one switch was meant to express. If the intent was "hide me completely", that is
+`leaderboardVisible` alone and `scoreHidden` should come off the screen — but it stays on the
+contract, so somebody still has to decide its value.
+
+Also `seif_fight.md` **S27**.

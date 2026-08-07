@@ -151,7 +151,66 @@ approved frame, and a golden would freeze a look we invented.
 > `pinned 23f0535`, which is two versions old. **`contract/SOURCE.md` is authoritative** — it pins
 > `ee2ed8f` (v1.1.0-m1), vendored 2026-08-03. Do not trust a contract reference in an older brief.
 
-## Endpoint coverage (21 stable / 36 total)
+## Day 8 — the Account cluster (brief: `docs/day8_account_brief.md`) — built, awaiting review
+**The day the contract ran out.** One endpoint to build (`PATCH /me`) and eight designed screens.
+Three commits, one per step; the split was deliberate so the owner could review between them.
+
+**Step 1 — Profile hub** (`6edf922`). `ProfileScreen` (Figma `166:4416`) replaces
+`AccountPlaceholderScreen` on the `/account` branch, powered by the `/me` Home already fetched —
+switching tabs costs no request. **Points renders `points.total` verbatim; Solved Questions and Rank
+are omitted outright** because the contract has neither (S24, S25) and a card showing "—" invites
+somebody to fill it in with a guess. The frame draws **ten** rows, not eight: `Go to University` and
+`Logout` are rows too, styled differently, opening dialogs rather than navigating. Logout is the one
+thing on the screen that fully works.
+
+**Step 2 — Edit Profile + `PATCH /me`** (`fdf8d73`). The last unconsumed stable endpoint.
+The whole step turned on one field: **`email` is the only place in this app where sending an
+explicit JSON `null` is correct** — absent means unchanged, `null` means clear it. `String?` cannot
+carry three states, and the repo's standing `includeIfNull: false` habit would have made *clearing
+an email silently impossible*. Modelled as a sealed `EmailPatch { unchanged | set | cleared }` with
+a hand-written `toJson`; the "cleared" test was proven to bite by temporarily reverting the
+handling and watching three assertions go red. `ProfileCity` got its first real call site and is
+switched on exhaustively. Six fields the frame draws as inputs render **read-only**, and one —
+Parent's Number — could not be built at all, which is how **S34** was found.
+
+**Step 3 — Settings, shells, and the records** (this commit). `SettingsScreen` (`176:1840`) replaces
+the `/settings` placeholder: Languages and Mode are client preferences, Rank is two `PATCH /me`
+booleans through Step 2's one repository method, Notification Preferences is four dead toggles.
+**Mode closes `DESIGN_ISSUES.md` #10** — both palettes have existed since Day 0 and nothing could
+select between them, so half the design was unreachable on a device. Four Profile rows now open
+**disabled shells** (Refer a Friend, Customer Support, Privacy, Terms); three stay dead because a
+shell for them would have to invent the missing thing. `seif_fight.md` gained **S24–S36**.
+
+**The rule that governed all three steps:** shells, not mocks. No invented referral code, no fake
+ticket, no placeholder friend row, no legal copy. Every disabled control has a `Key`, a
+`TODO(contract)` naming its entry, and a widget test asserting it is **structurally** dead — no ink
+response anywhere in its subtree, not merely a null callback.
+
+**Tests:** 764 green (Step 1 +35, Step 2 +59, Step 3 +45), `flutter analyze` clean, no new goldens
+and the existing 18 untouched.
+
+## What the app looks like after Day 8
+A five-tab nav bar with **three real tabs** — Home, Learn, Account — and **two placeholders**:
+
+| Tab | State | What unblocks it |
+|---|---|---|
+| Home · Learn · Account | real | — |
+| **Leaderboard** | placeholder | `GET /leaderboard` + `/leaderboard/me` are `draft`. Schema is written; it needs promoting. The cheaper of the two. |
+| **Message** | placeholder | **No endpoint exists at all** — not draft, absent. A complete support/ticketing product in Figma with nothing behind it (S33). |
+
+**Neither is fixable from our side.** That is the honest state of the app and the next person should
+not have to rediscover it.
+
+## Endpoint coverage — 21/21 stable (100%) · 22/36 total
+**Every stable path in the contract is consumed.** `PATCH /me` (Day 8 step 2) was the last one.
+**Every one of the 14 remaining paths is `x-stability: draft`**, so there is no further endpoint
+work until Seif promotes something — the next feature day depends on a contract change, not on us.
+
+The 22nd consumed path is `GET /me/entitlements`; the 14 unconsumed are the three favourites, quiz
+history and review, `/checkout/sessions`, both leaderboard paths, `PUT /me/avatar`,
+`PUT /me/fcm-token` and the four `/auth/recovery/*`.
+
+## Endpoint coverage before Day 8 (historical)
 Done: auth otp/request, otp/verify, refresh, logout (4). After Day 2: +7 reference = 11/21 (52%).
 **Quiz x4 are now done** — `POST /quizzes`, `POST /quizzes/{id}/answers`,
 `POST /quizzes/{id}/finish`, `GET /questions/{id}/explanation` (Day 7).
@@ -187,7 +246,10 @@ Sign Up_1 337:15875 · Sign Up_2 (track) 337:15947 · bird logo 82:849 · file k
 `docs/day2_registration_brief.md` · `docs/day3_registration_complete_brief.md` ·
 `docs/day4_home_brief.md` · `docs/day5_learn_brief.md` · `docs/day6_university_brief.md` ·
 `docs/day7_quiz_brief.md` · `docs/day7b_design_fixes_brief.md` ·
-`docs/day7c_contract_v11_brief.md`
+`docs/day7c_contract_v11_brief.md` · `docs/day8_account_brief.md`
+
+**Partner notice:** `docs/for_seif_account_surface.md` — sent 2026-08-06 ahead of implementation,
+amended 2026-08-07 with what building it turned up (sections 9–11, and a correction to section 1).
 
 > ⚠️ The section headers above ("In progress — Day 2", "Next — Day 3", the endpoint-coverage
 > percentages) are stale as of 2026-07-30: Days 3–6 are built, and Day 00 landed the onboarding

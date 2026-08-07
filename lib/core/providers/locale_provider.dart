@@ -12,8 +12,19 @@ class LocaleController extends Notifier<Locale> {
   @override
   Locale build() => const Locale('ar');
 
-  void toggle() {
-    state = state.languageCode == 'ar' ? const Locale('en') : const Locale('ar');
+  /// The language pill's flip. Six screens carry one, and none of them offers a
+  /// choice — there are two locales, so "the other one" is unambiguous.
+  void toggle() =>
+      select(state.languageCode == 'ar' ? const Locale('en') : const Locale('ar'));
+
+  /// Picks a language outright, for the Settings list where both options are on
+  /// screen at once and "toggle" is the wrong verb: tapping the row you are
+  /// already on must do nothing, not flip you away from it.
+  ///
+  /// [toggle] delegates here so there is one place where the locale changes.
+  void select(Locale locale) {
+    if (locale == state) return;
+    state = locale;
   }
 }
 

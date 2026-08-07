@@ -518,5 +518,49 @@
   "discardChangesTitle": "Discard changes?",
   "discardChangesBody": "Your edits haven't been saved.",
   "discardChangesStay": "Keep editing",
-  "discardChangesLeave": "Discard"
+  "discardChangesLeave": "Discard",
+
+  "settingsLanguages": "Languages",
+  "settingsMode": "Mode",
+  "settingsRank": "Rank",
+  "settingsNotifications": "Notification Preferences",
+  "languageArabicName": "العربية",
+  "@languageArabicName": {
+    "description": "Written in Arabic in BOTH ARB files, on purpose. A student who has ended up in a script they can't read has to be able to recognise the row that gets them out; 'Arabic' in Latin script is no help to someone looking for العربية."
+  },
+  "languageEnglishName": "English",
+  "@languageEnglishName": {
+    "description": "Written in English in BOTH ARB files — see languageArabicName."
+  },
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "The Settings Mode section offers TWO canvases. The frame draws three colour circles; AppColors has two palettes and the third has nothing behind it (seif_fight.md S26)."
+  },
+  "settingsLeaderboardVisible": "Show me on the leaderboard",
+  "settingsLeaderboardVisibleHelp": "Turn this off and you won't be listed at all.",
+  "settingsScoreHidden": "Hide my points",
+  "settingsScoreHiddenHelp": "You'll still be listed — without your score.",
+  "@settingsScoreHiddenHelp": {
+    "description": "The frame draws ONE 'Show Rank' switch; the contract has two independent booleans with different adr-023 defaults (seif_fight.md S27). These two help lines are what makes the difference between them legible."
+  },
+  "notifAnnouncements": "Announcements",
+  "notifPromotions": "Promotions",
+  "notifSupport": "Support",
+  "notifSystem": "System",
+  "settingsNotificationsUnavailable": "Notification settings aren't available yet.",
+  "@settingsNotificationsUnavailable": {
+    "description": "Why all four notification toggles are disabled: nothing in the contract stores a notification preference (seif_fight.md S28)."
+  },
+
+  "friendsTitle": "Friends",
+  "friendsUnavailable": "Friends aren't available yet.",
+  "referUnavailable": "Inviting friends isn't available yet.",
+  "shareInvite": "Share invite",
+  "supportUnavailable": "Support isn't available yet.",
+  "createTicket": "Create Ticket",
+  "legalNotPublished": "This document hasn't been published yet.",
+  "@legalNotPublished": {
+    "description": "Privacy & policy and Terms & Conditions need no endpoint — they need TEXT, and none has been supplied (seif_fight.md S30). Deliberately says the document is missing rather than inventing legal copy."
+  }
 }

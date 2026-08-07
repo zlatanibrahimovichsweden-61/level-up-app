@@ -3,6 +3,12 @@
 **From:** Flutter partner · **Date:** 2026-08-06 · **Affects:** milestone-1 scope, contract v1.2
 **Contract read against:** `ee2ed8f` (v1.1.0-m1)
 
+> **Amended 2026-08-07, after implementation.** The original went out before we started building,
+> so you would not be waiting on us. Building it turned up two things the first version did not
+> know, and made one of its claims too soft. **Sections 9 and 10 are new**, section 11 is a small
+> loose end, and **section 1 has been corrected** — Parent's Number is not merely immutable, it is
+> write-only, which is a different and worse problem. Everything else is as sent.
+
 We're starting the Account tab. Before we do, you should know what we found, because the shape of it
 changes what milestone 1 can honestly ship.
 
@@ -30,6 +36,11 @@ The screen renders, in order: avatar · Full Name · E-Mail · **Phone Number** 
 `PATCH /me` accepts five things: `name`, `email`, `avatarId`, `leaderboardVisible`, `scoreHidden`.
 
 So six of the drawn fields are immutable after registration. We're rendering them read-only.
+
+> **Corrected 2026-08-07.** Five of them. **Parent's Number is not immutable — it is write-only.**
+> It's required at registration and absent from `StudentProfile` entirely, so there is no value to
+> render read-only and we did not build the row at all. That deserves its own section rather than a
+> clause here: **see section 9**, which is now the item we'd most like an answer to.
 
 **What we need to know:**
 
@@ -148,17 +159,90 @@ can't fix either from our side. Leaderboard looks like the cheaper of the two to
 schema is already written; it just needs to leave `draft`. Is that plausible for milestone 1? If
 not, we should talk about whether five tabs is the right shape to ship.
 
+## 9. Parent's Number is write-only — we make students give it and can never show it back
+
+**New, 2026-08-07.** Found while building the Edit Profile form. This is the one we'd most like you
+to look at.
+
+`parentPhone` is **required** on both registration bodies — `openapi.yaml:1280` for school,
+`:1305` for university. It is **absent from `StudentProfile`**. So we compel a student to hand over
+a parent's phone number to create an account, and then there is no endpoint that will ever tell
+them what they gave us. Not read-only, not masked, not at all.
+
+Every other locked field on Edit Profile works fine: phone, city, school, stage and education
+system all come back on `GET /me`, and we render them with a padlock. Parent's Number is the one
+row in the frame we couldn't build, so we didn't — the student has no way to check whether the
+number they typed months ago has a digit wrong in it. For a product whose users are minors and
+whose recovery path runs through that number, that's the wrong shape.
+
+And you clearly have the value. `POST /auth/recovery/start` returns **`parentPhoneMasked`**
+(`openapi.yaml:272`) — recovery reads it back to prove identity. So this is a missing field on a
+response, not missing data.
+
+**What we'd like:** the same masked form on `GET /me`. Masked rather than raw is almost certainly
+right here — it's enough for "yes, that's my mum's number", and it means a stolen token can't be
+used to harvest guardian contact details. If you'd rather it stay invisible, tell us and we'll ask
+the designer to take the row off the frame instead of leaving it drawn.
+
+## 10. `GET /me` gives us codes where the frame shows names
+
+**New, 2026-08-07.** Same pass as section 9.
+
+Most of the profile is bilingual already: governorate, city, school, university and faculty are all
+`NamedRef`, with `nameAr` and `nameEn`. Two fields aren't. `stage` and `educationSystem` come back
+as bare wire codes, so rendered honestly a student sees **`nationalLanguages`** and **`secondary2`**
+where the frame draws "American" and "Grade 11".
+
+We render the codes. That looks bad, and it is deliberate — here's why we didn't just translate
+them on our side, since that's the obvious fix:
+
+- `EducationSystem` is documented **extensible** — *"clients must tolerate unknown values"*. So
+  there's no closed set to map against. Any table we hardcode goes stale the day you add a system,
+  and it fails precisely for the students on the newest option, who then see the raw code anyway.
+- `stage` does have translated copy in our registration wizard, but translating one row and not the
+  row directly beneath it is worse than translating neither.
+- Calling `/reference/education-systems` just to label a **read-only** row is a network round-trip
+  for cosmetics, on a screen that otherwise makes no requests at all.
+
+**What we'd like:** send the display names you already have — either make `stage` and
+`educationSystem` `NamedRef`-shaped like everything else on the object, or add a resolved-names
+block to `GET /me`. The first is more consistent with the rest of the schema and needs no new path.
+
+## 11. One loose end: there's a `Friends` screen with no way into it
+
+**New, 2026-08-07.** Small, and more the designer's than yours, but it belongs with the rest.
+
+There's a `Friends` frame in the Account cluster. It has no endpoint — no list, no requests, no
+social graph anywhere in the contract. That's expected by now. The odd part is that **nothing in
+the app navigates to it**: the Profile hub draws ten rows and none of them is Friends. We've built
+it as a disabled shell and given it a route, but no student can reach it, and we didn't invent an
+eleventh row to give it a door.
+
+Worth flagging to you rather than only to the designer because the concept is already in your
+schema's prose — `scoreHidden`'s description at `:1094` says it "affects profiles/friends". So
+somebody has thought about friends existing. If they're milestone 1 we'll need to know it; if
+they're not, the frame should come out.
+
 ---
 
 ## What would help most, in order
 
-1. **Confirm the immutables** — phone, parent phone, city, school, education system, grade stay
-   fixed after registration. That's the single answer that unblocks Edit Profile.
-2. **Decide Solved Questions and Rank** — real fields on `GET /me`, or removed from the design.
-3. **Promote `/leaderboard` out of draft**, or tell us it isn't milestone 1.
-4. **Answer the Go to Uni points question** — even "not milestone 1" is an answer we can build to.
-5. **Referral: in or out.**
+**Re-ranked 2026-08-07** — the first item is new, and the old first item is now item 2 because we
+built to the assumption and it held.
+
+1. **Put `parentPhoneMasked` on `GET /me`** (section 9). Cheapest thing on this list, and it closes
+   the one gap where we take something from a student and can't give it back. You already return
+   the field from `/auth/recovery/start`.
+2. **Confirm the immutables** — phone, city, school, education system, grade stay fixed after
+   registration. We've shipped Edit Profile on that assumption; confirming it just retires the
+   question.
+3. **Decide Solved Questions and Rank** — real fields on `GET /me`, or removed from the design.
+4. **Send display names, not codes** (section 10). Students are currently reading
+   `nationalLanguages` off their own profile.
+5. **Promote `/leaderboard` out of draft**, or tell us it isn't milestone 1.
+6. **Answer the Go to Uni points question** — even "not milestone 1" is an answer we can build to.
+7. **Referral: in or out.**
 
 Happy to go through it live if that's faster. Everything above is recorded on our side in
-`seif_fight.md` (S5, S20, S24–S31) with the frame references, so nothing here depends on this
+`seif_fight.md` (S5, S20, S24–S36) with the frame references, so nothing here depends on this
 document surviving.

@@ -748,4 +748,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discardChangesLeave => 'Discard';
+
+  @override
+  String get settingsLanguages => 'Languages';
+
+  @override
+  String get settingsMode => 'Mode';
+
+  @override
+  String get settingsRank => 'Rank';
+
+  @override
+  String get settingsNotifications => 'Notification Preferences';
+
+  @override
+  String get languageArabicName => 'العربية';
+
+  @override
+  String get languageEnglishName => 'English';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get settingsLeaderboardVisible => 'Show me on the leaderboard';
+
+  @override
+  String get settingsLeaderboardVisibleHelp =>
+      'Turn this off and you won\'t be listed at all.';
+
+  @override
+  String get settingsScoreHidden => 'Hide my points';
+
+  @override
+  String get settingsScoreHiddenHelp =>
+      'You\'ll still be listed — without your score.';
+
+  @override
+  String get notifAnnouncements => 'Announcements';
+
+  @override
+  String get notifPromotions => 'Promotions';
+
+  @override
+  String get notifSupport => 'Support';
+
+  @override
+  String get notifSystem => 'System';
+
+  @override
+  String get settingsNotificationsUnavailable =>
+      'Notification settings aren\'t available yet.';
+
+  @override
+  String get friendsTitle => 'Friends';
+
+  @override
+  String get friendsUnavailable => 'Friends aren\'t available yet.';
+
+  @override
+  String get referUnavailable => 'Inviting friends isn\'t available yet.';
+
+  @override
+  String get shareInvite => 'Share invite';
+
+  @override
+  String get supportUnavailable => 'Support isn\'t available yet.';
+
+  @override
+  String get createTicket => 'Create Ticket';
+
+  @override
+  String get legalNotPublished => 'This document hasn\'t been published yet.';
 }
