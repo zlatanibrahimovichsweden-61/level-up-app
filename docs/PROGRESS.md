@@ -189,6 +189,43 @@ response anywhere in its subtree, not merely a null callback.
 **Tests:** 764 green (Step 1 +35, Step 2 +59, Step 3 +45), `flutter analyze` clean, no new goldens
 and the existing 18 untouched.
 
+## Theme wiring pass — after Day 8, no endpoint, no package
+**Two commits. Coverage is unchanged at 21/21 stable · 22/36 total** — this is a follow-through on
+what Step 3's Mode selector exposed, not a feature day.
+
+**Persistence** (`8bd95da`). Neither preference survived a launch: a student picked dark, killed the
+app and got light back. `LocaleController`'s doc had carried a deferral naming its own trigger
+condition — *"add a SharedPreferences-backed load/save when settings lands"* — and settings had
+landed. Both ship together, because a launch where the language sticks and the theme does not reads
+as a bug rather than a scope line. `PreferencesStore` wraps the **already-declared, until-now-unused
+`shared_preferences`** (no new package), and is deliberately **not** `SecureStorage` — that store's
+Keychain policy exists for tokens and the `device_id`. It is loaded in `bootstrap()` *before*
+`runApp` and injected as an override, so both controllers stay synchronous and the first frame is
+already correct; a lazy async load would flash the wrong canvas on every cold start, which is worse
+than the defect being fixed. A key holding the wrong type makes `getString` **throw** — on the
+startup path — so every read and write swallows its own failure and falls back to the default.
+
+**Call sites that ignored the canvas** (this commit). Four of them:
+
+| What | Before | After |
+|---|---|---|
+| Go-to-Uni dialog's disabled Confirm label | literal `#FCFBF9` — the light surface value | `cs.onPrimary`, the same slot the enabled label uses |
+| Five drop shadows | raw black on both canvases | one `elevationShadow` token, per canvas (`DESIGN_ISSUES.md` #47) |
+| Status bar / system nav icons | never set at all | one `AnnotatedRegion` at the app root, driven by the brightness in force |
+| Notification toggles | OFF | ON, matching the frame (`DESIGN_ISSUES.md` #48) |
+
+The shadows are the real defect: black at 25% drops the light canvas ≈21 L\* and the dark canvas
+≈5, so **elevation silently disappeared in dark mode**. The token has no alpha — each frame's
+measured depth stays at its call site. The dark value is derived and marked `TODO(design)`.
+
+`test/core/theme/palette_discipline_test.dart` now holds the Day 7b rule — *no hex, no raw
+black/white outside `lib/core/theme/`, one status-bar style in the whole app* — as a test rather
+than a grep somebody has to remember. That rule had been failing quietly for two months, because a
+hardcoded colour compiles, analyses clean and looks perfect on the canvas it was measured against.
+
+**Tests:** 792 green (+28). Goldens: **none moved** — no golden subject carries one of the five
+shadows, and `navShadow` was deliberately left alone.
+
 ## What the app looks like after Day 8
 A five-tab nav bar with **three real tabs** — Home, Learn, Account — and **two placeholders**:
 

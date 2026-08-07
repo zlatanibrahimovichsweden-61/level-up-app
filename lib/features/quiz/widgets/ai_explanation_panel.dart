@@ -137,11 +137,12 @@ class _Body extends StatelessWidget {
         color: ext.quizOptionFill,
         borderRadius: BorderRadius.circular(20.224),
         boxShadow: [
-          // Figma `drop-shadow(0.02px 0.02px 1.5px rgba(0,0,0,0.25))`. A
-          // shadow is an elevation effect rather than a palette colour, so it
-          // is black-with-alpha like the onboarding sheet's, not a token.
+          // Figma `drop-shadow(0.02px 0.02px 1.5px rgba(0,0,0,0.25))`. The
+          // DEPTH is this component's and stays here; the shadow's colour is
+          // the canvas's and comes from the palette, because a black shadow
+          // does not exist on a `#232428` page.
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: ext.elevationShadow.withValues(alpha: 0.25),
             blurRadius: 1.5,
             offset: const Offset(0.02, 0.02),
           ),

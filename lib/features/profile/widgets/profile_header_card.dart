@@ -39,8 +39,9 @@ class ProfileHeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            // Figma `169:4609`: 0.5 / 0.5 / 4, black 25%.
-            color: Colors.black.withValues(alpha: 0.25),
+            // Figma `169:4609`: 0.5 / 0.5 / 4, at 25%. The frame's "black" is
+            // the light canvas's shadow; the token carries the dark one.
+            color: ext.elevationShadow.withValues(alpha: 0.25),
             offset: const Offset(0.5, 0.5),
             blurRadius: 4,
           ),

@@ -165,8 +165,14 @@ class ProfileConfirmDialog extends StatelessWidget {
                   // like the control it is, just unusable.
                   disabledBackgroundColor:
                       confirmColour.withValues(alpha: 0.45),
-                  disabledForegroundColor:
-                      const Color(0xFFFCFBF9).withValues(alpha: 0.7),
+                  // `onPrimary` is where the ENABLED label's colour comes from
+                  // (`AppTheme`'s filledButtonTheme sets `foregroundColor` to
+                  // it), so the disabled state is now that same colour dimmed
+                  // rather than a hardcoded copy of what it happens to be
+                  // today. It used to be a literal `#FCFBF9` — the LIGHT
+                  // surface value — measured on the light canvas and painted on
+                  // both.
+                  disabledForegroundColor: cs.onPrimary.withValues(alpha: 0.7),
                 ),
                 child: Text(
                   confirmLabel,

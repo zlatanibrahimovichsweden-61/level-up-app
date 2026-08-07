@@ -34,8 +34,9 @@ class ProfileStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // Figma `661:8571`: 0.02 / 0.02 / 1, black 25%.
-            color: Colors.black.withValues(alpha: 0.25),
+            // Figma `661:8571`: 0.02 / 0.02 / 1, at 25%. Colour from the
+            // canvas — see [AppColors.elevationShadow].
+            color: ext.elevationShadow.withValues(alpha: 0.25),
             offset: const Offset(0.02, 0.02),
             blurRadius: 1,
           ),

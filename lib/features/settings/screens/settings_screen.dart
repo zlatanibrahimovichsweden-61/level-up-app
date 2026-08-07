@@ -248,8 +248,15 @@ class _RankSection extends ConsumerWidget {
 /// TODO(contract): seif_fight.md **S28** — nothing in the contract persists a
 /// notification preference. `PUT /me/fcm-token` is a device token and is draft
 /// besides, so there is not even a draft endpoint to build against. All four
-/// render disabled and OFF: any other value would be a state we invented, and
-/// a switch that slides and forgets is worse than one that visibly cannot.
+/// render disabled: a switch that slides and forgets is worse than one that
+/// visibly cannot.
+///
+/// They render **ON**, which is the frame's answer (`176:1840` draws all four
+/// purple) rather than ours. This step first shipped them off, reasoning that
+/// any value here is invented — true, but the frame was not available at the
+/// time and it settles the question. Both states are equally fictional for a
+/// control nothing can persist, so the design wins for free. See
+/// docs/DESIGN_ISSUES.md #48.
 class _NotificationsSection extends StatelessWidget {
   const _NotificationsSection();
 
@@ -269,25 +276,25 @@ class _NotificationsSection extends StatelessWidget {
         SettingsSwitchRow(
           key: const Key('settings_notif_announcements'),
           label: l10n.notifAnnouncements,
-          value: false,
+          value: true, // the frame draws all four ON — see the class doc
           disabledHint: hint,
         ),
         SettingsSwitchRow(
           key: const Key('settings_notif_promotions'),
           label: l10n.notifPromotions,
-          value: false,
+          value: true, // the frame draws all four ON — see the class doc
           disabledHint: hint,
         ),
         SettingsSwitchRow(
           key: const Key('settings_notif_support'),
           label: l10n.notifSupport,
-          value: false,
+          value: true, // the frame draws all four ON — see the class doc
           disabledHint: hint,
         ),
         SettingsSwitchRow(
           key: const Key('settings_notif_system'),
           label: l10n.notifSystem,
-          value: false,
+          value: true, // the frame draws all four ON — see the class doc
           disabledHint: hint,
         ),
       ],

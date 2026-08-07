@@ -547,7 +547,8 @@ class _AvatarEditor extends StatelessWidget {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
+                        // Depth from the frame, colour from the canvas.
+                        color: ext.elevationShadow.withValues(alpha: 0.25),
                         offset: const Offset(0.5, 0.5),
                         blurRadius: 2,
                       ),

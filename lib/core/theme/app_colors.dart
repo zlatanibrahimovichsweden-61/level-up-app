@@ -68,6 +68,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.profileIconChip,
     required this.destructive,
     required this.dialogNote,
+    required this.elevationShadow,
   });
 
   final Color background;
@@ -399,6 +400,45 @@ class AppColors extends ThemeExtension<AppColors> {
   /// does not restyle a dialog's warning copy.
   final Color dialogNote;
 
+  // --- Elevation ------------------------------------------------------------
+
+  /// The BASE colour of a raised surface's drop shadow. Five call sites use it:
+  /// the onboarding sheet, the Edit Profile avatar badge, the Profile header
+  /// card, a Profile stat card and the quiz AI panel.
+  ///
+  /// **It carries no alpha — the call site applies the frame's own.** Those
+  /// five shadows are measured at two different depths (0.15 for the onboarding
+  /// sheet, 0.25 for the other four) with different blurs and offsets. How deep
+  /// a component floats is a property of that component, not of the palette;
+  /// what the palette owns is what the shadow is made of, which is exactly the
+  /// part that was wrong. Every one of them used to be a literal
+  /// `Colors.black`.
+  ///
+  /// **A black shadow is invisible on the dark canvas, so this flips.** Black
+  /// at 25% over light `#FCFBF9` drops L\* from ≈98 to ≈77 — a 21-point step,
+  /// which is what a shadow is for. The same black over dark `#232428` moves
+  /// L\* from ≈13.8 to ≈8.7: a 5-point step, under a 1–4px blur, i.e. nothing.
+  /// The dark canvas has almost no room left below it, so elevation there has
+  /// to be expressed upward. Cream at the same alphas over `#232428` gives
+  /// ≈+25 L\* — the same magnitude in the only available direction, rendering
+  /// as a rim light rather than a shadow.
+  ///
+  /// TODO(design): the dark value is DERIVED, not measured — there is no dark
+  /// frame for any of the five components, and the light frames export a filter
+  /// rather than a token. `#FCFBF9` is the file's already-approved dark
+  /// foreground (dark [textPrimary], [legalText], [fieldBorder]), chosen over
+  /// an invented hex for the reason the Home/Learn/quiz/Profile token blocks
+  /// above all give. Rejected alternative: keep black and raise the alpha —
+  /// arithmetically it cannot reach a comparable step, because `#232428` is
+  /// only ≈14 L\* off the floor to begin with. See docs/DESIGN_ISSUES.md #47;
+  /// one value here overrules it.
+  ///
+  /// [navShadow] is deliberately NOT pointed at this: it has its own measured
+  /// derivation and its own open question, and folding the two together would
+  /// restyle the bottom nav on the strength of a decision about card shadows.
+  /// It has the same dark-canvas problem — same issue entry.
+  final Color elevationShadow;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -453,6 +493,7 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to dark ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444), // Figma 176:1191
     dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
+    elevationShadow: Color(0xFF000000), // the five frames' rgba(0,0,0,α)
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -513,6 +554,7 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to light ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444),
     dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
+    elevationShadow: Color(0xFFFCFBF9), // TODO(design) derived — see field doc
   );
 
   @override
@@ -568,6 +610,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? profileIconChip,
     Color? destructive,
     Color? dialogNote,
+    Color? elevationShadow,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -623,6 +666,7 @@ class AppColors extends ThemeExtension<AppColors> {
       profileIconChip: profileIconChip ?? this.profileIconChip,
       destructive: destructive ?? this.destructive,
       dialogNote: dialogNote ?? this.dialogNote,
+      elevationShadow: elevationShadow ?? this.elevationShadow,
     );
   }
 
@@ -701,6 +745,10 @@ class AppColors extends ThemeExtension<AppColors> {
       // animation, which is the exemption made visible (as with successBadge).
       destructive: Color.lerp(destructive, other.destructive, t)!,
       dialogNote: Color.lerp(dialogNote, other.dialogNote, t)!,
+      // Black → cream is the widest travel of any token here, so a theme
+      // animation passes through a mid grey. Correct: the shadow fades out as
+      // the canvas darkens and fades back in as a rim light.
+      elevationShadow: Color.lerp(elevationShadow, other.elevationShadow, t)!,
     );
   }
 }

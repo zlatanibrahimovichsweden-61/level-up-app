@@ -1008,3 +1008,77 @@ single policy the one switch was meant to express. If the intent was "hide me co
 contract, so somebody still has to decide its value.
 
 Also `seif_fight.md` **S27**.
+
+---
+
+## 47. 🟠 Five drop shadows are pure black, which does not exist on the dark canvas
+
+**Where:** the onboarding sheet (`459:43873`), the Edit Profile avatar badge (`180:3989`), the
+Profile header card (`169:4609`), a Profile stat card (`661:8571`) and the quiz AI panel
+(`159:1851`). Code: `lib/core/theme/app_colors.dart` → `elevationShadow`, `TODO(design)`.
+
+**What.** Every one of those five frames exports its elevation as
+`drop-shadow(… rgba(0,0,0,α))`, and until this pass the build reproduced that literally — a raw
+black at each call site, painted on both canvases. That is correct on cream and meaningless on
+`#232428`:
+
+| Canvas | Base | Black @25% composites to | L\* step |
+|---|---|---|---|
+| Light `#FCFBF9` | L\* ≈ 98 | `#BDBCBB` | **−21** |
+| Dark `#232428` | L\* ≈ 13.8 | `#1A1B1E` | **−5** |
+
+A five-point step under a 1–4px blur is not a shadow, it is nothing. The dark canvas has almost no
+room left beneath it, so **elevation there has to be expressed upward**: cream at the same alphas
+over `#232428` gives ≈ **+25 L\***, the same magnitude in the only direction available, and reads
+as a rim light rather than a drop shadow.
+
+**What ships.** One token, `AppColors.elevationShadow` — black in light, `#FCFBF9` in dark. It
+carries **no alpha**: the five components are measured at two different depths (0.15 for the
+onboarding sheet, 0.25 for the other four) and each call site keeps its own. How far a component
+floats belongs to the component; what its shadow is made of belongs to the palette.
+
+**Fix we need — designer.** The dark value is **derived, not measured** — no dark frame exists for
+any of the five, which is the same situation as the Home, Learn, quiz and Profile token blocks.
+`#FCFBF9` was chosen because it is already this file's approved dark foreground rather than an
+invented hex. The alternative we rejected: keep black and raise the alpha. Arithmetically it cannot
+reach a comparable step, because the canvas starts ≈14 L\* off the floor. **One value overrules
+all of this** — send a dark shadow and it drops straight into the token.
+
+Related and deliberately not folded in: **`navShadow` has the same defect** — 8% black in both
+canvases, itself already a `TODO(design)` (issue #37, open question 2). It was left alone because
+it has its own derivation and restyling the bottom nav on the strength of a decision about card
+shadows would be the wrong trade. It should almost certainly follow whatever this one becomes.
+
+---
+
+## 48. 🟡 Settings applies changes immediately; the frame draws a "Save Change" button
+
+**Where:** Setting (`176:1840`). Code: `lib/features/settings/screens/settings_screen.dart`.
+
+**What.** The frame ends with a full-width dark-green button, h≈60 / r≈30 — the same treatment as
+Edit Profile's. The build has no such button: every control on the screen applies the moment it is
+touched. Language and Mode change the app on tap; each privacy toggle sends its own `PATCH /me`.
+
+**Why we built it that way.** Two of the four sections are pure client preferences with nothing to
+submit, and a Save button that governs only half a screen teaches the wrong thing about the other
+half. The privacy toggles are server-authoritative and non-optimistic — the switch shows what
+`/me` says, and a successful write invalidates `/me` so the value comes back from the server —
+which is a shape a Save button would have to be reconciled with rather than sit on top of. Edit
+Profile's button is different: it batches a form of text fields into one request.
+
+**This is a deliberate divergence, not an oversight, and it is the designer's call to overrule.**
+If the frame's model is wanted, that is its own change and a real one: batching means the toggles
+stop reflecting the server until submit, and the two client preferences need a defined answer for
+what "unsaved" means when the app has already visibly changed language.
+
+**Two other divergences from the same frame, both now reconciled:**
+
+- **The four Notification Preferences toggles render ON**, matching the frame. They were shipped
+  OFF when the frame could not be read. Both states are invented for a control nothing can persist
+  (issue: `seif_fight.md` **S28**), so the frame's answer wins at no cost.
+- **The frame draws the bottom nav bar on Settings, with Account selected.** `/settings` is routed
+  *outside* the `StatefulShellRoute`, so it renders without one. **Owner decision, taken: it stays
+  outside.** Every screen reached from the Profile hub — Edit Profile and the four shells included
+  — is pushed over the shell and renders without a bar; moving Settings alone would make it the
+  exception, change back-navigation for a screen that has already shipped, and leave the page with
+  two different ways out of it. Designer should treat the bar in this frame as decoration.

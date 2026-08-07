@@ -122,9 +122,10 @@ class _Sheet extends StatelessWidget {
           BoxShadow(
             offset: const Offset(0, -1.5),
             blurRadius: 9.2,
-            // The frame's rgba(0,0,0,0.15). A shadow, not a palette colour —
-            // expressed as an alpha on black rather than an inline hex.
-            color: Colors.black.withValues(alpha: 0.15),
+            // The frame's 0.15 depth, on the canvas's own shadow colour. The
+            // alpha is this component's; the colour is the palette's — it used
+            // to be raw black, which is invisible on the dark canvas.
+            color: ext.elevationShadow.withValues(alpha: 0.15),
           ),
         ],
       ),

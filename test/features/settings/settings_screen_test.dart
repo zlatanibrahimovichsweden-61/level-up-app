@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/locale_provider.dart';
@@ -215,6 +216,32 @@ void main() {
       );
     });
 
+    testWidgets('the status bar follows the canvas', (tester) async {
+      // The app draws custom headers rather than AppBars, so Flutter cannot
+      // infer icon brightness and the platform default stands — dark glyphs,
+      // which disappear against `#232428`. `.first` is the root annotation:
+      // it sits above the Navigator, so a depth-first search reaches it before
+      // any a screen might add.
+      SystemUiOverlayStyle overlay() => tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byType(AnnotatedRegion<SystemUiOverlayStyle>).first,
+          )
+          .value;
+
+      await pumpAppAt(tester, '/settings');
+
+      // Android's key describes the ICONS, iOS's the BACKGROUND — so on the
+      // cream canvas they read as opposites and both must be right.
+      expect(overlay().statusBarIconBrightness, Brightness.dark);
+      expect(overlay().statusBarBrightness, Brightness.light);
+
+      await tester.tap(find.byKey(const Key('settings_mode_dark')));
+      await tester.pumpAndSettle();
+
+      expect(overlay().statusBarIconBrightness, Brightness.light);
+      expect(overlay().statusBarBrightness, Brightness.dark);
+    });
+
     testWidgets('picking Light again comes back', (tester) async {
       await pumpAppAt(tester, '/settings');
 
@@ -390,7 +417,11 @@ void main() {
         final control = tester.widget<Switch>(
           find.descendant(of: find.byKey(Key(key)), matching: find.byType(Switch)),
         );
-        expect(control.value, isFalse, reason: '$key must not have moved');
+        // ON is the FRAME's state (`176:1840` draws all four purple), adopted
+        // once the frame could be read. What this asserts is that it did not
+        // MOVE — a dead control that still slides under a finger is the thing
+        // this group exists to prevent, whichever position it starts in.
+        expect(control.value, isTrue, reason: '$key must not have moved');
         expect(control.onChanged, isNull);
       }
     });
