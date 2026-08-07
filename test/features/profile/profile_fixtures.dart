@@ -87,6 +87,31 @@ Map<String, dynamic> universityProfileJson() => <String, dynamic>{
 StudentProfile universityProfile() =>
     StudentProfile.fromJson(universityProfileJson());
 
+/// A school student whose city was TYPED, not picked — the adr-028 §1
+/// free-text arm of the `ProfileCity` union. No `id`, so `ProfileCity.fromJson`
+/// takes the [FreeTextCity] branch.
+Map<String, dynamic> freeTextCityProfileJson() => <String, dynamic>{
+      ...schoolProfileJson(),
+      'geography': <String, dynamic>{
+        'countryCode': 'AE',
+        'governorate': null,
+        'city': <String, dynamic>{'name': 'Al Ain'},
+      },
+    };
+
+StudentProfile freeTextCityProfile() =>
+    StudentProfile.fromJson(freeTextCityProfileJson());
+
+/// The same student WITH an email on file — the only starting point from which
+/// "clear it" is a reachable instruction.
+Map<String, dynamic> profileWithEmailJson() => <String, dynamic>{
+      ...schoolProfileJson(),
+      'email': 'ahmed@example.com',
+    };
+
+StudentProfile profileWithEmail() =>
+    StudentProfile.fromJson(profileWithEmailJson());
+
 const baseEntitlement = EntitlementState(
   type: EntitlementType.baseSubscription,
   active: true,

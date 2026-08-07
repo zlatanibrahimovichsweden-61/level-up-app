@@ -484,5 +484,39 @@
   "goToUniUnavailable": "Switching tracks isn't available yet.",
   "@goToUniUnavailable": {
     "description": "Why the Go-to-Uni confirm is disabled. There is no track-switch endpoint, and adr-003's dual point pools make it a data-model question, not a UI one (seif_fight S31)."
-  }
+  },
+
+  "emailLabel": "E-Mail",
+  "emailHint": "you@example.com",
+  "emailClearHelp": "Leave this empty to remove your email.",
+  "@emailClearHelp": {
+    "description": "Emptying the field sends an explicit `\"email\": null`, which the contract defines as 'clears it'. Said out loud because a blank box that DELETES something is not a safe thing to leave students to discover."
+  },
+  "saveChanges": "Save Changes",
+  "@saveChanges": {
+    "description": "Figma 180:4082 reads \"Save Change\". Corrected to the grammatical plural, the same call made for upgradeCta — the frame's copy is a mock, not a term of art."
+  },
+  "fieldLockedHint": "Set when you registered — this can't be changed.",
+  "@fieldLockedHint": {
+    "description": "Screen-reader hint on every read-only Edit Profile row. Sighted students get the padlock; everyone else is told rather than left wondering why the field won't focus."
+  },
+  "fixedAfterRegistration": "These were set when you registered and can't be changed here.",
+  "@fixedAfterRegistration": {
+    "description": "One line above the read-only block. `PATCH /me` accepts five fields; the rest of what the frame draws is immutable in v1.1 (seif_fight S20)."
+  },
+  "changeAvatarTitle": "Change your picture",
+  "chooseAvatarTitle": "Choose Avatar",
+  "@chooseAvatarTitle": {
+    "description": "Figma 180:4249 — the default-avatar picker sheet, fed by GET /reference/avatars."
+  },
+  "useAvatar": "Use Avatar",
+  "uploadPhoto": "Upload photo",
+  "uploadPhotoUnavailable": "Uploading your own photo isn't available yet.",
+  "@uploadPhotoUnavailable": {
+    "description": "Why the frame's Upload photo option is disabled: `PUT /me/avatar` is draft AND moderated (adr-021), so there is no endpoint and no defined outcome for a rejected image (seif_fight S29)."
+  },
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesBody": "Your edits haven't been saved.",
+  "discardChangesStay": "Keep editing",
+  "discardChangesLeave": "Discard"
 }

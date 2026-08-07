@@ -694,4 +694,50 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get goToUniUnavailable => 'تغيير المسار غير متاح بعد.';
+
+  @override
+  String get emailLabel => 'البريد الإلكتروني';
+
+  @override
+  String get emailHint => 'you@example.com';
+
+  @override
+  String get emailClearHelp => 'اترك هذا الحقل فارغًا لحذف بريدك الإلكتروني.';
+
+  @override
+  String get saveChanges => 'حفظ التغييرات';
+
+  @override
+  String get fieldLockedHint => 'تم تحديده عند التسجيل ولا يمكن تغييره.';
+
+  @override
+  String get fixedAfterRegistration =>
+      'تم تحديد هذه البيانات عند التسجيل ولا يمكن تغييرها من هنا.';
+
+  @override
+  String get changeAvatarTitle => 'تغيير صورتك';
+
+  @override
+  String get chooseAvatarTitle => 'اختر صورة رمزية';
+
+  @override
+  String get useAvatar => 'اختيار صورة رمزية';
+
+  @override
+  String get uploadPhoto => 'رفع صورة';
+
+  @override
+  String get uploadPhotoUnavailable => 'رفع صورتك الشخصية غير متاح بعد.';
+
+  @override
+  String get discardChangesTitle => 'تجاهل التغييرات؟';
+
+  @override
+  String get discardChangesBody => 'لم يتم حفظ تعديلاتك.';
+
+  @override
+  String get discardChangesStay => 'متابعة التعديل';
+
+  @override
+  String get discardChangesLeave => 'تجاهل';
 }

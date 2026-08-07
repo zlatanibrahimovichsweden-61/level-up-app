@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
 import '../models/entitlement_state.dart';
+import '../models/profile_update.dart';
 import '../models/student_profile.dart';
 
 /// The only place that touches Dio for the signed-in student's own profile.
@@ -24,6 +25,31 @@ class ProfileRepository {
   Future<StudentProfile> getMe() async {
     try {
       final res = await _dio.get<Map<String, dynamic>>('/me');
+      return StudentProfile.fromJson(res.data!);
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    }
+  }
+
+  /// `PATCH /me` — the only mutable slice of the profile: `name`, `email`,
+  /// `avatarId` and the two adr-023 privacy toggles. Everything else the Edit
+  /// Profile frame draws (phone, parent phone, city, school, education system,
+  /// grade) is immutable after registration — `seif_fight.md` **S20**.
+  ///
+  /// [update] serializes ITSELF, and that matters: the body may legitimately
+  /// contain `"email": null`, which is how the contract spells *clear it*. No
+  /// interceptor, transformer or serializer in this path may strip nulls — see
+  /// [ProfileUpdate]'s class doc.
+  ///
+  /// A `400 validation_failed` arrives as a [ValidationException] carrying the
+  /// server's field map; the screen turns it into per-field inline errors, the
+  /// same way registration does.
+  Future<StudentProfile> updateMe(ProfileUpdate update) async {
+    try {
+      final res = await _dio.patch<Map<String, dynamic>>(
+        '/me',
+        data: update.toJson(),
+      );
       return StudentProfile.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);

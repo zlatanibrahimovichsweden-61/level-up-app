@@ -256,8 +256,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         builder: (_, _) => const ProfileScreen(),
         routes: [
-          // TODO(day8-step2): EditProfileScreen is a placeholder until Step 2
-          // builds the real form against `PATCH /me`.
+          // The real form against `PATCH /me` (Day 8 step 2) — the last stable
+          // endpoint in the contract.
           GoRoute(path: 'edit', builder: (_, _) => const EditProfileScreen()),
         ],
       ),

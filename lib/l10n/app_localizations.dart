@@ -1339,6 +1339,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switching tracks isn\'t available yet.'**
   String get goToUniUnavailable;
+
+  /// No description provided for @emailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'E-Mail'**
+  String get emailLabel;
+
+  /// No description provided for @emailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get emailHint;
+
+  /// Emptying the field sends an explicit `"email": null`, which the contract defines as 'clears it'. Said out loud because a blank box that DELETES something is not a safe thing to leave students to discover.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this empty to remove your email.'**
+  String get emailClearHelp;
+
+  /// Figma 180:4082 reads "Save Change". Corrected to the grammatical plural, the same call made for upgradeCta — the frame's copy is a mock, not a term of art.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// Screen-reader hint on every read-only Edit Profile row. Sighted students get the padlock; everyone else is told rather than left wondering why the field won't focus.
+  ///
+  /// In en, this message translates to:
+  /// **'Set when you registered — this can\'t be changed.'**
+  String get fieldLockedHint;
+
+  /// One line above the read-only block. `PATCH /me` accepts five fields; the rest of what the frame draws is immutable in v1.1 (seif_fight S20).
+  ///
+  /// In en, this message translates to:
+  /// **'These were set when you registered and can\'t be changed here.'**
+  String get fixedAfterRegistration;
+
+  /// No description provided for @changeAvatarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change your picture'**
+  String get changeAvatarTitle;
+
+  /// Figma 180:4249 — the default-avatar picker sheet, fed by GET /reference/avatars.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Avatar'**
+  String get chooseAvatarTitle;
+
+  /// No description provided for @useAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Avatar'**
+  String get useAvatar;
+
+  /// No description provided for @uploadPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get uploadPhoto;
+
+  /// Why the frame's Upload photo option is disabled: `PUT /me/avatar` is draft AND moderated (adr-021), so there is no endpoint and no defined outcome for a rejected image (seif_fight S29).
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading your own photo isn\'t available yet.'**
+  String get uploadPhotoUnavailable;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your edits haven\'t been saved.'**
+  String get discardChangesBody;
+
+  /// No description provided for @discardChangesStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get discardChangesStay;
+
+  /// No description provided for @discardChangesLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardChangesLeave;
 }
 
 class _AppLocalizationsDelegate

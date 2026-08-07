@@ -227,5 +227,21 @@
   "goToUniBody": "هل أنت متأكد أنك تريد التحويل إلى مسار الجامعة؟",
   "goToUniWarning": "لا يمكنك الرجوع مرة أخرى.",
   "goToUniConfirm": "تأكيد",
-  "goToUniUnavailable": "تغيير المسار غير متاح بعد."
+  "goToUniUnavailable": "تغيير المسار غير متاح بعد.",
+
+  "emailLabel": "البريد الإلكتروني",
+  "emailHint": "you@example.com",
+  "emailClearHelp": "اترك هذا الحقل فارغًا لحذف بريدك الإلكتروني.",
+  "saveChanges": "حفظ التغييرات",
+  "fieldLockedHint": "تم تحديده عند التسجيل ولا يمكن تغييره.",
+  "fixedAfterRegistration": "تم تحديد هذه البيانات عند التسجيل ولا يمكن تغييرها من هنا.",
+  "changeAvatarTitle": "تغيير صورتك",
+  "chooseAvatarTitle": "اختر صورة رمزية",
+  "useAvatar": "اختيار صورة رمزية",
+  "uploadPhoto": "رفع صورة",
+  "uploadPhotoUnavailable": "رفع صورتك الشخصية غير متاح بعد.",
+  "discardChangesTitle": "تجاهل التغييرات؟",
+  "discardChangesBody": "لم يتم حفظ تعديلاتك.",
+  "discardChangesStay": "متابعة التعديل",
+  "discardChangesLeave": "تجاهل"
 }

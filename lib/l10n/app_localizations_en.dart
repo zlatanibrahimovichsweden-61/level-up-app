@@ -700,4 +700,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goToUniUnavailable => 'Switching tracks isn\'t available yet.';
+
+  @override
+  String get emailLabel => 'E-Mail';
+
+  @override
+  String get emailHint => 'you@example.com';
+
+  @override
+  String get emailClearHelp => 'Leave this empty to remove your email.';
+
+  @override
+  String get saveChanges => 'Save Changes';
+
+  @override
+  String get fieldLockedHint =>
+      'Set when you registered — this can\'t be changed.';
+
+  @override
+  String get fixedAfterRegistration =>
+      'These were set when you registered and can\'t be changed here.';
+
+  @override
+  String get changeAvatarTitle => 'Change your picture';
+
+  @override
+  String get chooseAvatarTitle => 'Choose Avatar';
+
+  @override
+  String get useAvatar => 'Use Avatar';
+
+  @override
+  String get uploadPhoto => 'Upload photo';
+
+  @override
+  String get uploadPhotoUnavailable =>
+      'Uploading your own photo isn\'t available yet.';
+
+  @override
+  String get discardChangesTitle => 'Discard changes?';
+
+  @override
+  String get discardChangesBody => 'Your edits haven\'t been saved.';
+
+  @override
+  String get discardChangesStay => 'Keep editing';
+
+  @override
+  String get discardChangesLeave => 'Discard';
 }
