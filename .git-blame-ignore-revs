@@ -1,2 +1,7 @@
-# Reformat commits. Skipped by: git config blame.ignoreRevsFile .git-blame-ignore-revs
-e3651e6304f3feab0c79f34e6c11fb84b5eaa264
+# Commits git blame should skip. Enabled by:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# NOTE: 3fc4dd3 is labelled 'chore: ignore the formatting commit' but is in fact
+# the dart format reformat - 140 files, tall style, Dart 3.12, no behaviour change.
+# The 'style:' commit was killed mid-run by an MSYS2 fork failure and its staged
+# files were swept into the next commit. Full 40-char SHAs only; git rejects short ones.
+3fc4dd3499d0329852e420f39b99ec34009c2576
