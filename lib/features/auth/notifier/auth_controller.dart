@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/core_providers.dart';
+import '../../../core/session/session_scope.dart';
 import '../repository/auth_repository.dart';
 
 /// The single source of auth truth. The interceptor flips this (never navigates);
@@ -53,12 +54,24 @@ class AuthController extends Notifier<AuthStatus> {
   /// ([SecureStorage.clearTokens]) so `device_id` survives — wiping it would make
   /// the next login look like a new device and mis-fire `session_superseded`
   /// (Decisions_Log 2026-07-23). Never `clear()`.
+  ///
+  /// **Idempotent.** Returning early when already signed out is load-bearing,
+  /// not tidiness. [invalidateSessionScope] rebuilds any session provider that
+  /// still has a listener, a rebuild with no token in storage earns a 401, and
+  /// `AuthInterceptor._performRefresh` answers a 401 with no refresh token by
+  /// calling this method — which would invalidate again, refetch again, and
+  /// loop. The guard breaks that cycle at the first repeat. It also collapses
+  /// the N concurrent 401s that a burst of in-flight requests would otherwise
+  /// turn into N full teardowns, and keeps the FIRST reason, which is the one
+  /// that actually ended the session.
   Future<void> forceLogout(LogoutReason reason) async {
+    if (state is AuthUnauthenticated) return;
     await ref.read(secureStorageProvider).clearTokens();
     state = AuthUnauthenticated(reason);
+    invalidateSessionScope(ref);
   }
 
-  /// User-initiated sign-out (no caller yet — Settings wires the button later).
+  /// User-initiated sign-out, from the Profile hub's Sign Out row.
   /// Best-effort server revoke, then clear tokens regardless.
   Future<void> logout() async {
     try {
@@ -68,6 +81,7 @@ class AuthController extends Notifier<AuthStatus> {
     }
     await ref.read(secureStorageProvider).clearTokens();
     state = const AuthUnauthenticated(LogoutReason.userInitiated);
+    invalidateSessionScope(ref);
   }
 
   /// Consume the logout reason so its message shows exactly once.
@@ -78,5 +92,6 @@ class AuthController extends Notifier<AuthStatus> {
   }
 }
 
-final authControllerProvider =
-    NotifierProvider<AuthController, AuthStatus>(AuthController.new);
+final authControllerProvider = NotifierProvider<AuthController, AuthStatus>(
+  AuthController.new,
+);
