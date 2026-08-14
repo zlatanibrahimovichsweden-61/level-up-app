@@ -80,7 +80,9 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
 
     FocusScope.of(context).unfocus();
     final referral = _referralController.text.trim();
-    ref.read(registrationControllerProvider.notifier).setIdentity(
+    ref
+        .read(registrationControllerProvider.notifier)
+        .setIdentity(
           name: name,
           parentPhone: parentPhone!.e164,
           // Collected, NOT submitted (conflict #1). TODO(contract): no backend
@@ -156,8 +158,7 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       keyboardType: TextInputType.name,
                       maxLength: 100,
                     ),
-                    if (_nameErrorKey != null)
-                      _InlineError(_nameErrorKey!),
+                    if (_nameErrorKey != null) _InlineError(_nameErrorKey!),
                     const SizedBox(height: 16),
                     // Phone — read-only, proven at the OTP step, never submitted.
                     _FieldLabel(l10n.phoneLabel),

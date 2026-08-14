@@ -58,7 +58,10 @@ class ProfileConfirmDialog extends StatelessWidget {
 
   /// Shows the dialog and resolves to `true` only if the student confirmed.
   /// A barrier tap, a Back press and the ✕ all resolve to `false`.
-  static Future<bool> show(BuildContext context, ProfileConfirmDialog dialog) async {
+  static Future<bool> show(
+    BuildContext context,
+    ProfileConfirmDialog dialog,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => dialog,
@@ -163,8 +166,9 @@ class ProfileConfirmDialog extends StatelessWidget {
                   // Disabled keeps the frame's colours at reduced opacity
                   // rather than Material's grey: the control must still look
                   // like the control it is, just unusable.
-                  disabledBackgroundColor:
-                      confirmColour.withValues(alpha: 0.45),
+                  disabledBackgroundColor: confirmColour.withValues(
+                    alpha: 0.45,
+                  ),
                   // `onPrimary` is where the ENABLED label's colour comes from
                   // (`AppTheme`'s filledButtonTheme sets `foregroundColor` to
                   // it), so the disabled state is now that same colour dimmed

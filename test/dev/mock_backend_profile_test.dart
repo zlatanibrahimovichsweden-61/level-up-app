@@ -26,20 +26,22 @@ void main() {
     expect(profile.points.total, greaterThanOrEqualTo(0));
   });
 
-  test('mock GET /me/entitlements parses, and agrees with the /me embed',
-      () async {
-    final dio = buildMockDio(latency: Duration.zero);
+  test(
+    'mock GET /me/entitlements parses, and agrees with the /me embed',
+    () async {
+      final dio = buildMockDio(latency: Duration.zero);
 
-    final standalone = EntitlementsResponse.fromJson(
-      (await dio.get<Map<String, dynamic>>('/me/entitlements')).data!,
-    ).items;
-    final embedded = StudentProfile.fromJson(
-      (await dio.get<Map<String, dynamic>>('/me')).data!,
-    ).entitlements;
+      final standalone = EntitlementsResponse.fromJson(
+        (await dio.get<Map<String, dynamic>>('/me/entitlements')).data!,
+      ).items;
+      final embedded = StudentProfile.fromJson(
+        (await dio.get<Map<String, dynamic>>('/me')).data!,
+      ).entitlements;
 
-    expect(standalone.single.type, EntitlementType.baseSubscription);
-    // One student cannot have two different subscription truths depending on
-    // which call was made.
-    expect(embedded, standalone);
-  });
+      expect(standalone.single.type, EntitlementType.baseSubscription);
+      // One student cannot have two different subscription truths depending on
+      // which call was made.
+      expect(embedded, standalone);
+    },
+  );
 }

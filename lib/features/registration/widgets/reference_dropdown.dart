@@ -76,13 +76,13 @@ class ReferenceDropdown extends ConsumerWidget {
     final hasError = errorText != null;
 
     Widget shell(Widget child, {VoidCallback? onTap}) => FieldShell(
-          key: fieldKey == null ? null : Key(fieldKey!),
-          enabled: enabled,
-          hasError: hasError,
-          onTap: onTap,
-          semanticLabel: label,
-          child: child,
-        );
+      key: fieldKey == null ? null : Key(fieldKey!),
+      enabled: enabled,
+      hasError: hasError,
+      onTap: onTap,
+      semanticLabel: label,
+      child: child,
+    );
 
     final Widget control;
     if (!enabled) {
@@ -95,40 +95,37 @@ class ReferenceDropdown extends ConsumerWidget {
     } else {
       control = switch (options) {
         AsyncLoading() => shell(
-            Row(
-              children: [
-                const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  l10n.selectHint,
-                  style: TextStyle(fontSize: 18, color: ext.hint),
-                ),
-              ],
-            ),
+          Row(
+            children: [
+              const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                l10n.selectHint,
+                style: TextStyle(fontSize: 18, color: ext.hint),
+              ),
+            ],
           ),
+        ),
         AsyncError(:final error) => _PickerFailure(
-            message: referenceErrorMessage(l10n, error),
-            isOffline: isOffline(error),
-            onRetry: onRetry,
-          ),
+          message: referenceErrorMessage(l10n, error),
+          isOffline: isOffline(error),
+          onRetry: onRetry,
+        ),
         AsyncData(value: final rows) when rows.isEmpty => shell(
-            Text(
-              l10n.noOptions,
-              style: TextStyle(fontSize: 18, color: ext.hint),
-            ),
-          ),
+          Text(l10n.noOptions, style: TextStyle(fontSize: 18, color: ext.hint)),
+        ),
         AsyncData(value: final rows) => shell(
-            _Dropdown(
-              value: rows.any((r) => r.id == value) ? value : null,
-              rows: rows,
-              hint: l10n.selectHint,
-              onSelected: onSelected,
-            ),
+          _Dropdown(
+            value: rows.any((r) => r.id == value) ? value : null,
+            rows: rows,
+            hint: l10n.selectHint,
+            onSelected: onSelected,
           ),
+        ),
       };
     }
 

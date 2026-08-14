@@ -72,8 +72,7 @@ void main() {
       expect(find.text('2,450'), findsOneWidget);
     });
 
-    testWidgets(
-        'points.total is printed, not re-summed from the dual pools '
+    testWidgets('points.total is printed, not re-summed from the dual pools '
         '(adr-003)', (tester) async {
       // The pools deliberately do NOT add up to `total` here. A screen that
       // computed `school + university` would render 1,500; the contract says
@@ -93,22 +92,23 @@ void main() {
     });
 
     testWidgets(
-        'Solved Questions and Rank are OMITTED — the contract has neither',
-        (tester) async {
-      await pumpProfileScreen(tester, profile: profileRepo());
+      'Solved Questions and Rank are OMITTED — the contract has neither',
+      (tester) async {
+        await pumpProfileScreen(tester, profile: profileRepo());
 
-      // Conflict 2 (S24): no answered/solved counter exists in StudentProfile,
-      // and SubjectTree's per-node counts are not summable into a lifetime
-      // figure. Conflict 3 (S25): no rank tier string exists either.
-      expect(find.text('Solved Questions'), findsNothing);
-      expect(find.text('Rank'), findsNothing);
-      // Not rendered as an em-dash placeholder either — that invites a guess.
-      expect(find.text('—'), findsNothing);
-      expect(find.text('300'), findsNothing, reason: 'the frame mock value');
-      expect(find.text('HERO'), findsNothing, reason: 'the frame mock value');
-      // Exactly one stat card survives.
-      expect(find.byType(ProfileStatCard), findsOneWidget);
-    });
+        // Conflict 2 (S24): no answered/solved counter exists in StudentProfile,
+        // and SubjectTree's per-node counts are not summable into a lifetime
+        // figure. Conflict 3 (S25): no rank tier string exists either.
+        expect(find.text('Solved Questions'), findsNothing);
+        expect(find.text('Rank'), findsNothing);
+        // Not rendered as an em-dash placeholder either — that invites a guess.
+        expect(find.text('—'), findsNothing);
+        expect(find.text('300'), findsNothing, reason: 'the frame mock value');
+        expect(find.text('HERO'), findsNothing, reason: 'the frame mock value');
+        // Exactly one stat card survives.
+        expect(find.byType(ProfileStatCard), findsOneWidget);
+      },
+    );
 
     testWidgets('all ten of the frame\'s rows render', (tester) async {
       await pumpProfileScreen(tester, profile: profileRepo());
@@ -177,8 +177,9 @@ void main() {
       });
     }
 
-    testWidgets('and are announced as disabled buttons, with a reason',
-        (tester) async {
+    testWidgets('and are announced as disabled buttons, with a reason', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await pumpProfileScreen(tester, profile: profileRepo());
 
@@ -236,17 +237,19 @@ void main() {
       expect(locationOf(container), '/settings');
     });
 
-    testWidgets('every disabled row leads nowhere — the location does not move',
-        (tester) async {
-      final container = await pumpProfileApp(tester, profile: profileRepo());
-      await openAccountTab(tester);
+    testWidgets(
+      'every disabled row leads nowhere — the location does not move',
+      (tester) async {
+        final container = await pumpProfileApp(tester, profile: profileRepo());
+        await openAccountTab(tester);
 
-      for (final key in disabledRows.keys) {
-        // Nothing is expected to receive this tap — that IS the assertion.
-        await tapProfileKey(tester, key, warnIfMissed: false);
-        expect(locationOf(container), '/account', reason: '$key navigated');
-      }
-    });
+        for (final key in disabledRows.keys) {
+          // Nothing is expected to receive this tap — that IS the assertion.
+          await tapProfileKey(tester, key, warnIfMissed: false);
+          expect(locationOf(container), '/account', reason: '$key navigated');
+        }
+      },
+    );
 
     testWidgets('each shell row lands on its own screen', (tester) async {
       for (final entry in shellRows.entries) {
@@ -263,8 +266,9 @@ void main() {
       }
     });
 
-    testWidgets('the pencil routes to /profile/edit (Step 2 replaces it)',
-        (tester) async {
+    testWidgets('the pencil routes to /profile/edit (Step 2 replaces it)', (
+      tester,
+    ) async {
       final container = await pumpProfileApp(tester, profile: profileRepo());
       await openAccountTab(tester);
 
@@ -294,8 +298,9 @@ void main() {
       when(auth.logout).thenAnswer((_) async {});
     });
 
-    testWidgets('confirm calls the existing AuthController logout',
-        (tester) async {
+    testWidgets('confirm calls the existing AuthController logout', (
+      tester,
+    ) async {
       final container = await pumpProfileScreen(
         tester,
         profile: profileRepo(),
@@ -398,8 +403,9 @@ void main() {
       expect(find.byType(Container), findsWidgets);
     });
 
-    testWidgets('error → localized copy + a Retry that re-calls /me',
-        (tester) async {
+    testWidgets('error → localized copy + a Retry that re-calls /me', (
+      tester,
+    ) async {
       final repo = MockProfileRepository();
       when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
       when(repo.getMe).thenAnswer(
@@ -421,8 +427,9 @@ void main() {
       verify(repo.getMe).called(2);
     });
 
-    testWidgets('offline error → the offline view, not the generic error',
-        (tester) async {
+    testWidgets('offline error → the offline view, not the generic error', (
+      tester,
+    ) async {
       final repo = MockProfileRepository();
       when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
       when(repo.getMe).thenAnswer(
@@ -435,13 +442,10 @@ void main() {
       expect(find.byIcon(Icons.wifi_off), findsOneWidget);
     });
 
-    testWidgets('connectivity down with data on screen → pinned banner',
-        (tester) async {
-      await pumpProfileScreen(
-        tester,
-        profile: profileRepo(),
-        online: false,
-      );
+    testWidgets('connectivity down with data on screen → pinned banner', (
+      tester,
+    ) async {
+      await pumpProfileScreen(tester, profile: profileRepo(), online: false);
 
       // Both: the banner AND the loaded content.
       expect(find.text('You are offline'), findsOneWidget);
@@ -461,7 +465,10 @@ void main() {
       );
       expect(
         profileScreenState(
-          AsyncError<StudentProfile>(const OfflineException(), StackTrace.empty),
+          AsyncError<StudentProfile>(
+            const OfflineException(),
+            StackTrace.empty,
+          ),
         ),
         isA<ScreenOffline<StudentProfile>>(),
       );
@@ -518,8 +525,9 @@ void main() {
       );
     });
 
-    testWidgets('Arabic + dark, and the dialogs are localized too',
-        (tester) async {
+    testWidgets('Arabic + dark, and the dialogs are localized too', (
+      tester,
+    ) async {
       await pumpProfileScreen(
         tester,
         profile: profileRepo(),

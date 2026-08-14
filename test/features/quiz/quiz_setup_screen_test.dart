@@ -52,7 +52,9 @@ void main() {
   }
 
   group('rendering', () {
-    testWidgets('titles itself with the scope and offers 10/30/50', (tester) async {
+    testWidgets('titles itself with the scope and offers 10/30/50', (
+      tester,
+    ) async {
       await openSetup(tester);
 
       expect(find.text('Quiz Setup'), findsOneWidget);
@@ -65,8 +67,9 @@ void main() {
     });
 
     // CONFLICT 1 + 6: neither has a contract source, so neither is drawn.
-    testWidgets('shows NO points preview and NO question-pool card',
-        (tester) async {
+    testWidgets('shows NO points preview and NO question-pool card', (
+      tester,
+    ) async {
       await openSetup(tester);
 
       expect(find.textContaining('Points'), findsNothing);
@@ -75,8 +78,9 @@ void main() {
       expect(find.textContaining('remaining'), findsNothing);
     });
 
-    testWidgets('the subject line is absent — no endpoint returns one',
-        (tester) async {
+    testWidgets('the subject line is absent — no endpoint returns one', (
+      tester,
+    ) async {
       await openSetup(tester);
 
       // Only the scope name titles the screen; the frame's "Biology" eyebrow
@@ -84,8 +88,9 @@ void main() {
       expect(find.text('Biology'), findsNothing);
     });
 
-    testWidgets('30 is preselected, and tapping another length moves it',
-        (tester) async {
+    testWidgets('30 is preselected, and tapping another length moves it', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(
@@ -111,8 +116,9 @@ void main() {
   });
 
   group('creating a quiz', () {
-    testWidgets('school sends the lessonId and the chosen length',
-        (tester) async {
+    testWidgets('school sends the lessonId and the chosen length', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(
@@ -128,21 +134,24 @@ void main() {
       await tester.tap(find.text('Start learning'));
       await tester.pumpAndSettle();
 
-      final captured = verify(
-        () => quiz.createQuiz(
-          scope: captureAny(named: 'scope'),
-          length: QuizLength.ten,
-          mode: QuizMode.normal,
-        ),
-      ).captured.single as QuizSetupArgs;
+      final captured =
+          verify(
+                () => quiz.createQuiz(
+                  scope: captureAny(named: 'scope'),
+                  length: QuizLength.ten,
+                  mode: QuizMode.normal,
+                ),
+              ).captured.single
+              as QuizSetupArgs;
 
       expect(captured.lessonId, 'lesson-9');
       expect(captured.lectureId, isNull);
       expect(captured.quizType, isNull);
     });
 
-    testWidgets('university sends the lectureId and quizType — SAME screen',
-        (tester) async {
+    testWidgets('university sends the lectureId and quizType — SAME screen', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(
@@ -161,13 +170,15 @@ void main() {
       await tester.tap(find.text('Start learning'));
       await tester.pumpAndSettle();
 
-      final captured = verify(
-        () => quiz.createQuiz(
-          scope: captureAny(named: 'scope'),
-          length: any(named: 'length'),
-          mode: any(named: 'mode'),
-        ),
-      ).captured.single as QuizSetupArgs;
+      final captured =
+          verify(
+                () => quiz.createQuiz(
+                  scope: captureAny(named: 'scope'),
+                  length: any(named: 'length'),
+                  mode: any(named: 'mode'),
+                ),
+              ).captured.single
+              as QuizSetupArgs;
 
       expect(captured.lectureId, 'lecture-4');
       expect(captured.quizType, QuizType.finalRevision);
@@ -200,8 +211,9 @@ void main() {
   });
 
   group('error states', () {
-    testWidgets('422 not_enough_questions is inline and NEVER silently retried',
-        (tester) async {
+    testWidgets('422 not_enough_questions is inline and NEVER silently retried', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(
@@ -233,40 +245,43 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('403 weekly_question_limit_reached opens the sheet, WEEKLY copy',
-        (tester) async {
-      final quiz = MockQuizRepository();
-      when(
-        () => quiz.createQuiz(
-          scope: any(named: 'scope'),
-          length: any(named: 'length'),
-          mode: any(named: 'mode'),
-        ),
-      ).thenThrow(
-        const ApiException(
-          status: 403,
-          code: 'weekly_question_limit_reached',
-        ),
-      );
+    testWidgets(
+      '403 weekly_question_limit_reached opens the sheet, WEEKLY copy',
+      (tester) async {
+        final quiz = MockQuizRepository();
+        when(
+          () => quiz.createQuiz(
+            scope: any(named: 'scope'),
+            length: any(named: 'length'),
+            mode: any(named: 'mode'),
+          ),
+        ).thenThrow(
+          const ApiException(
+            status: 403,
+            code: 'weekly_question_limit_reached',
+          ),
+        );
 
-      await openSetup(tester, quiz: quiz);
-      await tester.tap(find.text('Start learning'));
-      await tester.pumpAndSettle();
+        await openSetup(tester, quiz: quiz);
+        await tester.tap(find.text('Start learning'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(LimitSheet), findsOneWidget);
-      expect(find.text('Free Usage Reached'), findsOneWidget);
-      expect(find.textContaining('this week'), findsOneWidget);
-      // The contract limit is weekly; the frame's "Daily" wording is not shipped.
-      expect(find.textContaining('Daily'), findsNothing);
-      expect(find.textContaining('daily'), findsNothing);
-      // Glossary: base_subscription is never called "premium".
-      expect(find.textContaining('Premium'), findsNothing);
-      // No questions-used bar — the contract exposes neither number.
-      expect(find.textContaining('50/50'), findsNothing);
-    });
+        expect(find.byType(LimitSheet), findsOneWidget);
+        expect(find.text('Free Usage Reached'), findsOneWidget);
+        expect(find.textContaining('this week'), findsOneWidget);
+        // The contract limit is weekly; the frame's "Daily" wording is not shipped.
+        expect(find.textContaining('Daily'), findsNothing);
+        expect(find.textContaining('daily'), findsNothing);
+        // Glossary: base_subscription is never called "premium".
+        expect(find.textContaining('Premium'), findsNothing);
+        // No questions-used bar — the contract exposes neither number.
+        expect(find.textContaining('50/50'), findsNothing);
+      },
+    );
 
-    testWidgets('403 subscription_required opens the same sheet, other copy',
-        (tester) async {
+    testWidgets('403 subscription_required opens the same sheet, other copy', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(
@@ -294,8 +309,9 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('a request in flight shows a spinner and blocks a second tap',
-        (tester) async {
+    testWidgets('a request in flight shows a spinner and blocks a second tap', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.createQuiz(

@@ -46,6 +46,6 @@ class SubjectTreeNotifier extends AsyncNotifier<SubjectTree> {
 /// error/offline view.
 final subjectTreeProvider =
     AsyncNotifierProvider.family<SubjectTreeNotifier, SubjectTree, String>(
-  SubjectTreeNotifier.new,
-  retry: noCatalogRetry,
-);
+      SubjectTreeNotifier.new,
+      retry: noCatalogRetry,
+    );

@@ -27,27 +27,26 @@ void main() {
 
   // MANDATED TEST 2 — a partially-answered quiz.
   group('a PARTIALLY answered quiz', () {
-    testWidgets(
-      'wrong is answeredCount - score, and Skipped is rendered',
-      (tester) async {
-        // 10 questions, 8 answered, 5 correct.
-        // Correct 5 · Wrong 3 (8 - 5) · Skipped 2 (10 - 8).
-        await openResult(tester, summary: quizSummary());
+    testWidgets('wrong is answeredCount - score, and Skipped is rendered', (
+      tester,
+    ) async {
+      // 10 questions, 8 answered, 5 correct.
+      // Correct 5 · Wrong 3 (8 - 5) · Skipped 2 (10 - 8).
+      await openResult(tester, summary: quizSummary());
 
-        expect(find.text('Correct'), findsOneWidget);
-        expect(find.text('Wrong'), findsOneWidget);
-        expect(find.text('Skipped'), findsOneWidget);
+      expect(find.text('Correct'), findsOneWidget);
+      expect(find.text('Wrong'), findsOneWidget);
+      expect(find.text('Skipped'), findsOneWidget);
 
-        expect(find.text('3'), findsOneWidget); // 8 answered - 5 correct
-        expect(find.text('2'), findsOneWidget); // 10 total - 8 answered
+      expect(find.text('3'), findsOneWidget); // 8 answered - 5 correct
+      expect(find.text('2'), findsOneWidget); // 10 total - 8 answered
 
-        // Exactly ONE "5" on screen — the score. `totalQuestions - score` is
-        // also 5, so the bug would put a second one in the Wrong card and this
-        // assertion would fail. Rendering 5 wrong would call two questions the
-        // student never reached mistakes.
-        expect(find.text('5'), findsOneWidget);
-      },
-    );
+      // Exactly ONE "5" on screen — the score. `totalQuestions - score` is
+      // also 5, so the bug would put a second one in the Wrong card and this
+      // assertion would fail. Rendering 5 wrong would call two questions the
+      // student never reached mistakes.
+      expect(find.text('5'), findsOneWidget);
+    });
 
     testWidgets('the three buckets account for every question', (tester) async {
       final summary = quizSummary();
@@ -58,7 +57,9 @@ void main() {
       expect(summary.skipped, 2);
     });
 
-    testWidgets('a fully answered quiz renders NO Skipped card', (tester) async {
+    testWidgets('a fully answered quiz renders NO Skipped card', (
+      tester,
+    ) async {
       await openResult(
         tester,
         summary: quizSummary(score: 7, totalQuestions: 10, answeredCount: 10),
@@ -70,8 +71,9 @@ void main() {
       expect(find.text('Skipped'), findsNothing);
     });
 
-    testWidgets('a quiz abandoned after one question is still truthful',
-        (tester) async {
+    testWidgets('a quiz abandoned after one question is still truthful', (
+      tester,
+    ) async {
       await openResult(
         tester,
         summary: quizSummary(
@@ -90,8 +92,9 @@ void main() {
 
   group('what the frame draws but the contract cannot back', () {
     // CONFLICT 2 / S13.
-    testWidgets('renders the percentage ring but NO Pass/Fail verdict',
-        (tester) async {
+    testWidgets('renders the percentage ring but NO Pass/Fail verdict', (
+      tester,
+    ) async {
       await openResult(tester, summary: quizSummary());
 
       expect(find.text('50%'), findsOneWidget);
@@ -101,8 +104,9 @@ void main() {
     });
 
     // CONFLICT 3 / S14.
-    testWidgets('Review Questions renders, disabled, with a coming-soon note',
-        (tester) async {
+    testWidgets('Review Questions renders, disabled, with a coming-soon note', (
+      tester,
+    ) async {
       await openResult(tester, summary: quizSummary());
 
       final review = tester.widget<FilledButton>(
@@ -112,15 +116,13 @@ void main() {
         ),
       );
       expect(review.onPressed, isNull);
-      expect(
-        find.text('Reviewing your answers is coming soon.'),
-        findsWidgets,
-      );
+      expect(find.text('Reviewing your answers is coming soon.'), findsWidgets);
     });
 
     // CONFLICT 1 / S12.
-    testWidgets('points come from the server verbatim, never computed',
-        (tester) async {
+    testWidgets('points come from the server verbatim, never computed', (
+      tester,
+    ) async {
       await openResult(
         tester,
         summary: quizSummary(score: 5, pointsAwarded: 5),
@@ -143,8 +145,9 @@ void main() {
       expect(find.text('Level 3 · 1255 points'), findsOneWidget);
     });
 
-    testWidgets('the subject line is absent — QuizSummary carries no scope',
-        (tester) async {
+    testWidgets('the subject line is absent — QuizSummary carries no scope', (
+      tester,
+    ) async {
       await openResult(tester, summary: quizSummary());
 
       // Only the scopeName carried forward from the Quiz.
@@ -154,8 +157,9 @@ void main() {
   });
 
   group('navigation', () {
-    testWidgets('Back leaves for Learn, never into the finished quiz',
-        (tester) async {
+    testWidgets('Back leaves for Learn, never into the finished quiz', (
+      tester,
+    ) async {
       final harness = await openResult(tester, summary: quizSummary());
 
       await tester.tap(find.byIcon(Icons.arrow_back));
@@ -185,18 +189,15 @@ void main() {
     });
 
     testWidgets('dark theme', (tester) async {
-      await openResult(
-        tester,
-        summary: quizSummary(),
-        theme: AppTheme.dark,
-      );
+      await openResult(tester, summary: quizSummary(), theme: AppTheme.dark);
 
       expect(find.text('Quiz Complete!'), findsOneWidget);
       expect(find.text('50%'), findsOneWidget);
     });
 
-    testWidgets('a zero-question quiz draws an empty ring, not a crash',
-        (tester) async {
+    testWidgets('a zero-question quiz draws an empty ring, not a crash', (
+      tester,
+    ) async {
       await openResult(
         tester,
         summary: quizSummary(
@@ -211,8 +212,9 @@ void main() {
       expect(find.text('Skipped'), findsNothing);
     });
 
-    testWidgets('leveledUp and newBadge parse but celebrate nothing',
-        (tester) async {
+    testWidgets('leveledUp and newBadge parse but celebrate nothing', (
+      tester,
+    ) async {
       // The contract goes to the trouble of telling us; the frame has no state
       // to render for either. Flagged in DESIGN_ISSUES rather than invented.
       await openResult(

@@ -22,10 +22,10 @@ void main() {
   });
 
   QuizBloc build() => QuizBloc(
-        repository: repo,
-        // No 2s waits in tests; production uses the contract's cadence.
-        explanationPollInterval: Duration.zero,
-      );
+    repository: repo,
+    // No 2s waits in tests; production uses the contract's cadence.
+    explanationPollInterval: Duration.zero,
+  );
 
   void stubAnswer({bool correct = true, bool explanationAvailable = true}) {
     when(
@@ -117,7 +117,11 @@ void main() {
       seed: () => QuizInProgress(started(), selectedOptionId: 'q1-opt0'),
       act: (bloc) => bloc.add(const AnswerSubmitted()),
       expect: () => [
-        isA<AnswerConfirming>().having((s) => s.optionId, 'optionId', 'q1-opt0'),
+        isA<AnswerConfirming>().having(
+          (s) => s.optionId,
+          'optionId',
+          'q1-opt0',
+        ),
         isA<QuizInProgress>()
             .having((s) => s.session.isGraded, 'isGraded', true)
             .having(
@@ -213,11 +217,14 @@ void main() {
       'AnswerRetried re-sends the SAME (questionId, optionId) and regrades',
       build: build,
       setUp: () => stubAnswer(correct: false),
-      seed: () =>
-          AnswerFailed(started(), 'q1-opt2', const OfflineException()),
+      seed: () => AnswerFailed(started(), 'q1-opt2', const OfflineException()),
       act: (bloc) => bloc.add(const AnswerRetried()),
       expect: () => [
-        isA<AnswerConfirming>().having((s) => s.optionId, 'optionId', 'q1-opt2'),
+        isA<AnswerConfirming>().having(
+          (s) => s.optionId,
+          'optionId',
+          'q1-opt2',
+        ),
         isA<QuizInProgress>()
             .having((s) => s.session.isGraded, 'isGraded', true)
             .having((s) => s.session.grade!.correct, 'correct', false)
@@ -313,8 +320,9 @@ void main() {
       final session = started();
       return session.copyWith(
         grades: {
-          session.question.id:
-              answerResult(explanationAvailable: explanationAvailable),
+          session.question.id: answerResult(
+            explanationAvailable: explanationAvailable,
+          ),
         },
         chosen: {session.question.id: 'q1-opt0'},
       );
@@ -339,8 +347,11 @@ void main() {
       // the whole design — it is what keeps Next alive while generating.
       wait: const Duration(milliseconds: 50),
       expect: () => [
-        isA<QuizInProgress>()
-            .having((s) => s.session.explanation, 'panel', isA<ExplanationPending>()),
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
         isA<QuizInProgress>().having(
           (s) => (s.session.explanation as ExplanationLoaded).text,
           'text',
@@ -372,16 +383,20 @@ void main() {
       'asking twice does not restart a generation the server charges for',
       build: build,
       setUp: () {
-        when(() => repo.getExplanation(any()))
-            .thenAnswer((_) async => const ExplanationGenerating());
+        when(
+          () => repo.getExplanation(any()),
+        ).thenAnswer((_) async => const ExplanationGenerating());
       },
       seed: () => QuizInProgress(graded()),
       act: (bloc) => bloc
         ..add(const ExplanationRequested())
         ..add(const ExplanationRequested()),
       expect: () => [
-        isA<QuizInProgress>()
-            .having((s) => s.session.explanation, 'panel', isA<ExplanationPending>()),
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
       ],
     );
 
@@ -398,8 +413,11 @@ void main() {
       seed: () => QuizInProgress(graded()),
       act: (bloc) => bloc.add(const ExplanationRequested()),
       expect: () => [
-        isA<QuizInProgress>()
-            .having((s) => s.session.explanation, 'panel', isA<ExplanationPending>()),
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
         isA<QuizInProgress>()
             .having(
               (s) => (s.session.explanation as ExplanationFailed).code,
@@ -414,15 +432,19 @@ void main() {
       'a generation that never settles gives up rather than polling forever',
       build: build,
       setUp: () {
-        when(() => repo.getExplanation(any()))
-            .thenAnswer((_) async => const ExplanationGenerating());
+        when(
+          () => repo.getExplanation(any()),
+        ).thenAnswer((_) async => const ExplanationGenerating());
       },
       seed: () => QuizInProgress(graded()),
       act: (bloc) => bloc.add(const ExplanationRequested()),
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        isA<QuizInProgress>()
-            .having((s) => s.session.explanation, 'panel', isA<ExplanationPending>()),
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
         isA<QuizInProgress>().having(
           (s) => (s.session.explanation as ExplanationFailed).code,
           'code',
@@ -437,8 +459,9 @@ void main() {
       'finishing renders the SERVER summary verbatim',
       build: build,
       setUp: () {
-        when(() => repo.finishQuiz(any()))
-            .thenAnswer((_) async => quizSummary());
+        when(
+          () => repo.finishQuiz(any()),
+        ).thenAnswer((_) async => quizSummary());
       },
       seed: () => QuizInProgress(started()),
       act: (bloc) => bloc.add(const QuizFinishRequested()),
@@ -504,8 +527,9 @@ void main() {
       'retrying a failed finish calls again — finish is idempotent',
       build: build,
       setUp: () {
-        when(() => repo.finishQuiz(any()))
-            .thenAnswer((_) async => quizSummary());
+        when(
+          () => repo.finishQuiz(any()),
+        ).thenAnswer((_) async => quizSummary());
       },
       seed: () => FinishFailed(started(), const OfflineException()),
       act: (bloc) => bloc.add(const QuizFinishRequested()),
@@ -561,13 +585,25 @@ void main() {
     },
     expect: () => [
       isA<QuizInProgress>().having((s) => s.session.position, 'q', 1),
-      isA<QuizInProgress>().having((s) => s.selectedOptionId, 'selected', 'q1-opt0'),
+      isA<QuizInProgress>().having(
+        (s) => s.selectedOptionId,
+        'selected',
+        'q1-opt0',
+      ),
       isA<AnswerConfirming>(),
       isA<QuizInProgress>().having((s) => s.session.isGraded, 'graded', true),
       isA<QuizInProgress>().having((s) => s.session.position, 'q', 2),
-      isA<QuizInProgress>().having((s) => s.selectedOptionId, 'selected', 'q2-opt0'),
+      isA<QuizInProgress>().having(
+        (s) => s.selectedOptionId,
+        'selected',
+        'q2-opt0',
+      ),
       isA<AnswerConfirming>(),
-      isA<QuizInProgress>().having((s) => s.session.answeredCount, 'answered', 2),
+      isA<QuizInProgress>().having(
+        (s) => s.session.answeredCount,
+        'answered',
+        2,
+      ),
       isA<QuizFinishing>(),
       isA<QuizCompleted>()
           .having((s) => s.summary.score, 'score', 2)

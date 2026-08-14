@@ -235,8 +235,9 @@ class _RankSection extends ConsumerWidget {
           label: l10n.settingsScoreHidden,
           help: l10n.settingsScoreHiddenHelp,
           value: profile.privacy.scoreHidden,
-          onChanged:
-              busy ? null : (value) => write(ProfileUpdate(scoreHidden: value)),
+          onChanged: busy
+              ? null
+              : (value) => write(ProfileUpdate(scoreHidden: value)),
         ),
       ],
     );
@@ -268,10 +269,7 @@ class _NotificationsSection extends StatelessWidget {
 
     return SettingsSection(
       title: l10n.settingsNotifications,
-      note: Text(
-        hint,
-        style: TextStyle(fontSize: 13, color: ext.hint),
-      ),
+      note: Text(hint, style: TextStyle(fontSize: 13, color: ext.hint)),
       children: [
         SettingsSwitchRow(
           key: const Key('settings_notif_announcements'),

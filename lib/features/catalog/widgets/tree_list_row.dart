@@ -139,10 +139,7 @@ class _IndexBadge extends StatelessWidget {
       width: 40,
       height: 40,
       alignment: AlignmentDirectional.center,
-      decoration: BoxDecoration(
-        color: ext.cardFill,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: ext.cardFill, shape: BoxShape.circle),
       child: Text(
         // Locale-aware digits: Arabic renders ١، ٢، ٣ rather than 1, 2, 3.
         MaterialLocalizations.of(context).formatDecimal(index),

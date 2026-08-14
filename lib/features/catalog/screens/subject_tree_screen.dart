@@ -59,8 +59,10 @@ class SubjectTreeScreen extends ConsumerWidget {
                   ref.read(subjectTreeProvider(subjectId).notifier).refresh(),
               skeleton: const CatalogListSkeleton(),
               onLoaded: (data) => switch (data) {
-                SchoolSubjectTree(:final units) =>
-                  UnitsView(subjectId: subjectId, units: units),
+                SchoolSubjectTree(:final units) => UnitsView(
+                  subjectId: subjectId,
+                  units: units,
+                ),
                 UniversitySubjectTree() => LecturesView(tree: data),
               },
             ),
@@ -82,14 +84,13 @@ class SubjectTreeScreen extends ConsumerWidget {
     AppLocalizations l10n,
     String? subjectName,
     SubjectTree? tree,
-  ) =>
-      switch (tree) {
-        UniversitySubjectTree() => subjectName == null
-            ? l10n.lecturesTitle
-            : l10n.lecturesTitleFor(subjectName),
-        SchoolSubjectTree() => subjectName == null
-            ? l10n.unitsTitle
-            : l10n.unitsTitleFor(subjectName),
-        null => subjectName ?? l10n.navLearn,
-      };
+  ) => switch (tree) {
+    UniversitySubjectTree() =>
+      subjectName == null
+          ? l10n.lecturesTitle
+          : l10n.lecturesTitleFor(subjectName),
+    SchoolSubjectTree() =>
+      subjectName == null ? l10n.unitsTitle : l10n.unitsTitleFor(subjectName),
+    null => subjectName ?? l10n.navLearn,
+  };
 }

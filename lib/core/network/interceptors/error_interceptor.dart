@@ -28,10 +28,12 @@ class ErrorInterceptor extends Interceptor {
       final status = res.statusCode ?? 0;
       mapped = switch (status) {
         401 => UnauthorizedException(code: code),
-        400 when code == 'validation_failed' =>
-          ValidationException(errors: _fieldMap(data)),
-        429 when code == 'rate_limited' =>
-          RateLimitedException(retryAfter: _retryAfter(res)),
+        400 when code == 'validation_failed' => ValidationException(
+          errors: _fieldMap(data),
+        ),
+        429 when code == 'rate_limited' => RateLimitedException(
+          retryAfter: _retryAfter(res),
+        ),
         // `404 country_not_found` (adr-028 §3) needs no subclass and no new UI:
         // the geography pickers' existing error state stands. It is listed here
         // only so the code is carried through as itself rather than `unknown`.

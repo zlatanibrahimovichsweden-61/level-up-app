@@ -30,31 +30,38 @@ void main() {
       expect(profile.geography.city, isA<CodedCity>());
       // format: date → calendar date, no timezone shift.
       expect(profile.dateOfBirth, DateTime(2008, 5, 14));
-      expect(profile.entitlements.single.type, EntitlementType.baseSubscription);
+      expect(
+        profile.entitlements.single.type,
+        EntitlementType.baseSubscription,
+      );
     });
 
-    test('parses a university profile (school block null, governorate absent)',
-        () {
-      final json = schoolProfileJson()
-        ..['track'] = 'university'
-        ..['school'] = null
-        ..['university'] = <String, dynamic>{
-          'university': namedRefJson('uni-cairo'),
-          'faculty': namedRefJson('fac-medicine'),
-          'yearNumber': 2,
-        }
-        ..['geography'] = <String, dynamic>{
-          'countryCode': 'EG',
-          'city': namedRefJson('city-nasr'), // governorate key omitted entirely
-        };
+    test(
+      'parses a university profile (school block null, governorate absent)',
+      () {
+        final json = schoolProfileJson()
+          ..['track'] = 'university'
+          ..['school'] = null
+          ..['university'] = <String, dynamic>{
+            'university': namedRefJson('uni-cairo'),
+            'faculty': namedRefJson('fac-medicine'),
+            'yearNumber': 2,
+          }
+          ..['geography'] = <String, dynamic>{
+            'countryCode': 'EG',
+            'city': namedRefJson(
+              'city-nasr',
+            ), // governorate key omitted entirely
+          };
 
-      final profile = StudentProfile.fromJson(json);
+        final profile = StudentProfile.fromJson(json);
 
-      expect(profile.track, Track.university);
-      expect(profile.school, isNull);
-      expect(profile.university!.yearNumber, 2);
-      expect(profile.geography.governorate, isNull);
-    });
+        expect(profile.track, Track.university);
+        expect(profile.school, isNull);
+        expect(profile.university!.yearNumber, 2);
+        expect(profile.geography.governorate, isNull);
+      },
+    );
 
     test('a school student with NO school parses (adr-028 §2)', () {
       // The skipped-school case: `school.school` is null but the block itself
@@ -121,19 +128,21 @@ void main() {
       expect(flashcards.inGrace, isTrue);
     });
 
-    test('an UNKNOWN type degrades to EntitlementType.unknown, never throws',
-        () {
-      // The contract marks this set extensible: a future entitlement must not
-      // break every existing build's /me parse.
-      final future = EntitlementState.fromJson(<String, dynamic>{
-        'type': 'tutoringSubscription',
-        'active': true,
-        'inGrace': false,
-      });
+    test(
+      'an UNKNOWN type degrades to EntitlementType.unknown, never throws',
+      () {
+        // The contract marks this set extensible: a future entitlement must not
+        // break every existing build's /me parse.
+        final future = EntitlementState.fromJson(<String, dynamic>{
+          'type': 'tutoringSubscription',
+          'active': true,
+          'inGrace': false,
+        });
 
-      expect(future.type, EntitlementType.unknown);
-      expect(future.active, isTrue);
-    });
+        expect(future.type, EntitlementType.unknown);
+        expect(future.active, isTrue);
+      },
+    );
 
     test('the { items: [...] } envelope of GET /me/entitlements parses', () {
       final response = EntitlementsResponse.fromJson(<String, dynamic>{
@@ -198,20 +207,21 @@ void main() {
       // compiling without a `default:`, the union grew and Day 8's screens
       // need revisiting.
       String label(ProfileCity city) => switch (city) {
-            CodedCity(:final ref) => ref.nameEn,
-            FreeTextCity(:final name) => name,
-          };
+        CodedCity(:final ref) => ref.nameEn,
+        FreeTextCity(:final name) => name,
+      };
 
-      expect(label(ProfileCity.coded(NamedRef.fromJson(namedRefJson('c')))),
-          'Cairo');
+      expect(
+        label(ProfileCity.coded(NamedRef.fromJson(namedRefJson('c')))),
+        'Cairo',
+      );
       expect(label(const ProfileCity.freeText('Al Ain')), 'Al Ain');
     });
 
     test('the union round-trips back to the shape it came from', () {
-      final coded = StudentProfile.fromJson(withCity(namedRefJson('city-nasr')))
-          .geography
-          .city
-          .toJson();
+      final coded = StudentProfile.fromJson(
+        withCity(namedRefJson('city-nasr')),
+      ).geography.city.toJson();
       expect(coded['id'], 'city-nasr');
 
       final free = StudentProfile.fromJson(

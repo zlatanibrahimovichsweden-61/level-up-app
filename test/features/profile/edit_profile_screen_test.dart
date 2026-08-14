@@ -38,20 +38,22 @@ void main() {
     if (failure != null) {
       when(() => repo.updateMe(any())).thenThrow(failure);
     } else {
-      when(() => repo.updateMe(any()))
-          .thenAnswer((_) async => updated ?? me ?? schoolProfile());
+      when(
+        () => repo.updateMe(any()),
+      ).thenAnswer((_) async => updated ?? me ?? schoolProfile());
     }
     return repo;
   }
 
   /// The body the screen actually submitted.
   ProfileUpdate sent(MockProfileRepository repo) =>
-      verify(() => repo.updateMe(captureAny())).captured.single as ProfileUpdate;
+      verify(() => repo.updateMe(captureAny())).captured.single
+          as ProfileUpdate;
 
   Finder input(String key) => find.descendant(
-        of: find.byKey(Key(key)),
-        matching: find.byType(TextField),
-      );
+    of: find.byKey(Key(key)),
+    matching: find.byType(TextField),
+  );
 
   /// The resolved value on a read-only row. Read off the widget rather than by
   /// text search: the fixture's governorate, city and school are all `Cairo`,
@@ -70,8 +72,9 @@ void main() {
       expect(find.text('ahmed@example.com'), findsOneWidget);
     });
 
-    testWidgets('no second GET /me — the hub already fetched it',
-        (tester) async {
+    testWidgets('no second GET /me — the hub already fetched it', (
+      tester,
+    ) async {
       final repo = editRepo();
       await pumpEditProfile(tester, profile: repo);
 
@@ -79,8 +82,9 @@ void main() {
       verify(repo.getMe).called(1);
     });
 
-    testWidgets('a student with no email gets an empty box, not "null"',
-        (tester) async {
+    testWidgets('a student with no email gets an empty box, not "null"', (
+      tester,
+    ) async {
       await pumpEditProfile(tester, profile: editRepo()); // email: null
 
       expect(find.text('null'), findsNothing);
@@ -101,8 +105,9 @@ void main() {
       verifyNever(() => repo.updateMe(any()));
     });
 
-    testWidgets('changing the name sends `name` and nothing else',
-        (tester) async {
+    testWidgets('changing the name sends `name` and nothing else', (
+      tester,
+    ) async {
       final repo = editRepo();
       await pumpEditProfile(tester, profile: repo);
 
@@ -112,8 +117,9 @@ void main() {
       expect(sent(repo).toJson(), <String, dynamic>{'name': 'Ahmed Ali'});
     });
 
-    testWidgets('the six read-only facts never appear in the body',
-        (tester) async {
+    testWidgets('the six read-only facts never appear in the body', (
+      tester,
+    ) async {
       final repo = editRepo();
       await pumpEditProfile(tester, profile: repo);
 
@@ -134,14 +140,19 @@ void main() {
         'educationSystem',
         'stage',
       ]) {
-        expect(body.containsKey(key), isFalse, reason: '$key is immutable (S20)');
+        expect(
+          body.containsKey(key),
+          isFalse,
+          reason: '$key is immutable (S20)',
+        );
       }
     });
   });
 
   group('email — the three states, through the form', () {
-    testWidgets('UNTOUCHED: retyping the same address sends nothing',
-        (tester) async {
+    testWidgets('UNTOUCHED: retyping the same address sends nothing', (
+      tester,
+    ) async {
       final repo = editRepo(me: profileWithEmail());
       await pumpEditProfile(tester, profile: repo);
 
@@ -158,65 +169,81 @@ void main() {
       await tester.enterText(input('edit_email_field'), 'new@example.com');
       await save(tester);
 
-      expect(sent(repo).toJson(), <String, dynamic>{'email': 'new@example.com'});
+      expect(sent(repo).toJson(), <String, dynamic>{
+        'email': 'new@example.com',
+      });
     });
 
-    testWidgets('CLEARED: emptying the box sends the key with an explicit null',
-        (tester) async {
-      final repo = editRepo(me: profileWithEmail());
-      await pumpEditProfile(tester, profile: repo);
+    testWidgets(
+      'CLEARED: emptying the box sends the key with an explicit null',
+      (tester) async {
+        final repo = editRepo(me: profileWithEmail());
+        await pumpEditProfile(tester, profile: repo);
 
-      await tester.enterText(input('edit_email_field'), '');
-      await save(tester);
+        await tester.enterText(input('edit_email_field'), '');
+        await save(tester);
 
-      final body = sent(repo).toJson();
-      // The assertion that dies if `includeIfNull: false` is ever applied to
-      // this field: a dropped key means "unchanged", and the address the
-      // student just deleted would quietly survive.
-      expect(body.containsKey('email'), isTrue);
-      expect(body['email'], isNull);
-    });
+        final body = sent(repo).toJson();
+        // The assertion that dies if `includeIfNull: false` is ever applied to
+        // this field: a dropped key means "unchanged", and the address the
+        // student just deleted would quietly survive.
+        expect(body.containsKey('email'), isTrue);
+        expect(body['email'], isNull);
+      },
+    );
 
-    testWidgets('the screen says out loud that an empty box deletes',
-        (tester) async {
+    testWidgets('the screen says out loud that an empty box deletes', (
+      tester,
+    ) async {
       await pumpEditProfile(tester, profile: editRepo());
 
-      expect(find.text('Leave this empty to remove your email.'), findsOneWidget);
+      expect(
+        find.text('Leave this empty to remove your email.'),
+        findsOneWidget,
+      );
     });
   });
 
   group('avatar', () {
-    testWidgets('Use Avatar opens the reference picker and round-trips the id',
-        (tester) async {
-      final repo = editRepo();
-      await pumpEditProfile(tester, profile: repo);
+    testWidgets(
+      'Use Avatar opens the reference picker and round-trips the id',
+      (tester) async {
+        final repo = editRepo();
+        await pumpEditProfile(tester, profile: repo);
 
-      await tapProfileKey(tester, 'edit_avatar_button');
-      await tapProfileKey(tester, 'avatar_use_default');
-      await tapProfileKey(tester, 'avatar_choice_avatar-99');
-      await save(tester);
+        await tapProfileKey(tester, 'edit_avatar_button');
+        await tapProfileKey(tester, 'avatar_use_default');
+        await tapProfileKey(tester, 'avatar_choice_avatar-99');
+        await save(tester);
 
-      expect(sent(repo).toJson(), <String, dynamic>{'avatarId': 'avatar-99'});
-    });
+        expect(sent(repo).toJson(), <String, dynamic>{'avatarId': 'avatar-99'});
+      },
+    );
 
-    testWidgets('the picker reads the SAME /reference/avatars registration does',
-        (tester) async {
-      final reference = avatarReferenceRepo();
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(),
-        reference: reference,
-      );
+    testWidgets(
+      'the picker reads the SAME /reference/avatars registration does',
+      (tester) async {
+        final reference = avatarReferenceRepo();
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(),
+          reference: reference,
+        );
 
-      await tapProfileKey(tester, 'edit_avatar_button');
-      await tapProfileKey(tester, 'avatar_use_default');
+        await tapProfileKey(tester, 'edit_avatar_button');
+        await tapProfileKey(tester, 'avatar_use_default');
 
-      verify(reference.getAvatars).called(1);
-      expect(find.byKey(const Key('avatar_choice_avatar-01')), findsOneWidget);
-    });
+        verify(reference.getAvatars).called(1);
+        expect(
+          find.byKey(const Key('avatar_choice_avatar-01')),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('Upload photo is present and genuinely non-interactive',
-        (tester) async {
+    testWidgets('Upload photo is present and genuinely non-interactive', (
+      tester,
+    ) async {
       await pumpEditProfile(tester, profile: editRepo());
       await tapProfileKey(tester, 'edit_avatar_button');
 
@@ -292,15 +319,17 @@ void main() {
       }
     });
 
-    testWidgets('the phone is the value GET /me returned, verbatim',
-        (tester) async {
+    testWidgets('the phone is the value GET /me returned, verbatim', (
+      tester,
+    ) async {
       await pumpEditProfile(tester, profile: editRepo());
 
       expect(readOnly(tester, 'edit_phone_field'), '+201001234567');
     });
 
-    testWidgets('a "Parent\'s Number" row is not built — /me has no source',
-        (tester) async {
+    testWidgets('a "Parent\'s Number" row is not built — /me has no source', (
+      tester,
+    ) async {
       await pumpEditProfile(tester, profile: editRepo());
 
       // `parentPhone` exists only on the registration bodies (openapi.yaml
@@ -308,8 +337,9 @@ void main() {
       expect(find.text("Parent's Number"), findsNothing);
     });
 
-    testWidgets('a skipped school reads as resolved, not as missing data',
-        (tester) async {
+    testWidgets('a skipped school reads as resolved, not as missing data', (
+      tester,
+    ) async {
       final me = StudentProfile.fromJson(<String, dynamic>{
         ...schoolProfileJson(),
         'school': <String, dynamic>{
@@ -332,11 +362,7 @@ void main() {
     });
 
     testWidgets('a CODED city renders the Arabic name in AR', (tester) async {
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(),
-        locale: 'ar',
-      );
+      await pumpEditProfile(tester, profile: editRepo(), locale: 'ar');
 
       expect(readOnly(tester, 'edit_city_field'), 'القاهرة');
     });
@@ -352,25 +378,25 @@ void main() {
       expect(readOnly(tester, 'edit_city_field'), 'Al Ain');
     });
 
-    testWidgets('a FREE-TEXT city has nothing to localize, so AR shows it too',
-        (tester) async {
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(me: freeTextCityProfile()),
-        locale: 'ar',
-      );
+    testWidgets(
+      'a FREE-TEXT city has nothing to localize, so AR shows it too',
+      (tester) async {
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(me: freeTextCityProfile()),
+          locale: 'ar',
+        );
 
-      expect(readOnly(tester, 'edit_city_field'), 'Al Ain');
-    });
+        expect(readOnly(tester, 'edit_city_field'), 'Al Ain');
+      },
+    );
   });
 
   group('a university student sees their own academic block', () {
-    testWidgets('university, faculty and year replace the school rows',
-        (tester) async {
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(me: universityProfile()),
-      );
+    testWidgets('university, faculty and year replace the school rows', (
+      tester,
+    ) async {
+      await pumpEditProfile(tester, profile: editRepo(me: universityProfile()));
 
       expect(find.byKey(const Key('edit_university_field')), findsOneWidget);
       expect(find.byKey(const Key('edit_faculty_field')), findsOneWidget);
@@ -404,8 +430,9 @@ void main() {
       expect(locationOf(container), '/profile');
     });
 
-    testWidgets('400 validation_failed lands as an inline error on the field',
-        (tester) async {
+    testWidgets('400 validation_failed lands as an inline error on the field', (
+      tester,
+    ) async {
       final repo = editRepo(
         failure: const ValidationException(
           errors: <String, List<String>>{
@@ -427,11 +454,14 @@ void main() {
       expect(locationOf(container), '/profile/edit');
     });
 
-    testWidgets('editing after a failure clears the stale error',
-        (tester) async {
+    testWidgets('editing after a failure clears the stale error', (
+      tester,
+    ) async {
       final repo = editRepo(
         failure: const ValidationException(
-          errors: <String, List<String>>{'name': <String>['too long']},
+          errors: <String, List<String>>{
+            'name': <String>['too long'],
+          },
         ),
       );
       await pumpEditProfile(tester, profile: repo);
@@ -446,8 +476,9 @@ void main() {
       expect(find.byKey(const Key('edit_save_error')), findsNothing);
     });
 
-    testWidgets('an empty name is rejected before a request is made',
-        (tester) async {
+    testWidgets('an empty name is rejected before a request is made', (
+      tester,
+    ) async {
       final repo = editRepo();
       await pumpEditProfile(tester, profile: repo);
 
@@ -458,8 +489,9 @@ void main() {
       expect(find.text('Please enter your name'), findsOneWidget);
     });
 
-    testWidgets('offline shows the offline line, not a generic error',
-        (tester) async {
+    testWidgets('offline shows the offline line, not a generic error', (
+      tester,
+    ) async {
       final repo = editRepo(failure: const OfflineException());
       await pumpEditProfile(tester, profile: repo);
 
@@ -480,8 +512,9 @@ void main() {
       expect(locationOf(container), '/profile');
     });
 
-    testWidgets('a dirty form asks, and "Keep editing" stays put',
-        (tester) async {
+    testWidgets('a dirty form asks, and "Keep editing" stays put', (
+      tester,
+    ) async {
       final container = await pumpEditProfile(tester, profile: editRepo());
 
       await tester.enterText(input('edit_name_field'), 'Ahmed Ali');
@@ -508,24 +541,29 @@ void main() {
   });
 
   group('states', () {
-    testWidgets('loading renders the skeleton, and the back chip still exists',
-        (tester) async {
-      final repo = profileRepo();
-      // Never resolves — the loading branch is what the student sees while
-      // `/me` is in flight, and they must still be able to leave.
-      when(repo.getMe).thenAnswer((_) => Completer<StudentProfile>().future);
-      when(() => repo.updateMe(any())).thenAnswer((_) async => schoolProfile());
+    testWidgets(
+      'loading renders the skeleton, and the back chip still exists',
+      (tester) async {
+        final repo = profileRepo();
+        // Never resolves — the loading branch is what the student sees while
+        // `/me` is in flight, and they must still be able to leave.
+        when(repo.getMe).thenAnswer((_) => Completer<StudentProfile>().future);
+        when(
+          () => repo.updateMe(any()),
+        ).thenAnswer((_) async => schoolProfile());
 
-      await pumpEditProfile(tester, profile: repo, settle: false);
+        await pumpEditProfile(tester, profile: repo, settle: false);
 
-      expect(find.byType(EditProfileChrome), findsWidgets);
-      expect(find.byKey(const Key('edit_profile_back')), findsOneWidget);
-      expect(find.byType(ReadOnlyField), findsNothing);
-      expect(find.byKey(const Key('edit_save_button')), findsNothing);
-    });
+        expect(find.byType(EditProfileChrome), findsWidgets);
+        expect(find.byKey(const Key('edit_profile_back')), findsOneWidget);
+        expect(find.byType(ReadOnlyField), findsNothing);
+        expect(find.byKey(const Key('edit_save_button')), findsNothing);
+      },
+    );
 
-    testWidgets('an error shows the generic line plus a user-tapped retry',
-        (tester) async {
+    testWidgets('an error shows the generic line plus a user-tapped retry', (
+      tester,
+    ) async {
       final repo = profileRepo();
       when(repo.getMe).thenThrow(const UnknownException());
       when(() => repo.updateMe(any())).thenAnswer((_) async => schoolProfile());
@@ -536,8 +574,9 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
 
-    testWidgets('offline gets its own view, not the generic error',
-        (tester) async {
+    testWidgets('offline gets its own view, not the generic error', (
+      tester,
+    ) async {
       final repo = profileRepo();
       when(repo.getMe).thenThrow(const OfflineException());
       when(() => repo.updateMe(any())).thenAnswer((_) async => schoolProfile());
@@ -551,11 +590,7 @@ void main() {
 
   group('locales and themes', () {
     testWidgets('AR lays out RTL with Arabic labels', (tester) async {
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(),
-        locale: 'ar',
-      );
+      await pumpEditProfile(tester, profile: editRepo(), locale: 'ar');
 
       expect(find.text('تعديل الملف الشخصي'), findsWidgets);
       expect(find.text('حفظ التغييرات'), findsOneWidget);
@@ -575,13 +610,10 @@ void main() {
       );
     });
 
-    testWidgets('dark renders the same form on the dark canvas',
-        (tester) async {
-      await pumpEditProfile(
-        tester,
-        profile: editRepo(),
-        theme: AppTheme.dark,
-      );
+    testWidgets('dark renders the same form on the dark canvas', (
+      tester,
+    ) async {
+      await pumpEditProfile(tester, profile: editRepo(), theme: AppTheme.dark);
 
       expect(find.byKey(const Key('edit_save_button')), findsOneWidget);
       expect(find.byType(ReadOnlyField), findsWidgets);

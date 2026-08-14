@@ -40,8 +40,7 @@ class CatalogAsyncView<T> extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final state = value.when<ScreenState<T>>(
-      data: (data) =>
-          isEmpty(data) ? ScreenEmpty<T>() : ScreenLoaded<T>(data),
+      data: (data) => isEmpty(data) ? ScreenEmpty<T>() : ScreenLoaded<T>(data),
       loading: ScreenLoading<T>.new,
       error: (error, _) => isOffline(error)
           ? ScreenOffline<T>()
@@ -127,7 +126,12 @@ class CatalogMessage extends StatelessWidget {
 /// A grey block in the shape of real content, so the page doesn't jump when the
 /// data lands.
 class CatalogBlock extends StatelessWidget {
-  const CatalogBlock({super.key, this.width, this.height = 56, this.radius = 10.7});
+  const CatalogBlock({
+    super.key,
+    this.width,
+    this.height = 56,
+    this.radius = 10.7,
+  });
 
   final double? width;
   final double height;

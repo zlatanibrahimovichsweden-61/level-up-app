@@ -162,7 +162,9 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
   }
 
   void _start() {
-    ref.read(quizSetupProvider.notifier).create(
+    ref
+        .read(quizSetupProvider.notifier)
+        .create(
           scope: widget.args,
           length: _length,
           // Day 7 offers one mode. `offeredQuizModes` is the single place that
@@ -175,10 +177,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
   /// Navigation and the paywall sheet are side effects of the command
   /// completing, so they belong in a listener rather than in `build` — building
   /// a widget must never push a route.
-  void _onCreationChanged(
-    AsyncValue<Quiz?>? previous,
-    AsyncValue<Quiz?> next,
-  ) {
+  void _onCreationChanged(AsyncValue<Quiz?>? previous, AsyncValue<Quiz?> next) {
     if (!mounted) return;
 
     if (next.value case final quiz?) {

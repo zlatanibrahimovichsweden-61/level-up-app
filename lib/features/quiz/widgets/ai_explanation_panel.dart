@@ -74,39 +74,36 @@ class AiExplanationPanel extends StatelessWidget {
           switch (state) {
             // Collapsed until asked — exhaustive, no `default:`.
             ExplanationIdle() => Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: onRequest,
-                  child: Text(l10n.showExplanation),
-                ),
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: onRequest,
+                child: Text(l10n.showExplanation),
               ),
+            ),
             ExplanationPending() => _Body(
-                child: Row(
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      l10n.explanationGenerating,
+                      style: _bodyStyle(ext),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        l10n.explanationGenerating,
-                        style: _bodyStyle(ext),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             ExplanationLoaded(:final text) => _Body(
-                child: Text(text, style: _bodyStyle(ext)),
-              ),
+              child: Text(text, style: _bodyStyle(ext)),
+            ),
             ExplanationFailed() => _Body(
-                child: Text(
-                  l10n.explanationUnavailable,
-                  style: _bodyStyle(ext),
-                ),
-              ),
+              child: Text(l10n.explanationUnavailable, style: _bodyStyle(ext)),
+            ),
           },
         ],
       ),
@@ -114,10 +111,10 @@ class AiExplanationPanel extends StatelessWidget {
   }
 
   TextStyle _bodyStyle(AppColors ext) => TextStyle(
-        fontSize: 13.145,
-        height: 21.033 / 13.145,
-        color: ext.quizExplanationBody,
-      );
+    fontSize: 13.145,
+    height: 21.033 / 13.145,
+    color: ext.quizExplanationBody,
+  );
 }
 
 /// The inner card the frame draws around each explanation body (`159:1826`).

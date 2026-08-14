@@ -30,14 +30,15 @@ void main() {
       );
 
   DioException failure(AppException mapped) => DioException(
-        requestOptions: RequestOptions(path: '/x'),
-        error: mapped,
-      );
+    requestOptions: RequestOptions(path: '/x'),
+    error: mapped,
+  );
 
   group('getSubjects', () {
     test('parses the bare array', () async {
-      when(() => dio.get<List<dynamic>>('/catalog/subjects'))
-          .thenAnswer((_) async => response(subjectsJson()));
+      when(
+        () => dio.get<List<dynamic>>('/catalog/subjects'),
+      ).thenAnswer((_) async => response(subjectsJson()));
 
       final result = await repo.getSubjects();
 
@@ -47,26 +48,31 @@ void main() {
     });
 
     test('an empty catalog is an empty list, not an error', () async {
-      when(() => dio.get<List<dynamic>>('/catalog/subjects'))
-          .thenAnswer((_) async => response(<dynamic>[]));
+      when(
+        () => dio.get<List<dynamic>>('/catalog/subjects'),
+      ).thenAnswer((_) async => response(<dynamic>[]));
 
       expect(await repo.getSubjects(), isEmpty);
     });
 
-    test('sends NO scope parameters — the server derives scope (adr-013)',
-        () async {
-      when(() => dio.get<List<dynamic>>(any()))
-          .thenAnswer((_) async => response(subjectsJson()));
+    test(
+      'sends NO scope parameters — the server derives scope (adr-013)',
+      () async {
+        when(
+          () => dio.get<List<dynamic>>(any()),
+        ).thenAnswer((_) async => response(subjectsJson()));
 
-      await repo.getSubjects();
+        await repo.getSubjects();
 
-      // Exactly this path, no query string.
-      verify(() => dio.get<List<dynamic>>('/catalog/subjects')).called(1);
-    });
+        // Exactly this path, no query string.
+        verify(() => dio.get<List<dynamic>>('/catalog/subjects')).called(1);
+      },
+    );
 
     test('offline surfaces as OfflineException', () async {
-      when(() => dio.get<List<dynamic>>('/catalog/subjects'))
-          .thenThrow(failure(const OfflineException()));
+      when(
+        () => dio.get<List<dynamic>>('/catalog/subjects'),
+      ).thenThrow(failure(const OfflineException()));
 
       expect(repo.getSubjects, throwsA(isA<OfflineException>()));
     });
@@ -74,8 +80,9 @@ void main() {
 
   group('getSubjectTree', () {
     test('parses the school tree', () async {
-      when(() => dio.get<Map<String, dynamic>>('/catalog/subjects/sub-1/tree'))
-          .thenAnswer((_) async => response(schoolTreeJson()));
+      when(
+        () => dio.get<Map<String, dynamic>>('/catalog/subjects/sub-1/tree'),
+      ).thenAnswer((_) async => response(schoolTreeJson()));
 
       final tree = await repo.getSubjectTree('sub-1');
 
@@ -87,8 +94,9 @@ void main() {
     });
 
     test('parses the university tree — the OTHER side of the oneOf', () async {
-      when(() => dio.get<Map<String, dynamic>>('/catalog/subjects/uni-1/tree'))
-          .thenAnswer((_) async => response(universityTreeJson()));
+      when(
+        () => dio.get<Map<String, dynamic>>('/catalog/subjects/uni-1/tree'),
+      ).thenAnswer((_) async => response(universityTreeJson()));
 
       final tree = await repo.getSubjectTree('uni-1');
 
@@ -103,19 +111,21 @@ void main() {
       ]);
     });
 
-    test('an unknown track is contract drift — it throws, it does not guess',
-        () async {
-      // A third track would parse as neither shape. Failing loudly beats
-      // rendering an empty screen and calling it "no content".
-      when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
-        (_) async => response(<String, dynamic>{'track': 'bootcamp'}),
-      );
+    test(
+      'an unknown track is contract drift — it throws, it does not guess',
+      () async {
+        // A third track would parse as neither shape. Failing loudly beats
+        // rendering an empty screen and calling it "no content".
+        when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
+          (_) async => response(<String, dynamic>{'track': 'bootcamp'}),
+        );
 
-      await expectLater(
-        () => repo.getSubjectTree('sub-1'),
-        throwsA(isA<UnknownException>()),
-      );
-    });
+        await expectLater(
+          () => repo.getSubjectTree('sub-1'),
+          throwsA(isA<UnknownException>()),
+        );
+      },
+    );
 
     test('403 surfaces as insufficient_scope, not a generic failure', () async {
       when(() => dio.get<Map<String, dynamic>>(any())).thenThrow(
@@ -132,28 +142,31 @@ void main() {
       );
     });
 
-    test('an empty university tree parses — 0 lectures is not a failure',
-        () async {
-      // Day 5 REFUSED this payload (no model for it yet). Day 6 parses it, so
-      // the assertion inverts: it must come back as a tree, and the screen —
-      // not the repository — decides that no lectures means EMPTY.
-      when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
-        (_) async => response(<String, dynamic>{
-          'track': 'university',
-          'quizTypes': <dynamic>['normal'],
-          'lectures': <dynamic>[],
-        }),
-      );
+    test(
+      'an empty university tree parses — 0 lectures is not a failure',
+      () async {
+        // Day 5 REFUSED this payload (no model for it yet). Day 6 parses it, so
+        // the assertion inverts: it must come back as a tree, and the screen —
+        // not the repository — decides that no lectures means EMPTY.
+        when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
+          (_) async => response(<String, dynamic>{
+            'track': 'university',
+            'quizTypes': <dynamic>['normal'],
+            'lectures': <dynamic>[],
+          }),
+        );
 
-      final tree = await repo.getSubjectTree('sub-uni');
+        final tree = await repo.getSubjectTree('sub-uni');
 
-      expect(tree, isA<UniversitySubjectTree>());
-      expect((tree as UniversitySubjectTree).lectures, isEmpty);
-    });
+        expect(tree, isA<UniversitySubjectTree>());
+        expect((tree as UniversitySubjectTree).lectures, isEmpty);
+      },
+    );
 
     test('offline surfaces as OfflineException', () async {
-      when(() => dio.get<Map<String, dynamic>>(any()))
-          .thenThrow(failure(const OfflineException()));
+      when(
+        () => dio.get<Map<String, dynamic>>(any()),
+      ).thenThrow(failure(const OfflineException()));
 
       expect(
         () => repo.getSubjectTree('sub-1'),
@@ -162,9 +175,9 @@ void main() {
     });
 
     test('an unmapped Dio failure falls back to UnknownException', () async {
-      when(() => dio.get<Map<String, dynamic>>(any())).thenThrow(
-        DioException(requestOptions: RequestOptions(path: '/x')),
-      );
+      when(
+        () => dio.get<Map<String, dynamic>>(any()),
+      ).thenThrow(DioException(requestOptions: RequestOptions(path: '/x')));
 
       expect(
         () => repo.getSubjectTree('sub-1'),

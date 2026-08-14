@@ -54,15 +54,19 @@ void main() {
     return container;
   }
 
-  testWidgets('superseded reason shows the message once (EN), then clears',
-      (tester) async {
+  testWidgets('superseded reason shows the message once (EN), then clears', (
+    tester,
+  ) async {
     final container = makeContainer();
     await container
         .read(authControllerProvider.notifier)
         .forceLogout(LogoutReason.supersededOtherDevice);
 
-    await _pumpLoginAfterForceLogout(tester,
-        locale: const Locale('en'), container: container);
+    await _pumpLoginAfterForceLogout(
+      tester,
+      locale: const Locale('en'),
+      container: container,
+    );
 
     expect(
       find.text(
@@ -79,14 +83,19 @@ void main() {
     await _drainSnackBar(tester);
   });
 
-  testWidgets('sessionExpired reason shows the message in Arabic', (tester) async {
+  testWidgets('sessionExpired reason shows the message in Arabic', (
+    tester,
+  ) async {
     final container = makeContainer();
     await container
         .read(authControllerProvider.notifier)
         .forceLogout(LogoutReason.sessionExpired);
 
-    await _pumpLoginAfterForceLogout(tester,
-        locale: const Locale('ar'), container: container);
+    await _pumpLoginAfterForceLogout(
+      tester,
+      locale: const Locale('ar'),
+      container: container,
+    );
 
     expect(
       find.text('انتهت صلاحية جلستك. من فضلك سجّل الدخول مرة أخرى.'),

@@ -46,7 +46,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.initState();
     // The forced-logout message: on arrival at /login (fresh mount after a
     // forceLogout), show the reason ONCE, then clear it so it can't repeat.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showLogoutReasonOnce());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _showLogoutReasonOnce(),
+    );
   }
 
   void _showLogoutReasonOnce() {

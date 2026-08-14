@@ -15,17 +15,14 @@ void main() {
       expect(converter.toJson(DateTime(2011, 12, 31)), '2011-12-31');
     });
 
-    test(
-      'a local midnight does NOT shift a day (Egypt is UTC+2 — a DoB is a '
-      'calendar date, not an instant)',
-      () {
-        // Constructed as LOCAL midnight: a toUtc() round-trip would render
-        // 2009-04-30 for any timezone east of Greenwich.
-        expect(converter.toJson(DateTime(2009, 5, 1)), '2009-05-01');
-        // Late in the local day must not roll forward either.
-        expect(converter.toJson(DateTime(2009, 5, 1, 23, 59)), '2009-05-01');
-      },
-    );
+    test('a local midnight does NOT shift a day (Egypt is UTC+2 — a DoB is a '
+        'calendar date, not an instant)', () {
+      // Constructed as LOCAL midnight: a toUtc() round-trip would render
+      // 2009-04-30 for any timezone east of Greenwich.
+      expect(converter.toJson(DateTime(2009, 5, 1)), '2009-05-01');
+      // Late in the local day must not roll forward either.
+      expect(converter.toJson(DateTime(2009, 5, 1, 23, 59)), '2009-05-01');
+    });
   });
 
   group('fromJson', () {

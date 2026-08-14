@@ -14,30 +14,31 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get light => _build(
-        brightness: Brightness.light,
-        primary: Brand.greenPrimary,
-        ext: AppColors.light,
-      );
+    brightness: Brightness.light,
+    primary: Brand.greenPrimary,
+    ext: AppColors.light,
+  );
 
   static ThemeData get dark => _build(
-        brightness: Brightness.dark,
-        primary: Brand.purplePrimary,
-        ext: AppColors.dark,
-      );
+    brightness: Brightness.dark,
+    primary: Brand.purplePrimary,
+    ext: AppColors.dark,
+  );
 
   static ThemeData _build({
     required Brightness brightness,
     required Color primary,
     required AppColors ext,
   }) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: primary,
-      brightness: brightness,
-    ).copyWith(
-      primary: primary,
-      onPrimary: const Color(0xFFFCFBF9), // button label in both themes
-      surface: ext.background,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: primary,
+          brightness: brightness,
+        ).copyWith(
+          primary: primary,
+          onPrimary: const Color(0xFFFCFBF9), // button label in both themes
+          surface: ext.background,
+        );
 
     return ThemeData(
       useMaterial3: true,

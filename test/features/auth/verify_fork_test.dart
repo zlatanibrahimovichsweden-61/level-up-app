@@ -18,7 +18,11 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 class MockSecureStorage extends Mock implements SecureStorage {}
 
 // resendAfterSeconds: 0 → no countdown timer starts (keeps the unit test clean).
-const _args = OtpArgs(phone: '+201021871999', resendAfterSeconds: 0, expiresInSeconds: 300);
+const _args = OtpArgs(
+  phone: '+201021871999',
+  resendAfterSeconds: 0,
+  expiresInSeconds: 300,
+);
 const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
 
 const _tokens = TokenPair(
@@ -28,7 +32,10 @@ const _tokens = TokenPair(
   refreshExpiresInSeconds: 5184000,
 );
 
-ProviderContainer _container(MockAuthRepository repo, MockSecureStorage storage) {
+ProviderContainer _container(
+  MockAuthRepository repo,
+  MockSecureStorage storage,
+) {
   final container = ProviderContainer(
     overrides: [
       authRepositoryProvider.overrideWithValue(repo),
@@ -51,20 +58,24 @@ void main() {
   setUp(() {
     repo = MockAuthRepository();
     storage = MockSecureStorage();
-    when(() => storage.writeTokens(
-          access: any(named: 'access'),
-          refresh: any(named: 'refresh'),
-        )).thenAnswer((_) async {});
+    when(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer((_) async {});
     // The authenticated path now flips AuthController, whose build() reads this.
     when(() => storage.readAccessToken()).thenAnswer((_) async => null);
   });
 
   test('authenticated → tokens stored, then AuthenticatedOutcome', () async {
-    when(() => repo.verifyOtp(
-          phone: any(named: 'phone'),
-          code: any(named: 'code'),
-          device: any(named: 'device'),
-        )).thenAnswer(
+    when(
+      () => repo.verifyOtp(
+        phone: any(named: 'phone'),
+        code: any(named: 'code'),
+        device: any(named: 'device'),
+      ),
+    ).thenAnswer(
       (_) async => const AuthResult.authenticated(tokens: _tokens, profile: {}),
     );
 
@@ -74,16 +85,19 @@ void main() {
     final state = container.read(otpProvider(_args));
     expect(state.outcome, isA<AuthenticatedOutcome>());
     expect(state.isVerifying, isFalse);
-    verify(() => storage.writeTokens(access: 'access.jwt', refresh: 'refresh.jwt'))
-        .called(1);
+    verify(
+      () => storage.writeTokens(access: 'access.jwt', refresh: 'refresh.jwt'),
+    ).called(1);
   });
 
   test('registrationRequired → carries token, does NOT store tokens', () async {
-    when(() => repo.verifyOtp(
-          phone: any(named: 'phone'),
-          code: any(named: 'code'),
-          device: any(named: 'device'),
-        )).thenAnswer(
+    when(
+      () => repo.verifyOtp(
+        phone: any(named: 'phone'),
+        code: any(named: 'code'),
+        device: any(named: 'device'),
+      ),
+    ).thenAnswer(
       (_) async => const AuthResult.registrationRequired(
         registrationToken: 'reg.token',
         expiresInSeconds: 600,
@@ -95,19 +109,26 @@ void main() {
 
     final state = container.read(otpProvider(_args));
     expect(state.outcome, isA<RegistrationRequiredOutcome>());
-    expect((state.outcome as RegistrationRequiredOutcome).registrationToken, 'reg.token');
-    verifyNever(() => storage.writeTokens(
-          access: any(named: 'access'),
-          refresh: any(named: 'refresh'),
-        ));
+    expect(
+      (state.outcome as RegistrationRequiredOutcome).registrationToken,
+      'reg.token',
+    );
+    verifyNever(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    );
   });
 
   test('otp_invalid → inline error + red-box flag, no outcome', () async {
-    when(() => repo.verifyOtp(
-          phone: any(named: 'phone'),
-          code: any(named: 'code'),
-          device: any(named: 'device'),
-        )).thenThrow(const ApiException(status: 400, code: 'otp_invalid'));
+    when(
+      () => repo.verifyOtp(
+        phone: any(named: 'phone'),
+        code: any(named: 'code'),
+        device: any(named: 'device'),
+      ),
+    ).thenThrow(const ApiException(status: 400, code: 'otp_invalid'));
 
     final container = _container(repo, storage);
     await container.read(otpProvider(_args).notifier).verify('000000');
@@ -118,18 +139,23 @@ void main() {
     expect(state.error, isA<ApiException>());
   });
 
-  test('offline (NetworkException) surfaces as an offline-classified error', () async {
-    when(() => repo.verifyOtp(
+  test(
+    'offline (NetworkException) surfaces as an offline-classified error',
+    () async {
+      when(
+        () => repo.verifyOtp(
           phone: any(named: 'phone'),
           code: any(named: 'code'),
           device: any(named: 'device'),
-        )).thenThrow(const NetworkException());
+        ),
+      ).thenThrow(const NetworkException());
 
-    final container = _container(repo, storage);
-    await container.read(otpProvider(_args).notifier).verify('482913');
+      final container = _container(repo, storage);
+      await container.read(otpProvider(_args).notifier).verify('482913');
 
-    final state = container.read(otpProvider(_args));
-    expect(state.outcome, isNull);
-    expect(state.error, isA<NetworkException>());
-  });
+      final state = container.read(otpProvider(_args));
+      expect(state.outcome, isNull);
+      expect(state.error, isA<NetworkException>());
+    },
+  );
 }

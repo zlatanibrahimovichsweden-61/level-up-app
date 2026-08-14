@@ -73,8 +73,9 @@ void main() {
     });
   });
 
-  testWidgets('forceLogout flips the app from a protected route to /login',
-      (tester) async {
+  testWidgets('forceLogout flips the app from a protected route to /login', (
+    tester,
+  ) async {
     final storage = _MockStorage();
     when(() => storage.readAccessToken()).thenAnswer((_) async => 'access');
     when(() => storage.clearTokens()).thenAnswer((_) async {});

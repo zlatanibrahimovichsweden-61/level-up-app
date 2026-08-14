@@ -19,22 +19,22 @@ const _paths = ['/t0', '/t1', '/t2', '/t3', '/t4'];
 const _centre = 2;
 
 GoRouter _router(String initial) => GoRouter(
-      initialLocation: initial,
-      routes: [
-        StatefulShellRoute.indexedStack(
-          builder: (_, _, navigationShell) =>
-              MainShell(navigationShell: navigationShell),
-          branches: [
-            for (final path in _paths)
-              StatefulShellBranch(
-                routes: [
-                  GoRoute(path: path, builder: (_, _) => const SizedBox.expand()),
-                ],
-              ),
-          ],
-        ),
+  initialLocation: initial,
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (_, _, navigationShell) =>
+          MainShell(navigationShell: navigationShell),
+      branches: [
+        for (final path in _paths)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: path, builder: (_, _) => const SizedBox.expand()),
+            ],
+          ),
       ],
-    );
+    ),
+  ],
+);
 
 Future<void> _pump(WidgetTester tester, {required bool centreSelected}) async {
   await tester.pumpWidget(
@@ -85,8 +85,9 @@ void main() {
     expect(_glyphTint(tester), _tint(palette.mutedText));
   });
 
-  testWidgets('selecting the centre tab fills the CIRCLE with the accent',
-      (tester) async {
+  testWidgets('selecting the centre tab fills the CIRCLE with the accent', (
+    tester,
+  ) async {
     await _pump(tester, centreSelected: true);
 
     expect(
@@ -96,8 +97,9 @@ void main() {
     );
   });
 
-  testWidgets('the glyph never takes the accent — it goes grey to white',
-      (tester) async {
+  testWidgets('the glyph never takes the accent — it goes grey to white', (
+    tester,
+  ) async {
     await _pump(tester, centreSelected: false);
     expect(_glyphTint(tester), _tint(palette.mutedText));
     expect(_glyphTint(tester), isNot(_tint(palette.navAccent)));
@@ -111,8 +113,9 @@ void main() {
     );
   });
 
-  testWidgets('the circle carries no border — the frame draws none',
-      (tester) async {
+  testWidgets('the circle carries no border — the frame draws none', (
+    tester,
+  ) async {
     await _pump(tester, centreSelected: false);
 
     final container = tester.widget<AnimatedContainer>(

@@ -42,10 +42,10 @@ class PreferencesStore {
   /// a cleared file, or a value this version does not recognise. The caller
   /// supplies the default; this class does not know what it is.
   ThemeMode? readThemeMode() => switch (_read(_kThemeMode)) {
-        _light => ThemeMode.light,
-        _dark => ThemeMode.dark,
-        _ => null,
-      };
+    _light => ThemeMode.light,
+    _dark => ThemeMode.dark,
+    _ => null,
+  };
 
   /// Stores the canvas as a **name**, not `ThemeMode.index`. An index would tie
   /// the file format to the ordering of a Flutter enum we do not control.
@@ -55,10 +55,10 @@ class PreferencesStore {
   /// and `seif_fight.md` S26). Storing it would mean the next launch reads back
   /// a mode no row on the Settings screen can represent.
   Future<void> writeThemeMode(ThemeMode mode) => switch (mode) {
-        ThemeMode.light => _write(_kThemeMode, _light),
-        ThemeMode.dark => _write(_kThemeMode, _dark),
-        ThemeMode.system => _remove(_kThemeMode),
-      };
+    ThemeMode.light => _write(_kThemeMode, _light),
+    ThemeMode.dark => _write(_kThemeMode, _dark),
+    ThemeMode.system => _remove(_kThemeMode),
+  };
 
   /// The stored language, or null when nothing valid is stored.
   ///

@@ -61,8 +61,9 @@ void main() {
   group('loaded', () {
     setUp(() => when(repo.getMe).thenAnswer((_) async => schoolProfile()));
 
-    testWidgets('renders the header and the level card from GET /me',
-        (tester) async {
+    testWidgets('renders the header and the level card from GET /me', (
+      tester,
+    ) async {
       await pumpHome(tester);
 
       expect(find.text('Welcome back,'), findsOneWidget);
@@ -77,8 +78,9 @@ void main() {
       expect(find.text('2,450 / 4,000'), findsOneWidget);
     });
 
-    testWidgets('the three draft-endpoint sections are stubbed, not faked',
-        (tester) async {
+    testWidgets('the three draft-endpoint sections are stubbed, not faked', (
+      tester,
+    ) async {
       await pumpHome(tester);
 
       expect(find.text('Daily Tasks'), findsOneWidget);
@@ -128,8 +130,9 @@ void main() {
       expect(find.byType(Container), findsWidgets);
     });
 
-    testWidgets('error → localized copy + a Retry that re-calls /me',
-        (tester) async {
+    testWidgets('error → localized copy + a Retry that re-calls /me', (
+      tester,
+    ) async {
       when(repo.getMe).thenAnswer(
         (_) => Future<StudentProfile>.error(
           const ApiException(status: 500, code: 'internal_error'),
@@ -138,7 +141,10 @@ void main() {
       await pumpHome(tester);
 
       expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.text('You are offline'), findsNothing); // not an offline error
+      expect(
+        find.text('You are offline'),
+        findsNothing,
+      ); // not an offline error
 
       // Retry re-triggers the same request — on tap, never silently.
       when(repo.getMe).thenAnswer((_) async => schoolProfile());
@@ -150,8 +156,9 @@ void main() {
       verify(repo.getMe).called(2);
     });
 
-    testWidgets('offline error → the offline view, not the generic error',
-        (tester) async {
+    testWidgets('offline error → the offline view, not the generic error', (
+      tester,
+    ) async {
       when(repo.getMe).thenAnswer(
         (_) => Future<StudentProfile>.error(const OfflineException()),
       );
@@ -162,8 +169,9 @@ void main() {
       expect(find.byIcon(Icons.wifi_off), findsOneWidget);
     });
 
-    testWidgets('connectivity down with data on screen → pinned banner',
-        (tester) async {
+    testWidgets('connectivity down with data on screen → pinned banner', (
+      tester,
+    ) async {
       when(repo.getMe).thenAnswer((_) async => schoolProfile());
       await pumpHome(tester, offline: true);
 
@@ -187,8 +195,9 @@ void main() {
   /// differ in exactly one place, and that difference is asserted here rather
   /// than described in a comment.
   group('university (Figma 125:2373)', () {
-    testWidgets('renders from a university /me — the shared parts are shared',
-        (tester) async {
+    testWidgets('renders from a university /me — the shared parts are shared', (
+      tester,
+    ) async {
       when(repo.getMe).thenAnswer((_) async => universityProfile());
       await pumpHome(tester);
 
@@ -200,8 +209,9 @@ void main() {
       expect(find.text('Top Student'), findsOneWidget);
     });
 
-    testWidgets('adds Learning Tools, stubbed like every other section',
-        (tester) async {
+    testWidgets('adds Learning Tools, stubbed like every other section', (
+      tester,
+    ) async {
       // The frame draws five shortcut cards behind a premium crown. Not one of
       // them has an endpoint in M1 (quiz creation is Day 7; Flashcard has no
       // content endpoint at all), so the section is a header + "Coming soon".

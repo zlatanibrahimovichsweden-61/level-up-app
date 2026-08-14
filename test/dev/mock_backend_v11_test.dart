@@ -30,22 +30,21 @@ Map<String, dynamic> _schoolBody({
   String countryCode = 'EG',
   String? governorateId = '0197b2f3-0001-7cc3-9b4e-000000000001',
   bool includeSchoolName = false,
-}) =>
-    <String, dynamic>{
-      'track': 'school',
-      'registrationToken': 'mock.registration.token',
-      'name': 'Nour Hassan',
-      'dateOfBirth': '2009-05-01',
-      'countryCode': countryCode,
-      'governorateId': ?governorateId,
-      'cityId': ?cityId,
-      'cityName': ?cityName,
-      'schoolId': ?schoolId,
-      if (includeSchoolName) 'schoolName': 'Some Free Text',
-      'stage': 'secondary1',
-      'educationSystem': 'ig',
-      'parentPhone': '+201021871999',
-    };
+}) => <String, dynamic>{
+  'track': 'school',
+  'registrationToken': 'mock.registration.token',
+  'name': 'Nour Hassan',
+  'dateOfBirth': '2009-05-01',
+  'countryCode': countryCode,
+  'governorateId': ?governorateId,
+  'cityId': ?cityId,
+  'cityName': ?cityName,
+  'schoolId': ?schoolId,
+  if (includeSchoolName) 'schoolName': 'Some Free Text',
+  'stage': 'secondary1',
+  'educationSystem': 'ig',
+  'parentPhone': '+201021871999',
+};
 
 void main() {
   group('POST /auth/register enforces adr-028', () {
@@ -58,26 +57,30 @@ void main() {
       );
 
       expect(res.statusCode, 201);
-      final profile =
-          StudentProfile.fromJson(res.data!['profile']! as Map<String, dynamic>);
+      final profile = StudentProfile.fromJson(
+        res.data!['profile']! as Map<String, dynamic>,
+      );
       expect(profile.school!.school!.id, 'school-42');
     });
 
-    test('an Egyptian registration with NO school succeeds (adr-028 §2)',
-        () async {
-      final dio = buildMockDio(latency: Duration.zero);
+    test(
+      'an Egyptian registration with NO school succeeds (adr-028 §2)',
+      () async {
+        final dio = buildMockDio(latency: Duration.zero);
 
-      final res = await dio.post<Map<String, dynamic>>(
-        '/auth/register',
-        data: _schoolBody(),
-      );
+        final res = await dio.post<Map<String, dynamic>>(
+          '/auth/register',
+          data: _schoolBody(),
+        );
 
-      expect(res.statusCode, 201);
-      final profile =
-          StudentProfile.fromJson(res.data!['profile']! as Map<String, dynamic>);
-      expect(profile.school, isNotNull);
-      expect(profile.school!.school, isNull);
-    });
+        expect(res.statusCode, 201);
+        final profile = StudentProfile.fromJson(
+          res.data!['profile']! as Map<String, dynamic>,
+        );
+        expect(profile.school, isNotNull);
+        expect(profile.school!.school, isNull);
+      },
+    );
 
     test('schoolName is REJECTED as an unknown property, not echoed', () async {
       final dio = buildMockDio(latency: Duration.zero);
@@ -119,23 +122,25 @@ void main() {
       expect((error as ValidationException).fields, contains('cityName'));
     });
 
-    test('a schoolId outside Egypt is rejected — the coded list is Egyptian',
-        () async {
-      final dio = buildMockDio(latency: Duration.zero);
+    test(
+      'a schoolId outside Egypt is rejected — the coded list is Egyptian',
+      () async {
+        final dio = buildMockDio(latency: Duration.zero);
 
-      final error = await _failure(
-        () => dio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: _schoolBody(
-            countryCode: 'AE',
-            governorateId: null,
-            schoolId: 'school-42',
+        final error = await _failure(
+          () => dio.post<Map<String, dynamic>>(
+            '/auth/register',
+            data: _schoolBody(
+              countryCode: 'AE',
+              governorateId: null,
+              schoolId: 'school-42',
+            ),
           ),
-        ),
-      );
+        );
 
-      expect((error as ValidationException).fields, contains('schoolId'));
-    });
+        expect((error as ValidationException).fields, contains('schoolId'));
+      },
+    );
   });
 
   group('the profile echoes the city arm the registration actually used', () {
@@ -180,8 +185,9 @@ void main() {
 
     test('no profile fixture carries a schoolName key any more', () async {
       final dio = buildMockDio(latency: Duration.zero);
-      final school = (await dio.get<Map<String, dynamic>>('/me')).data!['school']
-          as Map<String, dynamic>;
+      final school =
+          (await dio.get<Map<String, dynamic>>('/me')).data!['school']
+              as Map<String, dynamic>;
 
       expect(school.containsKey('schoolName'), isFalse);
     });
@@ -214,8 +220,9 @@ void main() {
     test('country codes normalize case-insensitively', () async {
       final dio = buildMockDio(latency: Duration.zero);
 
-      final res =
-          await dio.get<List<dynamic>>('/reference/countries/eg/governorates');
+      final res = await dio.get<List<dynamic>>(
+        '/reference/countries/eg/governorates',
+      );
 
       expect(res.statusCode, 200);
       expect(res.data, isNotEmpty);
@@ -281,10 +288,9 @@ void main() {
       // The triggers are only useful if a student can actually select them:
       // there is no way to type a country code into the form.
       final dio = buildMockDio(latency: Duration.zero);
-      final codes = (await dio.get<List<dynamic>>('/reference/countries'))
-          .data!
-          .map((c) => (c as Map)['code'])
-          .toList();
+      final codes = (await dio.get<List<dynamic>>(
+        '/reference/countries',
+      )).data!.map((c) => (c as Map)['code']).toList();
 
       expect(codes, containsAll(<String>['EG', 'AE', 'ZZ', 'XX', 'EGY']));
     });

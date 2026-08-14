@@ -110,10 +110,7 @@ abstract class StudyYearRef with _$StudyYearRef {
 /// registration avatar picker (Day 3) renders; submit `id`.
 @freezed
 abstract class Avatar with _$Avatar {
-  const factory Avatar({
-    required String id,
-    required String url,
-  }) = _Avatar;
+  const factory Avatar({required String id, required String url}) = _Avatar;
 
   factory Avatar.fromJson(Map<String, dynamic> json) => _$AvatarFromJson(json);
 }

@@ -4,7 +4,8 @@ import '../../../core/theme/app_colors.dart';
 // CROSS-FEATURE IMPORT, deliberate — the same reason `settings_rows.dart`
 // carries it: unavailable must look identical everywhere in this cluster, so
 // the dim is Step 1's constant and not a second one beside it.
-import '../../profile/widgets/profile_menu_row.dart' show kProfileDisabledOpacity;
+import '../../profile/widgets/profile_menu_row.dart'
+    show kProfileDisabledOpacity;
 
 /// The body of a shell screen: an icon, one explanatory line, and — where the
 /// frame draws one — the screen's primary control, disabled.

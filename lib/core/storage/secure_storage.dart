@@ -7,8 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Never log token values.
 class SecureStorage {
   SecureStorage([FlutterSecureStorage? storage])
-    : _storage =
-          storage ?? const FlutterSecureStorage(iOptions: _iosOptions);
+    : _storage = storage ?? const FlutterSecureStorage(iOptions: _iosOptions);
 
   /// iOS Keychain policy. Both values are deliberate; do not drop back to the
   /// plugin defaults.

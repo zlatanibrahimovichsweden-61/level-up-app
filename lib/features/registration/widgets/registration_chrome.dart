@@ -51,8 +51,10 @@ class SubmitFailureBanner extends StatelessWidget {
           Icon(Icons.error_outline, size: 20, color: cs.error),
           const SizedBox(width: 8),
           Expanded(
-            child:
-                Text(message, style: TextStyle(color: cs.error, fontSize: 14)),
+            child: Text(
+              message,
+              style: TextStyle(color: cs.error, fontSize: 14),
+            ),
           ),
         ],
       ),

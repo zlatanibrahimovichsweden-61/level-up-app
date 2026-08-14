@@ -19,11 +19,7 @@ part 'entitlement_state.g.dart';
 /// throw the day Seif adds one. [unknown] is the client-side sink for values
 /// this build has never heard of — it is NOT a contract value and is never sent.
 @JsonEnum()
-enum EntitlementType {
-  baseSubscription,
-  flashcardSubscription,
-  unknown,
-}
+enum EntitlementType { baseSubscription, flashcardSubscription, unknown }
 
 @freezed
 abstract class EntitlementState with _$EntitlementState {
@@ -47,9 +43,8 @@ abstract class EntitlementState with _$EntitlementState {
 /// The `{ items: [...] }` envelope of `GET /me/entitlements`.
 @freezed
 abstract class EntitlementsResponse with _$EntitlementsResponse {
-  const factory EntitlementsResponse({
-    required List<EntitlementState> items,
-  }) = _EntitlementsResponse;
+  const factory EntitlementsResponse({required List<EntitlementState> items}) =
+      _EntitlementsResponse;
 
   factory EntitlementsResponse.fromJson(Map<String, dynamic> json) =>
       _$EntitlementsResponseFromJson(json);

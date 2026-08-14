@@ -87,8 +87,9 @@ void main() {
   }
 
   group('frame 337:10373 — layout', () {
-    testWidgets('renders the title, subtitle and Start learning CTA',
-        (tester) async {
+    testWidgets('renders the title, subtitle and Start learning CTA', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.text('University Registration'), findsWidgets);
@@ -99,36 +100,31 @@ void main() {
       );
     });
 
-    testWidgets(
-      'orders fields by the DATA cascade, not the drawn order '
-      '(DESIGN_ISSUES #4)',
-      (tester) async {
-        await pump(tester);
-        double dy(String label) => tester.getTopLeft(find.text(label)).dy;
+    testWidgets('orders fields by the DATA cascade, not the drawn order '
+        '(DESIGN_ISSUES #4)', (tester) async {
+      await pump(tester);
+      double dy(String label) => tester.getTopLeft(find.text(label)).dy;
 
-        // University must precede Faculty, which must precede Academic Year.
-        expect(dy('Date of Birth'), lessThan(dy('University Name')));
-        expect(dy('University Name'), lessThan(dy('Faculty')));
-        expect(dy('Faculty'), lessThan(dy('Academic Year')));
-        // Governorate precedes City so the city list can be scoped.
-        expect(dy('Academic Year'), lessThan(dy('Governorate')));
-        expect(dy('Governorate'), lessThan(dy('City')));
-      },
-    );
+      // University must precede Faculty, which must precede Academic Year.
+      expect(dy('Date of Birth'), lessThan(dy('University Name')));
+      expect(dy('University Name'), lessThan(dy('Faculty')));
+      expect(dy('Faculty'), lessThan(dy('Academic Year')));
+      // Governorate precedes City so the city list can be scoped.
+      expect(dy('Academic Year'), lessThan(dy('Governorate')));
+      expect(dy('Governorate'), lessThan(dy('City')));
+    });
 
-    testWidgets(
-      'includes the two fields the Figma frame is missing '
-      '(DESIGN_ISSUES #2 dateOfBirth, #3 governorateId)',
-      (tester) async {
-        await pump(tester);
+    testWidgets('includes the two fields the Figma frame is missing '
+        '(DESIGN_ISSUES #2 dateOfBirth, #3 governorateId)', (tester) async {
+      await pump(tester);
 
-        expect(find.byKey(const Key('field-dateOfBirth')), findsOneWidget);
-        expect(find.byKey(const Key('field-governorateId')), findsOneWidget);
-      },
-    );
+      expect(find.byKey(const Key('field-dateOfBirth')), findsOneWidget);
+      expect(find.byKey(const Key('field-governorateId')), findsOneWidget);
+    });
 
-    testWidgets('has NO country field — Egypt-only by shape (adr-010)',
-        (tester) async {
+    testWidgets('has NO country field — Egypt-only by shape (adr-010)', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.byKey(const Key('field-countryCode')), findsNothing);
@@ -138,22 +134,25 @@ void main() {
   });
 
   group('the university → faculty → year cascade is gated', () {
-    testWidgets('Faculty is disabled until a University is chosen',
-        (tester) async {
+    testWidgets('Faculty is disabled until a University is chosen', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.text('Choose a university first'), findsOneWidget);
     });
 
-    testWidgets('Academic Year is disabled until a Faculty is chosen',
-        (tester) async {
+    testWidgets('Academic Year is disabled until a Faculty is chosen', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.text('Choose a faculty first'), findsOneWidget);
     });
 
-    testWidgets('choosing a University unlocks its own faculties',
-        (tester) async {
+    testWidgets('choosing a University unlocks its own faculties', (
+      tester,
+    ) async {
       await pump(tester);
 
       await selectOption(
@@ -177,7 +176,9 @@ void main() {
       expect(find.text('Choose a faculty first'), findsNothing);
     });
 
-    testWidgets('changing University re-gates Faculty and Year', (tester) async {
+    testWidgets('changing University re-gates Faculty and Year', (
+      tester,
+    ) async {
       final container = await pump(tester);
       container.read(registrationControllerProvider.notifier)
         ..setUniversity('uni-cairo')
@@ -199,8 +200,9 @@ void main() {
   });
 
   group('academic years', () {
-    testWidgets('only `active` years are offered — `soon` is never listed',
-        (tester) async {
+    testWidgets('only `active` years are offered — `soon` is never listed', (
+      tester,
+    ) async {
       final container = await pump(tester);
       container.read(registrationControllerProvider.notifier)
         ..setUniversity('uni-cairo')
@@ -252,8 +254,9 @@ void main() {
       verify(() => reference.getGovernorates('EG')).called(1);
     });
 
-    testWidgets('choosing a governorate scopes the city request',
-        (tester) async {
+    testWidgets('choosing a governorate scopes the city request', (
+      tester,
+    ) async {
       final container = await pump(tester);
       container
           .read(registrationControllerProvider.notifier)
@@ -267,8 +270,9 @@ void main() {
 
     // adr-028 §1 applies to BOTH tracks — university registration collects a
     // city too. No frame draws this; see DESIGN_ISSUES #44.
-    testWidgets('the city escape swaps the picker for free text here too',
-        (tester) async {
+    testWidgets('the city escape swaps the picker for free text here too', (
+      tester,
+    ) async {
       final container = await pump(tester);
       container
           .read(registrationControllerProvider.notifier)
@@ -295,8 +299,9 @@ void main() {
       expect(draft.cityId, isNull);
     });
 
-    testWidgets('the escape is reachable even while the picker is GATED',
-        (tester) async {
+    testWidgets('the escape is reachable even while the picker is GATED', (
+      tester,
+    ) async {
       // The picker needs a governorate; a student whose city is missing from
       // the coded list must not also be blocked by the list's own scoping.
       await pump(tester);
@@ -319,8 +324,9 @@ void main() {
     });
 
     testWidgets('offline → its own copy', (tester) async {
-      when(reference.getUniversities)
-          .thenThrow(const NetworkException(detail: 'timeout'));
+      when(
+        reference.getUniversities,
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       await pump(tester);
 
       expect(find.text('You are offline'), findsOneWidget);
@@ -341,8 +347,9 @@ void main() {
   });
 
   group('submit pre-flight', () {
-    testWidgets('an incomplete form shows inline errors, sends no request',
-        (tester) async {
+    testWidgets('an incomplete form shows inline errors, sends no request', (
+      tester,
+    ) async {
       await pump(tester);
 
       final button = find.widgetWithText(FilledButton, 'Start learning');

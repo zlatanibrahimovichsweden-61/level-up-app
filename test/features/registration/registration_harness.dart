@@ -20,7 +20,12 @@ const regArgs = RegistrationArgs(
 Widget marker(String text) => Scaffold(body: Center(child: Text(text)));
 
 const countries = [
-  Country(code: 'EG', nameAr: 'مصر', nameEn: 'Egypt', requiresGovernorate: true),
+  Country(
+    code: 'EG',
+    nameAr: 'مصر',
+    nameEn: 'Egypt',
+    requiresGovernorate: true,
+  ),
   Country(
     code: 'AE',
     nameAr: 'الإمارات',
@@ -49,7 +54,9 @@ const educationSystems = [
 ];
 
 const schoolsPage = CursorPage<NamedRef>(
-  items: [NamedRef(id: 'school-42', nameAr: 'مدرسة النيل', nameEn: 'Nile School')],
+  items: [
+    NamedRef(id: 'school-42', nameAr: 'مدرسة النيل', nameEn: 'Nile School'),
+  ],
   hasMore: false,
 );
 

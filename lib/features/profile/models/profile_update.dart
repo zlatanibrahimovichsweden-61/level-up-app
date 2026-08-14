@@ -111,16 +111,16 @@ class ProfileUpdate {
   /// key WITH an explicit null. Do not "tidy" it into an `if (email != null)`
   /// and do not put this object behind a serializer that strips nulls.
   Map<String, dynamic> toJson() => <String, dynamic>{
-        if (name != null) 'name': name,
-        ...switch (email) {
-          EmailUnchanged() => const <String, dynamic>{},
-          EmailSet(:final value) => <String, dynamic>{'email': value},
-          EmailCleared() => <String, dynamic>{'email': null},
-        },
-        if (avatarId != null) 'avatarId': avatarId,
-        if (leaderboardVisible != null) 'leaderboardVisible': leaderboardVisible,
-        if (scoreHidden != null) 'scoreHidden': scoreHidden,
-      };
+    if (name != null) 'name': name,
+    ...switch (email) {
+      EmailUnchanged() => const <String, dynamic>{},
+      EmailSet(:final value) => <String, dynamic>{'email': value},
+      EmailCleared() => <String, dynamic>{'email': null},
+    },
+    if (avatarId != null) 'avatarId': avatarId,
+    if (leaderboardVisible != null) 'leaderboardVisible': leaderboardVisible,
+    if (scoreHidden != null) 'scoreHidden': scoreHidden,
+  };
 
   /// Nothing changed, so there is no request worth making.
   ///

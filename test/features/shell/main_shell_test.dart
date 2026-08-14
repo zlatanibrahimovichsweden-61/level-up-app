@@ -94,8 +94,9 @@ void main() {
     expect(shell.navigationShell.currentIndex, 0);
   });
 
-  testWidgets('the two unbuilt tabs are coming-soon placeholders',
-      (tester) async {
+  testWidgets('the two unbuilt tabs are coming-soon placeholders', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
     // Learn left this list in Day 5 (real SubjectsScreen) and Account left it
@@ -113,8 +114,9 @@ void main() {
     }
   });
 
-  testWidgets('the Account tab is the real Profile hub, not a placeholder',
-      (tester) async {
+  testWidgets('the Account tab is the real Profile hub, not a placeholder', (
+    tester,
+  ) async {
     await pumpApp(tester);
 
     await tester.tap(find.text('Account').last);
@@ -127,8 +129,9 @@ void main() {
     expect(find.text('Ahmed Mohamed'), findsOneWidget);
   });
 
-  testWidgets('switching tabs preserves Home — /me is not re-fetched',
-      (tester) async {
+  testWidgets('switching tabs preserves Home — /me is not re-fetched', (
+    tester,
+  ) async {
     await pumpApp(tester);
     expect(find.text('LEVEL 8'), findsOneWidget);
 

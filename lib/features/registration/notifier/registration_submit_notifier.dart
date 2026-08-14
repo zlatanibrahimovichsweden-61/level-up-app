@@ -74,10 +74,13 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final result =
-          await ref.read(registrationRepositoryProvider).register(_body(draft));
+      final result = await ref
+          .read(registrationRepositoryProvider)
+          .register(_body(draft));
 
-      await ref.read(secureStorageProvider).writeTokens(
+      await ref
+          .read(secureStorageProvider)
+          .writeTokens(
             access: result.tokens.accessToken,
             refresh: result.tokens.refreshToken,
           );
@@ -97,14 +100,14 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
 
   /// The `track` discriminator picks the body shape.
   RegistrationBody _body(RegistrationDraft draft) => switch (draft.track) {
-        RegTrack.school => SchoolRegistration.fromDraft(draft),
-        RegTrack.university => UniversityRegistration.fromDraft(draft),
-        // Unreachable: validateDraft above rejects a null track.
-        null => throw IncompleteRegistrationDraft('track'),
-      };
+    RegTrack.school => SchoolRegistration.fromDraft(draft),
+    RegTrack.university => UniversityRegistration.fromDraft(draft),
+    // Unreachable: validateDraft above rejects a null track.
+    null => throw IncompleteRegistrationDraft('track'),
+  };
 }
 
-final registrationSubmitProvider = AsyncNotifierProvider<
-    RegistrationSubmitNotifier, RegistrationSubmitted?>(
-  RegistrationSubmitNotifier.new,
-);
+final registrationSubmitProvider =
+    AsyncNotifierProvider<RegistrationSubmitNotifier, RegistrationSubmitted?>(
+      RegistrationSubmitNotifier.new,
+    );

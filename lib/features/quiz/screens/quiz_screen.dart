@@ -75,8 +75,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<QuizBloc>(
-      create: (_) => QuizBloc(repository: ref.read(quizRepositoryProvider))
-        ..add(QuizStarted(widget.quiz)),
+      create: (_) =>
+          QuizBloc(repository: ref.read(quizRepositoryProvider))
+            ..add(QuizStarted(widget.quiz)),
       child: _QuizView(renderer: widget.renderer),
     );
   }
@@ -139,8 +140,12 @@ class _QuizView extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding:
-                          const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        20,
+                        20,
+                        20,
+                        20,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -310,19 +315,19 @@ class _ActionBar extends StatelessWidget {
 
     final (label, action) = switch (state) {
       QuizInProgress(:final canConfirm) when !session.isGraded => (
-          l10n.confirm,
-          // Enabled only by an uncommitted selection. Nothing was sent when the
-          // student tapped an option; THIS is the only thing that submits.
-          canConfirm ? () => bloc.add(const AnswerSubmitted()) : null,
-        ),
+        l10n.confirm,
+        // Enabled only by an uncommitted selection. Nothing was sent when the
+        // student tapped an option; THIS is the only thing that submits.
+        canConfirm ? () => bloc.add(const AnswerSubmitted()) : null,
+      ),
       QuizInProgress() when session.isLast => (
-          l10n.finishQuiz,
-          () => bloc.add(const QuizFinishRequested()),
-        ),
+        l10n.finishQuiz,
+        () => bloc.add(const QuizFinishRequested()),
+      ),
       QuizInProgress() => (
-          l10n.next,
-          () => bloc.add(const NextQuestionRequested()),
-        ),
+        l10n.next,
+        () => bloc.add(const NextQuestionRequested()),
+      ),
       AnswerConfirming() => (l10n.confirm, null),
       QuizFinishing() => (l10n.finishQuiz, null),
       AnswerFailed() => (l10n.confirm, null),

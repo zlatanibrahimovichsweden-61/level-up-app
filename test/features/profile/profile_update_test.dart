@@ -149,7 +149,8 @@ void main() {
       expect(
         update.toJson().containsKey('email'),
         isTrue,
-        reason: 'clearing an email MUST send the key; omitting it means '
+        reason:
+            'clearing an email MUST send the key; omitting it means '
             '"unchanged" and the old address survives',
       );
       expect(update.toJson()['email'], isNull);

@@ -30,6 +30,5 @@ class RegistrationArgs {
       other.phone == phone;
 
   @override
-  int get hashCode =>
-      Object.hash(registrationToken, expiresInSeconds, phone);
+  int get hashCode => Object.hash(registrationToken, expiresInSeconds, phone);
 }

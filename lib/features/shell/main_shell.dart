@@ -166,10 +166,7 @@ Path navBarPath(Size size) {
 
   return Path()
     ..moveTo(centreX, 0)
-    ..arcToPoint(
-      Offset(centreX + halfChord, kNavBumpRise),
-      radius: notch,
-    )
+    ..arcToPoint(Offset(centreX + halfChord, kNavBumpRise), radius: notch)
     ..lineTo(size.width - kNavCornerRadius, kNavBumpRise)
     ..arcToPoint(
       Offset(size.width, kNavBumpRise + kNavCornerRadius),

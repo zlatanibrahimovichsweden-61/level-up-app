@@ -26,8 +26,7 @@ class _FakeAdapter implements HttpClientAdapter {
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
-  ) =>
-      onFetch(options);
+  ) => onFetch(options);
 
   @override
   void close({bool force = false}) {}
@@ -61,11 +60,15 @@ void main() {
     storage = _MockStorage();
     when(() => storage.readAccessToken()).thenAnswer((_) async => 'access');
     when(() => storage.readRefreshToken()).thenAnswer((_) async => 'refresh');
-    when(() => storage.readOrCreateDeviceId()).thenAnswer((_) async => 'dev-id');
-    when(() => storage.writeTokens(
-          access: any(named: 'access'),
-          refresh: any(named: 'refresh'),
-        )).thenAnswer((_) async {});
+    when(
+      () => storage.readOrCreateDeviceId(),
+    ).thenAnswer((_) async => 'dev-id');
+    when(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer((_) async {});
     when(() => storage.clearTokens()).thenAnswer((_) async {});
 
     container = ProviderContainer(
@@ -97,68 +100,86 @@ void main() {
     return dio;
   }
 
-  test('authentication_required → refresh once → original retried → success',
-      () async {
-    var refreshCalls = 0;
-    final dio = buildDio(
-      refresh: ({required refreshToken, required deviceId}) async {
-        refreshCalls++;
-        return _newTokens;
-      },
-      adapter: (options) async => options.extra['__retried'] == true
-          ? _json(200, {'ok': true})
-          : _unauthorized('authentication_required'),
-    );
+  test(
+    'authentication_required → refresh once → original retried → success',
+    () async {
+      var refreshCalls = 0;
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          return _newTokens;
+        },
+        adapter: (options) async => options.extra['__retried'] == true
+            ? _json(200, {'ok': true})
+            : _unauthorized('authentication_required'),
+      );
 
-    final res = await dio.get<dynamic>('/protected');
+      final res = await dio.get<dynamic>('/protected');
 
-    expect(res.statusCode, 200);
-    expect(refreshCalls, 1);
-    verify(() => storage.writeTokens(
-          access: 'new.access',
-          refresh: 'new.refresh',
-        )).called(1);
-    // Successful refresh must NOT log out.
-    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
-  });
+      expect(res.statusCode, 200);
+      expect(refreshCalls, 1);
+      verify(
+        () => storage.writeTokens(access: 'new.access', refresh: 'new.refresh'),
+      ).called(1);
+      // Successful refresh must NOT log out.
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    },
+  );
 
-  test('session_superseded → forceLogout(superseded), cleared, no refresh', () async {
-    var refreshCalls = 0;
-    final dio = buildDio(
-      refresh: ({required refreshToken, required deviceId}) async {
-        refreshCalls++;
-        return _newTokens;
-      },
-      adapter: (options) async => _unauthorized('session_superseded'),
-    );
+  test(
+    'session_superseded → forceLogout(superseded), cleared, no refresh',
+    () async {
+      var refreshCalls = 0;
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          return _newTokens;
+        },
+        adapter: (options) async => _unauthorized('session_superseded'),
+      );
 
-    await expectLater(dio.get<dynamic>('/protected'), throwsA(isA<DioException>()));
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(isA<DioException>()),
+      );
 
-    expect(refreshCalls, 0);
-    verify(() => storage.clearTokens()).called(1);
-    verifyNever(() => storage.writeTokens(
+      expect(refreshCalls, 0);
+      verify(() => storage.clearTokens()).called(1);
+      verifyNever(
+        () => storage.writeTokens(
           access: any(named: 'access'),
           refresh: any(named: 'refresh'),
-        ));
-    final status = container.read(authControllerProvider);
-    expect(status, isA<AuthUnauthenticated>());
-    expect((status as AuthUnauthenticated).reason,
-        LogoutReason.supersededOtherDevice);
-  });
+        ),
+      );
+      final status = container.read(authControllerProvider);
+      expect(status, isA<AuthUnauthenticated>());
+      expect(
+        (status as AuthUnauthenticated).reason,
+        LogoutReason.supersededOtherDevice,
+      );
+    },
+  );
 
-  test('refresh → refresh_token_invalid → forceLogout(sessionExpired)', () async {
-    final dio = buildDio(
-      refresh: ({required refreshToken, required deviceId}) async =>
-          throw const UnauthorizedException(code: 'refresh_token_invalid'),
-      adapter: (options) async => _unauthorized('authentication_required'),
-    );
+  test(
+    'refresh → refresh_token_invalid → forceLogout(sessionExpired)',
+    () async {
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async =>
+            throw const UnauthorizedException(code: 'refresh_token_invalid'),
+        adapter: (options) async => _unauthorized('authentication_required'),
+      );
 
-    await expectLater(dio.get<dynamic>('/protected'), throwsA(isA<DioException>()));
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(isA<DioException>()),
+      );
 
-    verify(() => storage.clearTokens()).called(1);
-    final status = container.read(authControllerProvider) as AuthUnauthenticated;
-    expect(status.reason, LogoutReason.sessionExpired);
-  });
+      verify(() => storage.clearTokens()).called(1);
+      final status =
+          container.read(authControllerProvider) as AuthUnauthenticated;
+      expect(status.reason, LogoutReason.sessionExpired);
+    },
+  );
 
   test('concurrent 401s → refresh called exactly once, all retried', () async {
     var refreshCalls = 0;
@@ -183,37 +204,47 @@ void main() {
     expect(refreshCalls, 1);
   });
 
-  test('already-retried request 401s again → not refreshed/retried a 2nd time',
-      () async {
-    var refreshCalls = 0;
-    final dio = buildDio(
-      refresh: ({required refreshToken, required deviceId}) async {
-        refreshCalls++;
-        return _newTokens;
-      },
-      // Always 401 — even the retried request.
-      adapter: (options) async => _unauthorized('authentication_required'),
-    );
+  test(
+    'already-retried request 401s again → not refreshed/retried a 2nd time',
+    () async {
+      var refreshCalls = 0;
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          return _newTokens;
+        },
+        // Always 401 — even the retried request.
+        adapter: (options) async => _unauthorized('authentication_required'),
+      );
 
-    await expectLater(dio.get<dynamic>('/protected'), throwsA(isA<DioException>()));
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(isA<DioException>()),
+      );
 
-    expect(refreshCalls, 1);
-  });
+      expect(refreshCalls, 1);
+    },
+  );
 
-  test('offline during refresh → NO logout, surfaces the network error', () async {
-    final dio = buildDio(
-      refresh: ({required refreshToken, required deviceId}) async =>
-          throw const NetworkException(),
-      adapter: (options) async => _unauthorized('authentication_required'),
-    );
+  test(
+    'offline during refresh → NO logout, surfaces the network error',
+    () async {
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async =>
+            throw const NetworkException(),
+        adapter: (options) async => _unauthorized('authentication_required'),
+      );
 
-    await expectLater(
-      dio.get<dynamic>('/protected'),
-      throwsA(predicate((e) => e is DioException && e.error is NetworkException)),
-    );
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(
+          predicate((e) => e is DioException && e.error is NetworkException),
+        ),
+      );
 
-    verifyNever(() => storage.clearTokens());
-    // Transient failure must NOT log out.
-    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
-  });
+      verifyNever(() => storage.clearTokens());
+      // Transient failure must NOT log out.
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    },
+  );
 }

@@ -161,8 +161,8 @@ Map<String, RegFieldIssue> validateDraft(RegistrationDraft draft) =>
 /// sources through one channel. The server's message strings are dropped by
 /// design — see [RegFieldIssue.rejected].
 Map<String, RegFieldIssue> serverFieldIssues(Iterable<String> fields) => {
-      for (final field in fields) field: RegFieldIssue.rejected,
-    };
+  for (final field in fields) field: RegFieldIssue.rejected,
+};
 
 /// Raised by the submit notifier when the draft fails the client pre-flight, so
 /// the request is never sent. Carries the same [RegFieldIssue] map the screen

@@ -29,8 +29,9 @@ void main() {
   setUp(() {
     catalog = MockCatalogRepository();
     when(catalog.getSubjects).thenAnswer((_) async => subjects());
-    when(() => catalog.getSubjectTree(any()))
-        .thenAnswer((_) async => schoolTree());
+    when(
+      () => catalog.getSubjectTree(any()),
+    ).thenAnswer((_) async => schoolTree());
   });
 
   /// Learn → Biology → Cell Biology → The Cell.
@@ -47,8 +48,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('Subjects → Units → Chapters → Lessons costs ONE tree fetch',
-      (tester) async {
+  testWidgets('Subjects → Units → Chapters → Lessons costs ONE tree fetch', (
+    tester,
+  ) async {
     await pumpCatalogApp(tester, catalog: catalog);
 
     await openLearnTab(tester);
@@ -76,8 +78,9 @@ void main() {
     verify(() => catalog.getSubjectTree('sub-1')).called(1);
   });
 
-  testWidgets('going back up and down again still does not re-fetch',
-      (tester) async {
+  testWidgets('going back up and down again still does not re-fetch', (
+    tester,
+  ) async {
     await pumpCatalogApp(tester, catalog: catalog);
     await walkToLessons(tester);
 
@@ -97,17 +100,16 @@ void main() {
     verify(() => catalog.getSubjectTree('sub-1')).called(1);
   });
 
-  testWidgets('a lesson opens /quiz/setup with its id and name',
-      (tester) async {
+  testWidgets('a lesson opens /quiz/setup with its id and name', (
+    tester,
+  ) async {
     await pumpCatalogApp(tester, catalog: catalog);
     await walkToLessons(tester);
 
     await tester.tap(find.text('Cell Division'));
     await tester.pumpAndSettle();
 
-    final screen = tester.widget<QuizSetupScreen>(
-      find.byType(QuizSetupScreen),
-    );
+    final screen = tester.widget<QuizSetupScreen>(find.byType(QuizSetupScreen));
     expect(screen.args.lessonId, 'lesson-2');
     expect(screen.args.scopeName, 'Cell Division');
     // The real setup screen titles itself with the scope it was handed — the
@@ -115,8 +117,9 @@ void main() {
     expect(find.text('Select Quiz Size'), findsOneWidget);
   });
 
-  testWidgets('questionCounter never disables or hides a lesson row',
-      (tester) async {
+  testWidgets('questionCounter never disables or hides a lesson row', (
+    tester,
+  ) async {
     // Contract: the counter "never locks retakes". `Cell Structure` is at 0/25
     // and `Cell Division` at 40/40 — both must render, both must be tappable.
     await pumpCatalogApp(tester, catalog: catalog);
@@ -137,8 +140,9 @@ void main() {
     expect(find.byType(QuizSetupScreen), findsOneWidget);
   });
 
-  testWidgets('an empty level shows the empty state, not an error',
-      (tester) async {
+  testWidgets('an empty level shows the empty state, not an error', (
+    tester,
+  ) async {
     await pumpCatalogApp(tester, catalog: catalog);
     await openLearnTab(tester);
 
@@ -154,8 +158,9 @@ void main() {
     expect(find.text('Something went wrong'), findsNothing);
   });
 
-  testWidgets('a subject with no units at all is empty, not broken',
-      (tester) async {
+  testWidgets('a subject with no units at all is empty, not broken', (
+    tester,
+  ) async {
     when(() => catalog.getSubjectTree(any())).thenAnswer(
       (_) async => SchoolSubjectTree.fromJson(<String, dynamic>{
         'track': 'school',
@@ -212,9 +217,9 @@ void main() {
         await tester.tap(find.text('Biology'));
         await tester.pumpAndSettle();
         expect(
-          tester.widgetList<TreeListRow>(find.byType(TreeListRow)).every(
-                (r) => r.progress == null,
-              ),
+          tester
+              .widgetList<TreeListRow>(find.byType(TreeListRow))
+              .every((r) => r.progress == null),
           isTrue,
         );
         expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -225,8 +230,9 @@ void main() {
       },
     );
 
-    testWidgets('lessons DO draw a bar, straight from questionCounter',
-        (tester) async {
+    testWidgets('lessons DO draw a bar, straight from questionCounter', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog);
       await walkToLessons(tester);
 
@@ -244,7 +250,9 @@ void main() {
 
   testWidgets('the tree shows a row skeleton while it loads', (tester) async {
     final completer = Completer<SubjectTree>();
-    when(() => catalog.getSubjectTree(any())).thenAnswer((_) => completer.future);
+    when(
+      () => catalog.getSubjectTree(any()),
+    ).thenAnswer((_) => completer.future);
 
     await pumpCatalogApp(tester, catalog: catalog);
     await openLearnTab(tester);
@@ -264,9 +272,9 @@ void main() {
 
   group('tree failures', () {
     testWidgets('error shows copy + a retry that re-requests', (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SubjectTree>.error(const UnknownException()),
-      );
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) => Future<SubjectTree>.error(const UnknownException()));
 
       await pumpCatalogApp(tester, catalog: catalog);
       await openLearnTab(tester);
@@ -275,8 +283,9 @@ void main() {
 
       expect(find.text('Something went wrong'), findsOneWidget);
 
-      when(() => catalog.getSubjectTree(any()))
-          .thenAnswer((_) async => schoolTree());
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => schoolTree());
       await tester.tap(find.text('Retry'));
       await tester.pumpAndSettle();
 
@@ -284,9 +293,9 @@ void main() {
     });
 
     testWidgets('offline gets its own view', (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SubjectTree>.error(const OfflineException()),
-      );
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) => Future<SubjectTree>.error(const OfflineException()));
 
       await pumpCatalogApp(tester, catalog: catalog, online: false);
       await openLearnTab(tester);
@@ -297,8 +306,9 @@ void main() {
       expect(find.text('Something went wrong'), findsNothing);
     });
 
-    testWidgets('403 insufficient_scope gets its own copy and NO retry',
-        (tester) async {
+    testWidgets('403 insufficient_scope gets its own copy and NO retry', (
+      tester,
+    ) async {
       // Retrying an out-of-scope subject would 403 again — offering the button
       // would just teach the student to tap it forever.
       when(() => catalog.getSubjectTree(any())).thenAnswer(
@@ -312,13 +322,17 @@ void main() {
       await tester.tap(find.text('Biology'));
       await tester.pumpAndSettle();
 
-      expect(find.text("This subject isn't part of your course."), findsOneWidget);
+      expect(
+        find.text("This subject isn't part of your course."),
+        findsOneWidget,
+      );
       expect(find.text('Retry'), findsNothing);
     });
   });
 
-  testWidgets('the drill-down keeps the nav bar and survives a tab switch',
-      (tester) async {
+  testWidgets('the drill-down keeps the nav bar and survives a tab switch', (
+    tester,
+  ) async {
     await pumpCatalogApp(tester, catalog: catalog);
     await walkToLessons(tester);
 

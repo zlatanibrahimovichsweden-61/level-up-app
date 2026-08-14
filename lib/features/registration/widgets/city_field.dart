@@ -62,8 +62,9 @@ class CityField extends StatefulWidget {
 }
 
 class _CityFieldState extends State<CityField> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.cityName ?? '');
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.cityName ?? '',
+  );
 
   /// Set by tapping the escape link. ORed with the draft's own `cityName` so
   /// the free-text field survives a rebuild before the student has typed

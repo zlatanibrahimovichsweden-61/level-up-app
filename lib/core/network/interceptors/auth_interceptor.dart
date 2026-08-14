@@ -8,10 +8,11 @@ import '../exceptions.dart';
 /// Performs `POST /auth/refresh` on the BARE refresh Dio. Injected as a closure
 /// so the interceptor never holds the repository directly (that would form a
 /// provider construction cycle: dio → interceptor → repo → dio).
-typedef TokenRefresher = Future<TokenPair> Function({
-  required String refreshToken,
-  required String deviceId,
-});
+typedef TokenRefresher =
+    Future<TokenPair> Function({
+      required String refreshToken,
+      required String deviceId,
+    });
 
 /// Attaches the Bearer token and drives silent token refresh on 401.
 ///
@@ -32,10 +33,10 @@ class AuthInterceptor extends Interceptor {
     required AuthController authController,
     required TokenRefresher refresh,
     required Dio retryDio,
-  })  : _storage = storage,
-        _authController = authController,
-        _refresh = refresh,
-        _retryDio = retryDio;
+  }) : _storage = storage,
+       _authController = authController,
+       _refresh = refresh,
+       _retryDio = retryDio;
 
   final SecureStorage _storage;
   final AuthController _authController;
@@ -116,8 +117,9 @@ class AuthInterceptor extends Interceptor {
   /// the same future. `??=` assigns synchronously before any await, so exactly
   /// one refresh runs even under a burst of 401s.
   Future<TokenPair> _sharedRefresh() {
-    return _refreshing ??=
-        _performRefresh().whenComplete(() => _refreshing = null);
+    return _refreshing ??= _performRefresh().whenComplete(
+      () => _refreshing = null,
+    );
   }
 
   Future<TokenPair> _performRefresh() async {
@@ -131,8 +133,10 @@ class AuthInterceptor extends Interceptor {
     }
 
     try {
-      final tokens =
-          await _refresh(refreshToken: refreshToken, deviceId: deviceId);
+      final tokens = await _refresh(
+        refreshToken: refreshToken,
+        deviceId: deviceId,
+      );
       await _storage.writeTokens(
         access: tokens.accessToken,
         refresh: tokens.refreshToken,

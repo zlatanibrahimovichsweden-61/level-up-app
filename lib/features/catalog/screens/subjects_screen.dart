@@ -104,9 +104,7 @@ class _MistakesButton extends StatelessWidget {
         padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
         foregroundColor: cs.error,
         side: BorderSide(color: cs.error, width: 0.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(9),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
       child: Text(
         l10n.mistakes,
@@ -160,10 +158,7 @@ class _SubjectsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (subjects.isEmpty) {
-      return CatalogMessage(
-        icon: Icons.search_off,
-        text: noMatchMessage,
-      );
+      return CatalogMessage(icon: Icons.search_off, text: noMatchMessage);
     }
 
     return GridView.builder(

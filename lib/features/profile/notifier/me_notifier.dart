@@ -72,6 +72,6 @@ class EntitlementsNotifier extends AsyncNotifier<List<EntitlementState>> {
 
 final entitlementsProvider =
     AsyncNotifierProvider<EntitlementsNotifier, List<EntitlementState>>(
-  EntitlementsNotifier.new,
-  retry: _noRetry, // same reasoning as meProvider
-);
+      EntitlementsNotifier.new,
+      retry: _noRetry, // same reasoning as meProvider
+    );

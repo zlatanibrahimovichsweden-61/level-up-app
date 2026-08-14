@@ -98,8 +98,9 @@ MockProfileRepository settingsRepo({
   if (failure != null) {
     when(() => repo.updateMe(any())).thenThrow(failure);
   } else {
-    when(() => repo.updateMe(any()))
-        .thenAnswer((_) async => updated ?? me ?? schoolProfile());
+    when(
+      () => repo.updateMe(any()),
+    ).thenAnswer((_) async => updated ?? me ?? schoolProfile());
   }
   return repo;
 }
@@ -141,5 +142,9 @@ void expectDeadControl(WidgetTester tester, String key) {
   final opacity = tester.widget<Opacity>(
     find.descendant(of: finder, matching: find.byType(Opacity)).first,
   );
-  expect(opacity.opacity, kProfileDisabledOpacity, reason: '$key must be dimmed');
+  expect(
+    opacity.opacity,
+    kProfileDisabledOpacity,
+    reason: '$key must be dimmed',
+  );
 }

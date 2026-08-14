@@ -195,11 +195,11 @@ class _FormState extends ConsumerState<_Form> {
   /// What would be sent right now. Recomputed rather than cached so "is this
   /// dirty" and "what do we send" can never disagree.
   ProfileUpdate get _update => ProfileUpdate.diff(
-        current: widget.profile,
-        name: _name.text,
-        email: _email.text,
-        avatarId: _pickedAvatarId,
-      );
+    current: widget.profile,
+    name: _name.text,
+    email: _email.text,
+    avatarId: _pickedAvatarId,
+  );
 
   bool get _dirty => !_update.isEmpty;
 
@@ -232,7 +232,9 @@ class _FormState extends ConsumerState<_Form> {
     // Client pre-flight only. The server stays authoritative; this just avoids
     // a doomed round trip on the one rule the contract states outright.
     setState(() {
-      _nameErrorKey = (name.isEmpty || name.length > 100) ? l10n.invalidName : null;
+      _nameErrorKey = (name.isEmpty || name.length > 100)
+          ? l10n.invalidName
+          : null;
     });
     if (_nameErrorKey != null) return;
 
@@ -340,7 +342,8 @@ class _FormState extends ConsumerState<_Form> {
                 hasError: rejected.contains('email'),
                 onChanged: (_) => _onEdited(),
               ),
-              if (rejected.contains('email')) InlineFieldError(l10n.fieldRejected),
+              if (rejected.contains('email'))
+                InlineFieldError(l10n.fieldRejected),
               // Emptying the box is a real instruction, not a no-op, so it is
               // stated rather than left to be discovered.
               const SizedBox(height: 8),
@@ -348,7 +351,9 @@ class _FormState extends ConsumerState<_Form> {
                 l10n.emailClearHelp,
                 style: TextStyle(
                   fontSize: 13,
-                  color: Theme.of(context).extension<AppColors>()!.textSecondary,
+                  color: Theme.of(
+                    context,
+                  ).extension<AppColors>()!.textSecondary,
                 ),
               ),
               const SizedBox(height: 25),
@@ -358,7 +363,9 @@ class _FormState extends ConsumerState<_Form> {
               const SizedBox(height: 28),
 
               if (submit.hasError) ...[
-                _SaveError(message: profileSaveErrorMessage(l10n, submit.error)),
+                _SaveError(
+                  message: profileSaveErrorMessage(l10n, submit.error),
+                ),
                 const SizedBox(height: 16),
               ],
               _SaveButton(
@@ -532,7 +539,8 @@ class _AvatarEditor extends StatelessWidget {
                   width: _size,
                   height: _size,
                   fit: BoxFit.cover,
-                  placeholder: (_, _) => _AvatarFallback(colour: ext.progressTrack),
+                  placeholder: (_, _) =>
+                      _AvatarFallback(colour: ext.progressTrack),
                   errorWidget: (_, _, _) =>
                       _AvatarFallback(colour: ext.progressTrack),
                 ),
@@ -647,10 +655,7 @@ class _SaveError extends StatelessWidget {
         Icon(Icons.error_outline, size: 18, color: cs.error),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(
-            message,
-            style: TextStyle(color: cs.error, fontSize: 14),
-          ),
+          child: Text(message, style: TextStyle(color: cs.error, fontSize: 14)),
         ),
       ],
     );
@@ -666,12 +671,12 @@ class _Skeleton extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
 
     Widget block(double height, double radius) => Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: ext.progressTrack,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-        );
+      height: height,
+      decoration: BoxDecoration(
+        color: ext.progressTrack,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),

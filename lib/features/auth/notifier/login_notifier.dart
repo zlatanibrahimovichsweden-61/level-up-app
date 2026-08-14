@@ -29,5 +29,6 @@ class LoginNotifier extends AsyncNotifier<OtpRequestResult?> {
   }
 }
 
-final loginProvider =
-    AsyncNotifierProvider<LoginNotifier, OtpRequestResult?>(LoginNotifier.new);
+final loginProvider = AsyncNotifierProvider<LoginNotifier, OtpRequestResult?>(
+  LoginNotifier.new,
+);

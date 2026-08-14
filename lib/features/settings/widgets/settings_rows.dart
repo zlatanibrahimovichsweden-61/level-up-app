@@ -5,7 +5,8 @@ import '../../../core/theme/app_colors.dart';
 // every surface of this cluster, so the opacity is the one Step 1 fixed rather
 // than a second constant that could drift from it by 0.05 and make two screens
 // disagree about what unavailable means.
-import '../../profile/widgets/profile_menu_row.dart' show kProfileDisabledOpacity;
+import '../../profile/widgets/profile_menu_row.dart'
+    show kProfileDisabledOpacity;
 
 const _rowPadding = EdgeInsetsDirectional.fromSTEB(16.5, 14.5, 16.5, 14.5);
 
@@ -60,7 +61,10 @@ class SettingsChoiceRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: swatch,
                       shape: BoxShape.circle,
-                      border: Border.all(color: ext.profileRowBorder, width: 0.5),
+                      border: Border.all(
+                        color: ext.profileRowBorder,
+                        width: 0.5,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -108,7 +112,10 @@ class _RadioRing extends StatelessWidget {
               child: Container(
                 width: 9,
                 height: 9,
-                decoration: BoxDecoration(color: colour, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: colour,
+                  shape: BoxShape.circle,
+                ),
               ),
             )
           : null,
@@ -177,10 +184,7 @@ class SettingsSwitchRow extends StatelessWidget {
                 ),
                 if (help != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    help!,
-                    style: TextStyle(fontSize: 13, color: ext.hint),
-                  ),
+                  Text(help!, style: TextStyle(fontSize: 13, color: ext.hint)),
                 ],
               ],
             ),
@@ -220,10 +224,7 @@ class SettingsSwitchRow extends StatelessWidget {
     return MergeSemantics(
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onChanged!(!value),
-          child: row(control),
-        ),
+        child: InkWell(onTap: () => onChanged!(!value), child: row(control)),
       ),
     );
   }

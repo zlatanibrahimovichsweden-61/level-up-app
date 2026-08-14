@@ -84,17 +84,21 @@ class OtpNotifier extends Notifier<OtpUiState> {
   /// `registrationRequired` no tokens exist, so only the reg token is carried.
   Future<void> verify(String code) async {
     if (state.isVerifying) return;
-    state = state.copyWith(isVerifying: true, clearError: true, isInvalidCode: false);
+    state = state.copyWith(
+      isVerifying: true,
+      clearError: true,
+      isInvalidCode: false,
+    );
     try {
       final device = await ref.read(deviceInfoProvider.future);
-      final result = await ref.read(authRepositoryProvider).verifyOtp(
-            phone: args.phone,
-            code: code,
-            device: device,
-          );
+      final result = await ref
+          .read(authRepositoryProvider)
+          .verifyOtp(phone: args.phone, code: code, device: device);
       switch (result) {
         case AuthenticatedResult(:final tokens):
-          await ref.read(secureStorageProvider).writeTokens(
+          await ref
+              .read(secureStorageProvider)
+              .writeTokens(
                 access: tokens.accessToken,
                 refresh: tokens.refreshToken,
               );
@@ -106,9 +110,9 @@ class OtpNotifier extends Notifier<OtpUiState> {
             outcome: const AuthenticatedOutcome(),
           );
         case RegistrationRequiredResult(
-            :final registrationToken,
-            :final expiresInSeconds,
-          ):
+          :final registrationToken,
+          :final expiresInSeconds,
+        ):
           state = state.copyWith(
             isVerifying: false,
             outcome: RegistrationRequiredOutcome(
@@ -124,7 +128,10 @@ class OtpNotifier extends Notifier<OtpUiState> {
         isInvalidCode: isInvalidOtp(e),
       );
     } catch (_) {
-      state = state.copyWith(isVerifying: false, error: const UnknownException());
+      state = state.copyWith(
+        isVerifying: false,
+        error: const UnknownException(),
+      );
     }
   }
 
@@ -132,7 +139,11 @@ class OtpNotifier extends Notifier<OtpUiState> {
   /// the countdown from the fresh `resendAfterSeconds`.
   Future<void> resend() async {
     if (!state.canResend || state.isResending) return;
-    state = state.copyWith(isResending: true, clearError: true, isInvalidCode: false);
+    state = state.copyWith(
+      isResending: true,
+      clearError: true,
+      isInvalidCode: false,
+    );
     try {
       final res = await ref.read(authRepositoryProvider).requestOtp(args.phone);
       state = state.copyWith(
@@ -143,7 +154,10 @@ class OtpNotifier extends Notifier<OtpUiState> {
     } on AppException catch (e) {
       state = state.copyWith(isResending: false, error: e);
     } catch (_) {
-      state = state.copyWith(isResending: false, error: const UnknownException());
+      state = state.copyWith(
+        isResending: false,
+        error: const UnknownException(),
+      );
     }
   }
 
@@ -161,7 +175,5 @@ class OtpNotifier extends Notifier<OtpUiState> {
   }
 }
 
-final otpProvider =
-    NotifierProvider.autoDispose.family<OtpNotifier, OtpUiState, OtpArgs>(
-  OtpNotifier.new,
-);
+final otpProvider = NotifierProvider.autoDispose
+    .family<OtpNotifier, OtpUiState, OtpArgs>(OtpNotifier.new);

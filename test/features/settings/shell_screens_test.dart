@@ -60,8 +60,9 @@ void main() {
 
   group('no invented data', () {
     for (final route in shells.keys) {
-      testWidgets('$route has nothing to type into and nothing to list',
-          (tester) async {
+      testWidgets('$route has nothing to type into and nothing to list', (
+        tester,
+      ) async {
         await pumpAppAt(tester, route);
 
         // A referral code, a ticket form, a friend search: all of them would
@@ -72,8 +73,9 @@ void main() {
       });
     }
 
-    testWidgets('the only live control on a shell is the way back',
-        (tester) async {
+    testWidgets('the only live control on a shell is the way back', (
+      tester,
+    ) async {
       for (final route in shells.keys) {
         await pumpAppAt(tester, route);
 
@@ -98,15 +100,17 @@ void main() {
 
   group('the drawn controls render and are dead', () {
     for (final entry in deadControls.entries) {
-      testWidgets('${entry.value} is structurally non-interactive',
-          (tester) async {
+      testWidgets('${entry.value} is structurally non-interactive', (
+        tester,
+      ) async {
         await pumpAppAt(tester, entry.key);
         expectDeadControl(tester, entry.value);
       });
     }
 
-    testWidgets('and each announces itself disabled, with a reason',
-        (tester) async {
+    testWidgets('and each announces itself disabled, with a reason', (
+      tester,
+    ) async {
       const reasons = <String, String>{
         'refer_share_button': 'Inviting friends isn\'t available yet.',
         'support_create_ticket_button': 'Support isn\'t available yet.',
@@ -144,12 +148,15 @@ void main() {
   });
 
   group('legal — one screen, two documents, no copy', () {
-    testWidgets('both routes render the same empty body, different titles',
-        (tester) async {
+    testWidgets('both routes render the same empty body, different titles', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/legal/privacy');
       expect(find.byKey(const Key('legal_body')), findsOneWidget);
-      expect(find.text('This document hasn\'t been published yet.'),
-          findsOneWidget);
+      expect(
+        find.text('This document hasn\'t been published yet.'),
+        findsOneWidget,
+      );
       expect(find.text('Terms & Conditions'), findsNothing);
 
       await pumpAppAt(tester, '/legal/terms');
@@ -157,8 +164,9 @@ void main() {
       expect(find.text('Privacy & policy'), findsNothing);
     });
 
-    testWidgets('no legal prose is rendered — the screen is one line',
-        (tester) async {
+    testWidgets('no legal prose is rendered — the screen is one line', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/legal/privacy');
 
       // If somebody ever pastes a policy in here, this is what notices: a
@@ -168,8 +176,9 @@ void main() {
   });
 
   group('leaving', () {
-    testWidgets('the back chip pops to where the student came from',
-        (tester) async {
+    testWidgets('the back chip pops to where the student came from', (
+      tester,
+    ) async {
       final container = await pumpAppAt(tester, '/support');
 
       await tester.tap(find.byKey(const Key('support_back')));
@@ -202,9 +211,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        Theme.of(tester.element(find.byType(Scaffold).first))
-            .extension<AppColors>()!
-            .background,
+        Theme.of(
+          tester.element(find.byType(Scaffold).first),
+        ).extension<AppColors>()!.background,
         AppColors.dark.background,
       );
     });

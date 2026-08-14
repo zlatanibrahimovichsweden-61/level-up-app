@@ -55,7 +55,11 @@ class SubjectCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(forwardChevron(context), size: 16, color: ext.textPrimary),
+                  Icon(
+                    forwardChevron(context),
+                    size: 16,
+                    color: ext.textPrimary,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),

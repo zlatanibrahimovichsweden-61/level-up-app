@@ -225,7 +225,10 @@ class _ScoreCard extends StatelessWidget {
           Container(
             width: 26,
             height: 26,
-            decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: badgeColor,
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, size: 16, color: theme.colorScheme.onPrimary),
           ),
           const SizedBox(height: 8),

@@ -67,5 +67,5 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
 
 final editProfileProvider =
     AsyncNotifierProvider.autoDispose<EditProfileNotifier, StudentProfile?>(
-  EditProfileNotifier.new,
-);
+      EditProfileNotifier.new,
+    );

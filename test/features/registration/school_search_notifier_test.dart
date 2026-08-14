@@ -110,27 +110,29 @@ void main() {
       ).called(1);
     });
 
-    test('a failed first page is an AsyncError (drives the Error/Offline view)',
-        () async {
-      when(
-        () => repo.searchSchools(
-          q: any(named: 'q'),
-          governorateId: any(named: 'governorateId'),
-          cityId: any(named: 'cityId'),
-          cursor: any(named: 'cursor'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenThrow(const NetworkException(detail: 'timeout'));
-      final c = container();
+    test(
+      'a failed first page is an AsyncError (drives the Error/Offline view)',
+      () async {
+        when(
+          () => repo.searchSchools(
+            q: any(named: 'q'),
+            governorateId: any(named: 'governorateId'),
+            cityId: any(named: 'cityId'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const NetworkException(detail: 'timeout'));
+        final c = container();
 
-      // Read the STATE rather than `.future`: a rejected `.future` on an
-      // autoDispose provider races the teardown.
-      await pumpEventQueue();
+        // Read the STATE rather than `.future`: a rejected `.future` on an
+        // autoDispose provider races the teardown.
+        await pumpEventQueue();
 
-      final state = c.read(schoolSearchProvider(_filter));
-      expect(state.hasError, isTrue);
-      expect(state.error, isA<NetworkException>());
-    });
+        final state = c.read(schoolSearchProvider(_filter));
+        expect(state.hasError, isTrue);
+        expect(state.error, isA<NetworkException>());
+      },
+    );
   });
 
   group('loadMore — opaque cursor pagination', () {
@@ -171,28 +173,30 @@ void main() {
       ).called(1); // the first page only
     });
 
-    test('a failed append keeps the loaded pages and reports appendError',
-        () async {
-      stubPages(
-        first: CursorPage(
-          items: [_school('a')],
-          nextCursor: 'cursor-page-2',
-          hasMore: true,
-        ),
-        secondThrows: const NetworkException(detail: 'timeout'),
-      );
-      final c = container();
-      await c.read(schoolSearchProvider(_filter).future);
+    test(
+      'a failed append keeps the loaded pages and reports appendError',
+      () async {
+        stubPages(
+          first: CursorPage(
+            items: [_school('a')],
+            nextCursor: 'cursor-page-2',
+            hasMore: true,
+          ),
+          secondThrows: const NetworkException(detail: 'timeout'),
+        );
+        final c = container();
+        await c.read(schoolSearchProvider(_filter).future);
 
-      await c.read(schoolSearchProvider(_filter).notifier).loadMore();
+        await c.read(schoolSearchProvider(_filter).notifier).loadMore();
 
-      final state = c.read(schoolSearchProvider(_filter));
-      expect(state.hasError, isFalse); // the list survives
-      expect(state.value!.items.map((s) => s.id), ['a']);
-      expect(state.value!.appendError, isA<NetworkException>());
-      expect(state.value!.isLoadingMore, isFalse);
-      expect(state.value!.hasMore, isTrue); // retry is still offered
-    });
+        final state = c.read(schoolSearchProvider(_filter));
+        expect(state.hasError, isFalse); // the list survives
+        expect(state.value!.items.map((s) => s.id), ['a']);
+        expect(state.value!.appendError, isA<NetworkException>());
+        expect(state.value!.isLoadingMore, isFalse);
+        expect(state.value!.hasMore, isTrue); // retry is still offered
+      },
+    );
   });
 
   group('refresh', () {

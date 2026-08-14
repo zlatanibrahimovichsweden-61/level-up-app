@@ -33,13 +33,24 @@ class StateWidget<T> extends StatelessWidget {
       ScreenLoading<T>() =>
         loading ?? const Center(child: CircularProgressIndicator()),
       ScreenEmpty<T>() =>
-        empty ?? const _CenterMessage(icon: Icons.inbox_outlined, text: 'Empty'),
+        empty ??
+            const _CenterMessage(icon: Icons.inbox_outlined, text: 'Empty'),
       ScreenLoaded<T>(:final data) => onLoaded(data),
       // messageKey is a localization key; real screens resolve it via l10n.
       ScreenError<T>(:final messageKey) =>
-        error ?? _CenterMessage(icon: Icons.error_outline, text: messageKey, onRetry: onRetry),
+        error ??
+            _CenterMessage(
+              icon: Icons.error_outline,
+              text: messageKey,
+              onRetry: onRetry,
+            ),
       ScreenOffline<T>() =>
-        offline ?? _CenterMessage(icon: Icons.wifi_off, text: 'Offline', onRetry: onRetry),
+        offline ??
+            _CenterMessage(
+              icon: Icons.wifi_off,
+              text: 'Offline',
+              onRetry: onRetry,
+            ),
     };
   }
 }

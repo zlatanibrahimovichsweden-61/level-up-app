@@ -52,17 +52,19 @@ void main() {
       expect(prefs.getString('pref.theme_mode'), 'dark');
     });
 
-    test('ThemeMode.system clears the key rather than storing a third value',
-        () async {
-      // Nothing sets `system` — the app has two canvases. If something ever
-      // does, the next launch must fall back to the default rather than read
-      // back a mode no Settings row can represent.
-      final store = await storeWith({'pref.theme_mode': 'dark'});
+    test(
+      'ThemeMode.system clears the key rather than storing a third value',
+      () async {
+        // Nothing sets `system` — the app has two canvases. If something ever
+        // does, the next launch must fall back to the default rather than read
+        // back a mode no Settings row can represent.
+        final store = await storeWith({'pref.theme_mode': 'dark'});
 
-      await store.writeThemeMode(ThemeMode.system);
+        await store.writeThemeMode(ThemeMode.system);
 
-      expect(store.readThemeMode(), isNull);
-    });
+        expect(store.readThemeMode(), isNull);
+      },
+    );
 
     test('an unrecognised value reads as nothing stored', () async {
       final store = await storeWith({
@@ -117,15 +119,17 @@ void main() {
       expect(container.read(localeProvider), const Locale('ar'));
     });
 
-    test('a stored canvas and language are in force before anything is read',
-        () async {
-      final container = containerWith(
-        await storeWith({'pref.theme_mode': 'dark', 'pref.locale': 'en'}),
-      );
+    test(
+      'a stored canvas and language are in force before anything is read',
+      () async {
+        final container = containerWith(
+          await storeWith({'pref.theme_mode': 'dark', 'pref.locale': 'en'}),
+        );
 
-      expect(container.read(themeModeProvider), ThemeMode.dark);
-      expect(container.read(localeProvider), const Locale('en'));
-    });
+        expect(container.read(themeModeProvider), ThemeMode.dark);
+        expect(container.read(localeProvider), const Locale('en'));
+      },
+    );
 
     test('a corrupt file yields the defaults and does not throw', () async {
       final container = containerWith(

@@ -40,7 +40,9 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
     if (track == null) return;
     ref.read(registrationControllerProvider.notifier).setTrack(track);
     // Day-3 sub-flow entries (placeholder routes for now).
-    context.push(track == RegTrack.school ? '/register/school' : '/register/university');
+    context.push(
+      track == RegTrack.school ? '/register/school' : '/register/university',
+    );
   }
 
   @override
@@ -97,8 +99,7 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                       label: l10n.trackSchool,
                       art: 'assets/images/track_school.svg',
                       selected: _selected == RegTrack.school,
-                      onTap: () =>
-                          setState(() => _selected = RegTrack.school),
+                      onTap: () => setState(() => _selected = RegTrack.school),
                     ),
                     const SizedBox(height: 16),
                     _TrackCard(

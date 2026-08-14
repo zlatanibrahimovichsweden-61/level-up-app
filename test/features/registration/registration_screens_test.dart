@@ -16,31 +16,33 @@ const _args = RegistrationArgs(
   phone: '+201021871999',
 );
 
-Widget _marker(String text) =>
-    Scaffold(body: Center(child: Text(text)));
+Widget _marker(String text) => Scaffold(body: Center(child: Text(text)));
 
 /// A standalone router for the wizard front — no auth redirect, so the screens
 /// are exercised in isolation. Day-3 sub-flows are simple markers.
 GoRouter _router(String initial) => GoRouter(
-      initialLocation: initial,
-      routes: [
-        GoRoute(
-          path: '/register',
-          builder: (_, state) =>
-              SignupIdentityScreen(args: state.extra as RegistrationArgs?),
-        ),
-        GoRoute(
-          path: '/register/track',
-          builder: (_, _) => const SignupTrackScreen(),
-        ),
-        GoRoute(path: '/register/school', builder: (_, _) => _marker('SCHOOL FLOW')),
-        GoRoute(
-          path: '/register/university',
-          builder: (_, _) => _marker('UNIVERSITY FLOW'),
-        ),
-        GoRoute(path: '/login', builder: (_, _) => _marker('LOGIN')),
-      ],
-    );
+  initialLocation: initial,
+  routes: [
+    GoRoute(
+      path: '/register',
+      builder: (_, state) =>
+          SignupIdentityScreen(args: state.extra as RegistrationArgs?),
+    ),
+    GoRoute(
+      path: '/register/track',
+      builder: (_, _) => const SignupTrackScreen(),
+    ),
+    GoRoute(
+      path: '/register/school',
+      builder: (_, _) => _marker('SCHOOL FLOW'),
+    ),
+    GoRoute(
+      path: '/register/university',
+      builder: (_, _) => _marker('UNIVERSITY FLOW'),
+    ),
+    GoRoute(path: '/login', builder: (_, _) => _marker('LOGIN')),
+  ],
+);
 
 Future<void> _tapContinue(WidgetTester tester) async {
   final finder = find.widgetWithText(FilledButton, 'Continue');
@@ -79,8 +81,9 @@ Future<ProviderContainer> _pump(
 
 void main() {
   group('Sign Up_1 (identity)', () {
-    testWidgets('shows the proven phone read-only (not an editable field)',
-        (tester) async {
+    testWidgets('shows the proven phone read-only (not an editable field)', (
+      tester,
+    ) async {
       await _pump(tester, '/register');
 
       expect(find.text('+201021871999'), findsOneWidget);
@@ -89,7 +92,9 @@ void main() {
       expect(find.byType(TextField), findsNWidgets(3));
     });
 
-    testWidgets('empty name blocks Continue with an inline error', (tester) async {
+    testWidgets('empty name blocks Continue with an inline error', (
+      tester,
+    ) async {
       final container = await _pump(tester, '/register');
 
       await _tapContinue(tester);
@@ -107,39 +112,47 @@ void main() {
       await _tapContinue(tester);
 
       expect(find.text('Please enter a valid phone number'), findsOneWidget);
-      expect(container.read(registrationControllerProvider)!.parentPhone, isNull);
+      expect(
+        container.read(registrationControllerProvider)!.parentPhone,
+        isNull,
+      );
     });
 
     testWidgets(
-        'valid input stores identity (referral collected) and routes to track',
-        (tester) async {
-      final container = await _pump(tester, '/register');
+      'valid input stores identity (referral collected) and routes to track',
+      (tester) async {
+        final container = await _pump(tester, '/register');
 
-      await tester.enterText(find.byType(TextField).at(0), 'Mostafa');
-      await tester.enterText(find.byType(TextField).at(1), '01000000000');
-      await tester.enterText(find.byType(TextField).at(2), 'FRIEND10');
-      await _tapContinue(tester);
+        await tester.enterText(find.byType(TextField).at(0), 'Mostafa');
+        await tester.enterText(find.byType(TextField).at(1), '01000000000');
+        await tester.enterText(find.byType(TextField).at(2), 'FRIEND10');
+        await _tapContinue(tester);
 
-      final draft = container.read(registrationControllerProvider)!;
-      expect(draft.name, 'Mostafa');
-      expect(draft.parentPhone, '+201000000000'); // normalized E.164
-      expect(draft.referralCode, 'FRIEND10'); // collected, not submitted
-      // Landed on the track picker.
-      expect(find.text('Choose Your Track'), findsOneWidget);
-    });
+        final draft = container.read(registrationControllerProvider)!;
+        expect(draft.name, 'Mostafa');
+        expect(draft.parentPhone, '+201000000000'); // normalized E.164
+        expect(draft.referralCode, 'FRIEND10'); // collected, not submitted
+        // Landed on the track picker.
+        expect(find.text('Choose Your Track'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders Arabic with RTL directionality', (tester) async {
       await _pump(tester, '/register', locale: const Locale('ar'));
 
-      expect(find.text('إنشاء حساب'), findsOneWidget); // createAccountTitle (AR)
+      expect(
+        find.text('إنشاء حساب'),
+        findsOneWidget,
+      ); // createAccountTitle (AR)
       expect(
         Directionality.of(tester.element(find.text('إنشاء حساب'))),
         TextDirection.rtl,
       );
     });
 
-    testWidgets('no draft → expiry guard, Back to login routes to /login',
-        (tester) async {
+    testWidgets('no draft → expiry guard, Back to login routes to /login', (
+      tester,
+    ) async {
       await _pump(tester, '/register', seed: false);
 
       expect(
@@ -153,7 +166,9 @@ void main() {
   });
 
   group('Sign Up_2 (track picker)', () {
-    testWidgets('Continue is disabled until a track is selected', (tester) async {
+    testWidgets('Continue is disabled until a track is selected', (
+      tester,
+    ) async {
       await _pump(tester, '/register/track');
 
       final button = tester.widget<FilledButton>(
@@ -162,19 +177,23 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('selecting School sets the discriminator and routes to /school',
-        (tester) async {
-      final container = await _pump(tester, '/register/track');
+    testWidgets(
+      'selecting School sets the discriminator and routes to /school',
+      (tester) async {
+        final container = await _pump(tester, '/register/track');
 
-      await tester.tap(find.text('School Student'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('School Student'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+        await tester.pumpAndSettle();
 
-      expect(container.read(registrationControllerProvider)!.track,
-          RegTrack.school);
-      expect(find.text('SCHOOL FLOW'), findsOneWidget);
-    });
+        expect(
+          container.read(registrationControllerProvider)!.track,
+          RegTrack.school,
+        );
+        expect(find.text('SCHOOL FLOW'), findsOneWidget);
+      },
+    );
 
     testWidgets('selecting University routes to /university', (tester) async {
       final container = await _pump(tester, '/register/track');
@@ -184,8 +203,10 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
 
-      expect(container.read(registrationControllerProvider)!.track,
-          RegTrack.university);
+      expect(
+        container.read(registrationControllerProvider)!.track,
+        RegTrack.university,
+      );
       expect(find.text('UNIVERSITY FLOW'), findsOneWidget);
     });
   });

@@ -28,8 +28,9 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     }
     state = RegistrationDraft(
       registrationToken: args.registrationToken,
-      tokenExpiresAt:
-          DateTime.now().add(Duration(seconds: args.expiresInSeconds)),
+      tokenExpiresAt: DateTime.now().add(
+        Duration(seconds: args.expiresInSeconds),
+      ),
       phone: args.phone,
     );
   }
@@ -123,11 +124,8 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     final trimmed = cityName?.trim();
     final normalized = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
     _update(
-      (draft) => draft.copyWith(
-        cityName: normalized,
-        cityId: null,
-        schoolId: null,
-      ),
+      (draft) =>
+          draft.copyWith(cityName: normalized, cityId: null, schoolId: null),
     );
   }
 
@@ -192,5 +190,5 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
 
 final registrationControllerProvider =
     NotifierProvider<RegistrationController, RegistrationDraft?>(
-  RegistrationController.new,
-);
+      RegistrationController.new,
+    );

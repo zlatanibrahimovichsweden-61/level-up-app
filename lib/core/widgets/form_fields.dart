@@ -79,7 +79,9 @@ class FieldShell extends StatelessWidget {
       ),
     );
 
-    final opaque = enabled ? container : Opacity(opacity: 0.6, child: container);
+    final opaque = enabled
+        ? container
+        : Opacity(opacity: 0.6, child: container);
     if (onTap == null) return opaque;
 
     return Semantics(

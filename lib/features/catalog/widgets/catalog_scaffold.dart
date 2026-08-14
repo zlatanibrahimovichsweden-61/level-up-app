@@ -99,8 +99,7 @@ class CatalogHeader extends StatelessWidget {
                 ),
               ),
             ),
-          if (action != null)
-            PositionedDirectional(end: 0, child: action!),
+          if (action != null) PositionedDirectional(end: 0, child: action!),
         ],
       ),
     );
@@ -112,11 +111,11 @@ class CatalogHeader extends StatelessWidget {
 /// not a cosmetic one.
 IconData backChevron(BuildContext context) =>
     Directionality.of(context) == TextDirection.rtl
-        ? Icons.arrow_forward_ios
-        : Icons.arrow_back_ios_new;
+    ? Icons.arrow_forward_ios
+    : Icons.arrow_back_ios_new;
 
 /// Forward-pointing chevron ("drill into this row"), mirrored for RTL.
 IconData forwardChevron(BuildContext context) =>
     Directionality.of(context) == TextDirection.rtl
-        ? Icons.chevron_left
-        : Icons.chevron_right;
+    ? Icons.chevron_left
+    : Icons.chevron_right;

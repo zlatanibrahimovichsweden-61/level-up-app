@@ -68,8 +68,9 @@ void main() {
   }
 
   group('content', () {
-    testWidgets('renders the title, tagline, subtitle and both buttons',
-        (tester) async {
+    testWidgets('renders the title, tagline, subtitle and both buttons', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       expect(find.text('Level Up'), findsOneWidget);
@@ -91,8 +92,9 @@ void main() {
       expect(find.textContaining('Achive'), findsNothing);
     });
 
-    testWidgets('the illustration renders full-bleed from the top',
-        (tester) async {
+    testWidgets('the illustration renders full-bleed from the top', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       // Matched by ASSET: since Day 7b the language pill carries an SVG glyph
@@ -110,8 +112,9 @@ void main() {
       expect(svg.alignment, Alignment.topCenter);
     });
 
-    testWidgets('carries a language pill the frame does not draw',
-        (tester) async {
+    testWidgets('carries a language pill the frame does not draw', (
+      tester,
+    ) async {
       // Deliberate addition: Login and OTP-success both have one, so without it
       // a student landing here in the wrong language is stuck (DESIGN_ISSUES
       // #27).
@@ -126,9 +129,7 @@ void main() {
     /// Pulls the rich-text spans in render order with their colours.
     List<(String, Color?)> spansOf(WidgetTester tester) {
       final text = tester.widget<Text>(
-        find.byWidgetPredicate(
-          (w) => w is Text && w.textSpan != null,
-        ),
+        find.byWidgetPredicate((w) => w is Text && w.textSpan != null),
       );
       final out = <(String, Color?)>[];
       text.textSpan!.visitChildren((span) {
@@ -140,8 +141,9 @@ void main() {
       return out;
     }
 
-    testWidgets('accents the word the .arb marks, in the light sage',
-        (tester) async {
+    testWidgets('accents the word the .arb marks, in the light sage', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       final spans = spansOf(tester);
@@ -150,8 +152,9 @@ void main() {
       expect(spans.last.$2, AppColors.light.textPrimary);
     });
 
-    testWidgets('the accent follows the TRANSLATION, not a fixed span index',
-        (tester) async {
+    testWidgets('the accent follows the TRANSLATION, not a fixed span index', (
+      tester,
+    ) async {
       // Arabic keys the accent off its own .arb entry, so the accented word is
       // whatever the translator put there — the widget never splits a sentence
       // on a space or hardcodes [accent, plain] against English word order.
@@ -163,7 +166,9 @@ void main() {
       expect(spans.last.$1, 'التعليمية');
     });
 
-    testWidgets('dark swaps the accent to purple via the token', (tester) async {
+    testWidgets('dark swaps the accent to purple via the token', (
+      tester,
+    ) async {
       await pumpOnboarding(tester, theme: AppTheme.dark);
 
       expect(spansOf(tester).first.$2, AppColors.dark.accentSoft);
@@ -197,10 +202,12 @@ void main() {
       final screen = tester.getRect(find.byType(OnboardingScreen));
       // Use the sheet's own painted box rather than the button.
       final box = tester.getRect(
-        find.ancestor(
-          of: find.byType(FilledButton),
-          matching: find.byType(SafeArea),
-        ).last,
+        find
+            .ancestor(
+              of: find.byType(FilledButton),
+              matching: find.byType(SafeArea),
+            )
+            .last,
       );
       expect(sheet.top, greaterThan(0));
       return box.top / screen.height;
@@ -211,8 +218,9 @@ void main() {
       ('reference', Size(402, 878)),
       ('tablet', Size(834, 1194)),
     ]) {
-      testWidgets('$label: sheet sits at the bottom, no overflow',
-          (tester) async {
+      testWidgets('$label: sheet sits at the bottom, no overflow', (
+        tester,
+      ) async {
         await pumpOnboarding(tester, size: size);
 
         final screen = tester.getRect(find.byType(OnboardingScreen));
@@ -230,8 +238,9 @@ void main() {
       });
     }
 
-    testWidgets('at the reference size the sheet lands near the frame\'s 60%',
-        (tester) async {
+    testWidgets('at the reference size the sheet lands near the frame\'s 60%', (
+      tester,
+    ) async {
       // Figma puts the sheet top at 529/878 = 0.602. Content-sizing must land
       // in that neighbourhood WITHOUT the number appearing in the source.
       await pumpOnboarding(tester, size: const Size(402, 878));
@@ -262,16 +271,13 @@ void main() {
       }
     }
 
-    testWidgets('the language pill mirrors to the start edge in Arabic',
-        (tester) async {
+    testWidgets('the language pill mirrors to the start edge in Arabic', (
+      tester,
+    ) async {
       await pumpOnboarding(tester, size: const Size(402, 878));
       final ltr = tester.getRect(find.byType(LanguagePill));
 
-      await pumpOnboarding(
-        tester,
-        locale: 'ar',
-        size: const Size(402, 878),
-      );
+      await pumpOnboarding(tester, locale: 'ar', size: const Size(402, 878));
       final rtl = tester.getRect(find.byType(LanguagePill));
 
       // AlignmentDirectional.topEnd: right in LTR, left in RTL.

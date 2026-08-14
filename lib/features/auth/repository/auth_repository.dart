@@ -17,8 +17,8 @@ import '../models/token_pair.dart';
 /// path (loop safety). All are `x-stability: stable`; refresh is `security: []`.
 class AuthRepository {
   AuthRepository({required Dio dio, required Dio refreshDio})
-      : _dio = dio,
-        _refreshDio = refreshDio;
+    : _dio = dio,
+      _refreshDio = refreshDio;
 
   final Dio _dio;
   final Dio _refreshDio;
@@ -49,11 +49,7 @@ class AuthRepository {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/auth/otp/verify',
-        data: {
-          'phone': phone,
-          'code': code,
-          'device': device.toJson(),
-        },
+        data: {'phone': phone, 'code': code, 'device': device.toJson()},
       );
       return AuthResult.fromJson(res.data!);
     } on DioException catch (e) {
@@ -106,9 +102,10 @@ class AuthRepository {
 
 // Explicit left-side type breaks the static reference cycle with dioProvider
 // (which reads this provider lazily inside its refresh closure).
-final Provider<AuthRepository> authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(
-    dio: ref.watch(dioProvider),
-    refreshDio: ref.watch(refreshDioProvider),
-  ),
-);
+final Provider<AuthRepository> authRepositoryProvider =
+    Provider<AuthRepository>(
+      (ref) => AuthRepository(
+        dio: ref.watch(dioProvider),
+        refreshDio: ref.watch(refreshDioProvider),
+      ),
+    );

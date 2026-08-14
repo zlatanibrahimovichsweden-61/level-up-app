@@ -23,7 +23,12 @@ void main() {
     ThemeData? theme,
     int questionCount = 3,
   }) async {
-    final harness = await pumpQuizApp(tester, quiz: quiz, locale: locale, theme: theme);
+    final harness = await pumpQuizApp(
+      tester,
+      quiz: quiz,
+      locale: locale,
+      theme: theme,
+    );
     harness.router.push(
       '/quiz/quiz-1',
       extra: quizFor(questionCount: questionCount),
@@ -60,19 +65,19 @@ void main() {
     await tester.tap(finder);
   }
 
-  OptionTileState stateOf(WidgetTester tester, String optionText) =>
-      tester
-          .widget<QuestionOptionTile>(
-            find.ancestor(
-              of: find.text(optionText),
-              matching: find.byType(QuestionOptionTile),
-            ),
-          )
-          .state;
+  OptionTileState stateOf(WidgetTester tester, String optionText) => tester
+      .widget<QuestionOptionTile>(
+        find.ancestor(
+          of: find.text(optionText),
+          matching: find.byType(QuestionOptionTile),
+        ),
+      )
+      .state;
 
   group('rendering', () {
-    testWidgets('shows the question, its options and the n/total counter',
-        (tester) async {
+    testWidgets('shows the question, its options and the n/total counter', (
+      tester,
+    ) async {
       await openQuiz(tester);
 
       expect(find.text('Quiz'), findsOneWidget);
@@ -102,8 +107,9 @@ void main() {
 
     // NON-NEGOTIABLE: no client-side points arithmetic, and nothing that looks
     // like a running score.
-    testWidgets('shows no points figure anywhere during the quiz',
-        (tester) async {
+    testWidgets('shows no points figure anywhere during the quiz', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz);
       await openQuiz(tester, quiz: quiz);
@@ -119,15 +125,18 @@ void main() {
   });
 
   group('the per-question submit model', () {
-    testWidgets('Confirm is disabled until an option is chosen', (tester) async {
+    testWidgets('Confirm is disabled until an option is chosen', (
+      tester,
+    ) async {
       await openQuiz(tester);
 
       final before = tester.widget<FilledButton>(find.byType(FilledButton));
       expect(before.onPressed, isNull);
     });
 
-    testWidgets('selecting an option sends NOTHING and enables Confirm',
-        (tester) async {
+    testWidgets('selecting an option sends NOTHING and enables Confirm', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       await openQuiz(tester, quiz: quiz);
 
@@ -148,7 +157,9 @@ void main() {
       expect(button.onPressed, isNotNull);
     });
 
-    testWidgets('correctOptionId is revealed ONLY after Confirm', (tester) async {
+    testWidgets('correctOptionId is revealed ONLY after Confirm', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz, correct: false);
       await openQuiz(tester, quiz: quiz);
@@ -268,8 +279,9 @@ void main() {
       },
     );
 
-    testWidgets('a mid-quiz 403 limit opens the same paywall sheet',
-        (tester) async {
+    testWidgets('a mid-quiz 403 limit opens the same paywall sheet', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       when(
         () => quiz.submitAnswer(
@@ -278,10 +290,7 @@ void main() {
           optionId: any(named: 'optionId'),
         ),
       ).thenThrow(
-        const ApiException(
-          status: 403,
-          code: 'weekly_question_limit_reached',
-        ),
+        const ApiException(status: 403, code: 'weekly_question_limit_reached'),
       );
 
       await openQuiz(tester, quiz: quiz);
@@ -295,8 +304,9 @@ void main() {
   });
 
   group('AI explanation', () {
-    testWidgets('is not offered when the server says there is none',
-        (tester) async {
+    testWidgets('is not offered when the server says there is none', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz, explanationAvailable: false);
       await openQuiz(tester, quiz: quiz);
@@ -310,8 +320,9 @@ void main() {
       verifyNever(() => quiz.getExplanation(any()));
     });
 
-    testWidgets('202 → poll → 200 renders the text, in ONE section',
-        (tester) async {
+    testWidgets('202 → poll → 200 renders the text, in ONE section', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz, explanationAvailable: true);
       var calls = 0;
@@ -345,13 +356,14 @@ void main() {
       expect(find.text('WHY IS THE CORRECT ANSWER RIGHT?'), findsNothing);
     });
 
-    testWidgets('a 403 reads as "not available", never as a broken quiz',
-        (tester) async {
+    testWidgets('a 403 reads as "not available", never as a broken quiz', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz, explanationAvailable: true);
-      when(() => quiz.getExplanation(any())).thenThrow(
-        const ApiException(status: 403, code: 'insufficient_scope'),
-      );
+      when(
+        () => quiz.getExplanation(any()),
+      ).thenThrow(const ApiException(status: 403, code: 'insufficient_scope'));
 
       await openQuiz(tester, quiz: quiz);
       await tester.tap(find.text('Option 0'));
@@ -371,8 +383,9 @@ void main() {
   });
 
   group('finishing', () {
-    testWidgets('the last question offers Finish and lands on the result',
-        (tester) async {
+    testWidgets('the last question offers Finish and lands on the result', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz);
       when(() => quiz.finishQuiz(any())).thenAnswer(
@@ -398,8 +411,9 @@ void main() {
       verify(() => quiz.finishQuiz('quiz-1')).called(1);
     });
 
-    testWidgets('finishing invalidates /me so Home shows the new points',
-        (tester) async {
+    testWidgets('finishing invalidates /me so Home shows the new points', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz);
       when(() => quiz.finishQuiz(any())).thenAnswer(
@@ -441,8 +455,9 @@ void main() {
       expect(harness.protection.disableCalls, 0);
     });
 
-    testWidgets('is OFF again when the quiz screen is disposed',
-        (tester) async {
+    testWidgets('is OFF again when the quiz screen is disposed', (
+      tester,
+    ) async {
       final quiz = MockQuizRepository();
       stubGrade(quiz);
       when(() => quiz.finishQuiz(any())).thenAnswer(
@@ -471,8 +486,9 @@ void main() {
   });
 
   group('exit guard', () {
-    testWidgets('closing asks first — progress cannot be lost silently',
-        (tester) async {
+    testWidgets('closing asks first — progress cannot be lost silently', (
+      tester,
+    ) async {
       await openQuiz(tester);
 
       await tester.tap(find.byIcon(Icons.close));
@@ -508,25 +524,27 @@ void main() {
       expect(find.text('Confirm'), findsOneWidget);
     });
 
-    testWidgets('an offline submit shows offline copy and a user-tapped retry',
-        (tester) async {
-      final quiz = MockQuizRepository();
-      when(
-        () => quiz.submitAnswer(
-          quizId: any(named: 'quizId'),
-          questionId: any(named: 'questionId'),
-          optionId: any(named: 'optionId'),
-        ),
-      ).thenThrow(const OfflineException());
+    testWidgets(
+      'an offline submit shows offline copy and a user-tapped retry',
+      (tester) async {
+        final quiz = MockQuizRepository();
+        when(
+          () => quiz.submitAnswer(
+            quizId: any(named: 'quizId'),
+            questionId: any(named: 'questionId'),
+            optionId: any(named: 'optionId'),
+          ),
+        ).thenThrow(const OfflineException());
 
-      await openQuiz(tester, quiz: quiz, locale: 'ar');
-      await tester.tap(find.text('Option 0'));
-      await tester.pump();
-      await tester.tap(find.text('تأكيد'));
-      await tester.pumpAndSettle();
+        await openQuiz(tester, quiz: quiz, locale: 'ar');
+        await tester.tap(find.text('Option 0'));
+        await tester.pump();
+        await tester.tap(find.text('تأكيد'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
-      expect(find.text('إعادة المحاولة'), findsOneWidget);
-    });
+        expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
+        expect(find.text('إعادة المحاولة'), findsOneWidget);
+      },
+    );
   });
 }

@@ -13,7 +13,9 @@ import '../models/device_info.dart';
 ///
 /// Overridden in tests. Never logs any of these values.
 final deviceInfoProvider = FutureProvider<DeviceInfo>((ref) async {
-  final deviceId = await ref.watch(secureStorageProvider).readOrCreateDeviceId();
+  final deviceId = await ref
+      .watch(secureStorageProvider)
+      .readOrCreateDeviceId();
   final plugin = DeviceInfoPlugin();
 
   if (Platform.isIOS) {

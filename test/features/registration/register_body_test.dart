@@ -53,17 +53,16 @@ RegistrationDraft _egyptSchoolDraft({
   String? cityId = 'city-nasr',
   String? cityName,
   String? schoolId = 'school-42',
-}) =>
-    _draft(
-      countryCode: 'EG',
-      requiresGovernorate: true,
-      governorateId: 'gov-cairo',
-      cityId: cityId,
-      cityName: cityName,
-      schoolId: schoolId,
-      stage: Stage.secondary1.wireValue,
-      educationSystem: 'ig',
-    );
+}) => _draft(
+  countryCode: 'EG',
+  requiresGovernorate: true,
+  governorateId: 'gov-cairo',
+  cityId: cityId,
+  cityName: cityName,
+  schoolId: schoolId,
+  stage: Stage.secondary1.wireValue,
+  educationSystem: 'ig',
+);
 
 /// A complete, valid NON-Egyptian school draft (UAE — `requiresGovernorate`
 /// false). Since adr-028 §2 there is no school step at all on this flow, so the
@@ -73,32 +72,30 @@ RegistrationDraft _foreignSchoolDraft({
   String? schoolId,
   String? cityId = 'city-dubai',
   String? cityName,
-}) =>
-    _draft(
-      countryCode: 'AE',
-      requiresGovernorate: false,
-      governorateId: governorateId,
-      cityId: cityId,
-      cityName: cityName,
-      schoolId: schoolId,
-      stage: Stage.prep2.wireValue,
-      educationSystem: 'american',
-    );
+}) => _draft(
+  countryCode: 'AE',
+  requiresGovernorate: false,
+  governorateId: governorateId,
+  cityId: cityId,
+  cityName: cityName,
+  schoolId: schoolId,
+  stage: Stage.prep2.wireValue,
+  educationSystem: 'american',
+);
 
 RegistrationDraft _universityDraft({
   String? cityId = 'city-dokki',
   String? cityName,
-}) =>
-    _draft(
-      track: RegTrack.university,
-      universityId: 'uni-cairo',
-      facultyId: 'fac-medicine',
-      studyYearId: 'year-2',
-      governorateId: 'gov-giza',
-      cityId: cityId,
-      cityName: cityName,
-      dateOfBirth: DateTime(2004, 3, 7),
-    );
+}) => _draft(
+  track: RegTrack.university,
+  universityId: 'uni-cairo',
+  facultyId: 'fac-medicine',
+  studyYearId: 'year-2',
+  governorateId: 'gov-giza',
+  cityId: cityId,
+  cityName: cityName,
+  dateOfBirth: DateTime(2004, 3, 7),
+);
 
 void main() {
   group('SchoolRegistration.toJson — Egypt (requiresGovernorate)', () {
@@ -175,8 +172,11 @@ void main() {
           _foreignSchoolDraft(schoolId: 'school-42'),
         ),
         throwsA(
-          isA<ForbiddenRegistrationField>()
-              .having((e) => e.field, 'field', 'schoolId'),
+          isA<ForbiddenRegistrationField>().having(
+            (e) => e.field,
+            'field',
+            'schoolId',
+          ),
         ),
       );
     });
@@ -201,12 +201,13 @@ void main() {
 
     test('NEITHER throws, naming cityId', () {
       expect(
-        () => SchoolRegistration.fromDraft(
-          _foreignSchoolDraft(cityId: null),
-        ),
+        () => SchoolRegistration.fromDraft(_foreignSchoolDraft(cityId: null)),
         throwsA(
-          isA<IncompleteRegistrationDraft>()
-              .having((e) => e.field, 'field', 'cityId'),
+          isA<IncompleteRegistrationDraft>().having(
+            (e) => e.field,
+            'field',
+            'cityId',
+          ),
         ),
       );
     });
@@ -217,8 +218,11 @@ void main() {
           _egyptSchoolDraft(cityName: 'Nasr City'),
         ),
         throwsA(
-          isA<ForbiddenRegistrationField>()
-              .having((e) => e.field, 'field', 'cityName'),
+          isA<ForbiddenRegistrationField>().having(
+            (e) => e.field,
+            'field',
+            'cityName',
+          ),
         ),
       );
     });
@@ -247,8 +251,9 @@ void main() {
     });
 
     test('the same union rules apply on the university body', () {
-      final coded =
-          UniversityRegistration.fromDraft(_universityDraft()).toJson();
+      final coded = UniversityRegistration.fromDraft(
+        _universityDraft(),
+      ).toJson();
       expect(coded['cityId'], 'city-dokki');
       expect(coded.containsKey('cityName'), isFalse);
 
@@ -273,8 +278,9 @@ void main() {
 
   group('UniversityRegistration.toJson', () {
     test('emits the Egypt-only-by-shape body', () {
-      final json =
-          UniversityRegistration.fromDraft(_universityDraft()).toJson();
+      final json = UniversityRegistration.fromDraft(
+        _universityDraft(),
+      ).toJson();
 
       expect(json['track'], 'university');
       expect(json['registrationToken'], 'reg.token');
@@ -289,8 +295,9 @@ void main() {
     });
 
     test('carries NO countryCode — Egypt-only by shape (adr-010)', () {
-      final json =
-          UniversityRegistration.fromDraft(_universityDraft()).toJson();
+      final json = UniversityRegistration.fromDraft(
+        _universityDraft(),
+      ).toJson();
       expect(json.containsKey('countryCode'), isFalse);
     });
   });
@@ -339,8 +346,11 @@ void main() {
           _egyptSchoolDraft().copyWith(dateOfBirth: null),
         ),
         throwsA(
-          isA<IncompleteRegistrationDraft>()
-              .having((e) => e.field, 'field', 'dateOfBirth'),
+          isA<IncompleteRegistrationDraft>().having(
+            (e) => e.field,
+            'field',
+            'dateOfBirth',
+          ),
         ),
       );
     });
@@ -351,8 +361,11 @@ void main() {
           _egyptSchoolDraft().copyWith(governorateId: null),
         ),
         throwsA(
-          isA<IncompleteRegistrationDraft>()
-              .having((e) => e.field, 'field', 'governorateId'),
+          isA<IncompleteRegistrationDraft>().having(
+            (e) => e.field,
+            'field',
+            'governorateId',
+          ),
         ),
       );
     });
@@ -363,8 +376,11 @@ void main() {
           _universityDraft().copyWith(studyYearId: null),
         ),
         throwsA(
-          isA<IncompleteRegistrationDraft>()
-              .having((e) => e.field, 'field', 'studyYearId'),
+          isA<IncompleteRegistrationDraft>().having(
+            (e) => e.field,
+            'field',
+            'studyYearId',
+          ),
         ),
       );
     });
@@ -391,10 +407,7 @@ void main() {
     });
 
     test('an Egyptian student with no school passes the pre-flight', () {
-      expect(
-        validateSchoolDraft(_egyptSchoolDraft(schoolId: null)),
-        isEmpty,
-      );
+      expect(validateSchoolDraft(_egyptSchoolDraft(schoolId: null)), isEmpty);
     });
 
     test('a complete non-Egypt draft is valid', () {
@@ -402,8 +415,9 @@ void main() {
     });
 
     test('non-Egypt REQUIRES a city only', () {
-      final issues =
-          validateSchoolDraft(_foreignSchoolDraft().copyWith(cityId: null));
+      final issues = validateSchoolDraft(
+        _foreignSchoolDraft().copyWith(cityId: null),
+      );
       expect(issues[RegFields.cityId], RegFieldIssue.missing);
       expect(issues.containsKey(RegFields.governorateId), isFalse);
       expect(issues.containsKey(RegFields.schoolId), isFalse);
@@ -456,8 +470,9 @@ void main() {
     test('both halves populated is FORBIDDEN, reported on cityName', () {
       // The coded value is what the backend can filter and report on, so when
       // the two disagree it is the free text that gives.
-      final issues =
-          validateSchoolDraft(_egyptSchoolDraft(cityName: 'Nasr City'));
+      final issues = validateSchoolDraft(
+        _egyptSchoolDraft(cityName: 'Nasr City'),
+      );
       expect(issues[RegFields.cityName], RegFieldIssue.forbidden);
       expect(issues.containsKey(RegFields.cityId), isFalse);
     });
@@ -521,10 +536,14 @@ void main() {
 
   group('Stage', () {
     test('wire values match the contract enum exactly', () {
-      expect(
-        Stage.values.map((s) => s.wireValue),
-        ['prep1', 'prep2', 'prep3', 'secondary1', 'secondary2', 'secondary3'],
-      );
+      expect(Stage.values.map((s) => s.wireValue), [
+        'prep1',
+        'prep2',
+        'prep3',
+        'secondary1',
+        'secondary2',
+        'secondary3',
+      ]);
     });
 
     test('tryParse round-trips and rejects unknown values', () {

@@ -42,11 +42,7 @@ int nextLevelThreshold(int level) => level * kPointsPerLevel;
 /// the points balance and the badge count come straight from `GET /me`. The one
 /// derived value is the progress bar's fill, from [kPointsPerLevel] above.
 class LevelCard extends StatelessWidget {
-  const LevelCard({
-    super.key,
-    required this.level,
-    required this.totalPoints,
-  });
+  const LevelCard({super.key, required this.level, required this.totalPoints});
 
   final int level;
   final int totalPoints;

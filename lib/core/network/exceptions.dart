@@ -27,11 +27,8 @@ class NetworkException extends AppException {
 
 /// A structured API error carrying an error-codes.md `code` + HTTP status.
 class ApiException extends AppException {
-  const ApiException({
-    required this.status,
-    required String code,
-    super.detail,
-  }) : super(code);
+  const ApiException({required this.status, required String code, super.detail})
+    : super(code);
   final int status;
 }
 
@@ -39,7 +36,7 @@ class ApiException extends AppException {
 /// `authentication_required` → refresh + retry once (handled in interceptor).
 class UnauthorizedException extends ApiException {
   const UnauthorizedException({required super.code, super.detail})
-      : super(status: 401);
+    : super(status: 401);
 }
 
 /// 400 `validation_failed` carrying `ProblemDetails.errors` — the contract's
@@ -53,7 +50,7 @@ class UnauthorizedException extends ApiException {
 /// localized copy at the screen. They are never logged either (minors' data).
 class ValidationException extends ApiException {
   const ValidationException({required this.errors, super.detail})
-      : super(status: 400, code: 'validation_failed');
+    : super(status: 400, code: 'validation_failed');
 
   /// Contract shape: `additionalProperties: { type: array, items: string }`.
   final Map<String, List<String>> errors;
@@ -70,7 +67,7 @@ class ValidationException extends ApiException {
 /// exactly this reason.
 class RateLimitedException extends ApiException {
   const RateLimitedException({this.retryAfter, super.detail})
-      : super(status: 429, code: 'rate_limited');
+    : super(status: 429, code: 'rate_limited');
 
   /// Parsed from the `Retry-After` response header. Null when the header is
   /// absent or unparseable — it is not guaranteed by the contract (only the

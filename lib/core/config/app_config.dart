@@ -38,8 +38,8 @@ class AppConfig {
   // `https://staging.TBD.example/api/v1` — the real staging/prod hosts are TBD
   // (announced via contract-changelog.md). Change request pending. Do NOT ship.
   static String _baseUrlFor(Flavor flavor) => switch (flavor) {
-        Flavor.dev => 'https://staging.TBD.example/api/v1',
-        Flavor.staging => 'https://staging.TBD.example/api/v1',
-        Flavor.prod => 'https://TBD.example/api/v1',
-      };
+    Flavor.dev => 'https://staging.TBD.example/api/v1',
+    Flavor.staging => 'https://staging.TBD.example/api/v1',
+    Flavor.prod => 'https://TBD.example/api/v1',
+  };
 }

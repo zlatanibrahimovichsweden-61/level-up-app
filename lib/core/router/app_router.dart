@@ -84,7 +84,9 @@ String? authRedirect(AuthStatus status, String matchedLocation) {
 /// it (contract says "returns via deep link" but the scheme/host is TBD).
 final routerProvider = Provider<GoRouter>((ref) {
   // Mirror AuthController state into a Listenable go_router can watch.
-  final authListenable = ValueNotifier<AuthStatus>(ref.read(authControllerProvider));
+  final authListenable = ValueNotifier<AuthStatus>(
+    ref.read(authControllerProvider),
+  );
   ref.listen<AuthStatus>(authControllerProvider, (_, next) {
     authListenable.value = next;
   });
@@ -125,7 +127,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register/university',
         builder: (_, _) => const UniversityDetailScreen(),
       ),
-      GoRoute(path: '/track-select', builder: (_, _) => const _Placeholder('Track select')),
+      GoRoute(
+        path: '/track-select',
+        builder: (_, _) => const _Placeholder('Track select'),
+      ),
       // The signed-in app lives inside the 5-tab nav shell. `indexedStack`
       // keeps one Navigator per branch, so each tab preserves its own state
       // (and Home does not re-fetch `/me`) when the student switches tabs.
@@ -223,7 +228,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // QuizSetupArgs constructor the Learn stack used.
       GoRoute(
         path: '/quiz/setup',
-        builder: (_, state) => QuizSetupScreen(args: state.extra! as QuizSetupArgs),
+        builder: (_, state) =>
+            QuizSetupScreen(args: state.extra! as QuizSetupArgs),
       ),
       // The `Quiz` rides as `extra` because quiz state is IN MEMORY ONLY:
       // questions are never cached, and `GET /quizzes/{quizId}` is `draft`, so
@@ -247,8 +253,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(path: '/subscription', builder: (_, _) => const _Placeholder('Subscription')),
-      GoRoute(path: '/subscription/return', builder: (_, _) => const _Placeholder('Paymob return')),
+      GoRoute(
+        path: '/subscription',
+        builder: (_, _) => const _Placeholder('Subscription'),
+      ),
+      GoRoute(
+        path: '/subscription/return',
+        builder: (_, _) => const _Placeholder('Paymob return'),
+      ),
       // `/profile` is the same hub as the `/account` tab, reachable outside the
       // shell (deep links, and the parent of `/profile/edit`). `/profile/edit`
       // is NESTED so the pencil pushes a child of the profile it came from.
@@ -278,7 +290,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Outside the nav shell, like `/profile/edit`: they are pushed from the
       // Account tab and cover the nav bar, rather than being tabs themselves.
       GoRoute(path: '/refer', builder: (_, _) => const ReferAFriendScreen()),
-      GoRoute(path: '/support', builder: (_, _) => const CustomerSupportScreen()),
+      GoRoute(
+        path: '/support',
+        builder: (_, _) => const CustomerSupportScreen(),
+      ),
       // No entry point in the app — the Profile frame draws no Friends row (see
       // FriendsScreen). Routed so the built screen is reachable and testable
       // the day a design gives it a door.

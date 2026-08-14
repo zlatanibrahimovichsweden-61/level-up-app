@@ -58,8 +58,9 @@ void main() {
       expect(find.text('Notification Preferences'), findsOneWidget);
     });
 
-    testWidgets('adds no request of its own — /me is still fetched once',
-        (tester) async {
+    testWidgets('adds no request of its own — /me is still fetched once', (
+      tester,
+    ) async {
       final repo = settingsRepo();
       await pumpAppAt(tester, '/settings', profile: repo);
 
@@ -69,13 +70,16 @@ void main() {
   });
 
   group('Rank — two independent booleans (S27)', () {
-    testWidgets('the frame\'s ONE switch is drawn as two, from /me',
-        (tester) async {
+    testWidgets('the frame\'s ONE switch is drawn as two, from /me', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/settings');
 
       // The fixture is the adr-023 default pair: listed, score shown.
-      expect(find.byKey(const Key('settings_leaderboard_visible')),
-          findsOneWidget);
+      expect(
+        find.byKey(const Key('settings_leaderboard_visible')),
+        findsOneWidget,
+      );
       expect(find.byKey(const Key('settings_score_hidden')), findsOneWidget);
 
       final switches = tester.widgetList<Switch>(
@@ -87,8 +91,9 @@ void main() {
       expect(switches.single.value, isTrue, reason: 'leaderboardVisible: true');
     });
 
-    testWidgets('flipping leaderboardVisible sends ONLY leaderboardVisible',
-        (tester) async {
+    testWidgets('flipping leaderboardVisible sends ONLY leaderboardVisible', (
+      tester,
+    ) async {
       final repo = settingsRepo();
       await pumpAppAt(tester, '/settings', profile: repo);
 
@@ -120,7 +125,9 @@ void main() {
       );
     });
 
-    testWidgets('neither toggle carries name, email or avatarId', (tester) async {
+    testWidgets('neither toggle carries name, email or avatarId', (
+      tester,
+    ) async {
       final repo = settingsRepo();
       await pumpAppAt(tester, '/settings', profile: repo);
 
@@ -137,28 +144,31 @@ void main() {
       }
     });
 
-    testWidgets('a successful save re-reads /me — the server decides the value',
-        (tester) async {
-      final hidden = StudentProfile.fromJson(<String, dynamic>{
-        ...schoolProfileJson(),
-        'privacy': <String, dynamic>{
-          'leaderboardVisible': false,
-          'scoreHidden': false,
-        },
-      });
-      final repo = settingsRepo(updated: hidden);
-      await pumpAppAt(tester, '/settings', profile: repo);
+    testWidgets(
+      'a successful save re-reads /me — the server decides the value',
+      (tester) async {
+        final hidden = StudentProfile.fromJson(<String, dynamic>{
+          ...schoolProfileJson(),
+          'privacy': <String, dynamic>{
+            'leaderboardVisible': false,
+            'scoreHidden': false,
+          },
+        });
+        final repo = settingsRepo(updated: hidden);
+        await pumpAppAt(tester, '/settings', profile: repo);
 
-      await tester.tap(find.byKey(const Key('settings_leaderboard_visible')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('settings_leaderboard_visible')));
+        await tester.pumpAndSettle();
 
-      // Nothing optimistic: the switch moved because `/me` was invalidated and
-      // came back saying so.
-      verify(repo.getMe).called(2);
-    });
+        // Nothing optimistic: the switch moved because `/me` was invalidated and
+        // came back saying so.
+        verify(repo.getMe).called(2);
+      },
+    );
 
-    testWidgets('a failed save says so and does not move the switch',
-        (tester) async {
+    testWidgets('a failed save says so and does not move the switch', (
+      tester,
+    ) async {
       final repo = settingsRepo(failure: const NetworkException());
       await pumpAppAt(tester, '/settings', profile: repo);
 
@@ -175,13 +185,17 @@ void main() {
       expect(control.value, isTrue, reason: 'still what /me last said');
     });
 
-    testWidgets('when /me has never loaded, Rank degrades and the rest works',
-        (tester) async {
+    testWidgets('when /me has never loaded, Rank degrades and the rest works', (
+      tester,
+    ) async {
       final repo = settingsRepo();
       when(repo.getMe).thenThrow(const NetworkException());
       await pumpAppAt(tester, '/settings', profile: repo);
 
-      expect(find.byKey(const Key('settings_rank_unavailable')), findsOneWidget);
+      expect(
+        find.byKey(const Key('settings_rank_unavailable')),
+        findsOneWidget,
+      );
       // The two client-side sections are untouched by a failing request.
       expect(find.byKey(const Key('settings_language_ar')), findsOneWidget);
       expect(find.byKey(const Key('settings_mode_dark')), findsOneWidget);
@@ -198,12 +212,15 @@ void main() {
       expect(find.text('Dark'), findsOneWidget);
     });
 
-    testWidgets('picking Dark changes the app\'s canvas, not just a flag',
-        (tester) async {
+    testWidgets('picking Dark changes the app\'s canvas, not just a flag', (
+      tester,
+    ) async {
       final container = await pumpAppAt(tester, '/settings');
 
-      expect(paletteAt(tester, atSettings()).background,
-          AppColors.light.background);
+      expect(
+        paletteAt(tester, atSettings()).background,
+        AppColors.light.background,
+      );
 
       await tester.tap(find.byKey(const Key('settings_mode_dark')));
       await tester.pumpAndSettle();
@@ -250,8 +267,10 @@ void main() {
       await tester.tap(find.byKey(const Key('settings_mode_light')));
       await tester.pumpAndSettle();
 
-      expect(paletteAt(tester, atSettings()).background,
-          AppColors.light.background);
+      expect(
+        paletteAt(tester, atSettings()).background,
+        AppColors.light.background,
+      );
     });
   });
 
@@ -259,8 +278,10 @@ void main() {
     testWidgets('picking Arabic flips the whole app to RTL', (tester) async {
       final container = await pumpAppAt(tester, '/settings');
 
-      expect(Directionality.of(tester.element(atSettings())),
-          TextDirection.ltr);
+      expect(
+        Directionality.of(tester.element(atSettings())),
+        TextDirection.ltr,
+      );
 
       await tester.tap(find.byKey(const Key('settings_language_ar')));
       await tester.pumpAndSettle();
@@ -273,8 +294,9 @@ void main() {
       expect(find.text('الترتيب'), findsOneWidget);
     });
 
-    testWidgets('both names are written in their own language, in both locales',
-        (tester) async {
+    testWidgets('both names are written in their own language, in both locales', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/settings');
       expect(find.text('العربية'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
@@ -288,15 +310,19 @@ void main() {
       expect(find.text('English'), findsOneWidget);
     });
 
-    testWidgets('tapping the language already in use is a no-op',
-        (tester) async {
+    testWidgets('tapping the language already in use is a no-op', (
+      tester,
+    ) async {
       final container = await pumpAppAt(tester, '/settings');
 
       await tester.tap(find.byKey(const Key('settings_language_en')));
       await tester.pumpAndSettle();
 
-      expect(container.read(localeProvider), const Locale('en'),
-          reason: 'select(), not toggle() — it must not flip away');
+      expect(
+        container.read(localeProvider),
+        const Locale('en'),
+        reason: 'select(), not toggle() — it must not flip away',
+      );
     });
   });
 
@@ -312,8 +338,9 @@ void main() {
       return PreferencesStore.load();
     }
 
-    testWidgets('a stored dark canvas is already painted, not flipped into',
-        (tester) async {
+    testWidgets('a stored dark canvas is already painted, not flipped into', (
+      tester,
+    ) async {
       await pumpAppAt(
         tester,
         '/settings',
@@ -331,22 +358,28 @@ void main() {
       expect(modeRow(tester, 'settings_mode_light').selected, isFalse);
     });
 
-    testWidgets('a stored language is already in force, in the right direction',
-        (tester) async {
-      // No `locale:` argument — the store is the source, which is the whole
-      // point. The app default is AR, so EN here can only have come from disk.
-      await pumpAppAt(
-        tester,
-        '/settings',
-        prefs: await seeded({'pref.locale': 'en'}),
-      );
+    testWidgets(
+      'a stored language is already in force, in the right direction',
+      (tester) async {
+        // No `locale:` argument — the store is the source, which is the whole
+        // point. The app default is AR, so EN here can only have come from disk.
+        await pumpAppAt(
+          tester,
+          '/settings',
+          prefs: await seeded({'pref.locale': 'en'}),
+        );
 
-      expect(Directionality.of(tester.element(atSettings())), TextDirection.ltr);
-      expect(find.text('Languages'), findsOneWidget);
-    });
+        expect(
+          Directionality.of(tester.element(atSettings())),
+          TextDirection.ltr,
+        );
+        expect(find.text('Languages'), findsOneWidget);
+      },
+    );
 
-    testWidgets('picking a canvas writes it, so the next launch keeps it',
-        (tester) async {
+    testWidgets('picking a canvas writes it, so the next launch keeps it', (
+      tester,
+    ) async {
       final store = await seeded({});
       await pumpAppAt(tester, '/settings', prefs: store);
 
@@ -378,9 +411,14 @@ void main() {
         prefs: await seeded({'pref.theme_mode': 3, 'pref.locale': 7}),
       );
 
-      expect(paletteAt(tester, atSettings()).background,
-          AppColors.light.background);
-      expect(Directionality.of(tester.element(atSettings())), TextDirection.rtl);
+      expect(
+        paletteAt(tester, atSettings()).background,
+        AppColors.light.background,
+      );
+      expect(
+        Directionality.of(tester.element(atSettings())),
+        TextDirection.rtl,
+      );
     });
   });
 
@@ -395,15 +433,17 @@ void main() {
     });
 
     for (final entry in notificationRows.entries) {
-      testWidgets('${entry.key} is structurally non-interactive',
-          (tester) async {
+      testWidgets('${entry.key} is structurally non-interactive', (
+        tester,
+      ) async {
         await pumpAppAt(tester, '/settings');
         expectDeadControl(tester, entry.key);
-      }, );
+      });
     }
 
-    testWidgets('tapping one changes nothing and sends nothing',
-        (tester) async {
+    testWidgets('tapping one changes nothing and sends nothing', (
+      tester,
+    ) async {
       final repo = settingsRepo();
       await pumpAppAt(tester, '/settings', profile: repo);
 
@@ -415,7 +455,10 @@ void main() {
       verifyNever(() => repo.updateMe(any()));
       for (final key in notificationRows.keys) {
         final control = tester.widget<Switch>(
-          find.descendant(of: find.byKey(Key(key)), matching: find.byType(Switch)),
+          find.descendant(
+            of: find.byKey(Key(key)),
+            matching: find.byType(Switch),
+          ),
         );
         // ON is the FRAME's state (`176:1840` draws all four purple), adopted
         // once the frame could be read. What this asserts is that it did not
@@ -426,7 +469,9 @@ void main() {
       }
     });
 
-    testWidgets('each announces itself disabled, with a reason', (tester) async {
+    testWidgets('each announces itself disabled, with a reason', (
+      tester,
+    ) async {
       final handle = tester.ensureSemantics();
       await pumpAppAt(tester, '/settings');
 
@@ -446,39 +491,48 @@ void main() {
   });
 
   group('AR (RTL) + EN × light + dark', () {
-    testWidgets('Arabic renders the Arabic section titles under RTL',
-        (tester) async {
+    testWidgets('Arabic renders the Arabic section titles under RTL', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/settings', locale: 'ar');
 
-      expect(Directionality.of(tester.element(atSettings())),
-          TextDirection.rtl);
+      expect(
+        Directionality.of(tester.element(atSettings())),
+        TextDirection.rtl,
+      );
       expect(find.text('اللغة'), findsOneWidget);
       expect(find.text('المظهر'), findsOneWidget);
       expect(find.text('الترتيب'), findsOneWidget);
       expect(find.text('تفضيلات الإشعارات'), findsOneWidget);
     });
 
-    testWidgets('Arabic + dark, and the disabled reason is localized too',
-        (tester) async {
+    testWidgets('Arabic + dark, and the disabled reason is localized too', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/settings', locale: 'ar');
 
       await tester.tap(find.byKey(const Key('settings_mode_dark')));
       await tester.pumpAndSettle();
 
-      expect(paletteAt(tester, atSettings()).background,
-          AppColors.dark.background);
+      expect(
+        paletteAt(tester, atSettings()).background,
+        AppColors.dark.background,
+      );
       expect(find.text('إعدادات الإشعارات غير متاحة بعد.'), findsOneWidget);
       // Dark must not quietly re-enable anything.
       expectDeadControl(tester, 'settings_notif_system');
     });
 
-    testWidgets('offline pins the banner and Rank still reads from cache',
-        (tester) async {
+    testWidgets('offline pins the banner and Rank still reads from cache', (
+      tester,
+    ) async {
       await pumpAppAt(tester, '/settings', online: false);
 
       expect(find.text('You are offline'), findsOneWidget);
-      expect(find.byKey(const Key('settings_leaderboard_visible')),
-          findsOneWidget);
+      expect(
+        find.byKey(const Key('settings_leaderboard_visible')),
+        findsOneWidget,
+      );
     });
   });
 }

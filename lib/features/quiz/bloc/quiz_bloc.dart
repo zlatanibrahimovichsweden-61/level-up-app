@@ -45,9 +45,9 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   QuizBloc({
     required QuizRepository repository,
     Duration explanationPollInterval = _kExplanationPollInterval,
-  })  : _repository = repository,
-        _pollInterval = explanationPollInterval,
-        super(const QuizInitial()) {
+  }) : _repository = repository,
+       _pollInterval = explanationPollInterval,
+       super(const QuizInitial()) {
     on<QuizStarted>(_onStarted);
     on<OptionSelected>(_onOptionSelected);
     on<AnswerSubmitted>(_onAnswerSubmitted);
@@ -96,8 +96,10 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     // Guarded on QuizInProgress specifically: from AnswerConfirming this is a
     // double-submit, and from a graded question it is a re-answer. Both are
     // dropped, so the rejection is deterministic rather than a race.
-    if (state case QuizInProgress(:final session, :final selectedOptionId)
-        when selectedOptionId != null && !session.isGraded) {
+    if (state case QuizInProgress(
+      :final session,
+      :final selectedOptionId,
+    ) when selectedOptionId != null && !session.isGraded) {
       await _submit(session, selectedOptionId, emit);
     }
   }
@@ -147,8 +149,9 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   /// Forward. Only from a graded question — the shell renders Confirm until
   /// then, so there is nothing to advance past.
   void _onNext(NextQuestionRequested event, Emitter<QuizState> emit) {
-    if (state case QuizInProgress(:final session)
-        when session.isGraded && !session.isLast) {
+    if (state case QuizInProgress(
+      :final session,
+    ) when session.isGraded && !session.isLast) {
       _stopPolling();
       emit(QuizInProgress(session.copyWith(index: session.index + 1)));
     }
@@ -219,11 +222,19 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       // explanation landing must not knock the machine out of whichever phase
       // it is in, and a sixth position added later fails to compile here.
       emit(switch (active) {
-        QuizInProgress(:final selectedOptionId) =>
-          QuizInProgress(updated, selectedOptionId: selectedOptionId),
-        AnswerConfirming(:final optionId) => AnswerConfirming(updated, optionId),
-        AnswerFailed(:final optionId, :final error) =>
-          AnswerFailed(updated, optionId, error),
+        QuizInProgress(:final selectedOptionId) => QuizInProgress(
+          updated,
+          selectedOptionId: selectedOptionId,
+        ),
+        AnswerConfirming(:final optionId) => AnswerConfirming(
+          updated,
+          optionId,
+        ),
+        AnswerFailed(:final optionId, :final error) => AnswerFailed(
+          updated,
+          optionId,
+          error,
+        ),
         QuizFinishing() => QuizFinishing(updated),
         FinishFailed(:final error) => FinishFailed(updated, error),
       });

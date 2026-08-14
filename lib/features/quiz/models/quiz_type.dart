@@ -31,9 +31,9 @@ enum QuizType { normal, midTermRevision, finalRevision, practicalRevision }
 /// sends bare enum values, so the app owns the translation.
 extension QuizTypeLabel on QuizType {
   String label(AppLocalizations l10n) => switch (this) {
-        QuizType.normal => l10n.quizTypeNormal,
-        QuizType.midTermRevision => l10n.quizTypeMidterm,
-        QuizType.finalRevision => l10n.quizTypeFinal,
-        QuizType.practicalRevision => l10n.quizTypePractice,
-      };
+    QuizType.normal => l10n.quizTypeNormal,
+    QuizType.midTermRevision => l10n.quizTypeMidterm,
+    QuizType.finalRevision => l10n.quizTypeFinal,
+    QuizType.practicalRevision => l10n.quizTypePractice,
+  };
 }

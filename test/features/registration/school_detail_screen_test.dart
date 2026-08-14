@@ -92,8 +92,9 @@ void main() {
   }
 
   group('frame 337:5269 — layout', () {
-    testWidgets('renders the title, subtitle and Start learning CTA',
-        (tester) async {
+    testWidgets('renders the title, subtitle and Start learning CTA', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.text('School Registration'), findsWidgets);
@@ -104,8 +105,9 @@ void main() {
       );
     });
 
-    testWidgets('shows the frame fields in order after Date of Birth',
-        (tester) async {
+    testWidgets('shows the frame fields in order after Date of Birth', (
+      tester,
+    ) async {
       await pump(tester);
 
       // Vertical positions must follow the frame's top-to-bottom order.
@@ -119,17 +121,15 @@ void main() {
       expect(dy('Grade'), lessThan(dy('School Name')));
     });
 
-    testWidgets(
-      'includes the Date of Birth field the Figma frame is missing '
-      '(DESIGN_ISSUES #2 — contract-required)',
-      (tester) async {
-        await pump(tester);
-        expect(find.byKey(const Key('field-dateOfBirth')), findsOneWidget);
-      },
-    );
+    testWidgets('includes the Date of Birth field the Figma frame is missing '
+        '(DESIGN_ISSUES #2 — contract-required)', (tester) async {
+      await pump(tester);
+      expect(find.byKey(const Key('field-dateOfBirth')), findsOneWidget);
+    });
 
-    testWidgets('defaults the country to Egypt from the server list',
-        (tester) async {
+    testWidgets('defaults the country to Egypt from the server list', (
+      tester,
+    ) async {
       final container = await pump(tester);
 
       final draft = container.read(registrationControllerProvider)!;
@@ -139,8 +139,9 @@ void main() {
   });
 
   group('geography conditionality (adr-010)', () {
-    testWidgets('Egypt shows Governorate + the coded school picker',
-        (tester) async {
+    testWidgets('Egypt shows Governorate + the coded school picker', (
+      tester,
+    ) async {
       await pump(tester);
 
       expect(find.byKey(const Key('field-governorateId')), findsOneWidget);
@@ -151,10 +152,9 @@ void main() {
       'a non-Egypt country hides Governorate AND the school step entirely',
       (tester) async {
         final container = await pump(tester);
-        container.read(registrationControllerProvider.notifier).setCountry(
-              countryCode: 'AE',
-              requiresGovernorate: false,
-            );
+        container
+            .read(registrationControllerProvider.notifier)
+            .setCountry(countryCode: 'AE', requiresGovernorate: false);
         await tester.pumpAndSettle();
 
         // Governorate is FORBIDDEN there — absent, not merely disabled.
@@ -168,8 +168,9 @@ void main() {
       },
     );
 
-    testWidgets('switching country clears the dependent geography',
-        (tester) async {
+    testWidgets('switching country clears the dependent geography', (
+      tester,
+    ) async {
       final container = await pump(
         tester,
         afterSeed: (c) {
@@ -181,10 +182,9 @@ void main() {
         },
       );
 
-      container.read(registrationControllerProvider.notifier).setCountry(
-            countryCode: 'AE',
-            requiresGovernorate: false,
-          );
+      container
+          .read(registrationControllerProvider.notifier)
+          .setCountry(countryCode: 'AE', requiresGovernorate: false);
       await tester.pumpAndSettle();
 
       final draft = container.read(registrationControllerProvider)!;
@@ -193,8 +193,9 @@ void main() {
       expect(draft.schoolId, isNull);
     });
 
-    testWidgets('City stays gated until a governorate is chosen (Egypt)',
-        (tester) async {
+    testWidgets('City stays gated until a governorate is chosen (Egypt)', (
+      tester,
+    ) async {
       await pump(tester);
 
       // The contract 400s on /reference/cities?countryCode=EG with no
@@ -217,17 +218,16 @@ void main() {
 
       expect(find.text('Choose a governorate first'), findsNothing);
       verify(
-        () => reference.getCities(
-          countryCode: 'EG',
-          governorateId: 'gov-cairo',
-        ),
+        () =>
+            reference.getCities(countryCode: 'EG', governorateId: 'gov-cairo'),
       ).called(1);
     });
   });
 
   group('rate limiting (429 rate_limited)', () {
-    testWidgets('renders in the picker\'s EXISTING error slot, with Retry',
-        (tester) async {
+    testWidgets('renders in the picker\'s EXISTING error slot, with Retry', (
+      tester,
+    ) async {
       // No new widget and no gating: the same failure state every other
       // picker error uses, just with copy that does not invite the student to
       // hammer Retry against a limiter.
@@ -245,10 +245,12 @@ void main() {
       expect(find.text('You are offline'), findsNothing);
     });
 
-    testWidgets('the message stands alone when Retry-After was unusable',
-        (tester) async {
-      when(reference.getEducationSystems)
-          .thenThrow(const RateLimitedException());
+    testWidgets('the message stands alone when Retry-After was unusable', (
+      tester,
+    ) async {
+      when(
+        reference.getEducationSystems,
+      ).thenThrow(const RateLimitedException());
       await pump(tester);
 
       expect(
@@ -258,19 +260,21 @@ void main() {
     });
 
     testWidgets('and is localized', (tester) async {
-      when(reference.getEducationSystems)
-          .thenThrow(const RateLimitedException());
+      when(
+        reference.getEducationSystems,
+      ).thenThrow(const RateLimitedException());
       await pump(tester, locale: const Locale('ar'));
 
       expect(find.text('طلبات كثيرة. حاول مرة أخرى بعد قليل.'), findsOneWidget);
     });
 
-    testWidgets('country_not_found still shows the GENERIC geography error',
-        (tester) async {
+    testWidgets('country_not_found still shows the GENERIC geography error', (
+      tester,
+    ) async {
       // Seif's notice §3 — map the code, render nothing new.
-      when(() => reference.getGovernorates(any())).thenThrow(
-        const ApiException(status: 404, code: 'country_not_found'),
-      );
+      when(
+        () => reference.getGovernorates(any()),
+      ).thenThrow(const ApiException(status: 404, code: 'country_not_found'));
       await pump(tester);
 
       expect(find.text('Something went wrong'), findsWidgets);
@@ -289,34 +293,40 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('empty → the localized empty line, not a blank field',
-        (tester) async {
+    testWidgets('empty → the localized empty line, not a blank field', (
+      tester,
+    ) async {
       when(() => reference.getEducationSystems()).thenAnswer((_) async => []);
       await pump(tester);
 
       expect(find.text('Nothing to show here'), findsWidgets);
     });
 
-    testWidgets('error → message + a user-tapped Retry that refetches',
-        (tester) async {
-      when(() => reference.getEducationSystems())
-          .thenThrow(const UnknownException());
+    testWidgets('error → message + a user-tapped Retry that refetches', (
+      tester,
+    ) async {
+      when(
+        () => reference.getEducationSystems(),
+      ).thenThrow(const UnknownException());
       await pump(tester);
 
       expect(find.text('Something went wrong'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Retry'), findsOneWidget);
 
-      when(() => reference.getEducationSystems())
-          .thenAnswer((_) async => educationSystems);
+      when(
+        () => reference.getEducationSystems(),
+      ).thenAnswer((_) async => educationSystems);
       await tapVisible(tester, find.widgetWithText(TextButton, 'Retry'));
 
       expect(find.text('Something went wrong'), findsNothing);
     });
 
-    testWidgets('offline → its own copy, distinct from a generic error',
-        (tester) async {
-      when(() => reference.getEducationSystems())
-          .thenThrow(const NetworkException(detail: 'timeout'));
+    testWidgets('offline → its own copy, distinct from a generic error', (
+      tester,
+    ) async {
+      when(
+        () => reference.getEducationSystems(),
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       await pump(tester);
 
       expect(find.text('You are offline'), findsOneWidget);
@@ -330,8 +340,9 @@ void main() {
   });
 
   group('submit pre-flight', () {
-    testWidgets('an incomplete form shows inline errors and sends no request',
-        (tester) async {
+    testWidgets('an incomplete form shows inline errors and sends no request', (
+      tester,
+    ) async {
       await pump(tester);
 
       await tapVisible(
@@ -346,30 +357,32 @@ void main() {
   });
 
   group('expiry guard', () {
-    testWidgets('an expired token renders the expiry view instead of the form',
-        (tester) async {
-      await pump(
-        tester,
-        seed: false,
-        afterSeed: (c) {
-          c.read(registrationControllerProvider.notifier)
-            ..start(
-              const RegistrationArgs(
-                registrationToken: 'reg.token',
-                expiresInSeconds: -1,
-                phone: '+201555000111',
-              ),
-            )
-            ..setTrack(RegTrack.school);
-        },
-      );
+    testWidgets(
+      'an expired token renders the expiry view instead of the form',
+      (tester) async {
+        await pump(
+          tester,
+          seed: false,
+          afterSeed: (c) {
+            c.read(registrationControllerProvider.notifier)
+              ..start(
+                const RegistrationArgs(
+                  registrationToken: 'reg.token',
+                  expiresInSeconds: -1,
+                  phone: '+201555000111',
+                ),
+              )
+              ..setTrack(RegTrack.school);
+          },
+        );
 
-      expect(
-        find.text('Your registration session expired. Please start again.'),
-        findsOneWidget,
-      );
-      expect(find.text('Start learning'), findsNothing);
-    });
+        expect(
+          find.text('Your registration session expired. Please start again.'),
+          findsOneWidget,
+        );
+        expect(find.text('Start learning'), findsNothing);
+      },
+    );
 
     testWidgets('no draft at all renders the expiry view', (tester) async {
       await pump(tester, seed: false);
@@ -397,15 +410,17 @@ void main() {
     });
 
     testWidgets('picker errors are localized in Arabic', (tester) async {
-      when(() => reference.getEducationSystems())
-          .thenThrow(const NetworkException(detail: 'timeout'));
+      when(
+        () => reference.getEducationSystems(),
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       await pump(tester, locale: const Locale('ar'));
 
       expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
     });
 
-    testWidgets('both adr-028 escapes carry Seif\'s Arabic copy',
-        (tester) async {
+    testWidgets('both adr-028 escapes carry Seif\'s Arabic copy', (
+      tester,
+    ) async {
       final container = await pump(tester, locale: const Locale('ar'));
       container
           .read(registrationControllerProvider.notifier)
@@ -432,8 +447,9 @@ void main() {
       return container;
     }
 
-    testWidgets('the picker is the default; the escape is a link under it',
-        (tester) async {
+    testWidgets('the picker is the default; the escape is a link under it', (
+      tester,
+    ) async {
       await pumpWithGovernorate(tester);
 
       expect(find.byKey(const Key('field-cityId')), findsOneWidget);
@@ -443,12 +459,15 @@ void main() {
       expect(link, findsOneWidget);
       expect(
         tester.getTopLeft(link).dy,
-        greaterThan(tester.getTopLeft(find.byKey(const Key('field-cityId'))).dy),
+        greaterThan(
+          tester.getTopLeft(find.byKey(const Key('field-cityId'))).dy,
+        ),
       );
     });
 
-    testWidgets('tapping it SWAPS the dropdown for a text field in place',
-        (tester) async {
+    testWidgets('tapping it SWAPS the dropdown for a text field in place', (
+      tester,
+    ) async {
       await pumpWithGovernorate(tester);
       await tapVisible(
         tester,
@@ -461,8 +480,9 @@ void main() {
       expect(find.text('City name'), findsWidgets);
     });
 
-    testWidgets('typing lands on the controller and clears the coded id',
-        (tester) async {
+    testWidgets('typing lands on the controller and clears the coded id', (
+      tester,
+    ) async {
       final container = await pumpWithGovernorate(tester);
       container.read(registrationControllerProvider.notifier)
         ..setCity('city-nasr')
@@ -485,8 +505,9 @@ void main() {
       expect(draft.schoolId, isNull);
     });
 
-    testWidgets('"Choose from the list" returns AND clears the free text',
-        (tester) async {
+    testWidgets('"Choose from the list" returns AND clears the free text', (
+      tester,
+    ) async {
       final container = await pumpWithGovernorate(tester);
       await tapVisible(
         tester,
@@ -509,8 +530,9 @@ void main() {
       expect(container.read(registrationControllerProvider)!.cityName, isNull);
     });
 
-    testWidgets('a free-text city still permits a school search',
-        (tester) async {
+    testWidgets('a free-text city still permits a school search', (
+      tester,
+    ) async {
       // The consequence that is easy to miss: the coded search is filtered by
       // governorateId + cityId, and a free-text city has no cityId. It must
       // fall back to governorate-only, not be disabled and not send an empty
@@ -526,8 +548,10 @@ void main() {
       await tester.tap(find.text('Nile School'));
       await tester.pumpAndSettle();
 
-      expect(container.read(registrationControllerProvider)!.schoolId,
-          'school-42');
+      expect(
+        container.read(registrationControllerProvider)!.schoolId,
+        'school-42',
+      );
       verify(
         () => reference.searchSchools(
           q: any(named: 'q'),
@@ -552,8 +576,9 @@ void main() {
       return container;
     }
 
-    testWidgets('the skip affordance sits under the Egyptian picker',
-        (tester) async {
+    testWidgets('the skip affordance sits under the Egyptian picker', (
+      tester,
+    ) async {
       await pumpEgypt(tester);
 
       final link = find.widgetWithText(TextButton, "I can't find my school");
@@ -589,8 +614,9 @@ void main() {
       );
     });
 
-    testWidgets('an Egyptian student can submit having skipped it',
-        (tester) async {
+    testWidgets('an Egyptian student can submit having skipped it', (
+      tester,
+    ) async {
       final container = await pumpEgypt(tester);
       container.read(registrationControllerProvider.notifier)
         ..setDateOfBirth(DateTime(2009, 5, 1))
@@ -611,8 +637,9 @@ void main() {
       );
     });
 
-    testWidgets('picking a school afterwards un-skips the field',
-        (tester) async {
+    testWidgets('picking a school afterwards un-skips the field', (
+      tester,
+    ) async {
       final container = await pumpEgypt(tester);
       await tapVisible(
         tester,

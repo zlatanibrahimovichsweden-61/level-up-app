@@ -42,11 +42,9 @@ final Provider<Dio> dioProvider = Provider<Dio>((ref) {
     authController: ref.read(authControllerProvider.notifier),
     // Lazy: reads authRepositoryProvider only when a refresh is actually needed
     // (at onError), so building dioProvider doesn't cycle back through the repo.
-    refresh: ({required refreshToken, required deviceId}) =>
-        ref.read(authRepositoryProvider).refresh(
-              refreshToken: refreshToken,
-              deviceId: deviceId,
-            ),
+    refresh: ({required refreshToken, required deviceId}) => ref
+        .read(authRepositoryProvider)
+        .refresh(refreshToken: refreshToken, deviceId: deviceId),
     error: ErrorInterceptor(),
   );
 });
@@ -56,6 +54,7 @@ final connectivityProvider = Provider<Connectivity>((ref) => Connectivity());
 /// Drives the Offline screen state. `true` = at least one active transport.
 final isOnlineProvider = StreamProvider<bool>((ref) {
   final conn = ref.watch(connectivityProvider);
-  return conn.onConnectivityChanged
-      .map((results) => results.any((r) => r != ConnectivityResult.none));
+  return conn.onConnectivityChanged.map(
+    (results) => results.any((r) => r != ConnectivityResult.none),
+  );
 });

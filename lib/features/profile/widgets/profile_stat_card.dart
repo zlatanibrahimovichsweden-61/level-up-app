@@ -11,11 +11,7 @@ import '../../../core/theme/app_colors.dart';
 /// promised a figure the server never sent). Whatever the server returned goes
 /// on screen; if the server returns nothing, the card does not exist.
 class ProfileStatCard extends StatelessWidget {
-  const ProfileStatCard({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const ProfileStatCard({super.key, required this.label, required this.value});
 
   final String label;
 

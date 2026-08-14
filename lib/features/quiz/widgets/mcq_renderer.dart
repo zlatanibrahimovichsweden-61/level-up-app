@@ -98,8 +98,10 @@ class _McqBody extends StatelessWidget {
                 height: 180,
                 color: ext.quizOptionFill,
                 alignment: Alignment.center,
-                child: Icon(Icons.image_not_supported_outlined,
-                    color: ext.mutedText),
+                child: Icon(
+                  Icons.image_not_supported_outlined,
+                  color: ext.mutedText,
+                ),
               ),
               imageBuilder: (context, provider) => Semantics(
                 label: l10n.questionImage,
@@ -117,9 +119,7 @@ class _McqBody extends StatelessWidget {
         for (final (index, option) in question.options.indexed) ...[
           if (index > 0) const SizedBox(height: 12),
           QuestionOptionTile(
-            letter: index < _letters.length
-                ? _letters[index]
-                : '${index + 1}',
+            letter: index < _letters.length ? _letters[index] : '${index + 1}',
             text: option.text,
             state: _stateFor(option.id),
             onTap: presentation.isInteractive

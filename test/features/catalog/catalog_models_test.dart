@@ -37,8 +37,10 @@ void main() {
 
   group('QuestionCounter.fraction', () {
     test('is answered/total', () {
-      expect(const QuestionCounter(answered: 216, total: 480).fraction,
-          closeTo(0.45, 0.001));
+      expect(
+        const QuestionCounter(answered: 216, total: 480).fraction,
+        closeTo(0.45, 0.001),
+      );
     });
 
     test('a subject with no questions is 0, not NaN', () {
@@ -178,13 +180,10 @@ void main() {
       // repository dispatched on the VALUE — if those two ever disagreed, a
       // school payload could render as a lecture list.
       for (final tree in <SubjectTree>[schoolTree(), universityTree()]) {
-        expect(
-          switch (tree) {
-            SchoolSubjectTree() => Track.school,
-            UniversitySubjectTree() => Track.university,
-          },
-          tree.track,
-        );
+        expect(switch (tree) {
+          SchoolSubjectTree() => Track.school,
+          UniversitySubjectTree() => Track.university,
+        }, tree.track);
       }
     });
   });

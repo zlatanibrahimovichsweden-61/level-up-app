@@ -57,8 +57,8 @@ class CatalogRepository {
         'school' => SchoolSubjectTree.fromJson(json),
         'university' => UniversitySubjectTree.fromJson(json),
         final track => throw UnknownException(
-            detail: 'unsupported subject tree track: $track',
-          ),
+          detail: 'unsupported subject tree track: $track',
+        ),
       };
     } on DioException catch (e) {
       throw _asAppException(e);

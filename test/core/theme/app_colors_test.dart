@@ -13,8 +13,11 @@ void main() {
       // `copyWith`/`lerp` below would not compile if the constructor were
       // missing a field, so declaring them here covers the first two places.
       for (final palette in [AppColors.light, AppColors.dark]) {
-        expect(palette.sheetFill.a, closeTo(0.2, 0.01),
-            reason: 'sheetFill is a 20% wash');
+        expect(
+          palette.sheetFill.a,
+          closeTo(0.2, 0.01),
+          reason: 'sheetFill is a 20% wash',
+        );
         expect(palette.accentSoft.a, 1.0);
         expect(palette.bodyMuted.a, 1.0);
         expect(palette.successBadge.a, 1.0);
@@ -35,57 +38,67 @@ void main() {
       expect(one.background, AppColors.light.background);
     });
 
-    test('lerp moves each of them — a missing entry would pin one in place', () {
-      final mid = AppColors.light.lerp(AppColors.dark, 0.5);
+    test(
+      'lerp moves each of them — a missing entry would pin one in place',
+      () {
+        final mid = AppColors.light.lerp(AppColors.dark, 0.5);
 
-      expect(mid.sheetFill, Color.lerp(
-        AppColors.light.sheetFill,
-        AppColors.dark.sheetFill,
-        0.5,
-      ));
-      expect(mid.accentSoft, Color.lerp(
-        AppColors.light.accentSoft,
-        AppColors.dark.accentSoft,
-        0.5,
-      ));
-      expect(mid.bodyMuted, Color.lerp(
-        AppColors.light.bodyMuted,
-        AppColors.dark.bodyMuted,
-        0.5,
-      ));
+        expect(
+          mid.sheetFill,
+          Color.lerp(AppColors.light.sheetFill, AppColors.dark.sheetFill, 0.5),
+        );
+        expect(
+          mid.accentSoft,
+          Color.lerp(
+            AppColors.light.accentSoft,
+            AppColors.dark.accentSoft,
+            0.5,
+          ),
+        );
+        expect(
+          mid.bodyMuted,
+          Color.lerp(AppColors.light.bodyMuted, AppColors.dark.bodyMuted, 0.5),
+        );
 
-      // The three that differ between palettes must actually MOVE at t=0.5 —
-      // this is what catches a token that was added to the constructor but
-      // forgotten in lerp (it would sit on the light value forever).
-      expect(mid.accentSoft, isNot(AppColors.light.accentSoft));
-      expect(mid.bodyMuted, isNot(AppColors.light.bodyMuted));
+        // The three that differ between palettes must actually MOVE at t=0.5 —
+        // this is what catches a token that was added to the constructor but
+        // forgotten in lerp (it would sit on the light value forever).
+        expect(mid.accentSoft, isNot(AppColors.light.accentSoft));
+        expect(mid.bodyMuted, isNot(AppColors.light.bodyMuted));
 
-      expect(mid.sheetFill, isNot(AppColors.light.sheetFill));
-    });
+        expect(mid.sheetFill, isNot(AppColors.light.sheetFill));
+      },
+    );
 
     test('lerp endpoints are exact', () {
-      expect(AppColors.light.lerp(AppColors.dark, 1).accentSoft,
-          AppColors.dark.accentSoft);
-      expect(AppColors.light.lerp(AppColors.dark, 0).accentSoft,
-          AppColors.light.accentSoft);
+      expect(
+        AppColors.light.lerp(AppColors.dark, 1).accentSoft,
+        AppColors.dark.accentSoft,
+      );
+      expect(
+        AppColors.light.lerp(AppColors.dark, 0).accentSoft,
+        AppColors.light.accentSoft,
+      );
     });
   });
 
   group('successBadge', () {
-    test('is identical in both palettes — it must not follow the accent flip',
-        () {
-      // The bug this exists to prevent: the badge used to be tinted with
-      // colorScheme.primary, which is green in light and PURPLE in dark. A
-      // success signal is semantic, not decorative.
-      expect(AppColors.light.successBadge, AppColors.dark.successBadge);
-      expect(
-        AppColors.light.successBadge,
-        isNot(AppColors.light.accentSoft),
-        reason: 'successBadge must not be an accent',
-      );
-      expect(AppColors.dark.successBadge, isNot(Brand.purplePrimary));
-      expect(AppColors.light.successBadge, isNot(Brand.greenPrimary));
-    });
+    test(
+      'is identical in both palettes — it must not follow the accent flip',
+      () {
+        // The bug this exists to prevent: the badge used to be tinted with
+        // colorScheme.primary, which is green in light and PURPLE in dark. A
+        // success signal is semantic, not decorative.
+        expect(AppColors.light.successBadge, AppColors.dark.successBadge);
+        expect(
+          AppColors.light.successBadge,
+          isNot(AppColors.light.accentSoft),
+          reason: 'successBadge must not be an accent',
+        );
+        expect(AppColors.dark.successBadge, isNot(Brand.purplePrimary));
+        expect(AppColors.light.successBadge, isNot(Brand.greenPrimary));
+      },
+    );
 
     test('equals the fill in the exported SVG — not an estimate', () {
       // There is no green anywhere in the Figma file's variables (the only bound
@@ -95,10 +108,9 @@ void main() {
       // of the badge quietly disagreeing with the palette.
       final svg = File('assets/images/success_badge.svg').readAsStringSync();
 
-      final fills = RegExp(r'fill="(#[0-9A-Fa-f]{6})"')
-          .allMatches(svg)
-          .map((m) => m.group(1)!.toUpperCase())
-          .toSet();
+      final fills = RegExp(
+        r'fill="(#[0-9A-Fa-f]{6})"',
+      ).allMatches(svg).map((m) => m.group(1)!.toUpperCase()).toSet();
 
       expect(fills, contains('#22C55E'));
       expect(
@@ -108,8 +120,7 @@ void main() {
       );
     });
 
-    test('the badge keeps its white checkmark — so it is never srcIn-tinted',
-        () {
+    test('the badge keeps its white checkmark — so it is never srcIn-tinted', () {
       // Documents why the screen renders the asset unfiltered: it is a TWO
       // colour mark. Any single-colour ColorFilter would flatten the check into
       // the scallop and leave a green blob.

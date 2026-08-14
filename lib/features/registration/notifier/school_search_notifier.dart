@@ -73,7 +73,9 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
 
   @override
   Future<SchoolSearchResults> build() async {
-    final page = await ref.read(referenceRepositoryProvider).searchSchools(
+    final page = await ref
+        .read(referenceRepositoryProvider)
+        .searchSchools(
           q: filter.q,
           governorateId: filter.governorateId,
           cityId: filter.cityId,
@@ -96,7 +98,9 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
       current.copyWith(isLoadingMore: true, clearAppendError: true),
     );
     try {
-      final page = await ref.read(referenceRepositoryProvider).searchSchools(
+      final page = await ref
+          .read(referenceRepositoryProvider)
+          .searchSchools(
             q: filter.q,
             governorateId: filter.governorateId,
             cityId: filter.cityId,
@@ -129,5 +133,5 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
 
 final schoolSearchProvider = AsyncNotifierProvider.autoDispose
     .family<SchoolSearchNotifier, SchoolSearchResults, SchoolFilter>(
-  SchoolSearchNotifier.new,
-);
+      SchoolSearchNotifier.new,
+    );

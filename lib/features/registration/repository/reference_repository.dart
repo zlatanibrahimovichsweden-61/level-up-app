@@ -100,9 +100,7 @@ class ReferenceRepository {
   /// `GET /reference/education-systems` — school systems (closed, bare array).
   Future<List<EducationSystemRef>> getEducationSystems() async {
     try {
-      final res = await _dio.get<List<dynamic>>(
-        '/reference/education-systems',
-      );
+      final res = await _dio.get<List<dynamic>>('/reference/education-systems');
       return res.data!
           .map((e) => EducationSystemRef.fromJson(e as Map<String, dynamic>))
           .toList();

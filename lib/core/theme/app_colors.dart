@@ -459,8 +459,12 @@ class AppColors extends ThemeExtension<AppColors> {
     bellRing: Color(0xFF4B675E), // Figma 59:1466 — same in both canvases
     bellGlyph: Color(0xFF4B675E), // Figma 59:1466
     bellUnreadDot: Color(0xFFE67E22), // Figma 59:1466
-    catalogCardFill: Color(0xFFFDFDFD), // = light fieldFill (no light Learn frame)
-    catalogTrack: Color(0xFFD1D1D1), // = light fieldBorder (no light Learn frame)
+    catalogCardFill: Color(
+      0xFFFDFDFD,
+    ), // = light fieldFill (no light Learn frame)
+    catalogTrack: Color(
+      0xFFD1D1D1,
+    ), // = light fieldBorder (no light Learn frame)
     sheetFill: Color(0x33FCFBF9), // rgba(252,251,249,0.2) — Figma 459:43873
     accentSoft: Color(0xFFA0B384), // Figma 459:43876 — sage, not greenPrimary
     bodyMuted: Color(0xFF858585), // Figma 459:43887
@@ -525,7 +529,9 @@ class AppColors extends ThemeExtension<AppColors> {
     // green→purple accent flip. See the field doc above.
     successBadge: Color(0xFF22C55E),
     quizOptionFill: Color(0xFF27282C), // = dark catalogCardFill (no dark frame)
-    quizOptionBorder: Color(0xFF4B675E), // Figma — kept in both, like the border above
+    quizOptionBorder: Color(
+      0xFF4B675E,
+    ), // Figma — kept in both, like the border above
     quizDivider: Color(0xFF2E2D32), // = dark progressTrack (no dark frame)
     // The five semantic tokens below are IDENTICAL to light on purpose: a
     // correct answer must not read purple and a wrong one must not read green.
@@ -620,7 +626,8 @@ class AppColors extends ThemeExtension<AppColors> {
       textSecondary: textSecondary ?? this.textSecondary,
       hint: hint ?? this.hint,
       link: link ?? this.link,
-      secondaryButtonBorder: secondaryButtonBorder ?? this.secondaryButtonBorder,
+      secondaryButtonBorder:
+          secondaryButtonBorder ?? this.secondaryButtonBorder,
       legalText: legalText ?? this.legalText,
       cardFill: cardFill ?? this.cardFill,
       cardLabel: cardLabel ?? this.cardLabel,
@@ -681,8 +688,11 @@ class AppColors extends ThemeExtension<AppColors> {
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       hint: Color.lerp(hint, other.hint, t)!,
       link: Color.lerp(link, other.link, t)!,
-      secondaryButtonBorder:
-          Color.lerp(secondaryButtonBorder, other.secondaryButtonBorder, t)!,
+      secondaryButtonBorder: Color.lerp(
+        secondaryButtonBorder,
+        other.secondaryButtonBorder,
+        t,
+      )!,
       legalText: Color.lerp(legalText, other.legalText, t)!,
       cardFill: Color.lerp(cardFill, other.cardFill, t)!,
       cardLabel: Color.lerp(cardLabel, other.cardLabel, t)!,
@@ -704,42 +714,82 @@ class AppColors extends ThemeExtension<AppColors> {
       // animation, which is the whole point.
       successBadge: Color.lerp(successBadge, other.successBadge, t)!,
       quizOptionFill: Color.lerp(quizOptionFill, other.quizOptionFill, t)!,
-      quizOptionBorder: Color.lerp(quizOptionBorder, other.quizOptionBorder, t)!,
+      quizOptionBorder: Color.lerp(
+        quizOptionBorder,
+        other.quizOptionBorder,
+        t,
+      )!,
       quizDivider: Color.lerp(quizDivider, other.quizDivider, t)!,
       // Same as successBadge: identical endpoints, so these stay put across a
       // theme animation.
       quizCorrectFill: Color.lerp(quizCorrectFill, other.quizCorrectFill, t)!,
-      quizCorrectBorder:
-          Color.lerp(quizCorrectBorder, other.quizCorrectBorder, t)!,
+      quizCorrectBorder: Color.lerp(
+        quizCorrectBorder,
+        other.quizCorrectBorder,
+        t,
+      )!,
       quizWrongFill: Color.lerp(quizWrongFill, other.quizWrongFill, t)!,
       quizWrongBorder: Color.lerp(quizWrongBorder, other.quizWrongBorder, t)!,
       quizWrongBadge: Color.lerp(quizWrongBadge, other.quizWrongBadge, t)!,
-      quizExplanationBody:
-          Color.lerp(quizExplanationBody, other.quizExplanationBody, t)!,
+      quizExplanationBody: Color.lerp(
+        quizExplanationBody,
+        other.quizExplanationBody,
+        t,
+      )!,
       navBarFill: Color.lerp(navBarFill, other.navBarFill, t)!,
       navAccent: Color.lerp(navAccent, other.navAccent, t)!,
-      navCentreIdleFill:
-          Color.lerp(navCentreIdleFill, other.navCentreIdleFill, t)!,
-      navCentreGlyphOn:
-          Color.lerp(navCentreGlyphOn, other.navCentreGlyphOn, t)!,
+      navCentreIdleFill: Color.lerp(
+        navCentreIdleFill,
+        other.navCentreIdleFill,
+        t,
+      )!,
+      navCentreGlyphOn: Color.lerp(
+        navCentreGlyphOn,
+        other.navCentreGlyphOn,
+        t,
+      )!,
       navShadow: Color.lerp(navShadow, other.navShadow, t)!,
       // Nullable on purpose — Color.lerp fades to/from transparent when one end
       // is null, which is exactly right for a border that only exists in light.
-      languagePillBorder:
-          Color.lerp(languagePillBorder, other.languagePillBorder, t),
-      languagePillContent:
-          Color.lerp(languagePillContent, other.languagePillContent, t)!,
+      languagePillBorder: Color.lerp(
+        languagePillBorder,
+        other.languagePillBorder,
+        t,
+      ),
+      languagePillContent: Color.lerp(
+        languagePillContent,
+        other.languagePillContent,
+        t,
+      )!,
       // Nullable for the same reason as languagePillBorder — light-only border.
-      trackCardBorderStart:
-          Color.lerp(trackCardBorderStart, other.trackCardBorderStart, t),
-      trackCardBorderEnd:
-          Color.lerp(trackCardBorderEnd, other.trackCardBorderEnd, t),
+      trackCardBorderStart: Color.lerp(
+        trackCardBorderStart,
+        other.trackCardBorderStart,
+        t,
+      ),
+      trackCardBorderEnd: Color.lerp(
+        trackCardBorderEnd,
+        other.trackCardBorderEnd,
+        t,
+      ),
       trackRadioRing: Color.lerp(trackRadioRing, other.trackRadioRing, t)!,
       backChipFill: Color.lerp(backChipFill, other.backChipFill, t)!,
       backChipGlyph: Color.lerp(backChipGlyph, other.backChipGlyph, t)!,
-      profileRowBorder: Color.lerp(profileRowBorder, other.profileRowBorder, t)!,
-      profileStatLabel: Color.lerp(profileStatLabel, other.profileStatLabel, t)!,
-      profileStatValue: Color.lerp(profileStatValue, other.profileStatValue, t)!,
+      profileRowBorder: Color.lerp(
+        profileRowBorder,
+        other.profileRowBorder,
+        t,
+      )!,
+      profileStatLabel: Color.lerp(
+        profileStatLabel,
+        other.profileStatLabel,
+        t,
+      )!,
+      profileStatValue: Color.lerp(
+        profileStatValue,
+        other.profileStatValue,
+        t,
+      )!,
       profileIconChip: Color.lerp(profileIconChip, other.profileIconChip, t)!,
       // Identical endpoints — destructive does not move across a theme
       // animation, which is the exemption made visible (as with successBadge).

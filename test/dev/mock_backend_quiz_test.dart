@@ -61,7 +61,8 @@ void main() {
       for (final question in questions.cast<Map<String, dynamic>>()) {
         expect(question.containsKey('correctOptionId'), isFalse);
         for (final option
-            in (question['options']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+            in (question['options']! as List<dynamic>)
+                .cast<Map<String, dynamic>>()) {
           expect(option.keys, unorderedEquals(<String>['id', 'text']));
         }
       }
@@ -92,7 +93,11 @@ void main() {
       expect(
         () => repo().createQuiz(scope: bigLesson, length: QuizLength.fifty),
         throwsA(
-          isA<ApiException>().having((e) => e.code, 'code', 'not_enough_questions'),
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            'not_enough_questions',
+          ),
         ),
       );
     });
@@ -114,29 +119,33 @@ void main() {
       );
     });
 
-    test('403 weekly_question_limit_reached once 50 questions are used',
-        () async {
-      final quiz = repo();
+    test(
+      '403 weekly_question_limit_reached once 50 questions are used',
+      () async {
+        final quiz = repo();
 
-      // 30 + 30 > 50: the second quiz trips the free-plan cap.
-      await quiz.createQuiz(scope: bigLesson, length: QuizLength.thirty);
+        // 30 + 30 > 50: the second quiz trips the free-plan cap.
+        await quiz.createQuiz(scope: bigLesson, length: QuizLength.thirty);
 
-      expect(
-        () => quiz.createQuiz(scope: bigLesson, length: QuizLength.thirty),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.status, 'status', 403)
-              .having((e) => e.code, 'code', 'weekly_question_limit_reached'),
-        ),
-      );
-    });
+        expect(
+          () => quiz.createQuiz(scope: bigLesson, length: QuizLength.thirty),
+          throwsA(
+            isA<ApiException>()
+                .having((e) => e.status, 'status', 403)
+                .having((e) => e.code, 'code', 'weekly_question_limit_reached'),
+          ),
+        );
+      },
+    );
   });
 
   group('POST /quizzes/{quizId}/answers', () {
     test('grades, and reveals correctOptionId only now', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       final question = created.questions.first;
 
       final result = await quiz.submitAnswer(
@@ -156,8 +165,10 @@ void main() {
 
     test('a replay returns the ORIGINAL grade and awards nothing', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       final question = created.questions.first;
       // Pick the option the mock marked correct, so the first call awards 1 and
       // the replay's zero is unambiguous.
@@ -182,8 +193,10 @@ void main() {
 
     test('a replay with a DIFFERENT option does not re-grade', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       final question = created.questions.first;
 
       final first = await quiz.submitAnswer(
@@ -202,8 +215,10 @@ void main() {
 
     test('409 quiz_already_finished after finish', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       await quiz.finishQuiz(created.id);
 
       expect(
@@ -224,8 +239,10 @@ void main() {
   group('POST /quizzes/{quizId}/finish', () {
     test('summarises a PARTIALLY answered quiz truthfully', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
 
       // Answer 6 of 10, leaving 4 untouched.
       for (final question in created.questions.take(6)) {
@@ -247,15 +264,19 @@ void main() {
       // Recap rows carry a null `correct` for everything unanswered.
       expect(summary.questions.where((q) => !q.answered), hasLength(4));
       expect(
-        summary.questions.where((q) => !q.answered).every((q) => q.correct == null),
+        summary.questions
+            .where((q) => !q.answered)
+            .every((q) => q.correct == null),
         isTrue,
       );
     });
 
     test('is idempotent — a repeat call replays the same summary', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       await quiz.submitAnswer(
         quizId: created.id,
         questionId: created.questions.first.id,
@@ -270,40 +291,50 @@ void main() {
       expect(second.totalPoints, first.totalPoints);
     });
 
-    test('the award reaches GET /me — what invalidating the profile shows',
-        () async {
-      final dio = buildMockDio(latency: Duration.zero);
-      final quiz = QuizRepository(dio);
+    test(
+      'the award reaches GET /me — what invalidating the profile shows',
+      () async {
+        final dio = buildMockDio(latency: Duration.zero);
+        final quiz = QuizRepository(dio);
 
-      final before =
-          (await dio.get<Map<String, dynamic>>('/me')).data!['points']
-              as Map<String, dynamic>;
+        final before =
+            (await dio.get<Map<String, dynamic>>('/me')).data!['points']
+                as Map<String, dynamic>;
 
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
-      for (final question in created.questions) {
-        await quiz.submitAnswer(
-          quizId: created.id,
-          questionId: question.id,
-          optionId: question.options.first.id,
+        final created = await quiz.createQuiz(
+          scope: bigLesson,
+          length: QuizLength.ten,
         );
-      }
-      final summary = await quiz.finishQuiz(created.id);
+        for (final question in created.questions) {
+          await quiz.submitAnswer(
+            quizId: created.id,
+            questionId: question.id,
+            optionId: question.options.first.id,
+          );
+        }
+        final summary = await quiz.finishQuiz(created.id);
 
-      final after = (await dio.get<Map<String, dynamic>>('/me')).data!['points']
-          as Map<String, dynamic>;
+        final after =
+            (await dio.get<Map<String, dynamic>>('/me')).data!['points']
+                as Map<String, dynamic>;
 
-      expect(summary.pointsAwarded, greaterThan(0));
-      expect(after['total'], (before['total']! as int) + summary.pointsAwarded);
-      expect(after['total'], summary.totalPoints);
-    });
+        expect(summary.pointsAwarded, greaterThan(0));
+        expect(
+          after['total'],
+          (before['total']! as int) + summary.pointsAwarded,
+        );
+        expect(after['total'], summary.totalPoints);
+      },
+    );
   });
 
   group('GET /questions/{questionId}/explanation', () {
     test('403 before the student has answered — expected, not a bug', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
 
       expect(
         () => quiz.getExplanation(created.questions.first.id),
@@ -317,8 +348,10 @@ void main() {
 
     test('202 then 200 — the polling path is walkable', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
       final question = created.questions.first;
       await quiz.submitAnswer(
         quizId: created.id,
@@ -336,8 +369,10 @@ void main() {
 
     test('some questions report no explanation at all', () async {
       final quiz = repo();
-      final created =
-          await quiz.createQuiz(scope: bigLesson, length: QuizLength.ten);
+      final created = await quiz.createQuiz(
+        scope: bigLesson,
+        length: QuizLength.ten,
+      );
 
       final results = <bool>[];
       for (final question in created.questions) {
@@ -358,7 +393,10 @@ void main() {
 
   test('both tracks reach the quiz endpoints (000000 / 111111)', () async {
     for (final (code, scope) in const [
-      ('000000', QuizSetupArgs.lesson(lessonId: 'bio-u1-c1-l1', scopeName: 'x')),
+      (
+        '000000',
+        QuizSetupArgs.lesson(lessonId: 'bio-u1-c1-l1', scopeName: 'x'),
+      ),
       (
         '111111',
         QuizSetupArgs.lecture(
@@ -375,8 +413,9 @@ void main() {
         data: <String, dynamic>{'code': code, 'phone': '+201001234567'},
       );
 
-      final quiz = await QuizRepository(dio)
-          .createQuiz(scope: scope, length: QuizLength.ten);
+      final quiz = await QuizRepository(
+        dio,
+      ).createQuiz(scope: scope, length: QuizLength.ten);
 
       expect(quiz.questions, hasLength(10));
       expect(quiz.scopeName, isNotEmpty);

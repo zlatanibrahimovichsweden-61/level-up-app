@@ -60,7 +60,11 @@ class SettingsSection extends StatelessWidget {
             children: [
               for (var i = 0; i < children.length; i++) ...[
                 if (i > 0)
-                  Divider(height: 0.5, thickness: 0.5, color: ext.profileRowBorder),
+                  Divider(
+                    height: 0.5,
+                    thickness: 0.5,
+                    color: ext.profileRowBorder,
+                  ),
                 children[i],
               ],
             ],

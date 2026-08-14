@@ -62,10 +62,10 @@ String fieldIssueMessage(AppLocalizations l10n, RegFieldIssue issue) =>
 /// Per-field issues, whichever side produced them — the client pre-flight or
 /// the server's `400 validation_failed` field map.
 Map<String, RegFieldIssue> fieldIssuesFrom(Object? error) => switch (error) {
-      DraftValidationFailure(:final issues) => issues,
-      ValidationException(:final fields) => serverFieldIssues(fields),
-      _ => const {},
-    };
+  DraftValidationFailure(:final issues) => issues,
+  ValidationException(:final fields) => serverFieldIssues(fields),
+  _ => const {},
+};
 
 /// Does this failure mean the whole registration must restart at `/login`?
 ///

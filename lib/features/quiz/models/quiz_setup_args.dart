@@ -21,8 +21,8 @@ class QuizSetupArgs {
   const QuizSetupArgs.lesson({
     required String this.lessonId,
     required this.scopeName,
-  })  : lectureId = null,
-        quizType = null;
+  }) : lectureId = null,
+       quizType = null;
 
   /// University: the quiz is scoped by lecture, plus the type selected on the
   /// Lectures screen's tab row.

@@ -146,7 +146,11 @@ class _Fallback extends StatelessWidget {
       width: _Avatar._size,
       height: _Avatar._size,
       color: colour,
-      child: Icon(Icons.person, size: _Avatar._size * 0.6, color: ext.mutedText),
+      child: Icon(
+        Icons.person,
+        size: _Avatar._size * 0.6,
+        color: ext.mutedText,
+      ),
     );
   }
 }

@@ -49,8 +49,9 @@ class LimitSheet extends StatelessWidget {
     final title = isSubscription
         ? l10n.subscriptionRequiredTitle
         : l10n.freeUsageReachedTitle;
-    final body =
-        isSubscription ? l10n.subscriptionRequiredBody : l10n.weeklyLimitBody;
+    final body = isSubscription
+        ? l10n.subscriptionRequiredBody
+        : l10n.weeklyLimitBody;
 
     return SafeArea(
       child: Padding(
@@ -94,8 +95,11 @@ class LimitSheet extends StatelessWidget {
                       padding: const EdgeInsetsDirectional.only(bottom: 12),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle,
-                              size: 22, color: ext.successBadge),
+                          Icon(
+                            Icons.check_circle,
+                            size: 22,
+                            color: ext.successBadge,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(

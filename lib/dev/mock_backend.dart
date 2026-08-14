@@ -48,7 +48,10 @@ Dio buildMockDio({Duration latency = const Duration(milliseconds: 300)}) {
       headers: const {'Content-Type': 'application/json'},
     ),
   );
-  dio.interceptors.addAll([MockBackendInterceptor(latency: latency), ErrorInterceptor()]);
+  dio.interceptors.addAll([
+    MockBackendInterceptor(latency: latency),
+    ErrorInterceptor(),
+  ]);
   return dio;
 }
 
@@ -117,7 +120,9 @@ class MockBackendInterceptor extends Interceptor {
     final path = options.path;
     final method = options.method.toUpperCase();
     final query = options.queryParameters;
-    final body = options.data is Map ? Map<String, dynamic>.from(options.data as Map) : const <String, dynamic>{};
+    final body = options.data is Map
+        ? Map<String, dynamic>.from(options.data as Map)
+        : const <String, dynamic>{};
 
     // ---- auth -------------------------------------------------------------
     if (method == 'POST' && path == '/auth/otp/request') {
@@ -269,8 +274,9 @@ class MockBackendInterceptor extends Interceptor {
       return _finishQuiz(handler, options, finish.group(1)!);
     }
 
-    final explanation =
-        RegExp(r'^/questions/([^/]+)/explanation$').firstMatch(path);
+    final explanation = RegExp(
+      r'^/questions/([^/]+)/explanation$',
+    ).firstMatch(path);
     if (method == 'GET' && explanation != null) {
       return _explanation(handler, options, explanation.group(1)!);
     }
@@ -280,7 +286,9 @@ class MockBackendInterceptor extends Interceptor {
       return _ok(handler, options, 200, _countries);
     }
 
-    final governorates = RegExp(r'^/reference/countries/([^/]+)/governorates$').firstMatch(path);
+    final governorates = RegExp(
+      r'^/reference/countries/([^/]+)/governorates$',
+    ).firstMatch(path);
     if (method == 'GET' && governorates != null) {
       // Codes normalize case-insensitively, so `eg` is accepted as `EG`
       // (contract-changelog 2026-07-30). Comparing the raw path segment would
@@ -289,17 +297,27 @@ class MockBackendInterceptor extends Interceptor {
       final failure = _referenceCountryFailure(handler, options, code);
       if (failure) return;
       // Contract: bare array, EMPTY for non-EG.
-      return _ok(handler, options, 200, code == 'EG' ? _egGovernorates : <dynamic>[]);
+      return _ok(
+        handler,
+        options,
+        200,
+        code == 'EG' ? _egGovernorates : <dynamic>[],
+      );
     }
 
     if (method == 'GET' && path == '/reference/cities') {
       final code = (query['countryCode'] as String?)?.toUpperCase();
       final failure = _referenceCountryFailure(handler, options, code);
       if (failure) return;
-      return _ok(handler, options, 200, _citiesFor(
-        countryCode: code,
-        governorateId: query['governorateId'] as String?,
-      ));
+      return _ok(
+        handler,
+        options,
+        200,
+        _citiesFor(
+          countryCode: code,
+          governorateId: query['governorateId'] as String?,
+        ),
+      );
     }
 
     if (method == 'GET' && path == '/reference/schools') {
@@ -310,11 +328,16 @@ class MockBackendInterceptor extends Interceptor {
       if (q != null && q.trim() == _kRateLimitTrigger) {
         return _rateLimited(handler, options);
       }
-      return _ok(handler, options, 200, _schoolPage(
-        q: q,
-        cursor: query['cursor'] as String?,
-        limit: query['limit'] as int? ?? 20,
-      ));
+      return _ok(
+        handler,
+        options,
+        200,
+        _schoolPage(
+          q: q,
+          cursor: query['cursor'] as String?,
+          limit: query['limit'] as int? ?? 20,
+        ),
+      );
     }
 
     if (method == 'GET' && path == '/reference/education-systems') {
@@ -331,7 +354,13 @@ class MockBackendInterceptor extends Interceptor {
 
     // Anything not mocked fails loudly as a contract-shaped 404 rather than
     // hanging on a socket — an unmocked call should be obvious, not silent.
-    return _problem(handler, options, 404, 'not_found', 'No mock for $method $path');
+    return _problem(
+      handler,
+      options,
+      404,
+      'not_found',
+      'No mock for $method $path',
+    );
   }
 
   /// The adr-028 rules `POST /auth/register` now enforces, as a
@@ -473,17 +502,16 @@ class MockBackendInterceptor extends Interceptor {
   void _rateLimited(
     RequestInterceptorHandler handler,
     RequestOptions options,
-  ) =>
-      _problem(
-        handler,
-        options,
-        429,
-        'rate_limited',
-        'Too many requests to /reference/* from this IP',
-        headers: <String, List<String>>{
-          'retry-after': ['30'],
-        },
-      );
+  ) => _problem(
+    handler,
+    options,
+    429,
+    'rate_limited',
+    'Too many requests to /reference/* from this IP',
+    headers: <String, List<String>>{
+      'retry-after': ['30'],
+    },
+  );
 
   /// `POST /quizzes` → `201 Quiz`, or one of the three failures below.
   ///
@@ -657,7 +685,7 @@ class MockBackendInterceptor extends Interceptor {
               'answered': quiz.answers.containsKey(question['id']),
               'correct': quiz.answers.containsKey(question['id'])
                   ? quiz.answers[question['id']] ==
-                      quiz.correctOption[question['id']]
+                        quiz.correctOption[question['id']]
                   : null,
             },
         ],
@@ -698,7 +726,8 @@ class MockBackendInterceptor extends Interceptor {
     }
     return _ok(handler, options, 200, <String, dynamic>{
       'status': 'ready',
-      'text': 'الإجابة الصحيحة تعتمد على أن $questionId يقيس فهم المفهوم '
+      'text':
+          'الإجابة الصحيحة تعتمد على أن $questionId يقيس فهم المفهوم '
           'الأساسي في هذا الدرس. الخيارات الأخرى تبدو معقولة لكنها تخلط بين '
           'تعريفين مختلفين.',
     });
@@ -711,7 +740,11 @@ class MockBackendInterceptor extends Interceptor {
     Object? data,
   ) {
     handler.resolve(
-      Response<dynamic>(requestOptions: options, statusCode: status, data: data),
+      Response<dynamic>(
+        requestOptions: options,
+        statusCode: status,
+        data: data,
+      ),
     );
   }
 
@@ -773,11 +806,11 @@ const _kRateLimitTrigger = '429';
 // ---------------------------------------------------------------------------
 
 Map<String, dynamic> _tokenPair() => <String, dynamic>{
-      'accessToken': 'mock.access.token',
-      'accessExpiresInSeconds': 900,
-      'refreshToken': 'mock.refresh.token',
-      'refreshExpiresInSeconds': 5184000,
-    };
+  'accessToken': 'mock.access.token',
+  'accessExpiresInSeconds': 900,
+  'refreshToken': 'mock.refresh.token',
+  'refreshExpiresInSeconds': 5184000,
+};
 
 final _countries = <dynamic>[
   <String, dynamic>{
@@ -835,24 +868,36 @@ List<dynamic> _citiesFor({String? countryCode, String? governorateId}) {
   if (countryCode == 'EG') {
     return switch (governorateId) {
       '0197b2f3-0001-7cc3-9b4e-000000000001' => <dynamic>[
-          _named('0197b2f3-0002-7cc3-9b4e-000000000001', 'مدينة نصر', 'Nasr City'),
-          _named('0197b2f3-0002-7cc3-9b4e-000000000002', 'المعادي', 'Maadi'),
-          _named('0197b2f3-0002-7cc3-9b4e-000000000003', 'مصر الجديدة', 'Heliopolis'),
-        ],
+        _named(
+          '0197b2f3-0002-7cc3-9b4e-000000000001',
+          'مدينة نصر',
+          'Nasr City',
+        ),
+        _named('0197b2f3-0002-7cc3-9b4e-000000000002', 'المعادي', 'Maadi'),
+        _named(
+          '0197b2f3-0002-7cc3-9b4e-000000000003',
+          'مصر الجديدة',
+          'Heliopolis',
+        ),
+      ],
       '0197b2f3-0001-7cc3-9b4e-000000000002' => <dynamic>[
-          _named('0197b2f3-0002-7cc3-9b4e-000000000004', 'الدقي', 'Dokki'),
-          _named('0197b2f3-0002-7cc3-9b4e-000000000005', '٦ أكتوبر', '6th of October'),
-        ],
+        _named('0197b2f3-0002-7cc3-9b4e-000000000004', 'الدقي', 'Dokki'),
+        _named(
+          '0197b2f3-0002-7cc3-9b4e-000000000005',
+          '٦ أكتوبر',
+          '6th of October',
+        ),
+      ],
       '0197b2f3-0001-7cc3-9b4e-000000000003' => <dynamic>[
-          _named('0197b2f3-0002-7cc3-9b4e-000000000006', 'سموحة', 'Smouha'),
-          _named('0197b2f3-0002-7cc3-9b4e-000000000007', 'ميامي', 'Miami'),
-        ],
+        _named('0197b2f3-0002-7cc3-9b4e-000000000006', 'سموحة', 'Smouha'),
+        _named('0197b2f3-0002-7cc3-9b4e-000000000007', 'ميامي', 'Miami'),
+      ],
       // A governorate with no cities — the Empty state, on purpose.
       '0197b2f3-0001-7cc3-9b4e-000000000005' => <dynamic>[],
       _ => <dynamic>[
-          _named('0197b2f3-0002-7cc3-9b4e-000000000008', 'المنصورة', 'Mansoura'),
-          _named('0197b2f3-0002-7cc3-9b4e-000000000009', 'طلخا', 'Talkha'),
-        ],
+        _named('0197b2f3-0002-7cc3-9b4e-000000000008', 'المنصورة', 'Mansoura'),
+        _named('0197b2f3-0002-7cc3-9b4e-000000000009', 'طلخا', 'Talkha'),
+      ],
     };
   }
   return <dynamic>[
@@ -875,7 +920,11 @@ final _allSchools = <Map<String, dynamic>>[
 
 /// `CursorPage<NamedRef>`. The cursor is an opaque base64 offset — the client
 /// only ever echoes it back, which is exactly the contract's contract.
-Map<String, dynamic> _schoolPage({String? q, String? cursor, required int limit}) {
+Map<String, dynamic> _schoolPage({
+  String? q,
+  String? cursor,
+  required int limit,
+}) {
   final needle = (q ?? '').trim().toLowerCase();
   final matches = needle.isEmpty
       ? _allSchools
@@ -897,7 +946,8 @@ Map<String, dynamic> _schoolPage({String? q, String? cursor, required int limit}
   };
 }
 
-String _encodeCursor(int offset) => base64Url.encode(utf8.encode('offset:$offset'));
+String _encodeCursor(int offset) =>
+    base64Url.encode(utf8.encode('offset:$offset'));
 
 int _decodeCursor(String? cursor) {
   if (cursor == null || cursor.isEmpty) return 0;
@@ -910,11 +960,27 @@ int _decodeCursor(String? cursor) {
 }
 
 final _educationSystems = <dynamic>[
-  <String, dynamic>{'code': 'nationalArabic', 'nameAr': 'الوطني عربي', 'nameEn': 'National (Arabic)'},
-  <String, dynamic>{'code': 'nationalLanguages', 'nameAr': 'الوطني لغات', 'nameEn': 'National (Languages)'},
+  <String, dynamic>{
+    'code': 'nationalArabic',
+    'nameAr': 'الوطني عربي',
+    'nameEn': 'National (Arabic)',
+  },
+  <String, dynamic>{
+    'code': 'nationalLanguages',
+    'nameAr': 'الوطني لغات',
+    'nameEn': 'National (Languages)',
+  },
   <String, dynamic>{'code': 'ig', 'nameAr': 'آي جي', 'nameEn': 'IG'},
-  <String, dynamic>{'code': 'american', 'nameAr': 'أمريكي', 'nameEn': 'American'},
-  <String, dynamic>{'code': 'ib', 'nameAr': 'البكالوريا الدولية', 'nameEn': 'IB'},
+  <String, dynamic>{
+    'code': 'american',
+    'nameAr': 'أمريكي',
+    'nameEn': 'American',
+  },
+  <String, dynamic>{
+    'code': 'ib',
+    'nameAr': 'البكالوريا الدولية',
+    'nameEn': 'IB',
+  },
 ];
 
 Map<String, dynamic> _year(String id, int number, String status) =>
@@ -982,15 +1048,21 @@ final _universities = <dynamic>[
 // Catalog (Learn tab)
 // ---------------------------------------------------------------------------
 
-Map<String, dynamic> _counter(int answered, int total) =>
-    <String, dynamic>{'answered': answered, 'total': total};
+Map<String, dynamic> _counter(int answered, int total) => <String, dynamic>{
+  'answered': answered,
+  'total': total,
+};
 
-Map<String, dynamic> _subject(String id, String name, int answered, int total) =>
-    <String, dynamic>{
-      'id': id,
-      'name': name,
-      'questionCounter': _counter(answered, total),
-    };
+Map<String, dynamic> _subject(
+  String id,
+  String name,
+  int answered,
+  int total,
+) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'questionCounter': _counter(answered, total),
+};
 
 /// `name` arrives already in the content language (adr-018), so these are
 /// Arabic — exactly what an Egyptian school student's catalog returns, and the
@@ -1018,50 +1090,50 @@ Map<String, dynamic> _lesson(String id, String name, int answered, int total) =>
 /// every level of the drill-down has something to show, and `الفيزياء`'s second
 /// chapter is empty so the Lessons empty state is reachable on device.
 List<dynamic> _schoolUnits(String prefix) => <dynamic>[
+  <String, dynamic>{
+    'id': '$prefix-u1',
+    'name': 'الوحدة الأولى',
+    'chapters': <dynamic>[
       <String, dynamic>{
-        'id': '$prefix-u1',
-        'name': 'الوحدة الأولى',
-        'chapters': <dynamic>[
-          <String, dynamic>{
-            'id': '$prefix-u1-c1',
-            'name': 'الفصل الأول',
-            'lessons': <dynamic>[
-              _lesson('$prefix-u1-c1-l1', 'الدرس الأول', 12, 40),
-              _lesson('$prefix-u1-c1-l2', 'الدرس الثاني', 40, 40),
-              _lesson('$prefix-u1-c1-l3', 'الدرس الثالث', 0, 25),
-            ],
-          },
-          <String, dynamic>{
-            'id': '$prefix-u1-c2',
-            'name': 'الفصل الثاني',
-            'lessons': <dynamic>[
-              _lesson('$prefix-u1-c2-l1', 'الدرس الأول', 5, 30),
-              _lesson('$prefix-u1-c2-l2', 'الدرس الثاني', 18, 35),
-            ],
-          },
+        'id': '$prefix-u1-c1',
+        'name': 'الفصل الأول',
+        'lessons': <dynamic>[
+          _lesson('$prefix-u1-c1-l1', 'الدرس الأول', 12, 40),
+          _lesson('$prefix-u1-c1-l2', 'الدرس الثاني', 40, 40),
+          _lesson('$prefix-u1-c1-l3', 'الدرس الثالث', 0, 25),
         ],
       },
       <String, dynamic>{
-        'id': '$prefix-u2',
-        'name': 'الوحدة الثانية',
-        'chapters': <dynamic>[
-          <String, dynamic>{
-            'id': '$prefix-u2-c1',
-            'name': 'الفصل الأول',
-            'lessons': <dynamic>[
-              _lesson('$prefix-u2-c1-l1', 'الدرس الأول', 3, 20),
-              _lesson('$prefix-u2-c1-l2', 'الدرس الثاني', 0, 0),
-            ],
-          },
-          // A chapter with no lessons yet — the Lessons empty state.
-          <String, dynamic>{
-            'id': '$prefix-u2-c2',
-            'name': 'الفصل الثاني',
-            'lessons': <dynamic>[],
-          },
+        'id': '$prefix-u1-c2',
+        'name': 'الفصل الثاني',
+        'lessons': <dynamic>[
+          _lesson('$prefix-u1-c2-l1', 'الدرس الأول', 5, 30),
+          _lesson('$prefix-u1-c2-l2', 'الدرس الثاني', 18, 35),
         ],
       },
-    ];
+    ],
+  },
+  <String, dynamic>{
+    'id': '$prefix-u2',
+    'name': 'الوحدة الثانية',
+    'chapters': <dynamic>[
+      <String, dynamic>{
+        'id': '$prefix-u2-c1',
+        'name': 'الفصل الأول',
+        'lessons': <dynamic>[
+          _lesson('$prefix-u2-c1-l1', 'الدرس الأول', 3, 20),
+          _lesson('$prefix-u2-c1-l2', 'الدرس الثاني', 0, 0),
+        ],
+      },
+      // A chapter with no lessons yet — the Lessons empty state.
+      <String, dynamic>{
+        'id': '$prefix-u2-c2',
+        'name': 'الفصل الثاني',
+        'lessons': <dynamic>[],
+      },
+    ],
+  },
+];
 
 /// `SchoolSubjectTree` for a known subject, else null → `403`.
 Map<String, dynamic>? _schoolSubjectTree(String subjectId) {
@@ -1090,16 +1162,25 @@ final _subjectTrees = <String, List<dynamic>>{
 final _universitySubjects = <dynamic>[
   _subject('uni-anatomy', 'التشريح', 132, 400),
   _subject('uni-physio', 'الفسيولوجي', 400, 400), // finished — still tappable
-  _subject('uni-biochem', 'الكيمياء الحيوية', 0, 0), // untouched — still tappable
+  _subject(
+    'uni-biochem',
+    'الكيمياء الحيوية',
+    0,
+    0,
+  ), // untouched — still tappable
   _subject('uni-histology', 'الأنسجة', 58, 210),
 ];
 
-Map<String, dynamic> _lecture(String id, String name, int answered, int total) =>
-    <String, dynamic>{
-      'id': id,
-      'name': name,
-      'questionCounter': _counter(answered, total),
-    };
+Map<String, dynamic> _lecture(
+  String id,
+  String name,
+  int answered,
+  int total,
+) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'questionCounter': _counter(answered, total),
+};
 
 /// `UniversitySubjectTree` — flat, plus the quiz types THIS subject offers.
 ///
@@ -1110,12 +1191,11 @@ Map<String, dynamic> _universityTree(
   String prefix,
   List<String> quizTypes,
   List<dynamic> lectures,
-) =>
-    <String, dynamic>{
-      'track': 'university',
-      'quizTypes': quizTypes,
-      'lectures': lectures,
-    };
+) => <String, dynamic>{
+  'track': 'university',
+  'quizTypes': quizTypes,
+  'lectures': lectures,
+};
 
 final _universitySubjectTrees = <String, Map<String, dynamic>>{
   // The full set of four quiz types.
@@ -1150,11 +1230,10 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
     ],
   ),
   // No lectures published yet — the university EMPTY state.
-  'uni-histology': _universityTree(
-    'histology',
-    <String>['normal', 'finalRevision'],
-    <dynamic>[],
-  ),
+  'uni-histology': _universityTree('histology', <String>[
+    'normal',
+    'finalRevision',
+  ], <dynamic>[]),
 };
 
 // ---------------------------------------------------------------------------
@@ -1179,8 +1258,9 @@ int _poolSize(String? scopeId, {required bool isUniversity}) {
 
   if (isUniversity) {
     for (final tree in _universitySubjectTrees.values) {
-      for (final lecture in (tree['lectures']! as List<dynamic>)
-          .cast<Map<String, dynamic>>()) {
+      for (final lecture
+          in (tree['lectures']! as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
         if (lecture['id'] == scopeId) {
           return (lecture['questionCounter']! as Map<String, dynamic>)['total']
               as int;
@@ -1193,9 +1273,11 @@ int _poolSize(String? scopeId, {required bool isUniversity}) {
   for (final units in _subjectTrees.values) {
     for (final unit in units.cast<Map<String, dynamic>>()) {
       for (final chapter
-          in (unit['chapters']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+          in (unit['chapters']! as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
         for (final lesson
-            in (chapter['lessons']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+            in (chapter['lessons']! as List<dynamic>)
+                .cast<Map<String, dynamic>>()) {
           if (lesson['id'] == scopeId) {
             return (lesson['questionCounter']! as Map<String, dynamic>)['total']
                 as int;
@@ -1215,8 +1297,9 @@ String _scopeName(String? scopeId, {required bool isUniversity}) {
 
   if (isUniversity) {
     for (final tree in _universitySubjectTrees.values) {
-      for (final lecture in (tree['lectures']! as List<dynamic>)
-          .cast<Map<String, dynamic>>()) {
+      for (final lecture
+          in (tree['lectures']! as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
         if (lecture['id'] == scopeId) return lecture['name']! as String;
       }
     }
@@ -1226,9 +1309,11 @@ String _scopeName(String? scopeId, {required bool isUniversity}) {
   for (final units in _subjectTrees.values) {
     for (final unit in units.cast<Map<String, dynamic>>()) {
       for (final chapter
-          in (unit['chapters']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+          in (unit['chapters']! as List<dynamic>)
+              .cast<Map<String, dynamic>>()) {
         for (final lesson
-            in (chapter['lessons']! as List<dynamic>).cast<Map<String, dynamic>>()) {
+            in (chapter['lessons']! as List<dynamic>)
+                .cast<Map<String, dynamic>>()) {
           if (lesson['id'] == scopeId) return lesson['name']! as String;
         }
       }
@@ -1271,7 +1356,8 @@ class _MockQuiz {
       questions.add(<String, dynamic>{
         'id': questionId,
         'order': i,
-        'text': 'السؤال $i: أي من الخيارات التالية يصف <u>التركيب</u> بشكل صحيح؟',
+        'text':
+            'السؤال $i: أي من الخيارات التالية يصف <u>التركيب</u> بشكل صحيح؟',
         // Every fourth question has a photo — the `159:1852` variant.
         'imageUrl': i % 4 == 0
             ? 'https://picsum.photos/seed/levelup-q$i/640/360'
@@ -1383,7 +1469,11 @@ Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
             // adr-028 §2. There is no `schoolName` counterpart any more.
             'school': body['schoolId'] == null
                 ? null
-                : _named(body['schoolId']! as String, 'مدرسة مختارة', 'Selected School'),
+                : _named(
+                    body['schoolId']! as String,
+                    'مدرسة مختارة',
+                    'Selected School',
+                  ),
             'stage': body['stage'] ?? 'secondary1',
             'educationSystem': body['educationSystem'] ?? 'nationalLanguages',
           },
@@ -1407,29 +1497,35 @@ Map<String, dynamic> _profileFromRegistration(Map<String, dynamic> body) {
 
 /// The coded arm of the city union — a full `NamedRef`, the default for a
 /// session that did not register (the magic OTP codes).
-final _codedCity =
-    _named('0197b2f3-0002-7cc3-9b4e-000000000001', 'مدينة نصر', 'Nasr City');
+final _codedCity = _named(
+  '0197b2f3-0002-7cc3-9b4e-000000000001',
+  'مدينة نصر',
+  'Nasr City',
+);
 
 Map<String, dynamic> _schoolProfile({
   required String phone,
   int totalPoints = 1250,
   Map<String, dynamic>? city,
-}) =>
-    _profile(
-      track: 'school',
-      totalPoints: totalPoints,
-      name: 'طالب تجريبي',
-      phone: phone,
-      dateOfBirth: '2008-05-14',
-      countryCode: 'EG',
-      city: city,
-      school: <String, dynamic>{
-        'school': _named('0197b2f3-0004-7cc3-9b4e-000000000001', 'مدرسة رقم ١', 'Al Nasr Language School 1'),
-        'stage': 'secondary2',
-        'educationSystem': 'nationalLanguages',
-      },
-      university: null,
-    );
+}) => _profile(
+  track: 'school',
+  totalPoints: totalPoints,
+  name: 'طالب تجريبي',
+  phone: phone,
+  dateOfBirth: '2008-05-14',
+  countryCode: 'EG',
+  city: city,
+  school: <String, dynamic>{
+    'school': _named(
+      '0197b2f3-0004-7cc3-9b4e-000000000001',
+      'مدرسة رقم ١',
+      'Al Nasr Language School 1',
+    ),
+    'stage': 'secondary2',
+    'educationSystem': 'nationalLanguages',
+  },
+  university: null,
+);
 
 /// The university counterpart — a first-year medical student. `school` is null
 /// and the `university` block is populated, exactly as the contract specifies.
@@ -1437,30 +1533,29 @@ Map<String, dynamic> _universityProfile({
   required String phone,
   int totalPoints = 1250,
   Map<String, dynamic>? city,
-}) =>
-    _profile(
-      track: 'university',
-      totalPoints: totalPoints,
-      name: 'طالب جامعي تجريبي',
-      phone: phone,
-      dateOfBirth: '2005-03-02',
-      countryCode: 'EG',
-      city: city,
-      school: null,
-      university: <String, dynamic>{
-        'university': _named(
-          '0197b2f3-0005-7cc3-9b4e-000000000001',
-          'جامعة القاهرة',
-          'Cairo University',
-        ),
-        'faculty': _named(
-          '0197b2f3-0006-7cc3-9b4e-000000000001',
-          'كلية الطب البشري',
-          'Faculty of Human Medicine',
-        ),
-        'yearNumber': 1,
-      },
-    );
+}) => _profile(
+  track: 'university',
+  totalPoints: totalPoints,
+  name: 'طالب جامعي تجريبي',
+  phone: phone,
+  dateOfBirth: '2005-03-02',
+  countryCode: 'EG',
+  city: city,
+  school: null,
+  university: <String, dynamic>{
+    'university': _named(
+      '0197b2f3-0005-7cc3-9b4e-000000000001',
+      'جامعة القاهرة',
+      'Cairo University',
+    ),
+    'faculty': _named(
+      '0197b2f3-0006-7cc3-9b4e-000000000001',
+      'كلية الطب البشري',
+      'Faculty of Human Medicine',
+    ),
+    'yearNumber': 1,
+  },
+);
 
 Map<String, dynamic> _profile({
   required String track,
@@ -1508,7 +1603,10 @@ Map<String, dynamic> _profile({
     },
     'level': _levelFor(totalPoints),
     'badges': 0,
-    'privacy': <String, dynamic>{'leaderboardVisible': true, 'scoreHidden': false},
+    'privacy': <String, dynamic>{
+      'leaderboardVisible': true,
+      'scoreHidden': false,
+    },
     'entitlements': _entitlements,
     'createdAt': '2026-07-26T10:00:00Z',
   };

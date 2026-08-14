@@ -54,9 +54,9 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
   /// Anything that invalidates the school scope drops both the selection and
   /// the skip: the field is scoped by city, so a new city means a new question.
   void _clearSchool() => setState(() {
-        _selectedSchool = null;
-        _schoolSkipped = false;
-      });
+    _selectedSchool = null;
+    _schoolSkipped = false;
+  });
 
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
@@ -140,7 +140,8 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       errorText: errorFor(RegFields.countryCode),
                       onRetry: () => ref.invalidate(countriesProvider),
                       onSelected: (code) => _edit(() {
-                        final matches = ref
+                        final matches =
+                            ref
                                 .read(countriesProvider)
                                 .value
                                 ?.where((c) => c.code == code) ??
@@ -187,22 +188,25 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                     CityField(
                       cityId: draft.cityId,
                       cityName: draft.cityName,
-                      options: _cityOptions(draft.countryCode,
-                          draft.governorateId, requiresGovernorate),
-                      enabled: draft.countryCode != null &&
+                      options: _cityOptions(
+                        draft.countryCode,
+                        draft.governorateId,
+                        requiresGovernorate,
+                      ),
+                      enabled:
+                          draft.countryCode != null &&
                           (!requiresGovernorate || draft.governorateId != null),
                       disabledHint: requiresGovernorate
                           ? l10n.selectGovernorateFirst
                           : l10n.selectCountryFirst,
-                      errorText: errorFor(RegFields.cityId) ??
+                      errorText:
+                          errorFor(RegFields.cityId) ??
                           errorFor(RegFields.cityName),
                       onRetry: () => ref.invalidate(
-                        citiesProvider(
-                          (
-                            countryCode: draft.countryCode!,
-                            governorateId: draft.governorateId,
-                          ),
-                        ),
+                        citiesProvider((
+                          countryCode: draft.countryCode!,
+                          governorateId: draft.governorateId,
+                        )),
                       ),
                       onCitySelected: (id) => _edit(() {
                         controller.setCity(id);
@@ -284,14 +288,15 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       onPressed: submitState.isLoading
                           ? null
                           : () => ref
-                              .read(registrationSubmitProvider.notifier)
-                              .submit(),
+                                .read(registrationSubmitProvider.notifier)
+                                .submit(),
                       child: submitState.isLoading
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
                             )
                           : Text(
                               l10n.startLearning,
@@ -328,7 +333,9 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (ref.read(registrationControllerProvider)?.countryCode != null) return;
-      ref.read(registrationControllerProvider.notifier).setCountry(
+      ref
+          .read(registrationControllerProvider.notifier)
+          .setCountry(
             countryCode: preset.code,
             requiresGovernorate: preset.requiresGovernorate,
           );
@@ -355,9 +362,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
         // `registration_token_invalid` / `phone_already_registered` — the
         // contract's answer to both is to start again at phone → OTP.
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(registrationErrorMessage(l10n, next.error)),
-          ),
+          SnackBar(content: Text(registrationErrorMessage(l10n, next.error))),
         );
         ref.read(registrationControllerProvider.notifier).reset();
         context.go('/login');
@@ -367,24 +372,21 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 
   // --- Options mapping: bilingual rows in, {id,label} out ------------------
 
-  AsyncValue<List<PickerOption>> _countryOptions() =>
-      ref.watch(countriesProvider).whenData(
-            (countries) => [
-              for (final country in countries)
-                (
-                  id: country.code,
-                  label: localizedRefName(
-                    context,
-                    country.nameAr,
-                    country.nameEn,
-                  ),
-                  leading: CountryFlag.fromCountryCode(
-                    country.code,
-                    theme: const EmojiTheme(size: 20),
-                  ),
-                ),
-            ],
-          );
+  AsyncValue<List<PickerOption>> _countryOptions() => ref
+      .watch(countriesProvider)
+      .whenData(
+        (countries) => [
+          for (final country in countries)
+            (
+              id: country.code,
+              label: localizedRefName(context, country.nameAr, country.nameEn),
+              leading: CountryFlag.fromCountryCode(
+                country.code,
+                theme: const EmojiTheme(size: 20),
+              ),
+            ),
+        ],
+      );
 
   AsyncValue<List<PickerOption>> _governorateOptions(String? countryCode) {
     if (countryCode == null) return const AsyncData([]);
@@ -403,47 +405,47 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     }
     return ref
         .watch(
-          citiesProvider(
-            (countryCode: countryCode, governorateId: governorateId),
-          ),
+          citiesProvider((
+            countryCode: countryCode,
+            governorateId: governorateId,
+          )),
         )
         .whenData(_namedRefRows);
   }
 
-  AsyncValue<List<PickerOption>> _educationSystemOptions() =>
-      ref.watch(educationSystemsProvider).whenData(
-            (systems) => [
-              for (final system in systems)
-                (
-                  id: system.code,
-                  label:
-                      localizedRefName(context, system.nameAr, system.nameEn),
-                  leading: null,
-                ),
-            ],
-          );
+  AsyncValue<List<PickerOption>> _educationSystemOptions() => ref
+      .watch(educationSystemsProvider)
+      .whenData(
+        (systems) => [
+          for (final system in systems)
+            (
+              id: system.code,
+              label: localizedRefName(context, system.nameAr, system.nameEn),
+              leading: null,
+            ),
+        ],
+      );
 
   List<PickerOption> _stageOptions(AppLocalizations l10n) => [
-        for (final stage in Stage.values)
-          (id: stage.wireValue, label: _stageLabel(l10n, stage), leading: null),
-      ];
+    for (final stage in Stage.values)
+      (id: stage.wireValue, label: _stageLabel(l10n, stage), leading: null),
+  ];
 
   List<PickerOption> _namedRefRows(List<NamedRef> rows) => [
-        for (final row in rows)
-          (
-            id: row.id,
-            label: localizedRefName(context, row.nameAr, row.nameEn),
-            leading: null,
-          ),
-      ];
+    for (final row in rows)
+      (
+        id: row.id,
+        label: localizedRefName(context, row.nameAr, row.nameEn),
+        leading: null,
+      ),
+  ];
 }
 
 String _stageLabel(AppLocalizations l10n, Stage stage) => switch (stage) {
-      Stage.prep1 => l10n.stagePrep1,
-      Stage.prep2 => l10n.stagePrep2,
-      Stage.prep3 => l10n.stagePrep3,
-      Stage.secondary1 => l10n.stageSecondary1,
-      Stage.secondary2 => l10n.stageSecondary2,
-      Stage.secondary3 => l10n.stageSecondary3,
-    };
-
+  Stage.prep1 => l10n.stagePrep1,
+  Stage.prep2 => l10n.stagePrep2,
+  Stage.prep3 => l10n.stagePrep3,
+  Stage.secondary1 => l10n.stageSecondary1,
+  Stage.secondary2 => l10n.stageSecondary2,
+  Stage.secondary3 => l10n.stageSecondary3,
+};

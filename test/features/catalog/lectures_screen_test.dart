@@ -33,12 +33,16 @@ void main() {
   setUp(() {
     catalog = MockCatalogRepository();
     when(catalog.getSubjects).thenAnswer((_) async => subjects());
-    when(() => catalog.getSubjectTree(any()))
-        .thenAnswer((_) async => universityTree());
+    when(
+      () => catalog.getSubjectTree(any()),
+    ).thenAnswer((_) async => universityTree());
   });
 
   /// Learn → Biology. On a university tree that lands on Lectures.
-  Future<void> openSubject(WidgetTester tester, {String name = 'Biology'}) async {
+  Future<void> openSubject(
+    WidgetTester tester, {
+    String name = 'Biology',
+  }) async {
     await openLearnTab(tester);
     await tester.tap(find.text(name));
     await tester.pumpAndSettle();
@@ -46,11 +50,7 @@ void main() {
 
   group('the one route branches on the tree, not on the profile', () {
     testWidgets('a university tree renders Lectures', (tester) async {
-      await pumpCatalogApp(
-        tester,
-        catalog: catalog,
-        track: Track.university,
-      );
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
 
       expect(find.byType(SubjectTreeScreen), findsOneWidget);
@@ -60,10 +60,12 @@ void main() {
       expect(find.text('Thorax'), findsOneWidget);
     });
 
-    testWidgets('a school tree renders Units from the SAME route',
-        (tester) async {
-      when(() => catalog.getSubjectTree(any()))
-          .thenAnswer((_) async => schoolTree());
+    testWidgets('a school tree renders Units from the SAME route', (
+      tester,
+    ) async {
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => schoolTree());
 
       await pumpCatalogApp(tester, catalog: catalog);
       await openSubject(tester);
@@ -87,22 +89,25 @@ void main() {
       },
     );
 
-    testWidgets('university is FLAT — a lecture is the leaf, not a drill-down',
-        (tester) async {
-      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
-      await openSubject(tester);
+    testWidgets(
+      'university is FLAT — a lecture is the leaf, not a drill-down',
+      (tester) async {
+        await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+        await openSubject(tester);
 
-      await tester.tap(find.text('Upper Limb'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Upper Limb'));
+        await tester.pumpAndSettle();
 
-      // Straight to the quiz hand-off; there is no chapter/lesson level.
-      expect(find.byType(QuizSetupScreen), findsOneWidget);
-    });
+        // Straight to the quiz hand-off; there is no chapter/lesson level.
+        expect(find.byType(QuizSetupScreen), findsOneWidget);
+      },
+    );
   });
 
   group('title', () {
-    testWidgets('is the subject name from the CACHED subjects list',
-        (tester) async {
+    testWidgets('is the subject name from the CACHED subjects list', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
 
@@ -111,8 +116,9 @@ void main() {
       verify(catalog.getSubjects).called(1);
     });
 
-    testWidgets('falls back to the bare title when the name is not cached',
-        (tester) async {
+    testWidgets('falls back to the bare title when the name is not cached', (
+      tester,
+    ) async {
       // The cold-deep-link case: the tree loads for a subject that is not in
       // the subjects list, so there is no name to title the header with. It must
       // degrade to "Lectures" rather than invent one.
@@ -131,8 +137,9 @@ void main() {
       expect(find.textContaining('Biology'), findsNothing);
     });
 
-    testWidgets('Arabic titles it in Arabic, around the server copy',
-        (tester) async {
+    testWidgets('Arabic titles it in Arabic, around the server copy', (
+      tester,
+    ) async {
       await pumpCatalogApp(
         tester,
         catalog: catalog,
@@ -152,8 +159,9 @@ void main() {
   });
 
   group('quiz-type tabs', () {
-    testWidgets('are built from tree.quizTypes, not a hardcoded five',
-        (tester) async {
+    testWidgets('are built from tree.quizTypes, not a hardcoded five', (
+      tester,
+    ) async {
       // The fixture offers three of the four contract types.
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
@@ -165,8 +173,9 @@ void main() {
       expect(find.text('Practice'), findsNothing);
     });
 
-    testWidgets('never draw a Flashcard tab — it is not in the contract',
-        (tester) async {
+    testWidgets('never draw a Flashcard tab — it is not in the contract', (
+      tester,
+    ) async {
       // The frame draws one (DESIGN_ISSUES #18). `quizTypes` has no such value,
       // and there is no M1 endpoint behind it, so a tab would be inert.
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
@@ -176,11 +185,12 @@ void main() {
       expect(QuizType.values.map((t) => t.name), isNot(contains('flashcard')));
     });
 
-    testWidgets('a subject offering one type shows exactly one tab',
-        (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) async => universityTree(quizTypes: <String>['normal']),
-      );
+    testWidgets('a subject offering one type shows exactly one tab', (
+      tester,
+    ) async {
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree(quizTypes: <String>['normal']));
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
@@ -190,18 +200,20 @@ void main() {
       expect(find.text('Midterm'), findsNothing);
     });
 
-    testWidgets('no quiz types at all → no tab row, and the list still renders',
-        (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) async => universityTree(quizTypes: <String>[]),
-      );
+    testWidgets(
+      'no quiz types at all → no tab row, and the list still renders',
+      (tester) async {
+        when(
+          () => catalog.getSubjectTree(any()),
+        ).thenAnswer((_) async => universityTree(quizTypes: <String>[]));
 
-      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
-      await openSubject(tester);
+        await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+        await openSubject(tester);
 
-      expect(find.byType(QuizTypeTabs), findsNothing);
-      expect(find.byType(TreeListRow), findsNWidgets(3));
-    });
+        expect(find.byType(QuizTypeTabs), findsNothing);
+        expect(find.byType(TreeListRow), findsNWidgets(3));
+      },
+    );
 
     testWidgets('selecting a tab does NOT re-fetch the tree', (tester) async {
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
@@ -234,8 +246,9 @@ void main() {
   });
 
   group('lecture rows', () {
-    testWidgets('are numbered 1..n with a bar from their own counter',
-        (tester) async {
+    testWidgets('are numbered 1..n with a bar from their own counter', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
 
@@ -257,7 +270,9 @@ void main() {
       expect(find.text('45 / 45 questions'), findsOneWidget);
     });
 
-    testWidgets('the counter never disables or hides a lecture', (tester) async {
+    testWidgets('the counter never disables or hides a lecture', (
+      tester,
+    ) async {
       // Contract: it "never locks retakes". A 0/60 lecture and a finished 45/45
       // one must both render AND both be tappable.
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
@@ -276,8 +291,9 @@ void main() {
       expect(find.byType(QuizSetupScreen), findsOneWidget);
     });
 
-    testWidgets('row numbers go through the locale, not string interpolation',
-        (tester) async {
+    testWidgets('row numbers go through the locale, not string interpolation', (
+      tester,
+    ) async {
       // `MaterialLocalizations.formatDecimal`, not '${index + 1}'. Flutter's
       // Arabic data formats with Latin digits, so that is what must render —
       // hardcoding Arabic-Indic glyphs would be overriding the locale, and
@@ -294,9 +310,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(MaterialLocalizations.of(
-          tester.element(find.byType(LecturesView)),
-        ).formatDecimal(1)),
+        find.text(
+          MaterialLocalizations.of(
+            tester.element(find.byType(LecturesView)),
+          ).formatDecimal(1),
+        ),
         findsOneWidget,
       );
       expect(find.byType(TreeListRow), findsNWidgets(3));
@@ -317,8 +335,9 @@ void main() {
   });
 
   group('the /quiz/setup hand-off', () {
-    testWidgets('carries lectureId, name and the DEFAULT quiz type',
-        (tester) async {
+    testWidgets('carries lectureId, name and the DEFAULT quiz type', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
 
@@ -352,13 +371,14 @@ void main() {
       expect(screen.args.lectureId, 'lec-1');
     });
 
-    testWidgets('falls back to normal when the subject omits it',
-        (tester) async {
+    testWidgets('falls back to normal when the subject omits it', (
+      tester,
+    ) async {
       // `normal` is the contract's own default for POST /quizzes.quizType, so
       // using it when the subject offers nothing is not an invented value.
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) async => universityTree(quizTypes: <String>[]),
-      );
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree(quizTypes: <String>[]));
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
@@ -373,11 +393,12 @@ void main() {
   });
 
   group('states', () {
-    testWidgets('empty lectures get their OWN copy, not the school one',
-        (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) async => universityTree(lectures: <dynamic>[]),
-      );
+    testWidgets('empty lectures get their OWN copy, not the school one', (
+      tester,
+    ) async {
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree(lectures: <dynamic>[]));
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
@@ -386,11 +407,13 @@ void main() {
       expect(find.text('Nothing here yet'), findsNothing);
     });
 
-    testWidgets('loading shows a row skeleton, not a bare spinner',
-        (tester) async {
+    testWidgets('loading shows a row skeleton, not a bare spinner', (
+      tester,
+    ) async {
       final completer = Completer<SubjectTree>();
-      when(() => catalog.getSubjectTree(any()))
-          .thenAnswer((_) => completer.future);
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) => completer.future);
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openLearnTab(tester);
@@ -418,28 +441,30 @@ void main() {
     });
 
     testWidgets('error shows copy + a retry that re-requests', (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SubjectTree>.error(const UnknownException()),
-      );
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) => Future<SubjectTree>.error(const UnknownException()));
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
 
       expect(find.text('Something went wrong'), findsOneWidget);
 
-      when(() => catalog.getSubjectTree(any()))
-          .thenAnswer((_) async => universityTree());
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree());
       await tester.tap(find.text('Retry'));
       await tester.pumpAndSettle();
 
       expect(find.text('Upper Limb'), findsOneWidget);
     });
 
-    testWidgets('offline gets its own view, distinct from a generic error',
-        (tester) async {
-      when(() => catalog.getSubjectTree(any())).thenAnswer(
-        (_) => Future<SubjectTree>.error(const OfflineException()),
-      );
+    testWidgets('offline gets its own view, distinct from a generic error', (
+      tester,
+    ) async {
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) => Future<SubjectTree>.error(const OfflineException()));
 
       await pumpCatalogApp(
         tester,
@@ -453,8 +478,9 @@ void main() {
       expect(find.text('Something went wrong'), findsNothing);
     });
 
-    testWidgets('403 insufficient_scope gets its own copy and NO retry',
-        (tester) async {
+    testWidgets('403 insufficient_scope gets its own copy and NO retry', (
+      tester,
+    ) async {
       when(() => catalog.getSubjectTree(any())).thenAnswer(
         (_) => Future<SubjectTree>.error(
           const ApiException(status: 403, code: 'insufficient_scope'),

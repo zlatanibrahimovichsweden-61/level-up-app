@@ -37,9 +37,8 @@ void main() {
     return container;
   }
 
-  void stubMeFails(Object error) => when(repo.getMe).thenAnswer(
-        (_) => Future<StudentProfile>.error(error),
-      );
+  void stubMeFails(Object error) =>
+      when(repo.getMe).thenAnswer((_) => Future<StudentProfile>.error(error));
 
   setUp(() => repo = _MockProfileRepository());
 
@@ -71,46 +70,52 @@ void main() {
       expect(state.error, isA<ApiException>());
     });
 
-    test('offline → AsyncError whose error is still recognisably offline',
-        () async {
-      // Home reads this exact signal to render the Offline view instead of the
-      // generic error view.
-      stubMeFails(const OfflineException());
-      final container = makeContainer();
+    test(
+      'offline → AsyncError whose error is still recognisably offline',
+      () async {
+        // Home reads this exact signal to render the Offline view instead of the
+        // generic error view.
+        stubMeFails(const OfflineException());
+        final container = makeContainer();
 
-      container.listen(meProvider, (_, _) {});
-      await pumpEventQueue();
+        container.listen(meProvider, (_, _) {});
+        await pumpEventQueue();
 
-      expect(isOffline(container.read(meProvider).error), isTrue);
-    });
+        expect(isOffline(container.read(meProvider).error), isTrue);
+      },
+    );
 
-    test('refresh() re-calls the repository and replaces the error with data',
-        () async {
-      stubMeFails(const OfflineException());
-      final container = makeContainer();
-      container.listen(meProvider, (_, _) {});
-      await pumpEventQueue();
-      expect(container.read(meProvider).hasError, isTrue);
+    test(
+      'refresh() re-calls the repository and replaces the error with data',
+      () async {
+        stubMeFails(const OfflineException());
+        final container = makeContainer();
+        container.listen(meProvider, (_, _) {});
+        await pumpEventQueue();
+        expect(container.read(meProvider).hasError, isTrue);
 
-      // Connectivity comes back and the student taps Retry.
-      when(repo.getMe).thenAnswer((_) async => schoolProfile());
-      await container.read(meProvider.notifier).refresh();
+        // Connectivity comes back and the student taps Retry.
+        when(repo.getMe).thenAnswer((_) async => schoolProfile());
+        await container.read(meProvider.notifier).refresh();
 
-      expect(container.read(meProvider).value?.name, 'Ahmed Mohamed');
-      verify(repo.getMe).called(2);
-    });
+        expect(container.read(meProvider).value?.name, 'Ahmed Mohamed');
+        verify(repo.getMe).called(2);
+      },
+    );
 
-    test('no silent auto-retry — one failed build makes exactly one call',
-        () async {
-      stubMeFails(const OfflineException());
-      final container = makeContainer();
+    test(
+      'no silent auto-retry — one failed build makes exactly one call',
+      () async {
+        stubMeFails(const OfflineException());
+        final container = makeContainer();
 
-      container.listen(meProvider, (_, _) {});
-      await pumpEventQueue();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        container.listen(meProvider, (_, _) {});
+        await pumpEventQueue();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(repo.getMe).called(1);
-    });
+        verify(repo.getMe).called(1);
+      },
+    );
   });
 
   group('entitlementsProvider', () {
@@ -140,28 +145,30 @@ void main() {
       expect((await container.read(meProvider.future)).level, 8);
     });
 
-    test('refresh() keeps the previous value on screen while re-fetching',
-        () async {
-      when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
-      final container = makeContainer();
-      await container.read(entitlementsProvider.future);
+    test(
+      'refresh() keeps the previous value on screen while re-fetching',
+      () async {
+        when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+        final container = makeContainer();
+        await container.read(entitlementsProvider.future);
 
-      when(repo.getEntitlements).thenAnswer(
-        (_) async => [
-          const EntitlementState(
-            type: EntitlementType.baseSubscription,
-            active: false,
-            inGrace: true,
-          ),
-        ],
-      );
-      await container.read(entitlementsProvider.notifier).refresh();
+        when(repo.getEntitlements).thenAnswer(
+          (_) async => [
+            const EntitlementState(
+              type: EntitlementType.baseSubscription,
+              active: false,
+              inGrace: true,
+            ),
+          ],
+        );
+        await container.read(entitlementsProvider.notifier).refresh();
 
-      // Never blanked to AsyncLoading in between — this runs unprompted on
-      // resume, and a flicker the student didn't ask for is a bug.
-      final state = container.read(entitlementsProvider);
-      expect(state, isA<AsyncData<List<EntitlementState>>>());
-      expect(state.value!.single.inGrace, isTrue);
-    });
+        // Never blanked to AsyncLoading in between — this runs unprompted on
+        // resume, and a flicker the student didn't ask for is a bug.
+        final state = container.read(entitlementsProvider);
+        expect(state, isA<AsyncData<List<EntitlementState>>>());
+        expect(state.value!.single.inGrace, isTrue);
+      },
+    );
   });
 }

@@ -30,7 +30,7 @@ abstract interface class RegistrationBody {
 /// instead of shipping a request the server will 400.
 class IncompleteRegistrationDraft extends StateError {
   IncompleteRegistrationDraft(this.field)
-      : super('Registration draft is missing required field "$field"');
+    : super('Registration draft is missing required field "$field"');
 
   /// The contract field name (matches `ProblemDetails.errors` keys).
   final String field;
@@ -48,7 +48,7 @@ T requireField<T>(T? value, String field) {
 /// unreachable — so it fails loudly here rather than becoming a server 400.
 class ForbiddenRegistrationField extends StateError {
   ForbiddenRegistrationField(this.field, String because)
-      : super('Registration draft carries forbidden field "$field": $because');
+    : super('Registration draft carries forbidden field "$field": $because');
 
   /// The contract field name (matches `ProblemDetails.errors` keys).
   final String field;
@@ -101,6 +101,8 @@ void forbidField(Object? value, String field, String because) {
     // so this only guards a draft that reached here another way; truncating
     // keeps a long value submittable rather than failing the whole
     // registration on a field that must never block one.
-    cityName: hasFree ? (free.length > 100 ? free.substring(0, 100) : free) : null,
+    cityName: hasFree
+        ? (free.length > 100 ? free.substring(0, 100) : free)
+        : null,
   );
 }

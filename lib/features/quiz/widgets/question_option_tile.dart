@@ -61,20 +61,20 @@ class QuestionOptionTile extends StatelessWidget {
     final (fill, border, borderWidth) = switch (state) {
       OptionTileState.idle => (ext.quizOptionFill, ext.quizOptionBorder, 0.5),
       OptionTileState.selected => (
-          ext.quizOptionFill,
-          theme.colorScheme.primary,
-          1.5,
-        ),
+        ext.quizOptionFill,
+        theme.colorScheme.primary,
+        1.5,
+      ),
       OptionTileState.correct => (
-          ext.quizCorrectFill,
-          ext.quizCorrectBorder,
-          1.0,
-        ),
+        ext.quizCorrectFill,
+        ext.quizCorrectBorder,
+        1.0,
+      ),
       OptionTileState.incorrect => (
-          ext.quizWrongFill,
-          ext.quizWrongBorder,
-          1.0,
-        ),
+        ext.quizWrongFill,
+        ext.quizWrongBorder,
+        1.0,
+      ),
     };
 
     // Announced to screen readers so a blind student learns the outcome the
@@ -148,20 +148,20 @@ class _Badge extends StatelessWidget {
     final (fill, border, icon) = switch (state) {
       OptionTileState.idle => (null, ext.quizOptionBorder, null),
       OptionTileState.selected => (
-          theme.colorScheme.primary,
-          theme.colorScheme.primary,
-          null,
-        ),
+        theme.colorScheme.primary,
+        theme.colorScheme.primary,
+        null,
+      ),
       OptionTileState.correct => (
-          ext.successBadge,
-          ext.successBadge,
-          Icons.check,
-        ),
+        ext.successBadge,
+        ext.successBadge,
+        Icons.check,
+      ),
       OptionTileState.incorrect => (
-          ext.quizWrongBadge,
-          ext.quizWrongBadge,
-          Icons.close,
-        ),
+        ext.quizWrongBadge,
+        ext.quizWrongBadge,
+        Icons.close,
+      ),
     };
 
     return Container(

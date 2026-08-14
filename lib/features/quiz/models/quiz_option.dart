@@ -21,10 +21,8 @@ part 'quiz_option.g.dart';
 /// the server having to care about presentation.
 @freezed
 abstract class QuizOption with _$QuizOption {
-  const factory QuizOption({
-    required String id,
-    required String text,
-  }) = _QuizOption;
+  const factory QuizOption({required String id, required String text}) =
+      _QuizOption;
 
   factory QuizOption.fromJson(Map<String, dynamic> json) =>
       _$QuizOptionFromJson(json);

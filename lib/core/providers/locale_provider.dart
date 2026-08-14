@@ -25,8 +25,9 @@ class LocaleController extends Notifier<Locale> {
 
   /// The language pill's flip. Six screens carry one, and none of them offers a
   /// choice — there are two locales, so "the other one" is unambiguous.
-  void toggle() =>
-      select(state.languageCode == 'ar' ? const Locale('en') : const Locale('ar'));
+  void toggle() => select(
+    state.languageCode == 'ar' ? const Locale('en') : const Locale('ar'),
+  );
 
   /// Picks a language outright, for the Settings list where both options are on
   /// screen at once and "toggle" is the wrong verb: tapping the row you are
@@ -44,5 +45,6 @@ class LocaleController extends Notifier<Locale> {
   }
 }
 
-final localeProvider =
-    NotifierProvider<LocaleController, Locale>(LocaleController.new);
+final localeProvider = NotifierProvider<LocaleController, Locale>(
+  LocaleController.new,
+);

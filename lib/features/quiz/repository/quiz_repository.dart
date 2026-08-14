@@ -83,10 +83,7 @@ class QuizRepository {
     try {
       final res = await _dio.post<Map<String, dynamic>>(
         '/quizzes/$quizId/answers',
-        data: <String, dynamic>{
-          'questionId': questionId,
-          'optionId': optionId,
-        },
+        data: <String, dynamic>{'questionId': questionId, 'optionId': optionId},
       );
       return AnswerResult.fromJson(res.data!);
     } on DioException catch (e) {

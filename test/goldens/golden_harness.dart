@@ -46,9 +46,9 @@ Future<void> loadAppFonts() async {
 void _stubPathProvider() {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.flutter.io/path_provider'),
-    (_) async => '.dart_tool/golden_cache',
-  );
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (_) async => '.dart_tool/golden_cache',
+      );
 }
 
 /// The two canvases every golden is captured in.

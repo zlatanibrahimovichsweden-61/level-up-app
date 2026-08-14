@@ -46,8 +46,8 @@ class RegistrationRepository {
         // The contract documents 201 as AuthenticatedResult only. Anything else
         // is contract drift — surface it rather than silently coercing it.
         RegistrationRequiredResult() => throw const UnknownException(
-            detail: 'register returned a non-authenticated result',
-          ),
+          detail: 'register returned a non-authenticated result',
+        ),
       };
     } on DioException catch (e) {
       throw _asAppException(e);

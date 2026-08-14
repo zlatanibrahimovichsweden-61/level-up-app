@@ -34,16 +34,16 @@ final countriesProvider = FutureProvider<List<Country>>(
 );
 
 /// `GET /reference/countries/{code}/governorates` — keyed by country code.
-final governoratesProvider =
-    FutureProvider.family<List<NamedRef>, String>(
+final governoratesProvider = FutureProvider.family<List<NamedRef>, String>(
   (ref, countryCode) =>
       ref.watch(referenceRepositoryProvider).getGovernorates(countryCode),
 );
 
 /// `GET /reference/cities` — keyed by [CitiesQuery].
-final citiesProvider =
-    FutureProvider.family<List<NamedRef>, CitiesQuery>(
-  (ref, query) => ref.watch(referenceRepositoryProvider).getCities(
+final citiesProvider = FutureProvider.family<List<NamedRef>, CitiesQuery>(
+  (ref, query) => ref
+      .watch(referenceRepositoryProvider)
+      .getCities(
         countryCode: query.countryCode,
         governorateId: query.governorateId,
       ),
@@ -52,14 +52,16 @@ final citiesProvider =
 /// `GET /reference/schools` — cursor-paginated, keyed by [SchoolsQuery].
 final schoolsProvider =
     FutureProvider.family<CursorPage<NamedRef>, SchoolsQuery>(
-  (ref, query) => ref.watch(referenceRepositoryProvider).searchSchools(
-        q: query.q,
-        governorateId: query.governorateId,
-        cityId: query.cityId,
-        cursor: query.cursor,
-        limit: query.limit,
-      ),
-);
+      (ref, query) => ref
+          .watch(referenceRepositoryProvider)
+          .searchSchools(
+            q: query.q,
+            governorateId: query.governorateId,
+            cityId: query.cityId,
+            cursor: query.cursor,
+            limit: query.limit,
+          ),
+    );
 
 /// `GET /reference/education-systems`.
 final educationSystemsProvider = FutureProvider<List<EducationSystemRef>>(

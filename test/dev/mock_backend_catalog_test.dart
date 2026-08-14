@@ -32,9 +32,9 @@ void main() {
 
   test('every mocked subject has a walkable tree', () async {
     final dio = buildMockDio(latency: Duration.zero);
-    final subjects = (await dio.get<List<dynamic>>('/catalog/subjects')).data!
-        .map((e) => Subject.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final subjects = (await dio.get<List<dynamic>>(
+      '/catalog/subjects',
+    )).data!.map((e) => Subject.fromJson(e as Map<String, dynamic>)).toList();
 
     var withContent = 0;
     for (final subject in subjects) {
@@ -82,9 +82,9 @@ void main() {
 
     test('every university subject has a walkable lecture tree', () async {
       final dio = await universityDio();
-      final subjects = (await dio.get<List<dynamic>>('/catalog/subjects')).data!
-          .map((e) => Subject.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final subjects = (await dio.get<List<dynamic>>(
+        '/catalog/subjects',
+      )).data!.map((e) => Subject.fromJson(e as Map<String, dynamic>)).toList();
 
       expect(subjects.length, greaterThanOrEqualTo(3));
 
@@ -104,40 +104,45 @@ void main() {
       expect(withLectures, greaterThanOrEqualTo(1));
     });
 
-    test('quizTypes vary per subject, so the tab row cannot be hardcoded',
-        () async {
-      final dio = await universityDio();
+    test(
+      'quizTypes vary per subject, so the tab row cannot be hardcoded',
+      () async {
+        final dio = await universityDio();
 
-      Future<List<QuizType>> typesOf(String id) async => UniversitySubjectTree
-          .fromJson((await dio.get<Map<String, dynamic>>(
-            '/catalog/subjects/$id/tree',
-          )).data!)
-          .quizTypes;
+        Future<List<QuizType>> typesOf(String id) async =>
+            UniversitySubjectTree.fromJson(
+              (await dio.get<Map<String, dynamic>>(
+                '/catalog/subjects/$id/tree',
+              )).data!,
+            ).quizTypes;
 
-      expect(await typesOf('uni-anatomy'), hasLength(4));
-      // No practical component — the Practice tab must not appear here.
-      expect(
-        await typesOf('uni-physio'),
-        isNot(contains(QuizType.practicalRevision)),
-      );
-      expect(await typesOf('uni-biochem'), [QuizType.normal]);
-    });
+        expect(await typesOf('uni-anatomy'), hasLength(4));
+        // No practical component — the Practice tab must not appear here.
+        expect(
+          await typesOf('uni-physio'),
+          isNot(contains(QuizType.practicalRevision)),
+        );
+        expect(await typesOf('uni-biochem'), [QuizType.normal]);
+      },
+    );
 
-    test('a school subject id is out of scope for a university student',
-        () async {
-      final dio = await universityDio();
+    test(
+      'a school subject id is out of scope for a university student',
+      () async {
+        final dio = await universityDio();
 
-      await expectLater(
-        () => dio.get<Map<String, dynamic>>('/catalog/subjects/sub-bio/tree'),
-        throwsA(
-          isA<DioException>().having(
-            (e) => e.response?.statusCode,
-            'status',
-            403,
+        await expectLater(
+          () => dio.get<Map<String, dynamic>>('/catalog/subjects/sub-bio/tree'),
+          throwsA(
+            isA<DioException>().having(
+              (e) => e.response?.statusCode,
+              'status',
+              403,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   });
 
   test('an out-of-scope subject answers the contract 403', () async {

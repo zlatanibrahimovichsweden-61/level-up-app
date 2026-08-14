@@ -48,7 +48,8 @@ Duration? noCatalogRetry(int retryCount, Object error) => null;
 /// would be worse than showing none. Server copy, already in the content
 /// language (adr-018) — never translated client-side.
 String? cachedSubjectName(WidgetRef ref, String subjectId) {
-  for (final subject in ref.watch(subjectsProvider).value ?? const <Subject>[]) {
+  for (final subject
+      in ref.watch(subjectsProvider).value ?? const <Subject>[]) {
     if (subject.id == subjectId) return subject.name;
   }
   return null;
@@ -85,7 +86,9 @@ String normalizeForSearch(String input) {
   for (final rune in input.trim().toLowerCase().runes) {
     // Harakat (U+064B–U+065F), superscript alef (U+0670) and tatweel (U+0640)
     // carry no meaning for matching.
-    if ((rune >= 0x064B && rune <= 0x065F) || rune == 0x0670 || rune == 0x0640) {
+    if ((rune >= 0x064B && rune <= 0x065F) ||
+        rune == 0x0670 ||
+        rune == 0x0640) {
       continue;
     }
     final char = String.fromCharCode(rune);

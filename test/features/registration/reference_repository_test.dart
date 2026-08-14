@@ -8,15 +8,15 @@ import 'package:mocktail/mocktail.dart';
 class MockDio extends Mock implements Dio {}
 
 Response<T> _ok<T>(T data) => Response<T>(
-      requestOptions: RequestOptions(path: '/'),
-      statusCode: 200,
-      data: data,
-    );
+  requestOptions: RequestOptions(path: '/'),
+  statusCode: 200,
+  data: data,
+);
 
 DioException _dioError(Object mapped) => DioException(
-      requestOptions: RequestOptions(path: '/'),
-      error: mapped, // the ErrorInterceptor already put an AppException here
-    );
+  requestOptions: RequestOptions(path: '/'),
+  error: mapped, // the ErrorInterceptor already put an AppException here
+);
 
 void main() {
   late MockDio dio;
@@ -54,40 +54,52 @@ void main() {
     });
 
     test('governorates parse as NamedRef', () async {
-      when(() => dio.get<List<dynamic>>('/reference/countries/EG/governorates'))
-          .thenAnswer(
+      when(
+        () => dio.get<List<dynamic>>('/reference/countries/EG/governorates'),
+      ).thenAnswer(
         (_) async => _ok<List<dynamic>>([
           {'id': 'gov-1', 'nameAr': 'القاهرة', 'nameEn': 'Cairo'},
         ]),
       );
 
       final govs = await repo.getGovernorates('EG');
-      expect(govs.single, const NamedRef(id: 'gov-1', nameAr: 'القاهرة', nameEn: 'Cairo'));
-    });
-
-    test('cities pass countryCode + governorateId and parse as NamedRef', () async {
-      when(
-        () => dio.get<List<dynamic>>(
-          '/reference/cities',
-          queryParameters: any(named: 'queryParameters'),
-        ),
-      ).thenAnswer(
-        (_) async => _ok<List<dynamic>>([
-          {'id': 'city-1', 'nameAr': 'مدينة نصر', 'nameEn': 'Nasr City'},
-        ]),
+      expect(
+        govs.single,
+        const NamedRef(id: 'gov-1', nameAr: 'القاهرة', nameEn: 'Cairo'),
       );
-
-      final cities = await repo.getCities(countryCode: 'EG', governorateId: 'gov-1');
-      expect(cities.single.nameEn, 'Nasr City');
-      final captured = verify(
-        () => dio.get<List<dynamic>>(
-          '/reference/cities',
-          queryParameters: captureAny(named: 'queryParameters'),
-        ),
-      ).captured.single as Map<String, dynamic>;
-      expect(captured['countryCode'], 'EG');
-      expect(captured['governorateId'], 'gov-1');
     });
+
+    test(
+      'cities pass countryCode + governorateId and parse as NamedRef',
+      () async {
+        when(
+          () => dio.get<List<dynamic>>(
+            '/reference/cities',
+            queryParameters: any(named: 'queryParameters'),
+          ),
+        ).thenAnswer(
+          (_) async => _ok<List<dynamic>>([
+            {'id': 'city-1', 'nameAr': 'مدينة نصر', 'nameEn': 'Nasr City'},
+          ]),
+        );
+
+        final cities = await repo.getCities(
+          countryCode: 'EG',
+          governorateId: 'gov-1',
+        );
+        expect(cities.single.nameEn, 'Nasr City');
+        final captured =
+            verify(
+                  () => dio.get<List<dynamic>>(
+                    '/reference/cities',
+                    queryParameters: captureAny(named: 'queryParameters'),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(captured['countryCode'], 'EG');
+        expect(captured['governorateId'], 'gov-1');
+      },
+    );
 
     test('schools parse the CursorPage<NamedRef> envelope', () async {
       when(
@@ -132,10 +144,15 @@ void main() {
     });
 
     test('education systems parse code/names', () async {
-      when(() => dio.get<List<dynamic>>('/reference/education-systems'))
-          .thenAnswer(
+      when(
+        () => dio.get<List<dynamic>>('/reference/education-systems'),
+      ).thenAnswer(
         (_) async => _ok<List<dynamic>>([
-          {'code': 'nationalArabic', 'nameAr': 'قومي عربي', 'nameEn': 'National (Arabic)'},
+          {
+            'code': 'nationalArabic',
+            'nameAr': 'قومي عربي',
+            'nameEn': 'National (Arabic)',
+          },
           {'code': 'ig', 'nameAr': 'آي جي', 'nameEn': 'IG'},
         ]),
       );
@@ -144,34 +161,39 @@ void main() {
       expect(systems.map((s) => s.code), ['nationalArabic', 'ig']);
     });
 
-    test('universities parse the nested university→faculty→year tree', () async {
-      when(() => dio.get<List<dynamic>>('/reference/universities')).thenAnswer(
-        (_) async => _ok<List<dynamic>>([
-          {
-            'id': 'uni-1',
-            'nameAr': 'جامعة',
-            'nameEn': 'A University',
-            'faculties': [
-              {
-                'id': 'fac-1',
-                'nameAr': 'طب',
-                'nameEn': 'Medicine',
-                'years': [
-                  {'id': 'yr-1', 'yearNumber': 1, 'status': 'active'},
-                  {'id': 'yr-2', 'yearNumber': 2, 'status': 'soon'},
-                ],
-              },
-            ],
-          },
-        ]),
-      );
+    test(
+      'universities parse the nested university→faculty→year tree',
+      () async {
+        when(
+          () => dio.get<List<dynamic>>('/reference/universities'),
+        ).thenAnswer(
+          (_) async => _ok<List<dynamic>>([
+            {
+              'id': 'uni-1',
+              'nameAr': 'جامعة',
+              'nameEn': 'A University',
+              'faculties': [
+                {
+                  'id': 'fac-1',
+                  'nameAr': 'طب',
+                  'nameEn': 'Medicine',
+                  'years': [
+                    {'id': 'yr-1', 'yearNumber': 1, 'status': 'active'},
+                    {'id': 'yr-2', 'yearNumber': 2, 'status': 'soon'},
+                  ],
+                },
+              ],
+            },
+          ]),
+        );
 
-      final unis = await repo.getUniversities();
-      final year = unis.single.faculties.single.years;
-      expect(year.first.status, 'active');
-      expect(year[1].status, 'soon');
-      expect(year.first.yearNumber, 1);
-    });
+        final unis = await repo.getUniversities();
+        final year = unis.single.faculties.single.years;
+        expect(year.first.status, 'active');
+        expect(year[1].status, 'soon');
+        expect(year.first.yearNumber, 1);
+      },
+    );
 
     test('avatars parse id/url', () async {
       when(() => dio.get<List<dynamic>>('/reference/avatars')).thenAnswer(
@@ -188,7 +210,11 @@ void main() {
   group('fromJson — contract drift surfaces (required-missing throws)', () {
     test('Country without requiresGovernorate throws', () {
       expect(
-        () => Country.fromJson({'code': 'EG', 'nameAr': 'مصر', 'nameEn': 'Egypt'}),
+        () => Country.fromJson({
+          'code': 'EG',
+          'nameAr': 'مصر',
+          'nameEn': 'Egypt',
+        }),
         throwsA(anything),
       );
     });
@@ -203,15 +229,20 @@ void main() {
 
   group('error mapping — DioException.error surfaces as its AppException', () {
     test('offline maps to OfflineException', () async {
-      when(() => dio.get<List<dynamic>>('/reference/countries'))
-          .thenThrow(_dioError(const OfflineException()));
+      when(
+        () => dio.get<List<dynamic>>('/reference/countries'),
+      ).thenThrow(_dioError(const OfflineException()));
       await expectLater(repo.getCountries(), throwsA(isA<OfflineException>()));
     });
 
-    test('a bare/unmapped DioException falls back to UnknownException', () async {
-      when(() => dio.get<List<dynamic>>('/reference/avatars'))
-          .thenThrow(_dioError('not an AppException'));
-      await expectLater(repo.getAvatars(), throwsA(isA<UnknownException>()));
-    });
+    test(
+      'a bare/unmapped DioException falls back to UnknownException',
+      () async {
+        when(
+          () => dio.get<List<dynamic>>('/reference/avatars'),
+        ).thenThrow(_dioError('not an AppException'));
+        await expectLater(repo.getAvatars(), throwsA(isA<UnknownException>()));
+      },
+    );
   });
 }

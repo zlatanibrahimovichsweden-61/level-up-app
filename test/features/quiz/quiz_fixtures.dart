@@ -19,19 +19,18 @@ Map<String, dynamic> questionJson(
   String? imageUrl,
   bool isFavorite = false,
   int optionCount = 4,
-}) =>
-    <String, dynamic>{
-      'id': id,
-      'order': order,
-      'text': 'Question $id?',
-      'imageUrl': imageUrl,
-      'thumbnailUrl': null,
-      'options': <dynamic>[
-        for (var i = 0; i < optionCount; i++)
-          <String, dynamic>{'id': '$id-opt$i', 'text': 'Option $i'},
-      ],
-      'isFavorite': isFavorite,
-    };
+}) => <String, dynamic>{
+  'id': id,
+  'order': order,
+  'text': 'Question $id?',
+  'imageUrl': imageUrl,
+  'thumbnailUrl': null,
+  'options': <dynamic>[
+    for (var i = 0; i < optionCount; i++)
+      <String, dynamic>{'id': '$id-opt$i', 'text': 'Option $i'},
+  ],
+  'isFavorite': isFavorite,
+};
 
 /// A school quiz: `quizType` absent entirely, exactly as the contract types it
 /// for a lesson-scoped quiz.
@@ -40,17 +39,16 @@ Map<String, dynamic> quizJson({
   String mode = 'normal',
   String? quizType,
   String scopeName = 'Cell Structure',
-}) =>
-    <String, dynamic>{
-      'id': 'quiz-1',
-      'mode': mode,
-      'quizType': ?quizType,
-      'scopeName': scopeName,
-      'questions': <dynamic>[
-        for (var i = 1; i <= questionCount; i++) questionJson('q$i', order: i),
-      ],
-      'createdAt': '2026-07-30T09:00:00Z',
-    };
+}) => <String, dynamic>{
+  'id': 'quiz-1',
+  'mode': mode,
+  'quizType': ?quizType,
+  'scopeName': scopeName,
+  'questions': <dynamic>[
+    for (var i = 1; i <= questionCount; i++) questionJson('q$i', order: i),
+  ],
+  'createdAt': '2026-07-30T09:00:00Z',
+};
 
 Quiz quiz({int questionCount = 3, String? quizType}) =>
     Quiz.fromJson(quizJson(questionCount: questionCount, quizType: quizType));
@@ -65,28 +63,26 @@ Map<String, dynamic> answerResultJson({
   String correctOptionId = 'q1-opt0',
   int pointsDelta = 1,
   bool explanationAvailable = true,
-}) =>
-    <String, dynamic>{
-      'correct': correct,
-      'correctOptionId': correctOptionId,
-      'pointsDelta': pointsDelta,
-      'explanationAvailable': explanationAvailable,
-    };
+}) => <String, dynamic>{
+  'correct': correct,
+  'correctOptionId': correctOptionId,
+  'pointsDelta': pointsDelta,
+  'explanationAvailable': explanationAvailable,
+};
 
 AnswerResult answerResult({
   bool correct = true,
   String correctOptionId = 'q1-opt0',
   int pointsDelta = 1,
   bool explanationAvailable = true,
-}) =>
-    AnswerResult.fromJson(
-      answerResultJson(
-        correct: correct,
-        correctOptionId: correctOptionId,
-        pointsDelta: pointsDelta,
-        explanationAvailable: explanationAvailable,
-      ),
-    );
+}) => AnswerResult.fromJson(
+  answerResultJson(
+    correct: correct,
+    correctOptionId: correctOptionId,
+    pointsDelta: pointsDelta,
+    explanationAvailable: explanationAvailable,
+  ),
+);
 
 /// The PARTIALLY-ANSWERED default: 10 questions, 8 answered, 5 correct.
 ///
@@ -102,27 +98,26 @@ Map<String, dynamic> quizSummaryJson({
   int level = 3,
   bool leveledUp = false,
   bool newBadge = false,
-}) =>
-    <String, dynamic>{
-      'quizId': 'quiz-1',
-      'score': score,
-      'totalQuestions': totalQuestions,
-      'answeredCount': answeredCount,
-      'pointsAwarded': pointsAwarded,
-      'totalPoints': totalPoints,
-      'level': level,
-      'leveledUp': leveledUp,
-      'newBadge': newBadge,
-      'questions': <dynamic>[
-        for (var i = 1; i <= totalQuestions; i++)
-          <String, dynamic>{
-            'questionId': 'q$i',
-            'answered': i <= answeredCount,
-            // null when unanswered, per the contract.
-            'correct': i <= answeredCount ? i <= score : null,
-          },
-      ],
-    };
+}) => <String, dynamic>{
+  'quizId': 'quiz-1',
+  'score': score,
+  'totalQuestions': totalQuestions,
+  'answeredCount': answeredCount,
+  'pointsAwarded': pointsAwarded,
+  'totalPoints': totalPoints,
+  'level': level,
+  'leveledUp': leveledUp,
+  'newBadge': newBadge,
+  'questions': <dynamic>[
+    for (var i = 1; i <= totalQuestions; i++)
+      <String, dynamic>{
+        'questionId': 'q$i',
+        'answered': i <= answeredCount,
+        // null when unanswered, per the contract.
+        'correct': i <= answeredCount ? i <= score : null,
+      },
+  ],
+};
 
 QuizSummary quizSummary({
   int score = 5,
@@ -133,16 +128,15 @@ QuizSummary quizSummary({
   int level = 3,
   bool leveledUp = false,
   bool newBadge = false,
-}) =>
-    QuizSummary.fromJson(
-      quizSummaryJson(
-        score: score,
-        totalQuestions: totalQuestions,
-        answeredCount: answeredCount,
-        pointsAwarded: pointsAwarded,
-        totalPoints: totalPoints,
-        level: level,
-        leveledUp: leveledUp,
-        newBadge: newBadge,
-      ),
-    );
+}) => QuizSummary.fromJson(
+  quizSummaryJson(
+    score: score,
+    totalQuestions: totalQuestions,
+    answeredCount: answeredCount,
+    pointsAwarded: pointsAwarded,
+    totalPoints: totalPoints,
+    level: level,
+    leveledUp: leveledUp,
+    newBadge: newBadge,
+  ),
+);

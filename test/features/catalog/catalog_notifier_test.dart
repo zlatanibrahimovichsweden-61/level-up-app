@@ -38,7 +38,10 @@ void main() {
       when(repo.getSubjects).thenAnswer((_) async => subjects());
       final container = makeContainer();
 
-      expect(container.read(subjectsProvider), isA<AsyncLoading<List<Subject>>>());
+      expect(
+        container.read(subjectsProvider),
+        isA<AsyncLoading<List<Subject>>>(),
+      );
 
       final loaded = await container.read(subjectsProvider.future);
       expect(loaded, hasLength(3));
@@ -72,18 +75,20 @@ void main() {
       verify(repo.getSubjects).called(1);
     });
 
-    test('offline surfaces as OfflineException so the UI can pick its view',
-        () async {
-      when(repo.getSubjects).thenAnswer(
-        (_) => Future<List<Subject>>.error(const OfflineException()),
-      );
-      final container = makeContainer();
-      container.listen(subjectsProvider, (_, _) {});
+    test(
+      'offline surfaces as OfflineException so the UI can pick its view',
+      () async {
+        when(repo.getSubjects).thenAnswer(
+          (_) => Future<List<Subject>>.error(const OfflineException()),
+        );
+        final container = makeContainer();
+        container.listen(subjectsProvider, (_, _) {});
 
-      await pumpEventQueue();
+        await pumpEventQueue();
 
-      expect(container.read(subjectsProvider).error, isA<OfflineException>());
-    });
+        expect(container.read(subjectsProvider).error, isA<OfflineException>());
+      },
+    );
 
     test('refresh re-requests — the only way a retry ever happens', () async {
       when(repo.getSubjects).thenAnswer((_) async => subjects());
@@ -97,34 +102,40 @@ void main() {
   });
 
   group('subjectTreeProvider', () {
-    test('fetches the tree ONCE and serves every later read from cache',
-        () async {
-      when(() => repo.getSubjectTree('sub-1'))
-          .thenAnswer((_) async => schoolTree());
-      final container = makeContainer();
+    test(
+      'fetches the tree ONCE and serves every later read from cache',
+      () async {
+        when(
+          () => repo.getSubjectTree('sub-1'),
+        ).thenAnswer((_) async => schoolTree());
+        final container = makeContainer();
 
-      // Units, Chapters and Lessons each watch the same provider.
-      await container.read(subjectTreeProvider('sub-1').future);
-      container.read(subjectTreeProvider('sub-1'));
-      container.read(subjectTreeProvider('sub-1'));
-      final third = await container.read(subjectTreeProvider('sub-1').future);
+        // Units, Chapters and Lessons each watch the same provider.
+        await container.read(subjectTreeProvider('sub-1').future);
+        container.read(subjectTreeProvider('sub-1'));
+        container.read(subjectTreeProvider('sub-1'));
+        final third = await container.read(subjectTreeProvider('sub-1').future);
 
-      expect((third as SchoolSubjectTree).units, hasLength(2));
-      verify(() => repo.getSubjectTree('sub-1')).called(1);
-    });
+        expect((third as SchoolSubjectTree).units, hasLength(2));
+        verify(() => repo.getSubjectTree('sub-1')).called(1);
+      },
+    );
 
-    test('is keyed by subjectId — a different subject is its own fetch',
-        () async {
-      when(() => repo.getSubjectTree(any()))
-          .thenAnswer((_) async => schoolTree());
-      final container = makeContainer();
+    test(
+      'is keyed by subjectId — a different subject is its own fetch',
+      () async {
+        when(
+          () => repo.getSubjectTree(any()),
+        ).thenAnswer((_) async => schoolTree());
+        final container = makeContainer();
 
-      await container.read(subjectTreeProvider('sub-1').future);
-      await container.read(subjectTreeProvider('sub-2').future);
+        await container.read(subjectTreeProvider('sub-1').future);
+        await container.read(subjectTreeProvider('sub-2').future);
 
-      verify(() => repo.getSubjectTree('sub-1')).called(1);
-      verify(() => repo.getSubjectTree('sub-2')).called(1);
-    });
+        verify(() => repo.getSubjectTree('sub-1')).called(1);
+        verify(() => repo.getSubjectTree('sub-2')).called(1);
+      },
+    );
 
     test('a failure settles on AsyncError — no silent auto-retry', () async {
       when(() => repo.getSubjectTree(any())).thenAnswer(
@@ -139,10 +150,7 @@ void main() {
 
       final state = container.read(subjectTreeProvider('sub-9'));
       expect(state, isA<AsyncError<SubjectTree>>());
-      expect(
-        (state.error! as ApiException).code,
-        'insufficient_scope',
-      );
+      expect((state.error! as ApiException).code, 'insufficient_scope');
       verify(() => repo.getSubjectTree('sub-9')).called(1);
     });
 
@@ -162,8 +170,9 @@ void main() {
     });
 
     test('refresh re-requests that subject only', () async {
-      when(() => repo.getSubjectTree('sub-1'))
-          .thenAnswer((_) async => schoolTree());
+      when(
+        () => repo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) async => schoolTree());
       final container = makeContainer();
       await container.read(subjectTreeProvider('sub-1').future);
 
@@ -180,10 +189,7 @@ void main() {
     });
 
     test('matches a substring, case-insensitively', () {
-      expect(
-        filterSubjects(subjects(), 'BIO').single.name,
-        'Biology',
-      );
+      expect(filterSubjects(subjects(), 'BIO').single.name, 'Biology');
       expect(filterSubjects(subjects(), 'sic').single.name, 'Physics');
     });
 

@@ -65,9 +65,9 @@ class SchoolPickerField extends ConsumerWidget {
 
     final (String text, Color colour) = switch (school) {
       final NamedRef row => (
-          localizedRefName(context, row.nameAr, row.nameEn),
-          ext.textPrimary,
-        ),
+        localizedRefName(context, row.nameAr, row.nameEn),
+        ext.textPrimary,
+      ),
       null when skipped => (l10n.schoolSkipped, ext.textSecondary),
       null => (l10n.searchSchoolsHint, ext.hint),
     };
@@ -156,11 +156,8 @@ class _SchoolSearchSheetState extends ConsumerState<_SchoolSearchSheet> {
     super.dispose();
   }
 
-  SchoolFilter get _filter => (
-        q: _query,
-        governorateId: widget.governorateId,
-        cityId: widget.cityId,
-      );
+  SchoolFilter get _filter =>
+      (q: _query, governorateId: widget.governorateId, cityId: widget.cityId);
 
   void _onQueryChanged(String value) {
     _debounce?.cancel();
@@ -214,50 +211,47 @@ class _SchoolSearchSheetState extends ConsumerState<_SchoolSearchSheet> {
             ),
             Expanded(
               child: switch (results) {
-                AsyncLoading() =>
-                  const Center(child: CircularProgressIndicator()),
+                AsyncLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
                 AsyncError(:final error) => _SheetFailure(
-                    message: referenceErrorMessage(l10n, error),
-                    isOffline: isOffline(error),
-                    onRetry: () => ref
-                        .read(schoolSearchProvider(_filter).notifier)
-                        .refresh(),
-                  ),
+                  message: referenceErrorMessage(l10n, error),
+                  isOffline: isOffline(error),
+                  onRetry: () => ref
+                      .read(schoolSearchProvider(_filter).notifier)
+                      .refresh(),
+                ),
                 AsyncData(value: final data) when data.isEmpty => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        l10n.noSchoolsFound,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: ext.hint),
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l10n.noSchoolsFound,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: ext.hint),
                     ),
                   ),
+                ),
                 AsyncData(value: final data) => ListView.builder(
-                    controller: _scrollController,
-                    itemCount: data.items.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == data.items.length) {
-                        return _ListFooter(
-                          results: data,
-                          onRetryAppend: () => ref
-                              .read(schoolSearchProvider(_filter).notifier)
-                              .loadMore(),
-                        );
-                      }
-                      final school = data.items[index];
-                      return ListTile(
-                        title: Text(
-                          localizedRefName(
-                            context,
-                            school.nameAr,
-                            school.nameEn,
-                          ),
-                        ),
-                        onTap: () => Navigator.of(context).pop(school),
+                  controller: _scrollController,
+                  itemCount: data.items.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == data.items.length) {
+                      return _ListFooter(
+                        results: data,
+                        onRetryAppend: () => ref
+                            .read(schoolSearchProvider(_filter).notifier)
+                            .loadMore(),
                       );
-                    },
-                  ),
+                    }
+                    final school = data.items[index];
+                    return ListTile(
+                      title: Text(
+                        localizedRefName(context, school.nameAr, school.nameEn),
+                      ),
+                      onTap: () => Navigator.of(context).pop(school),
+                    );
+                  },
+                ),
               },
             ),
           ],

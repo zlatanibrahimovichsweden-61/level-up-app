@@ -56,8 +56,9 @@ class DateOfBirthField extends StatelessWidget {
     // (DateOnlyConverter) — never this string.
     final display = selected == null
         ? l10n.dobHint
-        : DateFormat.yMMMd(Localizations.localeOf(context).toString())
-            .format(selected);
+        : DateFormat.yMMMd(
+            Localizations.localeOf(context).toString(),
+          ).format(selected);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

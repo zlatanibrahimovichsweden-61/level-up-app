@@ -18,8 +18,10 @@ class _CaptureHandler extends ErrorInterceptorHandler {
   final void Function(DioException) onReject;
 
   @override
-  void reject(DioException error, [bool callFollowingErrorInterceptor = false]) =>
-      onReject(error);
+  void reject(
+    DioException error, [
+    bool callFollowingErrorInterceptor = false,
+  ]) => onReject(error);
 }
 
 DioException _response(int status, Object? body, {Headers? headers}) =>
@@ -36,15 +38,21 @@ DioException _response(int status, Object? body, {Headers? headers}) =>
 
 /// A `429 rate_limited` off `/reference/cities` with the given `Retry-After`
 /// header value verbatim (null = the header is absent).
-RateLimitedException _rateLimited(String? retryAfter) => _map(
-      _response(
-        429,
-        {'code': 'rate_limited', 'title': 'Too Many Requests', 'status': 429},
-        headers: Headers.fromMap(<String, List<String>>{
-          if (retryAfter != null) 'retry-after': [retryAfter],
-        }),
-      ),
-    ) as RateLimitedException;
+RateLimitedException _rateLimited(String? retryAfter) =>
+    _map(
+          _response(
+            429,
+            {
+              'code': 'rate_limited',
+              'title': 'Too Many Requests',
+              'status': 429,
+            },
+            headers: Headers.fromMap(<String, List<String>>{
+              if (retryAfter != null) 'retry-after': [retryAfter],
+            }),
+          ),
+        )
+        as RateLimitedException;
 
 void main() {
   group('400 validation_failed → ValidationException', () {
@@ -58,7 +66,9 @@ void main() {
           'status': 400,
           'code': 'validation_failed',
           'errors': {
-            'governorateId': ['governorateId is required when countryCode is EG'],
+            'governorateId': [
+              'governorateId is required when countryCode is EG',
+            ],
             // adr-028 §1's own violation, replacing the schoolName sample:
             // that field no longer exists on the contract, so the server can
             // never name it again.
@@ -77,7 +87,10 @@ void main() {
 
     test('is still an ApiException (existing handlers keep working)', () {
       final mapped = _map(
-        _response(400, {'code': 'validation_failed', 'errors': <String, dynamic>{}}),
+        _response(400, {
+          'code': 'validation_failed',
+          'errors': <String, dynamic>{},
+        }),
       );
       expect(mapped, isA<ApiException>());
       expect((mapped as ApiException).status, 400);
@@ -85,7 +98,8 @@ void main() {
 
     test('a missing/malformed errors map yields empty fields, not a crash', () {
       expect(
-        (_map(_response(400, {'code': 'validation_failed'})) as ValidationException)
+        (_map(_response(400, {'code': 'validation_failed'}))
+                as ValidationException)
             .fields,
         isEmpty,
       );
@@ -98,12 +112,14 @@ void main() {
     });
 
     test('a non-list value is tolerated as a single message', () {
-      final mapped = _map(
-        _response(400, {
-          'code': 'validation_failed',
-          'errors': {'cityId': 'required'},
-        }),
-      ) as ValidationException;
+      final mapped =
+          _map(
+                _response(400, {
+                  'code': 'validation_failed',
+                  'errors': {'cityId': 'required'},
+                }),
+              )
+              as ValidationException;
       expect(mapped.errors['cityId'], ['required']);
     });
   });
@@ -117,7 +133,9 @@ void main() {
     });
 
     test('401 → UnauthorizedException carrying the code', () {
-      final mapped = _map(_response(401, {'code': 'registration_token_invalid'}));
+      final mapped = _map(
+        _response(401, {'code': 'registration_token_invalid'}),
+      );
       expect(mapped, isA<UnauthorizedException>());
       expect(mapped.code, 'registration_token_invalid');
     });
@@ -180,10 +198,7 @@ void main() {
     test('an HTTP-date Retry-After yields null rather than a guess', () {
       // Converting a date means trusting the device clock against the
       // server's. A wrong countdown is worse than no countdown.
-      expect(
-        _rateLimited('Wed, 05 Aug 2026 07:28:00 GMT').retryAfter,
-        isNull,
-      );
+      expect(_rateLimited('Wed, 05 Aug 2026 07:28:00 GMT').retryAfter, isNull);
     });
 
     test('a 429 with a DIFFERENT code stays a plain ApiException', () {

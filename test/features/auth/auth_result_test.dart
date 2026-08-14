@@ -5,42 +5,48 @@ import 'package:level_up_app/features/auth/models/token_pair.dart';
 
 void main() {
   group('AuthResult.fromJson — discriminated on contract `result`', () {
-    test('authenticated → AuthenticatedResult with parsed tokens + opaque profile', () {
-      // Shape copied from contract/openapi.yaml AuthenticatedResult + TokenPair.
-      final json = {
-        'result': 'authenticated',
-        'tokens': {
-          'accessToken': 'access.jwt',
-          'accessExpiresInSeconds': 900,
-          'refreshToken': 'refresh.jwt',
-          'refreshExpiresInSeconds': 5184000,
-        },
-        'profile': {'id': 'uuid', 'track': 'school', 'name': 'Student'},
-      };
+    test(
+      'authenticated → AuthenticatedResult with parsed tokens + opaque profile',
+      () {
+        // Shape copied from contract/openapi.yaml AuthenticatedResult + TokenPair.
+        final json = {
+          'result': 'authenticated',
+          'tokens': {
+            'accessToken': 'access.jwt',
+            'accessExpiresInSeconds': 900,
+            'refreshToken': 'refresh.jwt',
+            'refreshExpiresInSeconds': 5184000,
+          },
+          'profile': {'id': 'uuid', 'track': 'school', 'name': 'Student'},
+        };
 
-      final result = AuthResult.fromJson(json);
+        final result = AuthResult.fromJson(json);
 
-      expect(result, isA<AuthenticatedResult>());
-      final authed = result as AuthenticatedResult;
-      expect(authed.tokens.accessToken, 'access.jwt');
-      expect(authed.tokens.refreshExpiresInSeconds, 5184000);
-      expect(authed.profile['track'], 'school');
-    });
+        expect(result, isA<AuthenticatedResult>());
+        final authed = result as AuthenticatedResult;
+        expect(authed.tokens.accessToken, 'access.jwt');
+        expect(authed.tokens.refreshExpiresInSeconds, 5184000);
+        expect(authed.profile['track'], 'school');
+      },
+    );
 
-    test('registrationRequired → RegistrationRequiredResult with token + ttl', () {
-      final json = {
-        'result': 'registrationRequired',
-        'registrationToken': 'reg.token',
-        'expiresInSeconds': 600,
-      };
+    test(
+      'registrationRequired → RegistrationRequiredResult with token + ttl',
+      () {
+        final json = {
+          'result': 'registrationRequired',
+          'registrationToken': 'reg.token',
+          'expiresInSeconds': 600,
+        };
 
-      final result = AuthResult.fromJson(json);
+        final result = AuthResult.fromJson(json);
 
-      expect(result, isA<RegistrationRequiredResult>());
-      final reg = result as RegistrationRequiredResult;
-      expect(reg.registrationToken, 'reg.token');
-      expect(reg.expiresInSeconds, 600);
-    });
+        expect(result, isA<RegistrationRequiredResult>());
+        final reg = result as RegistrationRequiredResult;
+        expect(reg.registrationToken, 'reg.token');
+        expect(reg.expiresInSeconds, 600);
+      },
+    );
   });
 
   group('Contract fidelity — required fields have no defensive defaults', () {

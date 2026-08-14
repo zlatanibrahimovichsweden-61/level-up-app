@@ -23,13 +23,15 @@ void main() {
   setUp(() {
     catalog = MockCatalogRepository();
     when(catalog.getSubjects).thenAnswer((_) async => subjects());
-    when(() => catalog.getSubjectTree(any()))
-        .thenAnswer((_) async => schoolTree());
+    when(
+      () => catalog.getSubjectTree(any()),
+    ).thenAnswer((_) async => schoolTree());
   });
 
   group('loaded', () {
-    testWidgets('renders a 2-column grid from GET /catalog/subjects',
-        (tester) async {
+    testWidgets('renders a 2-column grid from GET /catalog/subjects', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog);
       await openLearnTab(tester);
 
@@ -69,8 +71,9 @@ void main() {
       expect(bars[2].value, 0.0); // 0/0 draws empty, not NaN
     });
 
-    testWidgets('a finished or empty counter never disables or hides a card',
-        (tester) async {
+    testWidgets('a finished or empty counter never disables or hides a card', (
+      tester,
+    ) async {
       // The contract: questionCounter "never locks retakes". A 480/480 subject
       // and a 0/0 subject must both be present AND tappable.
       await pumpCatalogApp(tester, catalog: catalog);
@@ -80,7 +83,11 @@ void main() {
       for (final card in tester.widgetList<SubjectCard>(
         find.byType(SubjectCard),
       )) {
-        expect(card.onTap, isNotNull, reason: '${card.subject.name} not tappable');
+        expect(
+          card.onTap,
+          isNotNull,
+          reason: '${card.subject.name} not tappable',
+        );
       }
 
       // Prove it for the FINISHED one by actually opening it. The Units screen
@@ -106,8 +113,9 @@ void main() {
       verify(catalog.getSubjects).called(1);
     });
 
-    testWidgets('a query that matches nothing shows its own message',
-        (tester) async {
+    testWidgets('a query that matches nothing shows its own message', (
+      tester,
+    ) async {
       await pumpCatalogApp(tester, catalog: catalog);
       await openLearnTab(tester);
 
@@ -134,8 +142,9 @@ void main() {
   });
 
   group('states', () {
-    testWidgets('loading shows a skeleton grid, not a bare spinner',
-        (tester) async {
+    testWidgets('loading shows a skeleton grid, not a bare spinner', (
+      tester,
+    ) async {
       final completer = Completer<List<Subject>>();
       when(catalog.getSubjects).thenAnswer((_) => completer.future);
 
@@ -152,8 +161,9 @@ void main() {
       expect(find.byType(SubjectCard), findsNWidgets(3));
     });
 
-    testWidgets('empty catalog gets its own message, not a blank grid',
-        (tester) async {
+    testWidgets('empty catalog gets its own message, not a blank grid', (
+      tester,
+    ) async {
       when(catalog.getSubjects).thenAnswer((_) async => <Subject>[]);
 
       await pumpCatalogApp(tester, catalog: catalog);
@@ -181,8 +191,9 @@ void main() {
       verify(catalog.getSubjects).called(2);
     });
 
-    testWidgets('offline gets its own view, distinct from a generic error',
-        (tester) async {
+    testWidgets('offline gets its own view, distinct from a generic error', (
+      tester,
+    ) async {
       when(catalog.getSubjects).thenAnswer(
         (_) => Future<List<Subject>>.error(const OfflineException()),
       );

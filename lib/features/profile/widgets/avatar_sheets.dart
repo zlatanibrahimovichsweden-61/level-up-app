@@ -321,9 +321,7 @@ class _AvatarChoice extends StatelessWidget {
           height: ChooseAvatarSheet._size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: selected
-                ? Border.all(color: cs.primary, width: 2.5)
-                : null,
+            border: selected ? Border.all(color: cs.primary, width: 2.5) : null,
           ),
           child: ClipOval(
             child: CachedNetworkImage(

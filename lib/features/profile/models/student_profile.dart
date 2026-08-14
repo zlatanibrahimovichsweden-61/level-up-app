@@ -140,15 +140,15 @@ sealed class ProfileCity with _$ProfileCity {
   /// the wire, so there is nothing else to branch on.
   factory ProfileCity.fromJson(Map<String, dynamic> json) =>
       json.containsKey('id')
-          ? ProfileCity.coded(NamedRef.fromJson(json))
-          : ProfileCity.freeText(json['name'] as String);
+      ? ProfileCity.coded(NamedRef.fromJson(json))
+      : ProfileCity.freeText(json['name'] as String);
 
   /// The inverse of [ProfileCity.fromJson] — each arm emits exactly the object
   /// it was parsed from, flat, with no discriminator added.
   Map<String, dynamic> toJson() => switch (this) {
-        CodedCity(:final ref) => ref.toJson(),
-        FreeTextCity(:final name) => <String, dynamic>{'name': name},
-      };
+    CodedCity(:final ref) => ref.toJson(),
+    FreeTextCity(:final name) => <String, dynamic>{'name': name},
+  };
 }
 
 /// School-track academic block. `stage` and `educationSystem` are kept as wire

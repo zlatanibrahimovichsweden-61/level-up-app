@@ -140,7 +140,9 @@ void main() {
 
     test('start with an already-elapsed TTL yields an expired draft', () {
       final container = _container();
-      container.read(registrationControllerProvider.notifier).start(
+      container
+          .read(registrationControllerProvider.notifier)
+          .start(
             const RegistrationArgs(
               registrationToken: 'reg.token',
               expiresInSeconds: -1, // already past

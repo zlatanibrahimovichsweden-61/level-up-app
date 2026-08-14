@@ -13,11 +13,11 @@ import 'interceptors/error_interceptor.dart';
 ///   `AuthInterceptor`, so `POST /auth/refresh` can never re-enter the retry path.
 class DioClient {
   static BaseOptions _baseOptions() => BaseOptions(
-        baseUrl: AppConfig.instance.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 20),
-        headers: const {'Content-Type': 'application/json'},
-      );
+    baseUrl: AppConfig.instance.baseUrl,
+    connectTimeout: const Duration(seconds: 15),
+    receiveTimeout: const Duration(seconds: 20),
+    headers: const {'Content-Type': 'application/json'},
+  );
 
   static Dio create({
     required SecureStorage storage,

@@ -72,10 +72,11 @@ class _UniversityDetailScreenState
     // The cascade, resolved from the tree the endpoint returned. A selection
     // that no longer exists (e.g. the list changed) resolves to null, which
     // re-gates the fields below it rather than submitting a dangling id.
-    final selectedUniversity =
-        _findUniversity(universities.value, draft.universityId);
-    final selectedFaculty =
-        _findFaculty(selectedUniversity, draft.facultyId);
+    final selectedUniversity = _findUniversity(
+      universities.value,
+      draft.universityId,
+    );
+    final selectedFaculty = _findFaculty(selectedUniversity, draft.facultyId);
 
     final issues = fieldIssuesFrom(submitState.error);
     String? errorFor(String field) {
@@ -185,8 +186,8 @@ class _UniversityDetailScreenState
                       enabled: selectedFaculty != null,
                       disabledHint: l10n.selectFacultyFirst,
                       options: AsyncData([
-                        for (final year in selectedFaculty?.years ??
-                            const <StudyYearRef>[])
+                        for (final year
+                            in selectedFaculty?.years ?? const <StudyYearRef>[])
                           if (year.status == _activeYear)
                             (
                               id: year.id,
@@ -228,15 +229,14 @@ class _UniversityDetailScreenState
                       enabled: draft.governorateId != null,
                       disabledHint: l10n.selectGovernorateFirst,
                       options: _cityOptions(draft.governorateId),
-                      errorText: errorFor(RegFields.cityId) ??
+                      errorText:
+                          errorFor(RegFields.cityId) ??
                           errorFor(RegFields.cityName),
                       onRetry: () => ref.invalidate(
-                        citiesProvider(
-                          (
-                            countryCode: _countryCode,
-                            governorateId: draft.governorateId,
-                          ),
-                        ),
+                        citiesProvider((
+                          countryCode: _countryCode,
+                          governorateId: draft.governorateId,
+                        )),
                       ),
                       onCitySelected: (id) =>
                           _edit(() => controller.setCity(id)),
@@ -247,8 +247,10 @@ class _UniversityDetailScreenState
                     if (submitState.hasError &&
                         !restartsRegistration(submitState.error))
                       SubmitFailureBanner(
-                        message:
-                            registrationErrorMessage(l10n, submitState.error),
+                        message: registrationErrorMessage(
+                          l10n,
+                          submitState.error,
+                        ),
                       ),
                     const SizedBox(height: 28),
 
@@ -256,14 +258,15 @@ class _UniversityDetailScreenState
                       onPressed: submitState.isLoading
                           ? null
                           : () => ref
-                              .read(registrationSubmitProvider.notifier)
-                              .submit(),
+                                .read(registrationSubmitProvider.notifier)
+                                .submit(),
                       child: submitState.isLoading
                           ? const SizedBox(
                               height: 24,
                               width: 24,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
                             )
                           : Text(
                               l10n.startLearning,
@@ -316,21 +319,22 @@ class _UniversityDetailScreenState
     if (governorateId == null) return const AsyncData([]);
     return ref
         .watch(
-          citiesProvider(
-            (countryCode: _countryCode, governorateId: governorateId),
-          ),
+          citiesProvider((
+            countryCode: _countryCode,
+            governorateId: governorateId,
+          )),
         )
         .whenData(_namedRefRows);
   }
 
   List<PickerOption> _namedRefRows(List<NamedRef> rows) => [
-        for (final row in rows)
-          (
-            id: row.id,
-            label: localizedRefName(context, row.nameAr, row.nameEn),
-            leading: null,
-          ),
-      ];
+    for (final row in rows)
+      (
+        id: row.id,
+        label: localizedRefName(context, row.nameAr, row.nameEn),
+        leading: null,
+      ),
+  ];
 
   UniversityRef? _findUniversity(List<UniversityRef>? rows, String? id) {
     if (rows == null || id == null) return null;

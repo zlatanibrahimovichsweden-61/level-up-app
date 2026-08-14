@@ -32,12 +32,14 @@ void main() {
       expect(parsed.quizType, QuizType.midTermRevision);
     });
 
-    test('questionCount reads the questions DELIVERED, not the length asked for',
-        () {
-      // A short pool is contract-legal: `POST /quizzes` may return fewer than
-      // `length`. The counter must say 7, never 10.
-      expect(Quiz.fromJson(quizJson(questionCount: 7)).questionCount, 7);
-    });
+    test(
+      'questionCount reads the questions DELIVERED, not the length asked for',
+      () {
+        // A short pool is contract-legal: `POST /quizzes` may return fewer than
+        // `length`. The counter must say 7, never 10.
+        expect(Quiz.fromJson(quizJson(questionCount: 7)).questionCount, 7);
+      },
+    );
 
     test('a missing required field throws rather than defaulting', () {
       final json = quizJson()..remove('scopeName');
@@ -71,8 +73,9 @@ void main() {
 
   group('QuizQuestion', () {
     test('parses isFavorite — required, so the model must carry it', () {
-      final parsed =
-          QuizQuestion.fromJson(questionJson('q1', isFavorite: true));
+      final parsed = QuizQuestion.fromJson(
+        questionJson('q1', isFavorite: true),
+      );
 
       expect(parsed.isFavorite, isTrue);
     });
@@ -89,19 +92,20 @@ void main() {
       expect(parsed.imageUrl, 'https://cdn.example/q1.webp');
     });
 
-    test('carries NO correctness — the contract never ships it with questions',
-        () {
-      final json = questionJson('q1');
-      final options = json['options']! as List<dynamic>;
+    test(
+      'carries NO correctness — the contract never ships it with questions',
+      () {
+        final json = questionJson('q1');
+        final options = json['options']! as List<dynamic>;
 
-      for (final option in options.cast<Map<String, dynamic>>()) {
-        expect(option.keys, unorderedEquals(<String>['id', 'text']));
-      }
-    });
+        for (final option in options.cast<Map<String, dynamic>>()) {
+          expect(option.keys, unorderedEquals(<String>['id', 'text']));
+        }
+      },
+    );
 
     test('minItems is 2, not 4 — a three-option question parses', () {
-      final parsed =
-          QuizQuestion.fromJson(questionJson('q1', optionCount: 3));
+      final parsed = QuizQuestion.fromJson(questionJson('q1', optionCount: 3));
 
       expect(parsed.options, hasLength(3));
     });

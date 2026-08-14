@@ -20,22 +20,22 @@ import 'golden_harness.dart';
 const _branchPaths = ['/t0', '/t1', '/t2', '/t3', '/t4'];
 
 GoRouter _shellRouter(String initial) => GoRouter(
-      initialLocation: initial,
-      routes: [
-        StatefulShellRoute.indexedStack(
-          builder: (_, _, navigationShell) =>
-              MainShell(navigationShell: navigationShell),
-          branches: [
-            for (final path in _branchPaths)
-              StatefulShellBranch(
-                routes: [
-                  GoRoute(path: path, builder: (_, _) => const SizedBox.expand()),
-                ],
-              ),
-          ],
-        ),
+  initialLocation: initial,
+  routes: [
+    StatefulShellRoute.indexedStack(
+      builder: (_, _, navigationShell) =>
+          MainShell(navigationShell: navigationShell),
+      branches: [
+        for (final path in _branchPaths)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: path, builder: (_, _) => const SizedBox.expand()),
+            ],
+          ),
       ],
-    );
+    ),
+  ],
+);
 
 void main() {
   setUpAll(loadAppFonts);

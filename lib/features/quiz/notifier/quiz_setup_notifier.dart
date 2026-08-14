@@ -39,11 +39,9 @@ class QuizSetupNotifier extends AsyncNotifier<Quiz?> {
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(
-      () => ref.read(quizRepositoryProvider).createQuiz(
-            scope: scope,
-            length: length,
-            mode: mode,
-          ),
+      () => ref
+          .read(quizRepositoryProvider)
+          .createQuiz(scope: scope, length: length, mode: mode),
     );
   }
 
@@ -58,5 +56,5 @@ class QuizSetupNotifier extends AsyncNotifier<Quiz?> {
 /// state and push straight into a session the student did not ask for.
 final quizSetupProvider =
     AsyncNotifierProvider.autoDispose<QuizSetupNotifier, Quiz?>(
-  QuizSetupNotifier.new,
-);
+      QuizSetupNotifier.new,
+    );

@@ -394,11 +394,7 @@ class _SuccessView extends StatelessWidget {
           Text(
             l10n.otpSuccessSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20,
-              height: 1.3,
-              color: ext.bodyMuted,
-            ),
+            style: TextStyle(fontSize: 20, height: 1.3, color: ext.bodyMuted),
           ),
           const SizedBox(height: 60),
           FilledButton(

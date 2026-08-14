@@ -37,16 +37,17 @@ Future<void> _pump(
 
 /// Every circular `Container` inside the bell chip that is filled with [color].
 Finder _dotsColoured(Color color) => find.byWidgetPredicate((w) {
-      if (w is! Container) return false;
-      final decoration = w.decoration;
-      return decoration is BoxDecoration &&
-          decoration.shape == BoxShape.circle &&
-          decoration.color == color;
-    });
+  if (w is! Container) return false;
+  final decoration = w.decoration;
+  return decoration is BoxDecoration &&
+      decoration.shape == BoxShape.circle &&
+      decoration.color == color;
+});
 
 void main() {
-  testWidgets('the unread dot does NOT render while the flag is false',
-      (tester) async {
+  testWidgets('the unread dot does NOT render while the flag is false', (
+    tester,
+  ) async {
     await _pump(tester, hasUnread: false);
 
     expect(_dotsColoured(AppColors.light.bellUnreadDot), findsNothing);
@@ -61,7 +62,9 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         // No hasUnreadNotifications argument at all — exactly how Home builds
         // it, since the contract gives it nothing to pass.
-        home: const Scaffold(body: HomeHeader(name: 'Yara', avatarUrl: '')),
+        home: const Scaffold(
+          body: HomeHeader(name: 'Yara', avatarUrl: ''),
+        ),
       ),
     );
     await tester.pump();
@@ -69,8 +72,9 @@ void main() {
     expect(_dotsColoured(AppColors.light.bellUnreadDot), findsNothing);
   });
 
-  testWidgets('the dot renders when the flag is true, in the canvas hue',
-      (tester) async {
+  testWidgets('the dot renders when the flag is true, in the canvas hue', (
+    tester,
+  ) async {
     // Guards the widget itself, not the app: when an endpoint does arrive, this
     // is what flipping the flag must produce.
     await _pump(tester, hasUnread: true);

@@ -146,7 +146,9 @@ void main() {
       },
     );
 
-    testWidgets('an empty phone surfaces the same inline error', (tester) async {
+    testWidgets('an empty phone surfaces the same inline error', (
+      tester,
+    ) async {
       final repo = MockAuthRepository();
       await tester.pumpWidget(_harness(repo));
 

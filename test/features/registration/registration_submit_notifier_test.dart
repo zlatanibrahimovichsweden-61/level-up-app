@@ -29,15 +29,17 @@ const _args = RegistrationArgs(
   phone: '+201555000111',
 );
 
-final _authenticated = AuthResult.authenticated(
-  tokens: const TokenPair(
-    accessToken: 'access.jwt',
-    accessExpiresInSeconds: 900,
-    refreshToken: 'refresh.jwt',
-    refreshExpiresInSeconds: 5184000,
-  ),
-  profile: const {'id': 'student-1'},
-) as AuthenticatedResult;
+final _authenticated =
+    AuthResult.authenticated(
+          tokens: const TokenPair(
+            accessToken: 'access.jwt',
+            accessExpiresInSeconds: 900,
+            refreshToken: 'refresh.jwt',
+            refreshExpiresInSeconds: 5184000,
+          ),
+          profile: const {'id': 'student-1'},
+        )
+        as AuthenticatedResult;
 
 void main() {
   setUpAll(() => registerFallbackValue(_FakeBody()));
@@ -124,25 +126,27 @@ void main() {
   }
 
   group('201 → session established', () {
-    test('writes tokens, flips AuthController, emits RegistrationSubmitted',
-        () async {
-      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
-      final c = seededSchool();
+    test(
+      'writes tokens, flips AuthController, emits RegistrationSubmitted',
+      () async {
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededSchool();
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      verify(
-        () => storage.writeTokens(
-          access: 'access.jwt',
-          refresh: 'refresh.jwt',
-        ),
-      ).called(1);
-      expect(c.read(authControllerProvider), isA<AuthAuthenticated>());
-      expect(
-        c.read(registrationSubmitProvider).value,
-        isA<RegistrationSubmitted>(),
-      );
-    });
+        verify(
+          () =>
+              storage.writeTokens(access: 'access.jwt', refresh: 'refresh.jwt'),
+        ).called(1);
+        expect(c.read(authControllerProvider), isA<AuthAuthenticated>());
+        expect(
+          c.read(registrationSubmitProvider).value,
+          isA<RegistrationSubmitted>(),
+        );
+      },
+    );
 
     test('builds the SCHOOL body from the draft', () async {
       when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
@@ -172,21 +176,26 @@ void main() {
       expect((body as UniversityRegistration).toJson()['track'], 'university');
     });
 
-    test('name + parentPhone come from the draft; referral never submitted',
-        () async {
-      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
-      final c = seededSchool();
+    test(
+      'name + parentPhone come from the draft; referral never submitted',
+      () async {
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededSchool();
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      final json = (verify(() => repo.register(captureAny())).captured.single
-              as SchoolRegistration)
-          .toJson();
-      expect(json['name'], 'Nour Hassan');
-      expect(json['parentPhone'], '+201021871999');
-      expect(json.containsKey('referralCode'), isFalse);
-      expect(json.values, isNot(contains('FRIEND50')));
-    });
+        final json =
+            (verify(() => repo.register(captureAny())).captured.single
+                    as SchoolRegistration)
+                .toJson();
+        expect(json['name'], 'Nour Hassan');
+        expect(json['parentPhone'], '+201021871999');
+        expect(json.containsKey('referralCode'), isFalse);
+        expect(json.values, isNot(contains('FRIEND50')));
+      },
+    );
 
     test('non-Egypt draft omits the coded ids and every school key', () async {
       when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
@@ -194,31 +203,37 @@ void main() {
 
       await c.read(registrationSubmitProvider.notifier).submit();
 
-      final json = (verify(() => repo.register(captureAny())).captured.single
-              as SchoolRegistration)
-          .toJson();
+      final json =
+          (verify(() => repo.register(captureAny())).captured.single
+                  as SchoolRegistration)
+              .toJson();
       expect(json.containsKey('governorateId'), isFalse);
       expect(json.containsKey('schoolId'), isFalse);
       expect(json.containsKey('schoolName'), isFalse);
     });
 
-    test('a free-text city passes the pre-flight and reaches the wire',
-        () async {
-      // End to end for adr-028 §1: the escape's controller state clears the
-      // coded id, the validator accepts the free text in its place, and the
-      // body carries cityName with no cityId key at all.
-      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
-      final c = seededSchool(requiresGovernorate: false);
-      c.read(registrationControllerProvider.notifier).setCityName('Al Ain');
+    test(
+      'a free-text city passes the pre-flight and reaches the wire',
+      () async {
+        // End to end for adr-028 §1: the escape's controller state clears the
+        // coded id, the validator accepts the free text in its place, and the
+        // body carries cityName with no cityId key at all.
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededSchool(requiresGovernorate: false);
+        c.read(registrationControllerProvider.notifier).setCityName('Al Ain');
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      final json = (verify(() => repo.register(captureAny())).captured.single
-              as SchoolRegistration)
-          .toJson();
-      expect(json['cityName'], 'Al Ain');
-      expect(json.containsKey('cityId'), isFalse);
-    });
+        final json =
+            (verify(() => repo.register(captureAny())).captured.single
+                    as SchoolRegistration)
+                .toJson();
+        expect(json['cityName'], 'Al Ain');
+        expect(json.containsKey('cityId'), isFalse);
+      },
+    );
 
     test('an Egyptian student can submit with no school at all', () async {
       when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
@@ -231,70 +246,84 @@ void main() {
 
       await c.read(registrationSubmitProvider.notifier).submit();
 
-      final json = (verify(() => repo.register(captureAny())).captured.single
-              as SchoolRegistration)
-          .toJson();
+      final json =
+          (verify(() => repo.register(captureAny())).captured.single
+                  as SchoolRegistration)
+              .toJson();
       expect(json.containsKey('schoolId'), isFalse);
       expect(json['cityId'], 'city-dokki');
     });
   });
 
   group('failures surface as typed errors the screen branches on', () {
-    test('400 validation_failed keeps the ValidationException field map',
-        () async {
-      when(() => repo.register(any())).thenThrow(
-        // adr-028 §1's own violation. `schoolName` used to be the sample here;
-        // the server can never name that field again.
-        const ValidationException(
-          errors: {
-            'cityName': ['not allowed together with cityId'],
-          },
-        ),
-      );
-      final c = seededSchool();
+    test(
+      '400 validation_failed keeps the ValidationException field map',
+      () async {
+        when(() => repo.register(any())).thenThrow(
+          // adr-028 §1's own violation. `schoolName` used to be the sample here;
+          // the server can never name that field again.
+          const ValidationException(
+            errors: {
+              'cityName': ['not allowed together with cityId'],
+            },
+          ),
+        );
+        final c = seededSchool();
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      final error = c.read(registrationSubmitProvider).error;
-      expect(error, isA<ValidationException>());
-      expect((error! as ValidationException).fields, contains('cityName'));
-    });
+        final error = c.read(registrationSubmitProvider).error;
+        expect(error, isA<ValidationException>());
+        expect((error! as ValidationException).fields, contains('cityName'));
+      },
+    );
 
-    test('401 registration_token_invalid surfaces for the /login restart',
-        () async {
-      when(() => repo.register(any())).thenThrow(
-        const UnauthorizedException(code: 'registration_token_invalid'),
-      );
-      final c = seededSchool();
+    test(
+      '401 registration_token_invalid surfaces for the /login restart',
+      () async {
+        when(() => repo.register(any())).thenThrow(
+          const UnauthorizedException(code: 'registration_token_invalid'),
+        );
+        final c = seededSchool();
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      expect(
-        c.read(registrationSubmitProvider).error,
-        isA<UnauthorizedException>()
-            .having((e) => e.code, 'code', 'registration_token_invalid'),
-      );
-    });
+        expect(
+          c.read(registrationSubmitProvider).error,
+          isA<UnauthorizedException>().having(
+            (e) => e.code,
+            'code',
+            'registration_token_invalid',
+          ),
+        );
+      },
+    );
 
-    test('409 phone_already_registered surfaces for the /login restart',
-        () async {
-      when(() => repo.register(any())).thenThrow(
-        const ApiException(status: 409, code: 'phone_already_registered'),
-      );
-      final c = seededSchool();
+    test(
+      '409 phone_already_registered surfaces for the /login restart',
+      () async {
+        when(() => repo.register(any())).thenThrow(
+          const ApiException(status: 409, code: 'phone_already_registered'),
+        );
+        final c = seededSchool();
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      expect(
-        c.read(registrationSubmitProvider).error,
-        isA<ApiException>()
-            .having((e) => e.code, 'code', 'phone_already_registered'),
-      );
-    });
+        expect(
+          c.read(registrationSubmitProvider).error,
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            'phone_already_registered',
+          ),
+        );
+      },
+    );
 
     test('offline surfaces as NetworkException and stores NO tokens', () async {
-      when(() => repo.register(any()))
-          .thenThrow(const NetworkException(detail: 'timeout'));
+      when(
+        () => repo.register(any()),
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       final c = seededSchool();
 
       await c.read(registrationSubmitProvider.notifier).submit();
@@ -310,8 +339,9 @@ void main() {
     });
 
     test('the draft survives a failure so the form can be retried', () async {
-      when(() => repo.register(any()))
-          .thenThrow(const NetworkException(detail: 'timeout'));
+      when(
+        () => repo.register(any()),
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       final c = seededSchool();
 
       await c.read(registrationSubmitProvider.notifier).submit();
@@ -321,19 +351,24 @@ void main() {
   });
 
   group('pre-flight — the request is never sent when it cannot succeed', () {
-    test('an expired token short-circuits to registration_token_invalid',
-        () async {
-      final c = seededSchool(expired: true);
+    test(
+      'an expired token short-circuits to registration_token_invalid',
+      () async {
+        final c = seededSchool(expired: true);
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      verifyNever(() => repo.register(any()));
-      expect(
-        c.read(registrationSubmitProvider).error,
-        isA<UnauthorizedException>()
-            .having((e) => e.code, 'code', 'registration_token_invalid'),
-      );
-    });
+        verifyNever(() => repo.register(any()));
+        expect(
+          c.read(registrationSubmitProvider).error,
+          isA<UnauthorizedException>().having(
+            (e) => e.code,
+            'code',
+            'registration_token_invalid',
+          ),
+        );
+      },
+    );
 
     test('no draft at all short-circuits the same way', () async {
       final c = container();
@@ -341,26 +376,33 @@ void main() {
       await c.read(registrationSubmitProvider.notifier).submit();
 
       verifyNever(() => repo.register(any()));
-      expect(c.read(registrationSubmitProvider).error, isA<UnauthorizedException>());
+      expect(
+        c.read(registrationSubmitProvider).error,
+        isA<UnauthorizedException>(),
+      );
     });
 
-    test('an incomplete draft fails client-side with the per-field issues',
-        () async {
-      final c = seededSchool();
-      // Clear a contract-required field the way the UI would on a cascade reset.
-      c.read(registrationControllerProvider.notifier).setGovernorate('gov-giza');
+    test(
+      'an incomplete draft fails client-side with the per-field issues',
+      () async {
+        final c = seededSchool();
+        // Clear a contract-required field the way the UI would on a cascade reset.
+        c
+            .read(registrationControllerProvider.notifier)
+            .setGovernorate('gov-giza');
 
-      await c.read(registrationSubmitProvider.notifier).submit();
+        await c.read(registrationSubmitProvider.notifier).submit();
 
-      verifyNever(() => repo.register(any()));
-      final error = c.read(registrationSubmitProvider).error;
-      expect(error, isA<DraftValidationFailure>());
-      final issues = (error! as DraftValidationFailure).issues;
-      // Changing governorate cleared city + school. Only the city blocks now:
-      // adr-028 §2 made schoolId optional, so its absence is not an issue.
-      expect(issues[RegFields.cityId], RegFieldIssue.missing);
-      expect(issues.containsKey(RegFields.schoolId), isFalse);
-    });
+        verifyNever(() => repo.register(any()));
+        final error = c.read(registrationSubmitProvider).error;
+        expect(error, isA<DraftValidationFailure>());
+        final issues = (error! as DraftValidationFailure).issues;
+        // Changing governorate cleared city + school. Only the city blocks now:
+        // adr-028 §2 made schoolId optional, so its absence is not an issue.
+        expect(issues[RegFields.cityId], RegFieldIssue.missing);
+        expect(issues.containsKey(RegFields.schoolId), isFalse);
+      },
+    );
 
     test('a forbidden field is caught client-side too (adr-010)', () async {
       final c = seededSchool(requiresGovernorate: false);
@@ -385,8 +427,9 @@ void main() {
     });
 
     test('clearError returns to idle so stale errors stop rendering', () async {
-      when(() => repo.register(any()))
-          .thenThrow(const NetworkException(detail: 'timeout'));
+      when(
+        () => repo.register(any()),
+      ).thenThrow(const NetworkException(detail: 'timeout'));
       final c = seededSchool();
       await c.read(registrationSubmitProvider.notifier).submit();
       expect(c.read(registrationSubmitProvider).hasError, isTrue);

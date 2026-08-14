@@ -43,12 +43,12 @@ abstract class QuizSession with _$QuizSession {
   const QuizSession._();
 
   factory QuizSession.start(Quiz quiz) => QuizSession(
-        quiz: quiz,
-        index: 0,
-        grades: const {},
-        chosen: const {},
-        explanations: const {},
-      );
+    quiz: quiz,
+    index: 0,
+    grades: const {},
+    chosen: const {},
+    explanations: const {},
+  );
 
   QuizQuestion get question => quiz.questions[index];
 
@@ -79,7 +79,8 @@ abstract class QuizSession with _$QuizSession {
   /// which uses the server's own `answeredCount`.
   int get answeredCount => grades.length;
 
-  double get progress => total <= 0 ? 0 : (position / total).clamp(0, 1).toDouble();
+  double get progress =>
+      total <= 0 ? 0 : (position / total).clamp(0, 1).toDouble();
 }
 
 /// The quiz session state machine.

@@ -36,15 +36,15 @@ final _universityBody = UniversityRegistration(
 
 /// The contract's 201 body — `AuthenticatedResult` (tokens + profile).
 Map<String, dynamic> _authenticated201() => {
-      'result': 'authenticated',
-      'tokens': {
-        'accessToken': 'access.jwt',
-        'accessExpiresInSeconds': 900,
-        'refreshToken': 'refresh.jwt',
-        'refreshExpiresInSeconds': 5184000,
-      },
-      'profile': {'id': 'student-1', 'track': 'school', 'name': 'Nour Hassan'},
-    };
+  'result': 'authenticated',
+  'tokens': {
+    'accessToken': 'access.jwt',
+    'accessExpiresInSeconds': 900,
+    'refreshToken': 'refresh.jwt',
+    'refreshExpiresInSeconds': 5184000,
+  },
+  'profile': {'id': 'student-1', 'track': 'school', 'name': 'Nour Hassan'},
+};
 
 Response<Map<String, dynamic>> _created(Map<String, dynamic> data) =>
     Response<Map<String, dynamic>>(
@@ -56,9 +56,9 @@ Response<Map<String, dynamic>> _created(Map<String, dynamic> data) =>
 /// The ErrorInterceptor has already mapped the failure onto `DioException.error`
 /// by the time a repository sees it.
 DioException _mapped(AppException mapped) => DioException(
-      requestOptions: RequestOptions(path: '/auth/register'),
-      error: mapped,
-    );
+  requestOptions: RequestOptions(path: '/auth/register'),
+  error: mapped,
+);
 
 void main() {
   late MockDio dio;
@@ -99,12 +99,14 @@ void main() {
       stubPost(_created(_authenticated201()));
       await repo.register(_schoolBody);
 
-      final captured = verify(
-        () => dio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: captureAny<Object?>(named: 'data'),
-        ),
-      ).captured.single as Map<String, dynamic>;
+      final captured =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/auth/register',
+                  data: captureAny<Object?>(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
 
       expect(captured['track'], 'school');
       expect(captured['schoolId'], 'school-42');
@@ -115,12 +117,14 @@ void main() {
       stubPost(_created(_authenticated201()));
       await repo.register(_universityBody);
 
-      final captured = verify(
-        () => dio.post<Map<String, dynamic>>(
-          '/auth/register',
-          data: captureAny<Object?>(named: 'data'),
-        ),
-      ).captured.single as Map<String, dynamic>;
+      final captured =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/auth/register',
+                  data: captureAny<Object?>(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
 
       expect(captured['track'], 'university');
       expect(captured['studyYearId'], 'year-2');
@@ -155,8 +159,11 @@ void main() {
       expect(
         repo.register(_schoolBody),
         throwsA(
-          isA<ValidationException>()
-              .having((e) => e.fields, 'fields', contains('governorateId')),
+          isA<ValidationException>().having(
+            (e) => e.fields,
+            'fields',
+            contains('governorateId'),
+          ),
         ),
       );
     });
@@ -171,8 +178,11 @@ void main() {
       expect(
         repo.register(_schoolBody),
         throwsA(
-          isA<UnauthorizedException>()
-              .having((e) => e.code, 'code', 'registration_token_invalid'),
+          isA<UnauthorizedException>().having(
+            (e) => e.code,
+            'code',
+            'registration_token_invalid',
+          ),
         ),
       );
     });
