@@ -1,4 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app talks to an HTTPS API for literally everything: OTP, login,
+         registration, profile, catalogue, quiz. Without this it does nothing.
+
+         It MUST live in `main`, not in a per-build-type source set. Flutter
+         creates `src/debug/AndroidManifest.xml` and `src/profile/` carrying this
+         permission for the tool's own hot-reload channel, and those two are
+         merged ONLY into their own build types. `src/main` is the one source set
+         that merges into every build type, release included.
+
+         This was Tier-0 finding C-1: the permission existed in debug and profile
+         only, so every network call would have failed in a release build while
+         working perfectly throughout development. No plugin supplies it — it was
+         verified absent from the merged release manifest. `flutter analyze` and
+         a green test suite cannot see this class of defect; only a release
+         build can. See .ai/audits/current/remediation-tier0.md and the
+         `release-manifest` job in .github/workflows/ci.yml, which now fails the
+         build if this line is ever removed again. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <!-- Backup is disabled on purpose. This app holds minors' PII (date of birth,
          school, governorate) and auth material. allowBackup=false stops Google
          auto-backup to the user's Drive; on Android 12+ that flag does NOT cover
