@@ -1,0 +1,78 @@
+#!/bin/sh
+# Level Up — pre-commit hook.
+#
+# ENABLE (once, per clone):
+#     git config core.hooksPath .githooks
+# DISABLE:
+#     git config --unset core.hooksPath
+# SKIP ONE COMMIT:
+#     git commit --no-verify        (or:  LEVELUP_SKIP_HOOKS=1 git commit ...)
+#
+# Contract for this hook: it must be FAST. It only ever looks at the Dart files
+# you actually staged — never the whole 36k-line tree. If you staged no Dart,
+# it exits immediately.
+#
+# Windows: Git for Windows runs this under its bundled `sh`, so `#!/bin/sh` is
+# correct and no `.sh` extension / chmod +x is needed. `flutter` resolves to the
+# POSIX launcher script in flutter/bin, which works fine under Git Bash.
+
+set -eu
+
+[ "${LEVELUP_SKIP_HOOKS:-0}" = "1" ] && exit 0
+
+# Everything below assumes the repo root, whatever directory you invoked git
+# from. `--show-toplevel` returns a forward-slash path even on Windows, which
+# `cd` in Git Bash handles.
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+# Staged, still-present Dart files. -z + tr keeps paths with spaces intact.
+# Generated output is excluded: freezed / json_serializable / gen-l10n format
+# their own output and you did not write it.
+staged="$(
+  git diff --cached --name-only --diff-filter=ACMR -z -- '*.dart' \
+    | tr '\0' '\n' \
+    | grep -v -E '\.(freezed|g)\.dart$' \
+    | grep -v -E '^lib/l10n/app_localizations' \
+    || true
+)"
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+count="$(printf '%s\n' "$staged" | wc -l | tr -d ' ')"
+echo "pre-commit: $count staged Dart file(s)"
+
+fail=0
+
+# --- 1. format ---------------------------------------------------------------
+# Check, do not rewrite. A hook that silently reformats and re-stages changes
+# the diff you just reviewed, which is worse than a two-second failure.
+echo "pre-commit: dart format"
+if ! printf '%s\n' "$staged" | xargs dart format --output=none --set-exit-if-changed; then
+  echo ""
+  echo "  FIX: dart format $(printf '%s ' $staged)"
+  echo "       then: git add -u"
+  fail=1
+fi
+
+# --- 2. analyze --------------------------------------------------------------
+# Scoped to the staged files. The analysis server still resolves the whole
+# package (unavoidable), but it only REPORTS on what you touched, so you are
+# never blocked by a pre-existing warning in a file you did not open.
+echo "pre-commit: flutter analyze (staged files)"
+if ! printf '%s\n' "$staged" | xargs flutter analyze --no-pub; then
+  echo ""
+  echo "  FIX: resolve the diagnostics above."
+  fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo ""
+  echo "pre-commit FAILED. Bypass with 'git commit --no-verify' if you know why."
+  exit 1
+fi
+
+echo "pre-commit: ok"
+exit 0
