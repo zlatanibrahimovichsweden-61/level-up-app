@@ -62,6 +62,7 @@ semantic tokens. Extract with it, then verify on a device against the frame.
 | Decisions | `docs/DECISIONS.md` + `00_Project/Decisions_Log.md` | |
 | Bugs | `docs/KNOWN_BUGS.md` | Entries keep their history — the "why tests missed it" note is the point |
 | Design ↔ contract gaps | `docs/DESIGN_ISSUES.md` | |
+| **Automated enforcement** | **`docs/ENFORCEMENT.md`** | **Every rule a machine checks, and how. Read before writing a new rule.** |
 | Agent workflow | `docs/AGENT_WORKFLOW.md` | |
 | Audit protocol | `docs/AUDIT_PROTOCOL.md` | |
 | Current audit | `.ai/audits/current/` | |
@@ -124,6 +125,12 @@ the document was stale.
 **And when you write a new rule, ask whether it can be a test instead.** A rule
 that cannot be mechanised should say so and say why.
 
+Wave 2 acted on this: bloc containment, the BUG-001 `initState` rule, ARB
+parity, localization leaks and typography drift are now tests rather than prose,
+and the guards are themselves tested against their own comments. See
+`docs/ENFORCEMENT.md` — including the list of rules deliberately left to human
+review, so what a reviewer is actually responsible for stays honest.
+
 ---
 
 ## 5. Definition of Done
@@ -149,24 +156,49 @@ passes every test**. Only a device catches that class.
 ## 6. Running the quality gate
 
 ```powershell
-pwsh -File tool\validate.ps1     # Windows
+powershell -ExecutionPolicy Bypass -File tool\validate.ps1   # Windows
 ```
 ```sh
-sh tool/validate.sh              # Git Bash / macOS / Linux
+sh tool/validate.sh                                          # Git Bash / macOS / Linux
 ```
 
-Writes a self-contained record to `.ai/audits/current/test-results.md`:
-toolchain versions, format, analyze, full test output, pass/fail counts.
-Continues past failures rather than stopping at the first.
+**This is the canonical command.** Format → analyze → full test suite, including
+every automated guard. Continues past failures rather than stopping at the
+first, and writes a self-contained record to
+`.ai/audits/current/test-results.md` — toolchain versions, branch, commit, full
+output.
 
-**Optional hooks** (not installed by default):
+The same definition runs in three places, so "it passed locally" means the same
+thing everywhere:
+
+```
+developer  →  tool/validate.*  ←  pre-push hook
+                    ↑
+                   CI  (authoritative)
+```
+
+**SDK pin.** `.flutter-version` at the repo root is the single source of truth —
+currently **3.44.7**, the version the suite was validated against. CI reads that
+file; `validate.*` warns if your local SDK differs. To move it: run
+`flutter --version`, update the file, re-run the suite before committing.
+
+**Optional hooks** — opt-in, and deliberately so:
+
 ```sh
-git config core.hooksPath .githooks
+git config core.hooksPath .githooks     # enable
+git config --unset core.hooksPath       # disable
 ```
-`pre-commit` formats + analyses **staged files only**; `pre-push` runs the suite
-and skips entirely when a push touches no Dart or config. Both honour
-`--no-verify`.
 
-**CI** — `.github/workflows/ci.yml`. ⚠ Set `FLUTTER_VERSION` to your local
-`flutter --version` before the first run; three sources in this repo currently
-disagree about the SDK.
+`pre-commit` checks format + analyze on **staged files only** (seconds, and it
+never rewrites your diff). `pre-push` runs the canonical validation, and skips
+entirely when a push touches no Dart or config. Both honour `--no-verify` and
+`LEVELUP_SKIP_HOOKS=1`. CI remains authoritative — hooks are early feedback,
+not the only protection.
+
+**Automated rules** — see `docs/ENFORCEMENT.md` for the full list of what is
+mechanically enforced, what is a ratchet, and what deliberately remains human
+review.
+
+**Release verification** — `tool/verify_release_manifest.ps1` builds a release
+APK and proves with `aapt2` that it carries `android.permission.INTERNET`.
+Source inspection is not proof; that was Tier-0 C-1.
