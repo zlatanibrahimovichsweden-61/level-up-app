@@ -26,8 +26,9 @@ routing, API-layer or theme changes. No test deleted or weakened.
 > | No unrelated files touched | ✅ **VERIFIED** — `git status` |
 > | New tests fail against the OLD behaviour | ✅ **VERIFIED** — `verify_session_regression.ps1`, 2026-08-14 |
 > | Working copy restored after the proof | ✅ **VERIFIED** — SHA-256 match |
-> | Release APK carries INTERNET | ❌ **NOT VERIFIED** — run `tool/verify_release_manifest.ps1` |
-> | Suite green *after* the guard fix (806) | ❌ **NOT VERIFIED** — re-run `tool/validate.ps1` |
+> | Release build succeeds | ✅ **VERIFIED** — 60.2 MB APK, 2026-08-14 |
+> | **Release APK carries INTERNET** | ✅ **VERIFIED** — `aapt2 dump permissions` on the built artefact |
+> | Suite green after the guard fix | ✅ **VERIFIED** — 806 passed / 0 failed |
 >
 > Nothing here claims a result that was not observed.
 
@@ -549,3 +550,56 @@ Two things this surfaced, both now fixed:
    with the lock still present. A pre-flight check also reports a lock and its
    age, because `git commit` will still care even though this script no longer
    does.
+
+### 6.7 Release artefact verified — VERIFIED
+
+`tool/verify_release_manifest.ps1`, developer machine, 2026-08-14.
+
+```
+[1/3] source manifest (src/main)
+  PASS  src/main declares android.permission.INTERNET
+[2/3] release build
+  Running Gradle task 'assembleRelease'...  14.0s
+  Built build\app\outputs\flutter-apk\app-release.apk (60.2MB)
+  PASS  release APK built
+[3/3] the shipped artefact
+  aapt2: .../build-tools/36.1.0/aapt2.exe
+  PASS  the release APK declares android.permission.INTERNET  <-- this is the proof
+
+RESULT: VERIFIED - the release artefact can reach the network
+```
+
+**This is the claim that mattered.** `src/main` declaring the permission was never
+in doubt; what C-1 asserted is that the *merged release artefact* did not carry
+it. The chain is now closed end to end:
+
+```
+src/main/AndroidManifest.xml
+  -> Gradle manifest merge
+    -> app-release.apk
+      -> aapt2 dump permissions -> android.permission.INTERNET
+```
+
+Two incidental firsts worth recording: this is the **first release build this
+project has ever produced** (Wave-1 risk B-1 — the release path had never been
+exercised in 43 commits, which is exactly why C-1 survived undetected), and it
+succeeded in 14 seconds with no signing or toolchain problems.
+
+### 6.8 Full suite after the guard fix — VERIFIED
+
+```
+dart format      FAIL   2 of 210 files
+flutter analyze  PASS   0 issues
+flutter test     PASS   806 passed / 0 failed
+```
+
+806 = 804 + the 2 discipline tests added in §6.3, exactly as predicted.
+
+The format failure is **not a defect in the remediation**: the two files are
+`session_isolation_test.dart` and `session_scope_discipline_test.dart`, both
+hand-written in an environment with no Dart toolchain and therefore never run
+through `dart format`. Content is unaffected — all 806 tests pass in both the
+unformatted and formatted state. Corrected in a follow-up `style:` commit.
+
+Mildly instructive: the CI formatting gate added in Wave 1 would have caught this
+on the first pull request. The gate works.

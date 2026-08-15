@@ -32,7 +32,8 @@ void main() {
     'themeModeProvider':
         'Device preference, persisted on purpose. preferences_store.dart: '
         '"a theme choice is not a secret, is not personal data".',
-    'isOnlineProvider': 'Global connectivity. Nothing to do with who signed in.',
+    'isOnlineProvider':
+        'Global connectivity. Nothing to do with who signed in.',
     'deviceInfoProvider':
         'Device identity. forceLogout goes out of its way to preserve the '
         'device_id (Decisions_Log 2026-07-23) — clearing this would make the '
@@ -41,7 +42,8 @@ void main() {
     'governoratesProvider': 'Global reference data — same for every student.',
     'citiesProvider': 'Global reference data — same for every student.',
     'schoolsProvider': 'Global reference data — same for every student.',
-    'educationSystemsProvider': 'Global reference data — same for every student.',
+    'educationSystemsProvider':
+        'Global reference data — same for every student.',
     'universitiesProvider': 'Global reference data — same for every student.',
     'avatarsProvider': 'Global reference data — same for every student.',
   };

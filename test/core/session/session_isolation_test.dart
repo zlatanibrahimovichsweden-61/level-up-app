@@ -107,17 +107,17 @@ void main() {
 
   void stubStudentA() {
     when(profileRepo.getMe).thenAnswer((_) async => schoolProfile());
-    when(profileRepo.getEntitlements).thenAnswer(
-      (_) async => <EntitlementState>[baseEntitlement],
-    );
+    when(
+      profileRepo.getEntitlements,
+    ).thenAnswer((_) async => <EntitlementState>[baseEntitlement]);
     when(catalogRepo.getSubjects).thenAnswer((_) async => subjects());
   }
 
   void stubStudentB() {
     when(profileRepo.getMe).thenAnswer((_) async => _studentB());
-    when(profileRepo.getEntitlements).thenAnswer(
-      (_) async => <EntitlementState>[],
-    );
+    when(
+      profileRepo.getEntitlements,
+    ).thenAnswer((_) async => <EntitlementState>[]);
     when(catalogRepo.getSubjects).thenAnswer((_) async => <Subject>[]);
   }
 
@@ -254,18 +254,21 @@ void main() {
       verify(() => storage.clearTokens()).called(1);
     });
 
-    test('the FIRST reason wins — it is the one that ended the session', () async {
-      final container = makeContainer();
-      await settleAuth(container);
+    test(
+      'the FIRST reason wins — it is the one that ended the session',
+      () async {
+        final container = makeContainer();
+        await settleAuth(container);
 
-      final controller = container.read(authControllerProvider.notifier);
-      await controller.forceLogout(LogoutReason.supersededOtherDevice);
-      await controller.forceLogout(LogoutReason.sessionExpired);
+        final controller = container.read(authControllerProvider.notifier);
+        await controller.forceLogout(LogoutReason.supersededOtherDevice);
+        await controller.forceLogout(LogoutReason.sessionExpired);
 
-      final status =
-          container.read(authControllerProvider) as AuthUnauthenticated;
-      expect(status.reason, LogoutReason.supersededOtherDevice);
-    });
+        final status =
+            container.read(authControllerProvider) as AuthUnauthenticated;
+        expect(status.reason, LogoutReason.supersededOtherDevice);
+      },
+    );
   });
 
   group('what must NOT be cleared', () {
