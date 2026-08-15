@@ -3,21 +3,32 @@
 #
 # ENABLE (once, per clone):
 #     git config core.hooksPath .githooks
-# SKIP ONE PUSH:
+# BYPASS ONE PUSH:
 #     git push --no-verify          (or:  LEVELUP_SKIP_HOOKS=1 git push ...)
 #
-# Contract: pre-commit is the fast gate, this is the honest one. It runs the
-# test suite, because a green suite is the whole claim this repo makes about
-# itself and CI finding out 4 minutes after the push is 4 minutes too late.
+# CONTRACT
+# --------
+# pre-commit is the fast gate; this is the honest one. It runs the SAME
+# canonical validation CI runs — `tool/validate.sh`: format, analyze, full test
+# suite — so "it passed locally" means the same thing it means in CI.
 #
-# It does NOT run: build_runner (generated output is committed), a release
-# build (that is CI's `main`-only job), or `flutter analyze` over the whole
-# tree (pre-commit already covered what you changed).
+# It does NOT reimplement those three commands. That was the point of routing it
+# through validate.sh: a hook with its own copy of the checks drifts from CI,
+# and then a green hook stops meaning anything. One script, three callers
+# (developer, hook, CI).
 #
-# Cost control: if the push carries no change under lib/ or test/, the suite is
-# skipped entirely — docs-only and contract-only pushes cost nothing.
+# Cost control: if the push carries no change under lib/ or test/ (or the config
+# that affects them), validation is skipped entirely — docs-only and
+# contract-only pushes cost nothing. Everything else pays ~3-5 minutes, which is
+# the right trade at push time and the wrong one at commit time.
 #
-# Windows: runs under Git for Windows' bundled `sh`. No chmod / .sh needed.
+# The report is written to a temp file via LEVELUP_VALIDATE_OUT so pushing does
+# not dirty the committed evidence at .ai/audits/current/test-results.md.
+#
+# CI remains authoritative. This is early feedback and is deliberately
+# skippable.
+#
+# WINDOWS: runs under Git for Windows' bundled `sh`. No chmod / .sh needed.
 
 set -eu
 
@@ -30,9 +41,9 @@ zero='0000000000000000000000000000000000000000'
 
 # git feeds pre-push one line per ref on stdin:
 #   <local_ref> <local_sha> <remote_ref> <remote_sha>
-# Collect every file touched across all pushed refs. If we cannot work out a
-# range (new branch, unknown remote sha), fall back to running the suite —
-# never to skipping it.
+# Collect every file touched across all pushed refs. If a range cannot be worked
+# out (new branch, unknown remote sha), fall back to VALIDATING — never to
+# skipping. Failing open here would defeat the hook.
 touched=''
 run_anyway=0
 saw_ref=0
@@ -41,7 +52,7 @@ while read -r _local_ref local_sha _remote_ref remote_sha; do
   [ -z "${local_sha:-}" ] && continue
   saw_ref=1
 
-  # Branch deletion — nothing to test.
+  # Branch deletion — nothing to validate.
   case "$local_sha" in "$zero"|"$zero"*) continue ;; esac
 
   if [ "$remote_sha" = "$zero" ] || ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
@@ -57,26 +68,30 @@ while read -r _local_ref local_sha _remote_ref remote_sha; do
 $files"
 done
 
-# Invoked outside a real push (manual run, or an empty stdin) — be conservative.
+# Invoked outside a real push (manual run, empty stdin) — be conservative.
 [ "$saw_ref" -eq 0 ] && run_anyway=1
 
 if [ "$run_anyway" -eq 0 ]; then
-  if ! printf '%s\n' "$touched" | grep -q -E '^(lib|test)/|^pubspec\.(yaml|lock)$|^l10n\.yaml$|^analysis_options\.yaml$'; then
-    echo "pre-push: no Dart/config changes in this push — skipping tests."
+  if ! printf '%s\n' "$touched" | grep -q -E '^(lib|test)/|^pubspec\.(yaml|lock)$|^l10n\.yaml$|^analysis_options\.yaml$|^dart_test\.yaml$|^\.flutter-version$'; then
+    echo "pre-push: no Dart/config changes in this push — skipping validation."
     exit 0
   fi
 fi
 
-echo "pre-push: flutter test (730 cases; ~2-4 min). Ctrl-C or --no-verify to skip."
+echo "pre-push: running tool/validate.sh (format + analyze + full suite, ~3-5 min)."
+echo "          Ctrl-C or --no-verify to skip."
 
-# Goldens ARE included here on purpose. They were generated on this machine, so
-# unlike CI's Linux runner they are expected to pass locally — this is the only
-# place the golden baselines get a blocking check before they reach a reviewer.
-if ! flutter test --no-pub --reporter compact; then
+report="$(mktemp "${TMPDIR:-/tmp}/levelup-prepush.XXXXXX")"
+trap 'rm -f "$report"' EXIT INT TERM
+
+if ! LEVELUP_VALIDATE_OUT="$report" sh tool/validate.sh; then
   echo ""
-  echo "pre-push FAILED — the suite is red."
-  echo "  Full detail:  tool/validate.ps1   (or tool/validate.sh)"
-  echo "  Bypass:       git push --no-verify"
+  echo "pre-push FAILED — the canonical validation is red."
+  echo "  Full report was written to: $report"
+  echo "  Reproduce with:  sh tool/validate.sh     (or: pwsh -File tool/validate.ps1)"
+  echo "  Bypass:          git push --no-verify"
+  # Keep the report for inspection rather than deleting it on the way out.
+  trap - EXIT INT TERM
   exit 1
 fi
 

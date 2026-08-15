@@ -5,64 +5,79 @@
 #     git config core.hooksPath .githooks
 # DISABLE:
 #     git config --unset core.hooksPath
-# SKIP ONE COMMIT:
+# BYPASS ONE COMMIT:
 #     git commit --no-verify        (or:  LEVELUP_SKIP_HOOKS=1 git commit ...)
 #
-# Contract for this hook: it must be FAST. It only ever looks at the Dart files
-# you actually staged — never the whole 36k-line tree. If you staged no Dart,
-# it exits immediately.
+# CONTRACT
+# --------
+# Fast, and scoped to what you actually staged. It never looks at the whole
+# 36k-line tree and it never runs the test suite — that is pre-push's job.
+# If you staged no Dart, it exits immediately.
 #
-# Windows: Git for Windows runs this under its bundled `sh`, so `#!/bin/sh` is
-# correct and no `.sh` extension / chmod +x is needed. `flutter` resolves to the
-# POSIX launcher script in flutter/bin, which works fine under Git Bash.
+# It CHECKS formatting rather than rewriting it. A hook that silently reformats
+# and re-stages changes the diff you just reviewed, which is worse than a
+# two-second failure.
+#
+# CI remains the authoritative gate. This is developer feedback, deliberately
+# skippable, and is not the only thing standing between a mistake and `main`.
+#
+# WINDOWS
+# -------
+# Git for Windows runs this under its bundled `sh`, so `#!/bin/sh` is correct
+# and no chmod / .sh extension is needed. `flutter` and `dart` resolve to the
+# POSIX launcher scripts in flutter/bin, which work under Git Bash.
+#
+# SAFETY
+# ------
+# File lists are NUL-delimited end to end (`-z` … `xargs -0`). The previous
+# version piped newline-separated paths into a bare `xargs`, which splits on
+# whitespace — so a path containing a space became two nonexistent paths and the
+# hook either failed confusingly or checked the wrong thing. `--` terminates
+# option parsing so a file named `-x.dart` cannot be read as a flag.
 
 set -eu
 
 [ "${LEVELUP_SKIP_HOOKS:-0}" = "1" ] && exit 0
 
-# Everything below assumes the repo root, whatever directory you invoked git
-# from. `--show-toplevel` returns a forward-slash path even on Windows, which
-# `cd` in Git Bash handles.
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 
-# Staged, still-present Dart files. -z + tr keeps paths with spaces intact.
-# Generated output is excluded: freezed / json_serializable / gen-l10n format
-# their own output and you did not write it.
-staged="$(
-  git diff --cached --name-only --diff-filter=ACMR -z -- '*.dart' \
-    | tr '\0' '\n' \
-    | grep -v -E '\.(freezed|g)\.dart$' \
-    | grep -v -E '^lib/l10n/app_localizations' \
-    || true
-)"
+tmp="$(mktemp "${TMPDIR:-/tmp}/levelup-precommit.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT INT TERM
 
-if [ -z "$staged" ]; then
+# Staged, still-present Dart files, NUL-delimited. Generated output is excluded:
+# freezed / json_serializable / gen-l10n format their own output and you did not
+# write it.
+git diff --cached --name-only --diff-filter=ACMR -z -- '*.dart' \
+  | grep -zZv -e '\.freezed\.dart$' -e '\.g\.dart$' \
+  | grep -zZv -e '^lib/l10n/app_localizations' \
+  > "$tmp" || true
+
+# `wc -l` cannot count NUL-delimited records; translate for the count only.
+count="$(tr -dc '\0' < "$tmp" | wc -c | tr -d ' ')"
+
+if [ "$count" = "0" ]; then
   exit 0
 fi
 
-count="$(printf '%s\n' "$staged" | wc -l | tr -d ' ')"
 echo "pre-commit: $count staged Dart file(s)"
 
 fail=0
 
 # --- 1. format ---------------------------------------------------------------
-# Check, do not rewrite. A hook that silently reformats and re-stages changes
-# the diff you just reviewed, which is worse than a two-second failure.
 echo "pre-commit: dart format"
-if ! printf '%s\n' "$staged" | xargs dart format --output=none --set-exit-if-changed; then
+if ! xargs -0 -r dart format --output=none --set-exit-if-changed -- < "$tmp"; then
   echo ""
-  echo "  FIX: dart format $(printf '%s ' $staged)"
-  echo "       then: git add -u"
+  echo "  FIX: dart format <the files above>   then: git add -u"
   fail=1
 fi
 
 # --- 2. analyze --------------------------------------------------------------
 # Scoped to the staged files. The analysis server still resolves the whole
-# package (unavoidable), but it only REPORTS on what you touched, so you are
-# never blocked by a pre-existing warning in a file you did not open.
+# package (unavoidable), but it only REPORTS on what you touched, so a
+# pre-existing warning in a file you did not open cannot block you.
 echo "pre-commit: flutter analyze (staged files)"
-if ! printf '%s\n' "$staged" | xargs flutter analyze --no-pub; then
+if ! xargs -0 -r flutter analyze --no-pub -- < "$tmp"; then
   echo ""
   echo "  FIX: resolve the diagnostics above."
   fail=1

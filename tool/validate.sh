@@ -25,8 +25,11 @@ set -u
 root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$root" || exit 1
 
-out_dir=".ai/audits/current"
-out="$out_dir/test-results.md"
+# Report destination. Overridable so the pre-push hook can reuse this script
+# without dirtying the committed evidence file on every push:
+#   LEVELUP_VALIDATE_OUT=/tmp/x.md sh tool/validate.sh
+out="${LEVELUP_VALIDATE_OUT:-.ai/audits/current/test-results.md}"
+out_dir="$(dirname "$out")"
 tmp="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/levelup-validate.$$")"
 mkdir -p "$out_dir" "$tmp" || exit 1
 
@@ -64,8 +67,21 @@ fence_open text
   printf 'commit         : %s\n' "$(git rev-parse --short HEAD 2>/dev/null || echo '?')"
   printf 'tree clean     : %s\n' "$(test -z "$(git status --porcelain 2>/dev/null)" && echo yes || echo 'NO — uncommitted changes present')"
   printf '.metadata rev  : %s\n' "$(sed -n 's/^  revision: "\(.*\)"/\1/p' .metadata 2>/dev/null | head -1)"
+  printf 'pinned version : %s\n' "$(tr -d '[:space:]' < .flutter-version 2>/dev/null)"
 } >> "$body"
 fence_close
+
+# The pin is the single source of truth CI reads too. A local SDK that differs
+# means "works on my machine" is not evidence about CI, so say so loudly — but
+# warn rather than fail: an SDK mismatch is a setup issue, not a code defect.
+pinned="$(tr -d '[:space:]' < .flutter-version 2>/dev/null || echo '')"
+local_v="$(flutter --version 2>/dev/null | sed -n 's/^Flutter \([0-9.]*\).*/\1/p' | head -1)"
+if [ -n "$pinned" ] && [ -n "$local_v" ] && [ "$pinned" != "$local_v" ]; then
+  say "  WARNING: local Flutter $local_v != pinned $pinned (.flutter-version)"
+  printf '\n> **Local Flutter %s differs from the pin %s** (`.flutter-version`).\n' \
+    "$local_v" "$pinned" >> "$body"
+  printf '> CI builds on the pin, so these results may not predict CI.\n' >> "$body"
+fi
 
 # ---------------------------------------------------------------------------
 # 1. Toolchain

@@ -1,5 +1,5 @@
 <#
-Level Up — full validation run (Windows / PowerShell).
+Level Up - full validation run (Windows / PowerShell).
 
     pwsh -File tool\validate.ps1
     # or, from Windows PowerShell 5.1:
@@ -12,7 +12,7 @@ and writes one self-contained record to
 
     .ai/audits/current/test-results.md
 
-That file is the evidence the audit package rests on. Paste it back verbatim —
+That file is the evidence the audit package rests on. Paste it back verbatim -
 it carries the toolchain versions, so a reader can tell whether a failure is
 the code or the SDK.
 
@@ -20,7 +20,7 @@ Exit code: 0 only if every step passed.
 
 Note on goldens: the baselines in test/goldens were captured on Windows, so
 this script runs them. They are expected to PASS here and expected to FAIL on a
-Linux CI runner — that is the platform, not the code. See .github/workflows/ci.yml.
+Linux CI runner - that is the platform, not the code. See .github/workflows/ci.yml.
 #>
 
 $ErrorActionPreference = 'Continue'   # deliberate: continue past failures
@@ -31,8 +31,12 @@ $root = (& git rev-parse --show-toplevel 2>$null)
 if (-not $root) { $root = (Get-Location).Path }
 Set-Location $root
 
-$outDir = Join-Path $root '.ai/audits/current'
-$out    = Join-Path $outDir 'test-results.md'
+# Report destination. Overridable so the pre-push hook can reuse this script
+# without dirtying the committed evidence file on every push:
+#   $env:LEVELUP_VALIDATE_OUT = 'C:\temp\x.md'; .\tool\validate.ps1
+$out = $env:LEVELUP_VALIDATE_OUT
+if (-not $out) { $out = Join-Path $root '.ai/audits/current/test-results.md' }
+$outDir = Split-Path -Parent $out
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 $started  = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
@@ -72,7 +76,26 @@ Line ("branch         : {0}" -f $branch)
 Line ("commit         : {0}" -f $commit)
 Line ("tree clean     : {0}" -f $clean)
 Line (".metadata rev  : {0}" -f $metaRev)
+
+# The pin is the single source of truth CI reads too (.flutter-version). A local
+# SDK that differs means "works on my machine" is not evidence about CI. Warn
+# rather than fail: a version mismatch is a setup issue, not a code defect.
+$pinned = ''
+if (Test-Path '.flutter-version') {
+  $pinned = (Get-Content '.flutter-version' -Raw).Trim()
+}
+Line ("pinned version : {0}" -f $pinned)
 Unfence
+
+$localV = ''
+$vOut = (& flutter --version 2>&1) -join "`n"
+if ($vOut -match 'Flutter\s+([0-9]+\.[0-9]+\.[0-9]+)') { $localV = $Matches[1] }
+if ($pinned -and $localV -and ($pinned -ne $localV)) {
+  Say "  WARNING: local Flutter $localV != pinned $pinned (.flutter-version)"
+  Line ''
+  Line "> **Local Flutter $localV differs from the pin $pinned** (``.flutter-version``)."
+  Line '> CI builds on the pin, so these results may not predict CI.'
+}
 
 # --- 2. toolchain ------------------------------------------------------------
 Say '[2/5] toolchain versions'
@@ -214,7 +237,7 @@ $head = New-Object System.Text.StringBuilder
 if ($overall -eq 0) { [void]$head.AppendLine('**OVERALL: PASS**') }
 else                { [void]$head.AppendLine('**OVERALL: FAIL** - see the failing sections below.') }
 [void]$head.AppendLine('')
-[void]$head.AppendLine("Started $started · finished $finished")
+[void]$head.AppendLine("Started $started - finished $finished")
 [void]$head.AppendLine('')
 [void]$head.AppendLine('---')
 
