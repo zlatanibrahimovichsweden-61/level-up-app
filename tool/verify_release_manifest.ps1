@@ -1,5 +1,5 @@
 <#
-Level Up — release manifest verification (Tier-0 finding C-1).
+Level Up - release manifest verification (Tier-0 finding C-1).
 
     powershell -ExecutionPolicy Bypass -File tool\verify_release_manifest.ps1
 
@@ -9,13 +9,13 @@ android.permission.INTERNET.
 Why this needs its own script: C-1 is invisible to every other gate. The
 permission lived only in `src/debug` and `src/profile`, which merge into their
 own build types and never into release. So the app worked perfectly in
-development, compiled cleanly, analysed clean, and passed 792 tests — and would
+development, compiled cleanly, analysed clean, and passed 792 tests - and would
 have failed every network call the moment a release build reached a device.
 `flutter analyze` cannot see it. The test suite cannot see it. Only a release
 build can.
 
 Checks source first (fast, no build), then the merged manifest, then the APK
-itself via aapt2 — three levels, weakest to strongest. The APK check is the only
+itself via aapt2 - three levels, weakest to strongest. The APK check is the only
 one that is actual proof, because it inspects what the manifest merger really
 produced rather than what the source claims.
 

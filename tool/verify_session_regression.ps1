@@ -1,5 +1,5 @@
 <#
-Level Up — Wave 1 session-isolation regression proof (Tier-0 C-2).
+Level Up - Wave 1 session-isolation regression proof (Tier-0 C-2).
 
     powershell -ExecutionPolicy Bypass -File tool\verify_session_regression.ps1
 
@@ -16,7 +16,7 @@ script proves it empirically:
   5. run test/core/session/   -> MUST PASS
 
 HEAD (e3651e6) predates the Tier-0 work, so its AuthController clears the
-tokens, flips the auth state, and does nothing else — the exact bug.
+tokens, flips the auth state, and does nothing else - the exact bug.
 
 SAFETY: the restore runs in a `finally` block, so the working copy is put back
 even on an error or Ctrl-C. The backup is a plain file you can see and restore
@@ -24,7 +24,7 @@ by hand, not an entry on the git stash stack. The script verifies the restore by
 comparing SHA-256 before exiting, and refuses to finish quietly if it fails.
 
 Only `flutter test` is run. `dart format` is NOT run while the old file is in
-place — HEAD's copy predates the tall-style reformat and would report a false
+place - HEAD's copy predates the tall-style reformat and would report a false
 failure.
 #>
 
@@ -54,11 +54,11 @@ if (Test-Path $lock) {
     Write-Host ''
     Write-Host "  NOTE: $lock exists (age $([int]$age.TotalMinutes) min)." -ForegroundColor Yellow
     if ($age.TotalMinutes -gt 10) {
-        Write-Host '  It is almost certainly stale — a git process was killed while holding it.' -ForegroundColor Yellow
+        Write-Host '  It is almost certainly stale - a git process was killed while holding it.' -ForegroundColor Yellow
         Write-Host '  This script does not need the index, so it will continue, but git commit' -ForegroundColor Yellow
         Write-Host "  will fail until you run:  Remove-Item $lock" -ForegroundColor Yellow
     } else {
-        Write-Host '  It is recent — another git process may genuinely be running. Check before deleting.' -ForegroundColor Yellow
+        Write-Host '  It is recent - another git process may genuinely be running. Check before deleting.' -ForegroundColor Yellow
     }
 }
 
@@ -85,7 +85,7 @@ try {
     # blocked by an index.lock and cannot leave one behind. `git checkout -- `
     # would do both: it writes the index, so a stale lock from any other tool
     # (an IDE indexing in the background, or a git process that was killed) aborts
-    # this script before it can prove anything. That is not a hypothetical — it
+    # this script before it can prove anything. That is not a hypothetical - it
     # is how this script failed the first time it was run.
     $oldSource = (& git show "HEAD:$target") -join "`n"
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($oldSource)) {
@@ -97,7 +97,7 @@ try {
         (Resolve-Path $target).Path, $oldSource + "`n", $utf8NoBom)
 
     if ((Get-FileHash $target -Algorithm SHA256).Hash -eq $originalHash) {
-        throw 'HEAD version is identical to the working copy — the fix appears to be committed already. Point this script at the right baseline before trusting it.'
+        throw 'HEAD version is identical to the working copy - the fix appears to be committed already. Point this script at the right baseline before trusting it.'
     }
     Info 'reverted to the committed pre-fix AuthController (read from HEAD, index untouched)'
 
