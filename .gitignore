@@ -45,6 +45,11 @@ app.*.map.json
 /android/app/release
 .claude/settings.local.json
 
+# Scratch file created and deleted by tool/verify_guards.ps1 while it proves the
+# automated rules actually fail when broken. Ignored so a crashed probe run can
+# never leave it staged or committed — it exists for seconds at a time.
+lib/__guard_probe.dart
+
 # Release signing artefacts (key.properties, *.jks, *.keystore) are ignored by
 # android/.gitignore — do not duplicate the patterns here. See docs/RELEASE_SIGNING.md.
 
