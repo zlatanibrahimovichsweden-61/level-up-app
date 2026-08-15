@@ -1,0 +1,18 @@
+# Test tags.
+#
+# `golden` marks the pixel-comparison tests in test/goldens/. They are tagged
+# rather than selected by directory because CI used to enumerate test
+# directories by hand — `flutter test test/core test/dev test/features` — which
+# silently skipped test/widget_test.dart and would silently skip every future
+# directory. Tags let CI say WHAT it wants (everything except goldens) instead
+# of WHERE it lives, so a new directory is picked up automatically.
+#
+# Why goldens are separated at all: Flutter goldens embed platform-specific text
+# shaping and anti-aliasing. The baselines in test/goldens/*.png were captured on
+# Windows and will fail on a Linux runner even when the code is correct. So the
+# Linux gate runs `--exclude-tags golden` and a Windows job runs `--tags golden`.
+#
+# Declaring the tag here also stops `dart test` warning about an unknown tag.
+tags:
+  golden:
+    description: Pixel-comparison tests. Platform-sensitive — run on Windows.

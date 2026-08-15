@@ -1,3 +1,10 @@
+// Platform-sensitive: the .png baselines were captured on Windows and Flutter
+// goldens embed platform text shaping and anti-aliasing, so these fail on a
+// Linux runner even when the code is correct. The tag lets CI select by
+// intent rather than by directory — see dart_test.yaml.
+@Tags(['golden'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

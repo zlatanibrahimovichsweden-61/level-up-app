@@ -40,27 +40,26 @@ permissions:
 
 env:
   # ---------------------------------------------------------------------------
-  # PIN. Do not replace with `channel: stable` and no version — a silent SDK
-  # bump is the single most common cause of "CI broke and nobody changed code".
+  # The SDK version is NOT defined here. It lives in `.flutter-version` at the
+  # repo root — one file, read by every job (see the "Read pinned Flutter
+  # version" step) and by `tool/validate.ps1` / `tool/validate.sh`.
   #
-  # How to set this correctly (30 seconds, on the dev machine):
-  #     flutter --version
-  # and copy the version number (e.g. "3.44.2") into FLUTTER_VERSION below.
+  # Why a file instead of a workflow `env:`: the version previously appeared in
+  # the workflow only, so the local toolchain and CI could disagree silently.
+  # `test/guards/workflow_test.dart` fails if CI stops reading the file.
   #
-  # Why not the `.metadata` revision? `.metadata` records
-  # f6ff1529fd6d8af5f706051d9251ac9231c83407, but that is the revision the
-  # project was *created/migrated* with — `flutter upgrade` does not rewrite it.
-  # Meanwhile `pubspec.lock` was resolved by an SDK that reports
-  # `flutter: ">=3.44.0"` / `dart: ">=3.12.0"`, while `pubspec.yaml` still
-  # declares `sdk: ^3.10.4`. Those three sources disagree. Pinning blindly to
-  # the `.metadata` revision could pin CI to an SDK too old to resolve the
-  # committed lockfile. So: pin to the version the developer actually builds
-  # with, and let the "toolchain report" step below WARN (not fail) when it
-  # diverges from `.metadata`.
+  # Currently pinned to 3.44.7 — the version the suite was actually validated
+  # against (806 passing, Dart 3.12.2). PIN, do not float on `channel: stable`;
+  # a silent SDK bump is the most common cause of "CI broke and nobody changed
+  # code". To move it: run `flutter --version` on the dev machine, put that
+  # number in `.flutter-version`, and re-run the suite before committing.
   #
-  # 3.44.0 is the floor implied by pubspec.lock. Raise it to the exact local
-  # version on first run.
-  FLUTTER_VERSION: "3.44.0"
+  # `.metadata` records revision f6ff1529… but that is the revision the project
+  # was *created* with — `flutter upgrade` does not rewrite it — so it is used
+  # for a WARNING only, never as the pin. Note `pubspec.yaml` still declares
+  # `sdk: ^3.10.4` while the toolchain reports Dart 3.12.2; that is a valid
+  # lower bound, deliberately left alone, because raising it changes the
+  # language version and therefore `dart format` output.
   FLUTTER_CHANNEL: "stable"
   METADATA_REVISION: "f6ff1529fd6d8af5f706051d9251ac9231c83407"
 
@@ -77,10 +76,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Single source of truth for the SDK version: the `.flutter-version` file
+      # at the repo root. Read here rather than duplicated into a workflow `env:`
+      # so there is exactly one place to change it and nothing to drift.
+      # `shell: bash` because the Windows runner defaults to pwsh.
+      - name: Read pinned Flutter version
+        id: fv
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter (pinned)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: ${{ steps.fv.outputs.version }}
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
@@ -91,9 +99,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock') }}
+          key: pub-${{ runner.os }}-${{ steps.fv.outputs.version }}-${{ hashFiles('pubspec.lock') }}
           restore-keys: |
-            pub-${{ runner.os }}-${{ env.FLUTTER_VERSION }}-
+            pub-${{ runner.os }}-${{ steps.fv.outputs.version }}-
 
       - name: Toolchain report
         run: |
@@ -107,7 +115,7 @@ jobs:
           echo "framework revision : $have"
           echo ".metadata revision : $METADATA_REVISION"
           if [ "$have" != "$METADATA_REVISION" ]; then
-            echo "::warning title=Flutter revision differs from .metadata::CI is on $have, .metadata records $METADATA_REVISION. This is expected if the SDK has been upgraded since `flutter create`; it is a problem if nobody upgraded it. Reconcile FLUTTER_VERSION in .github/workflows/ci.yml with the dev machine."
+            echo "::warning title=Flutter revision differs from .metadata::CI is on $have, .metadata records $METADATA_REVISION. Expected if the SDK was upgraded since the project was created; a problem if nobody upgraded it. The pin lives in .flutter-version."
           fi
 
       # Uses the committed pubspec.lock. Never `pub upgrade` in CI — the point
@@ -139,7 +147,7 @@ jobs:
         run: |
           set -eu
           if ! git diff --quiet -- pubspec.lock; then
-            echo "::error title=pubspec.lock changed during pub get::The committed lockfile does not match what this SDK resolves. Run 'flutter pub get' locally and commit the result, or reconcile FLUTTER_VERSION."
+            echo "::error title=pubspec.lock changed during pub get::The committed lockfile does not match what this SDK resolves. Run 'flutter pub get' locally and commit the result, or reconcile the pin in .flutter-version."
             git --no-pager diff -- pubspec.lock
             exit 1
           fi
@@ -172,13 +180,20 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-pub
 
-      # test/goldens is excluded here on purpose — see the header comment and
-      # the `goldens` job. Everything else runs: 725 of the 730 cases.
-      - name: Test (excluding goldens)
-        run: |
-          set -eu
-          flutter test --no-pub --reporter expanded \
-            test/core test/dev test/features
+      # NO DIRECTORY LIST. This used to read
+      #   flutter test test/core test/dev test/features
+      # which silently skipped test/widget_test.dart — it sits at the root of
+      # test/ and matched none of the three directories — and would silently
+      # skip every future directory too. A test that is never run is worse than
+      # a test that fails, because it reports success.
+      #
+      # `flutter test` with no path argument walks the whole test/ tree, so
+      # discovery is driven by the repository rather than by a list somebody has
+      # to remember to update. Goldens are excluded BY TAG, not by path, for the
+      # platform reason in the header. test/guards/workflow_test.dart fails if a
+      # path argument is ever reintroduced here.
+      - name: Test (whole suite except goldens)
+        run: flutter test --no-pub --reporter expanded --exclude-tags golden
 
   # ===========================================================================
   # Goldens. Windows, because that is where the .png baselines were produced.
@@ -202,18 +217,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Single source of truth for the SDK version: the `.flutter-version` file
+      # at the repo root. Read here rather than duplicated into a workflow `env:`
+      # so there is exactly one place to change it and nothing to drift.
+      # `shell: bash` because the Windows runner defaults to pwsh.
+      - name: Read pinned Flutter version
+        id: fv
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter (pinned)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: ${{ steps.fv.outputs.version }}
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Resolve dependencies
         run: flutter pub get
 
+      # Selected by tag, so a golden added anywhere in test/ is picked up.
       - name: Golden tests
-        run: flutter test --no-pub --reporter expanded test/goldens
+        run: flutter test --no-pub --reporter expanded --tags golden
 
       # A failed golden writes the actual/diff PNGs next to the baseline. Ship
       # them, otherwise "goldens failed" is an unactionable red X.
@@ -242,10 +267,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Single source of truth for the SDK version: the `.flutter-version` file
+      # at the repo root. Read here rather than duplicated into a workflow `env:`
+      # so there is exactly one place to change it and nothing to drift.
+      # `shell: bash` because the Windows runner defaults to pwsh.
+      - name: Read pinned Flutter version
+        id: fv
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Flutter (pinned)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: ${{ steps.fv.outputs.version }}
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
@@ -253,7 +287,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock') }}
+          key: pub-${{ runner.os }}-${{ steps.fv.outputs.version }}-${{ hashFiles('pubspec.lock') }}
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -298,6 +332,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Single source of truth for the SDK version: the `.flutter-version` file
+      # at the repo root. Read here rather than duplicated into a workflow `env:`
+      # so there is exactly one place to change it and nothing to drift.
+      # `shell: bash` because the Windows runner defaults to pwsh.
+      - name: Read pinned Flutter version
+        id: fv
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < .flutter-version)" >> "$GITHUB_OUTPUT"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -307,7 +350,7 @@ jobs:
       - name: Set up Flutter (pinned)
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: ${{ steps.fv.outputs.version }}
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
@@ -315,7 +358,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ env.FLUTTER_VERSION }}-${{ hashFiles('pubspec.lock') }}
+          key: pub-${{ runner.os }}-${{ steps.fv.outputs.version }}-${{ hashFiles('pubspec.lock') }}
 
       - name: Cache Gradle
         uses: actions/cache@v4
