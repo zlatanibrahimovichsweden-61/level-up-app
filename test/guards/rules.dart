@@ -115,6 +115,45 @@ List<String> providerMutationInInitState(List<Source> sources) {
 }
 
 // ---------------------------------------------------------------------------
+// RULE: autoDispose notifiers that await must track their own disposal.
+// ---------------------------------------------------------------------------
+
+/// Files declaring an `autoDispose` notifier that `await`s but has no disposal
+/// flag wired to `ref.onDispose`.
+///
+/// An `autoDispose` provider is disposed the moment its last listener goes.
+/// If that happens while an `await` is in flight — the student pops the OTP
+/// screen mid-verify, closes the school picker mid-page, leaves Edit Profile
+/// mid-save — the continuation resumes and assigns to `state` on a dead
+/// notifier, which throws. It surfaces as an unhandled async error rather than
+/// a crash, which is why a green suite never saw it.
+///
+/// Deliberately NOT applied to non-`autoDispose` providers: those live for the
+/// container's lifetime and cannot be disposed mid-await, so a guard there
+/// would be cargo-culting. Wave-3 finding K-13 named "9 sites"; only the
+/// `autoDispose` ones are real.
+///
+/// The check is structural, not a proof: it asserts the *mechanism* exists, not
+/// that every assignment is guarded. A reviewer still has to place the guard
+/// after any side effect that must survive disposal — in `OtpNotifier.verify`
+/// the tokens and `markAuthenticated()` must happen regardless.
+List<String> autoDisposeNotifiersWithoutDisposalFlag(List<Source> sources) {
+  final out = <String>[];
+  for (final s in sources) {
+    final code = stripComments(s.text);
+    if (!code.contains('autoDispose')) continue;
+    if (!RegExp(r'\bawait\b').hasMatch(code)) continue;
+    // Must both declare the flag and set it from onDispose.
+    final declares = RegExp(r'bool\s+_disposed\s*=\s*false').hasMatch(code);
+    final wires = RegExp(
+      r'onDispose\([\s\S]{0,120}?_disposed\s*=\s*true',
+    ).hasMatch(code);
+    if (!declares || !wires) out.add(s.path);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // RULE: user-facing copy goes through AppLocalizations.
 // ---------------------------------------------------------------------------
 

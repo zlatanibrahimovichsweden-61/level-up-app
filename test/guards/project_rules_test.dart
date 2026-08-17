@@ -66,27 +66,53 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  test('autoDispose notifiers that await track their own disposal', () {
+    // Wave-3 3A. An autoDispose provider dies with its last listener, so an
+    // await that outlives the screen resumes on a dead notifier and throws on
+    // the next `state =`. Unhandled async error, invisible to a green suite.
+    //
+    // Non-autoDispose providers are deliberately excluded: they live for the
+    // container's lifetime and cannot hit this, so guarding them would be
+    // noise. That distinction is why the original "9 sites" finding narrowed
+    // to 4 real ones.
+    expect(
+      autoDisposeNotifiersWithoutDisposalFlag(sources),
+      isEmpty,
+      reason:
+          'An autoDispose notifier awaits but has no disposal flag. Add '
+          '`bool _disposed = false;` and `ref.onDispose(() => _disposed = true);` '
+          'in build(), then guard each post-await `state =` with '
+          '`if (_disposed) return;` — placed AFTER any side effect that must '
+          'survive the screen closing.',
+    );
+  });
+
+  // -------------------------------------------------------------------------
   group('user-facing copy goes through AppLocalizations', () {
     // Arabic is the baseline locale here, not an edge case, so a hardcoded
     // English string is a bug in half the product.
     //
-    // Two of the current seven are genuine leaks (the placeholder route and the
-    // Retry button) and belong to Wave 3. The rest are legitimately
-    // untranslatable: a flag emoji, and punctuation joining two already
-    // localized halves. So this is an allowlist plus a ratchet rather than a
-    // ban — new files cannot introduce a leak, and the total cannot grow.
+    // Wave 3 fixed the two genuine leaks: the shared Retry button
+    // (`state_widget.dart`, reached from every screen without a custom error
+    // view) and the `/subscription` placeholder body. Both now read existing
+    // ARB keys — `retry` and `comingSoon` — so no translation was invented and
+    // ARB parity was never at risk.
+    //
+    // The five that remain are ALL legitimately untranslatable, which is why
+    // this stays an allowlist rather than becoming a ban: two flag emoji, and
+    // three punctuation joiners between halves that are themselves localized
+    // (`Text('${l10n.legalPrefix} ')`).
     const knownFiles = <String, String>{
-      'lib/core/router/app_router.dart':
-          'Wave-3: the "not built yet" placeholder route copy.',
-      'lib/core/widgets/state_widget.dart': 'Wave-3: the Retry button label.',
       'lib/features/auth/screens/login_screen.dart':
           'Flag emoji + punctuation joining localized legal-link halves.',
       'lib/features/registration/screens/signup_identity_screen.dart':
           'Flag emoji beside the read-only phone field.',
     };
 
-    /// Frozen 2026-08-14. May fall, never rise.
-    const baseline = 7;
+    /// Frozen 2026-08-14 at 7. Lowered to 5 on 2026-08-15 after Wave 3 removed
+    /// two genuine leaks — remediation, not an artificial reduction. May fall
+    /// further, never rise.
+    const baseline = 5;
 
     test('no NEW file introduces a hardcoded string', () {
       final offenders = rawTextLiterals(sources)
