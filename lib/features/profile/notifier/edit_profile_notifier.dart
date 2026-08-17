@@ -27,8 +27,14 @@ import 'me_notifier.dart';
 /// is the opposite — it is deliberately kept alive so tab switches cost no
 /// request — and the two live at different lifetimes on purpose.
 class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
+  /// True once this notifier has been disposed — see [save].
+  bool _disposed = false;
+
   @override
-  FutureOr<StudentProfile?> build() => null;
+  FutureOr<StudentProfile?> build() {
+    ref.onDispose(() => _disposed = true);
+    return null;
+  }
 
   /// Submits [update]. Returns true when the profile is saved (or when there
   /// was nothing to save), so the screen can decide to leave.
@@ -45,6 +51,22 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
     final result = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).updateMe(update),
     );
+
+    // This provider is autoDispose and screen-scoped, so leaving Edit Profile
+    // mid-save disposes it while the PATCH is still in flight. The save has
+    // already happened server-side; what is unsafe is touching this notifier
+    // afterwards.
+    //
+    // Nothing below runs in that case — including `ref.invalidate`, because
+    // `ref` is dead too, and invalidating through it would throw exactly like
+    // the state assignment does. The cost is that `meProvider` keeps the
+    // pre-edit profile until something else refreshes it. That is a real but
+    // narrow staleness window (the student left the screen mid-request), and it
+    // is strictly better than an unhandled exception. Widening it into a
+    // guaranteed refresh would mean invalidating from a live ref — the screen's
+    // or the router's — which is a larger change than this hazard justifies.
+    if (_disposed) return !result.hasError;
+
     state = result;
     if (result.hasError) return false;
 

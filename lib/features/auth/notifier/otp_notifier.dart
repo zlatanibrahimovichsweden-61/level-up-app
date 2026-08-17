@@ -72,9 +72,25 @@ class OtpNotifier extends Notifier<OtpUiState> {
   final OtpArgs args;
   Timer? _timer;
 
+  /// True once this notifier has been disposed.
+  ///
+  /// `otpProvider` is `autoDispose`, so popping the OTP screen while a verify
+  /// or resend is in flight drops the last listener and disposes this notifier
+  /// mid-`await`. The continuation then assigns to `state` on a dead notifier,
+  /// which throws. Nothing catches it — it surfaces as an unhandled async error
+  /// rather than a crash, which is why the suite never saw it.
+  ///
+  /// Tracked with a flag set from [Ref.onDispose] (already used here for the
+  /// timer) rather than a `mounted` getter, so the guard depends only on API
+  /// this file already proves it has.
+  bool _disposed = false;
+
   @override
   OtpUiState build() {
-    ref.onDispose(() => _timer?.cancel());
+    ref.onDispose(() {
+      _disposed = true;
+      _timer?.cancel();
+    });
     if (args.resendAfterSeconds > 0) _scheduleTicks();
     return OtpUiState(secondsRemaining: args.resendAfterSeconds);
   }
@@ -105,6 +121,12 @@ class OtpNotifier extends Notifier<OtpUiState> {
           // Flip the single source of auth truth so the router guard authorizes
           // /home (the screen still shows the success view + Continue first).
           ref.read(authControllerProvider.notifier).markAuthenticated();
+          // The guard goes HERE, not around the await block. The tokens are
+          // already written and auth is already flipped — those side effects
+          // must survive the screen being popped, or the student ends up
+          // authenticated-but-not-routed. Only the UI state assignment is
+          // unsafe once this notifier is gone.
+          if (_disposed) return;
           state = state.copyWith(
             isVerifying: false,
             outcome: const AuthenticatedOutcome(),
@@ -113,6 +135,7 @@ class OtpNotifier extends Notifier<OtpUiState> {
           :final registrationToken,
           :final expiresInSeconds,
         ):
+          if (_disposed) return;
           state = state.copyWith(
             isVerifying: false,
             outcome: RegistrationRequiredOutcome(
@@ -122,12 +145,14 @@ class OtpNotifier extends Notifier<OtpUiState> {
           );
       }
     } on AppException catch (e) {
+      if (_disposed) return;
       state = state.copyWith(
         isVerifying: false,
         error: e,
         isInvalidCode: isInvalidOtp(e),
       );
     } catch (_) {
+      if (_disposed) return;
       state = state.copyWith(
         isVerifying: false,
         error: const UnknownException(),
@@ -146,14 +171,19 @@ class OtpNotifier extends Notifier<OtpUiState> {
     );
     try {
       final res = await ref.read(authRepositoryProvider).requestOtp(args.phone);
+      // Returning early also skips _scheduleTicks(), which is correct: a timer
+      // started on a disposed notifier would tick into a dead state setter.
+      if (_disposed) return;
       state = state.copyWith(
         isResending: false,
         secondsRemaining: res.resendAfterSeconds,
       );
       if (res.resendAfterSeconds > 0) _scheduleTicks();
     } on AppException catch (e) {
+      if (_disposed) return;
       state = state.copyWith(isResending: false, error: e);
     } catch (_) {
+      if (_disposed) return;
       state = state.copyWith(
         isResending: false,
         error: const UnknownException(),

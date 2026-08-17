@@ -69,10 +69,16 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
   /// The cursor for the NEXT page; null once exhausted.
   String? _nextCursor;
 
+  /// True once this notifier has been disposed — see [loadMore] and [refresh].
+  bool _disposed = false;
+
   static const _pageSize = 20;
 
   @override
   Future<SchoolSearchResults> build() async {
+    // Registered before the first await so a dispose during the initial page
+    // load is still recorded.
+    ref.onDispose(() => _disposed = true);
     final page = await ref
         .read(referenceRepositoryProvider)
         .searchSchools(
@@ -108,6 +114,10 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
             limit: _pageSize,
           );
       _nextCursor = page.nextCursor;
+      // autoDispose + sheet-scoped: closing the school picker while a page is
+      // in flight disposes this notifier mid-await, and the assignment would
+      // throw on a dead notifier.
+      if (_disposed) return;
       state = AsyncData(
         SchoolSearchResults(
           items: [...current.items, ...page.items],
@@ -117,6 +127,7 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
     } on Object catch (error) {
       // Keep the already-loaded pages visible; the sheet shows a retry for the
       // failed append rather than throwing the whole list away.
+      if (_disposed) return;
       state = AsyncData(
         current.copyWith(isLoadingMore: false, appendError: error),
       );
@@ -127,7 +138,9 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
   Future<void> refresh() async {
     _nextCursor = null;
     state = const AsyncLoading();
-    state = await AsyncValue.guard(build);
+    final result = await AsyncValue.guard(build);
+    if (_disposed) return;
+    state = result;
   }
 }
 

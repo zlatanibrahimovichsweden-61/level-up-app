@@ -27,8 +27,14 @@ import '../repository/quiz_repository.dart';
 ///     · 422 `not_enough_questions` → inline, and NEVER a silent smaller retry
 ///     · offline/network → the offline view
 class QuizSetupNotifier extends AsyncNotifier<Quiz?> {
+  /// True once this notifier has been disposed — see [create].
+  bool _disposed = false;
+
   @override
-  FutureOr<Quiz?> build() => null;
+  FutureOr<Quiz?> build() {
+    ref.onDispose(() => _disposed = true);
+    return null;
+  }
 
   Future<void> create({
     required QuizSetupArgs scope,
@@ -38,11 +44,23 @@ class QuizSetupNotifier extends AsyncNotifier<Quiz?> {
     if (state.isLoading) return; // no double-submit
 
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final result = await AsyncValue.guard(
       () => ref
           .read(quizRepositoryProvider)
           .createQuiz(scope: scope, length: length, mode: mode),
     );
+
+    // autoDispose + screen-scoped: backing out of the setup screen while
+    // `POST /quizzes` is in flight disposes this notifier mid-await, and the
+    // assignment below would throw on a dead notifier.
+    //
+    // A quiz may have been created server-side that the student never sees.
+    // That is pre-existing behaviour and not something this guard can fix from
+    // here — it needs an abandon/cleanup call the contract does not offer. The
+    // guard only stops the unhandled exception.
+    if (_disposed) return;
+
+    state = result;
   }
 
   /// Back to idle. Called after the screen has navigated with the quiz, so
