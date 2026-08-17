@@ -539,6 +539,11 @@ class _AvatarEditor extends StatelessWidget {
                   width: _size,
                   height: _size,
                   fit: BoxFit.cover,
+                  // See home_header.dart. 151dp is the largest avatar in the
+                  // app, so the saving is smaller here than on the 51dp header
+                  // — but the cap still keeps an oversized source in check.
+                  memCacheWidth:
+                      (_size * MediaQuery.devicePixelRatioOf(context)).round(),
                   placeholder: (_, _) =>
                       _AvatarFallback(colour: ext.progressTrack),
                   errorWidget: (_, _, _) =>

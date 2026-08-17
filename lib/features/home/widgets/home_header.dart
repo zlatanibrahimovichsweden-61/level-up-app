@@ -164,6 +164,12 @@ class _Avatar extends StatelessWidget {
         width: _size,
         height: _size,
         fit: BoxFit.cover,
+        // Decode at the size actually drawn. Without this the avatar is
+        // decoded at its FULL source resolution regardless of the 51dp it
+        // occupies — a 1024px source costs ~4 MB of heap instead of ~110 KB.
+        // On the low-end Android handsets this app targets, that is real.
+        // Scaled by the device pixel ratio so it stays sharp on 2x/3x screens.
+        memCacheWidth: (_size * MediaQuery.devicePixelRatioOf(context)).round(),
         placeholder: (_, _) => _Fallback(size: _size, color: ext.cardFill),
         errorWidget: (_, _, _) => _Fallback(size: _size, color: ext.cardFill),
       ),

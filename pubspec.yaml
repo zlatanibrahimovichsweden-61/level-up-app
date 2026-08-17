@@ -43,8 +43,14 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   shared_preferences: ^2.5.5
-  hive_ce: ^2.19.3
-  hive_ce_flutter: ^2.3.4
+  # hive_ce / hive_ce_flutter removed 2026-08-15 (Wave 3). They were declared
+  # but never imported: zero Dart references in lib/, no generated adapters, no
+  # build.yaml. The only three matches in the codebase were comments explaining
+  # that quiz data is deliberately NOT cached to Hive. There is no caching layer
+  # in this app — Riverpod holds state in memory and that is the design.
+  #
+  # This is a removal of unused dependencies, not a storage migration. If
+  # offline caching is added later, choose the package then, on its merits.
   url_launcher: ^6.3.2
   screen_protector: ^1.5.3
   intl: 0.20.2
@@ -74,7 +80,8 @@ dev_dependencies:
   riverpod_generator: ^4.0.4
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
-  hive_ce_generator: ^1.11.2
+  # hive_ce_generator removed with its runtime packages — it generated nothing
+  # (no Hive adapters exist anywhere in the tree).
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

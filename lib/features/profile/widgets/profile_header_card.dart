@@ -128,6 +128,8 @@ class _Avatar extends StatelessWidget {
         width: _size,
         height: _size,
         fit: BoxFit.cover,
+        // See home_header.dart — decode at the drawn size, not the source's.
+        memCacheWidth: (_size * MediaQuery.devicePixelRatioOf(context)).round(),
         placeholder: (_, _) => _Fallback(colour: ext.progressTrack),
         errorWidget: (_, _, _) => _Fallback(colour: ext.progressTrack),
       ),

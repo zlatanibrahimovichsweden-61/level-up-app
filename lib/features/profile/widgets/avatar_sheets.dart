@@ -327,6 +327,13 @@ class _AvatarChoice extends StatelessWidget {
             child: CachedNetworkImage(
               imageUrl: avatar.url,
               fit: BoxFit.cover,
+              // See home_header.dart. This is the worst of the five sites: a
+              // GRID of avatars, so every full-resolution decode is multiplied
+              // by however many the sheet shows at once.
+              memCacheWidth:
+                  (ChooseAvatarSheet._size *
+                          MediaQuery.devicePixelRatioOf(context))
+                      .round(),
               placeholder: (_, _) => Container(color: ext.progressTrack),
               errorWidget: (_, _, _) => Container(
                 color: ext.progressTrack,
