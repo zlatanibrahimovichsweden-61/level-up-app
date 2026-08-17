@@ -351,6 +351,18 @@ class _QuizUnavailableScreen extends StatelessWidget {
 }
 
 /// Temporary destination so the skeleton runs. Replaced screen-by-screen.
+///
+/// [title] is a DEVELOPER label naming the unbuilt route, not product copy —
+/// it only reaches the app bar so a half-built build is navigable. The body
+/// uses the existing `comingSoon` key, because that line is the one a student
+/// actually reads: `/subscription` is reachable from the quiz paywall
+/// (`limit_sheet.dart`), and it previously rendered hardcoded English
+/// ("Subscription — not built yet") in an app whose baseline locale is Arabic.
+///
+/// Localising the placeholder is the interim fix, not the resolution. The real
+/// choice — disable the paywall's entry point the way Profile's was, or build
+/// the screen — is a product decision and is recorded in
+/// `.ai/audits/current/wave3-implementation.md`.
 class _Placeholder extends StatelessWidget {
   const _Placeholder(this.title);
   final String title;
@@ -359,7 +371,7 @@ class _Placeholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: Center(child: Text('$title — not built yet')),
+      body: Center(child: Text(AppLocalizations.of(context).comingSoon)),
     );
   }
 }

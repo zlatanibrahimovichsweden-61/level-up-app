@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../models/screen_state.dart';
 
 /// The ONLY place that switches on `ScreenState`. If a screen re-derives its
@@ -73,7 +74,16 @@ class _CenterMessage extends StatelessWidget {
           if (onRetry != null) ...[
             const SizedBox(height: 12),
             // Retry re-triggers the same request on tap — never silent auto-retry.
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
+            //
+            // The label reads the existing `retry` ARB key rather than a
+            // hardcoded 'Retry'. Nine other retry buttons across the app already
+            // did; this shared fallback — the one reached from EVERY screen that
+            // has no custom error view — was the only English holdout, in an app
+            // whose baseline locale is Arabic.
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).retry),
+            ),
           ],
         ],
       ),
