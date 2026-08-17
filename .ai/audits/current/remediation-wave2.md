@@ -422,3 +422,114 @@ That is the same shape as Tier-0 C-1, where the source manifest was correct and
 the built artefact was still broken. **Verifying content does not verify
 execution** — now recorded twice, in two unrelated domains, which makes it a
 property of this workflow rather than a coincidence.
+
+---
+
+# Wave 2.1 — Fable findings
+
+Verdict on Wave 2: **APPROVED WITH WARNINGS**. Two actionable findings, both
+correct, both fixed below. No application code touched; Wave 3 not started.
+
+## Finding 1 — the guard-proof harness proved the wrong thing
+
+**Why it failed the requirement.** `Check()` concluded a probe had succeeded from:
+
+```
+(output contains [E])  AND  (the guard's name appears in the output)
+```
+
+`--reporter expanded` prints **every test name as it runs, passing or failing**.
+So the second condition was true whenever the target test merely *existed* — it
+carried no information about whether that test failed. The harness therefore
+proved only *"the guard suite went red"* and attributed it to whichever rule was
+being probed. Any unrelated failure anywhere in `test/guards/` would have been
+reported as a successful proof of the rule under test.
+
+The 6/6 result reported at the end of Wave 2 was, strictly, "6 probes each made
+the suite red" — which happened to be true for the right reasons, but the
+harness could not distinguish that from the wrong ones.
+
+**The fix — remove the ambiguity, don't pattern-match harder.** Each probe now
+runs **only the test under proof**, selected with `--plain-name`. The process
+exit code is then unambiguous: nothing else ran, so nothing else can explain a
+non-zero exit.
+
+Every probe is a three-point proof:
+
+| Step | Assertion | Catches |
+| --- | --- | --- |
+| 1. clean tree | the target test alone **passes** | a mistyped test name; a guard already red |
+| 2. violation applied | the target test alone **fails** | the guard genuinely fires |
+| 3. restore | SHA-256 matches | the probe left nothing behind |
+
+Step 1 doubles as name validation: if `--plain-name` matched nothing,
+`flutter test` exits non-zero and step 1 fails as a **HARNESS ERROR** rather
+than silently making step 2 look like a proof. Two further harness-error paths
+were added: a probe whose `From` string is absent from the target file (a
+no-op probe that would report "not detected" for the wrong reason), and a probe
+that changes test selection.
+
+All 41 test names in `test/guards/` were verified unique, so `--plain-name`
+selects exactly one.
+
+## Finding 2 — bare `xargs` in the canonical script
+
+**Why it failed.** `tool/validate.sh` built a newline-separated file list and
+piped it into a bare `xargs`. `xargs` without `-0` splits on whitespace, so a
+path containing a space becomes two nonexistent paths.
+
+This is the **same defect Wave 2 fixed in `.githooks/pre-commit`** — and it was
+left in the canonical script that CI and the pre-push hook both depend on. The
+Wave-2 guard only inspected the hook, so it reported success while the more
+important file stayed broken. Fixing the instance you noticed rather than the
+class is exactly how this recurred.
+
+**The fix.** NUL-delimited end to end, matching the hook:
+
+```sh
+git ls-files -z '*.dart' \
+  | grep -zZv -e '\.freezed\.dart$' -e '\.g\.dart$' \
+  | grep -zZv -e '^lib/l10n/app_localizations' \
+  > "$tmp/dartfiles.z" || true
+fmt_count="$(tr -dc '\0' < "$tmp/dartfiles.z" | wc -c | tr -d ' ')"
+xargs -0 -r dart format --output=none --set-exit-if-changed -- < "$tmp/dartfiles.z"
+```
+
+`wc -l` cannot count NUL-delimited records, so the file count now counts
+terminators. `--` stops a file named `-x.dart` being read as an option.
+
+**Executed proof** (the shell pipeline runs in the audit environment even though
+Dart does not):
+
+```
+new pipeline, real repo      : 214 files
+old ps1 filter, same input   : 214 files   <- filter-equivalent, no behaviour change
+bare xargs   on "a b.dart"   : a | b.dart | c.dart   (3 items - THE BUG)
+xargs -0     on "a b.dart"   : a b.dart | c.dart     (2 items - correct)
+```
+
+`tool/validate.ps1` was **not** changed: it passes a PowerShell array via
+`@chunk` splatting, which preserves spaces. It was already safe, so aligning it
+would have meant changing working code for symmetry.
+
+**The guard now inspects the class, not the instance.** `workflow_test.dart`
+checks **every** shell entry point — `pre-commit`, `pre-push`, `validate.sh` —
+for any `xargs` lacking `-0`, plus a positive assertion that `validate.sh`
+actually builds a NUL list (without it, deleting the `xargs` call entirely would
+pass). Shell comments are stripped first: the three scripts contain 3 prose
+mentions of bare `xargs` that would otherwise false-positive.
+
+Verified against the real files: 0 offenders, 3 comment mentions correctly
+ignored, and both `cat f | xargs dart format` and `xargs rm < list` caught.
+
+## Files changed in Wave 2.1
+
+| File | Change |
+| --- | --- |
+| `tool/verify_guards.ps1` | rewritten proof mechanism: per-test isolation via `--plain-name`, three-point proof, three harness-error paths |
+| `tool/validate.sh` | NUL-delimited format pipeline |
+| `test/guards/workflow_test.dart` | NUL-safety guard widened to all shell scripts + positive `validate.sh` assertion |
+| `docs/ENFORCEMENT.md` | rule table updated; how-to-prove-a-guard section added |
+| `.ai/audits/current/remediation-wave2.md` | this section |
+
+No file under `lib/` touched. No test deleted or weakened. No dependency added.
