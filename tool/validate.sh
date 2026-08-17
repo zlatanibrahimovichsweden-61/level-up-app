@@ -119,14 +119,24 @@ say "[4/5] dart format --set-exit-if-changed"
 sec "4. Format (\`dart format --set-exit-if-changed --output=none\`)"
 printf 'Generated output (`*.freezed.dart`, `*.g.dart`, `lib/l10n/app_localizations*`)\nis excluded — the generators format their own output.\n\n' >> "$body"
 
-git ls-files '*.dart' \
-  | grep -v -E '\.(freezed|g)\.dart$' \
-  | grep -v -E '^lib/l10n/app_localizations' > "$tmp/dartfiles.txt"
-fmt_count="$(wc -l < "$tmp/dartfiles.txt" | tr -d ' ')"
+# NUL-delimited end to end. A bare `xargs` splits on whitespace, so a path
+# containing a space becomes two nonexistent paths and the format check either
+# errors confusingly or silently checks the wrong files. Wave 2 fixed exactly
+# this in .githooks/pre-commit and missed it here, in the CANONICAL script that
+# CI and the pre-push hook both depend on. `--` stops a file named `-x.dart`
+# being read as an option. Guarded by test/guards/workflow_test.dart.
+git ls-files -z '*.dart' \
+  | grep -zZv -e '\.freezed\.dart$' -e '\.g\.dart$' \
+  | grep -zZv -e '^lib/l10n/app_localizations' \
+  > "$tmp/dartfiles.z" || true
+
+# `wc -l` cannot count NUL-delimited records; count the terminators instead.
+fmt_count="$(tr -dc '\0' < "$tmp/dartfiles.z" | wc -c | tr -d ' ')"
 
 fence_open text
 printf 'checking %s hand-written Dart files\n\n' "$fmt_count" >> "$body"
-xargs dart format --output=none --set-exit-if-changed < "$tmp/dartfiles.txt" >> "$body" 2>&1
+xargs -0 -r dart format --output=none --set-exit-if-changed -- \
+  < "$tmp/dartfiles.z" >> "$body" 2>&1
 fmt_rc=$?
 fence_close
 if [ $fmt_rc -eq 0 ]; then

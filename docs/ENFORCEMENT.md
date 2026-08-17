@@ -55,8 +55,31 @@ callers — so "it passed locally" means the same thing everywhere.
 | Goldens are tagged, not path-selected | same file | a golden test file loses its `@Tags(['golden'])` |
 | The SDK pin has one source | same file | CI hardcodes a version instead of reading `.flutter-version` |
 | Release networking (Tier-0 C-1) | same file + CI | `src/main` stops declaring `INTERNET`, or CI stops inspecting the built APK |
-| Hooks are NUL-safe | same file | a bare `xargs` reappears in `pre-commit` |
+| Shell scripts are NUL-safe | same file | a bare `xargs` appears in **any** of `pre-commit`, `pre-push` or `tool/validate.sh` |
+| `validate.sh` builds a NUL list | same file | it stops using `git ls-files -z` / `xargs -0` |
 | Pre-push reuses the canonical script | same file | the hook grows its own copy of format/analyze/test |
+| PowerShell scripts are ASCII-only | same file | a typographic character enters a `.ps1`, which PowerShell 5.1 mis-decodes as ANSI |
+
+### Proving a guard can fail
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tool\verify_guards.ps1
+```
+
+Breaks each rule on purpose and proves the **specific** guard went red.
+
+Each probe runs **only the one test under proof** (`--plain-name`), so the exit
+code is unambiguous — nothing else ran, so nothing else can explain a failure.
+Every probe is a three-point proof: the target test passes on the clean tree,
+fails under the violation, and the tree is restored with SHA-256 verification.
+
+That design is a correction. The first version concluded success from *"the
+suite went red AND the guard's name appears in the output"* — but
+`--reporter expanded` prints every test name as it runs, **passing or failing**,
+so the second condition was true whenever the test merely existed. It proved
+"something broke" and attributed it to whichever guard was being probed. Fable
+caught it. Running one test in isolation removes the ambiguity rather than
+pattern-matching harder.
 
 ### The guards are themselves tested
 

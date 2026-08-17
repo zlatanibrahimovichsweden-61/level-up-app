@@ -189,19 +189,66 @@ void main() {
       );
     });
 
-    test('hooks are NUL-safe, not whitespace-split', () {
+    test('every shell script that batches files is NUL-safe', () {
       // `xargs` without -0 splits on whitespace, so a path containing a space
-      // becomes two nonexistent paths and the hook checks the wrong thing.
-      final hook = File('.githooks/pre-commit').readAsStringSync();
+      // becomes two nonexistent paths and the script silently checks the wrong
+      // files — or errors in a way that looks unrelated.
+      //
+      // Wave 2 fixed this in .githooks/pre-commit and MISSED tool/validate.sh,
+      // which is the canonical script CI and the pre-push hook both depend on.
+      // Fable caught it. So the guard covers every shell entry point rather
+      // than the one file that happened to be looked at, because "we fixed the
+      // instance we noticed" is precisely how this recurred.
+      const shellScripts = [
+        '.githooks/pre-commit',
+        '.githooks/pre-push',
+        'tool/validate.sh',
+      ];
+
+      // Shell comments stripped: these files DISCUSS bare xargs in prose, and
+      // prose must never satisfy — or trip — a structural rule. Same lesson as
+      // the Wave-1 discipline-test bug and the ci.yml comment.
+      String code(String path) => File(path)
+          .readAsLinesSync()
+          .where((l) => !RegExp(r'^\s*#').hasMatch(l))
+          .join('\n');
+
+      final offenders = <String>[];
+      for (final path in shellScripts) {
+        final src = code(path);
+        // Any xargs invocation must carry -0. Matches `| xargs foo` and
+        // `xargs foo < file`, both of which read a file list.
+        for (final m in RegExp(r'xargs(\s+-\S+)*').allMatches(src)) {
+          if (!m.group(0)!.contains('-0')) {
+            offenders.add('$path: ${m.group(0)!.trim()}');
+          }
+        }
+      }
+
       expect(
-        hook.contains('xargs -0'),
+        offenders,
+        isEmpty,
+        reason:
+            'A bare xargs splits on whitespace and breaks on filenames with '
+            'spaces. Use NUL-delimited input end to end: `git ... -z` piped '
+            'through `grep -zZv` into `xargs -0`.\n${offenders.join('\n')}',
+      );
+    });
+
+    test('validate.sh feeds xargs a NUL-delimited list', () {
+      // The negative test above proves no bare xargs remains. This proves the
+      // positive: the canonical script actually builds a NUL-delimited list.
+      // Without both, deleting the xargs call entirely would pass the guard.
+      final src = File('tool/validate.sh').readAsStringSync();
+      expect(
+        src.contains('git ls-files -z'),
         isTrue,
-        reason: 'pre-commit must use NUL-delimited file lists',
+        reason: 'validate.sh must produce a NUL-delimited file list',
       );
       expect(
-        RegExp(r'\|\s*xargs\s+(?!-0)').hasMatch(hook),
-        isFalse,
-        reason: 'a bare xargs remains in pre-commit — it splits on whitespace',
+        src.contains('xargs -0'),
+        isTrue,
+        reason: 'validate.sh must consume it with xargs -0',
       );
     });
   });

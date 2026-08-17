@@ -7,26 +7,50 @@ Answers the only question that matters about an automated rule: **does it
 actually fail when the rule is broken?**
 
 A guard that has only ever run against a clean codebase has never demonstrated
-anything. This script breaks each rule on purpose, one at a time, and asserts
-that the specific guard responsible goes red - then puts everything back.
+anything. This script breaks each rule on purpose, one at a time, and proves the
+SPECIFIC guard responsible went red - then puts everything back.
+
+HOW THE PROOF WORKS (Wave 2.1 - this is the part Fable rejected)
+----------------------------------------------------------------
+The first version ran the whole guard suite and concluded success from:
+
+    (the suite went red) AND (the guard's name appears in the output)
+
+That is not a proof. `--reporter expanded` prints EVERY test name as it runs,
+passing or failing, so the second condition was true whenever the test merely
+existed. The harness therefore proved "the suite became red" and attributed it
+to whichever guard was being probed - a false PASS if any unrelated test failed.
+
+The fix removes the ambiguity rather than pattern-matching harder: each probe
+runs **only the one test under proof**, selected with `--plain-name`, so the
+process exit code is unambiguous. Nothing else ran, so nothing else can explain
+a non-zero exit.
+
+Each probe is therefore a three-point proof:
+
+    1. clean tree  -> the target test alone PASSES   (name is valid, guard green)
+    2. violation   -> the target test alone FAILS    (the guard fired)
+    3. restore     -> verified by SHA-256
+
+Step 1 doubles as validation of the test name: if `--plain-name` matched
+nothing, `flutter test` exits non-zero and step 1 fails loudly as a HARNESS
+error, rather than silently making step 2 look like a successful proof.
 
 METHOD
 ------
-Most probes create a single scratch file (`lib/__guard_probe.dart`) containing a
-deliberate violation, run `flutter test test/guards`, and check that the expected
-test name appears in the failures. The scratch file is never imported by
-anything, so it does not affect the app - the guards read it because they scan
-`lib/` from disk, which is exactly the surface under test.
+Four probes create a scratch file (`lib/__guard_probe.dart`) holding a
+deliberate violation. It is never imported, so it cannot affect the app - the
+guards see it because they scan `lib/` from disk, which is the surface under
+test. It is gitignored so a crashed run cannot leave it staged.
 
 Two probes must edit a real file (`ci.yml`, `AndroidManifest.xml`). Those are
-backed up to a temp file first and restored in a `finally` block with a SHA-256
-comparison before the script exits, so an error or Ctrl-C cannot leave the repo
-modified.
+backed up first and restored in a `finally` block with a SHA-256 comparison
+before the script exits, so an error or Ctrl-C cannot leave the repo modified.
 
 WHAT THIS DOES NOT PROVE
 ------------------------
 That the guards catch every possible phrasing of a violation. It proves each one
-fires on a representative case and that the clean tree passes - necessary, not
+fires on a representative case and stays green otherwise - necessary, not
 sufficient.
 #>
 
@@ -44,20 +68,68 @@ function Ok   ($m) { Write-Host "  PASS  $m" -ForegroundColor Green }
 function Bad  ($m) { Write-Host "  FAIL  $m" -ForegroundColor Red }
 function Info ($m) { Write-Host "        $m" -ForegroundColor DarkGray }
 
-# Runs the guard suite; returns the raw output.
-function RunGuards {
-    return (& flutter test test/guards --no-pub --reporter expanded 2>&1) -join "`n"
+# Runs the whole guard suite. Used only for the clean-tree bookends.
+function RunAll {
+    $out = (& flutter test test/guards --no-pub --reporter expanded 2>&1) -join "`n"
+    return [pscustomobject]@{ Output = $out; Code = $LASTEXITCODE }
 }
 
-# Records one probe result.
-function Check($name, $output, $expectFragment) {
-    $failed = $output -match '\[E\]' -or $output -match 'Some tests failed'
-    $named  = $output -match [regex]::Escape($expectFragment)
-    $good   = $failed -and $named
-    if ($good) { Ok "$name - guard fired" }
-    elseif ($failed) { Bad "$name - suite failed but NOT on the expected guard ('$expectFragment')" }
-    else { Bad "$name - the violation was NOT detected. This guard proves nothing." }
-    $script:results += [pscustomobject]@{ Rule = $name; Detected = $good }
+# Runs EXACTLY ONE test, selected by its full name. The exit code is then
+# unambiguous: nothing else ran, so nothing else can explain a failure.
+function RunOne($plainName) {
+    $out = (& flutter test test/guards --no-pub --reporter expanded `
+              --plain-name $plainName 2>&1) -join "`n"
+    $code = $LASTEXITCODE
+    # If the name matched nothing, flutter exits non-zero and says so. That is
+    # indistinguishable from a real failure by exit code alone, so detect it.
+    $matched = -not ($out -match 'No tests match')
+    return [pscustomobject]@{ Output = $out; Code = $code; Matched = $matched }
+}
+
+# One probe: prove $plainName passes clean, fails under $applyViolation, and is
+# restored afterwards. $applyViolation and $restore are script blocks.
+function Probe($name, $plainName, $applyViolation, $restore) {
+    $detected = $false
+    $note     = ''
+
+    # --- 1. the guard is green, and the name is real -------------------------
+    $before = RunOne $plainName
+    if (-not $before.Matched) {
+        Bad "$name - HARNESS ERROR: no test matches '$plainName'"
+        Info 'The probe proves nothing. Fix the name in this script.'
+        $script:results += [pscustomobject]@{ Rule = $name; Detected = $false }
+        return
+    }
+    if ($before.Code -ne 0) {
+        Bad "$name - HARNESS ERROR: the guard is ALREADY failing before the probe"
+        Info 'Fix that first; a red guard cannot prove anything about a violation.'
+        $script:results += [pscustomobject]@{ Rule = $name; Detected = $false }
+        return
+    }
+    Info "baseline: '$plainName' passes on the clean tree"
+
+    # --- 2. break it ---------------------------------------------------------
+    try {
+        & $applyViolation
+        $after = RunOne $plainName
+
+        if (-not $after.Matched) {
+            $note = 'the test stopped matching - the probe changed test selection'
+        } elseif ($after.Code -ne 0) {
+            $detected = $true
+        } else {
+            $note = 'the violation was NOT detected. This guard proves nothing.'
+        }
+    }
+    finally {
+        # --- 3. restore, always ----------------------------------------------
+        & $restore
+    }
+
+    if ($detected) { Ok "$name - guard fired (that test alone, exit $($after.Code))" }
+    else { Bad "$name - $note" }
+
+    $script:results += [pscustomobject]@{ Rule = $name; Detected = $detected }
 }
 
 Write-Host ''
@@ -67,12 +139,12 @@ Write-Host ''
 
 # --- 0. clean baseline -------------------------------------------------------
 Write-Host '[0] clean tree'
-$out = RunGuards
-if ($out -match 'All tests passed') {
-    Ok 'guards pass on the clean tree'
+$out = RunAll
+if ($out.Output -match 'All tests passed') {
+    Ok 'the whole guard suite passes on the clean tree'
 } else {
     Bad 'guards are ALREADY failing - fix that before trusting this run'
-    Write-Host $out
+    Write-Host $out.Output
     exit 1
 }
 Write-Host ''
@@ -81,94 +153,98 @@ Write-Host ''
 $fileProbes = @(
     @{ Name = 'Bloc confined to quiz'
        Body = "import 'package:flutter_bloc/flutter_bloc.dart';`nvoid probe() {}"
-       Expect = 'Bloc stays inside the quiz feature' },
+       Test = 'Bloc stays inside the quiz feature' },
 
     @{ Name = 'No provider mutation in initState'
        Body = "class P { void initState() { ref.read(x.notifier).start(); } }"
-       Expect = 'no provider is mutated during initState' },
+       Test = 'no provider is mutated during initState' },
 
     @{ Name = 'Copy is localized'
        Body = "Widget probe() => Text('hardcoded english');"
-       Expect = 'no NEW file introduces a hardcoded string' },
+       Test = 'no NEW file introduces a hardcoded string' },
 
     @{ Name = 'fontSize ratchet'
        Body = "var s = TextStyle(fontSize: 99);"
-       Expect = 'hardcoded fontSize does not increase' }
+       Test = 'hardcoded fontSize does not increase' }
 )
 
 $i = 1
 foreach ($p in $fileProbes) {
     Write-Host "[$i] probe: $($p.Name)"
-    try {
-        Set-Content -Path $probe -Value $p.Body -Encoding UTF8
-        Check $p.Name (RunGuards) $p.Expect
-    }
-    finally {
-        Remove-Item $probe -Force -ErrorAction SilentlyContinue
-    }
+    $body = $p.Body
+    Probe $p.Name $p.Test `
+        { Set-Content -Path $probe -Value $body -Encoding UTF8 } `
+        { Remove-Item $probe -Force -ErrorAction SilentlyContinue }
     Write-Host ''
     $i++
 }
 
-# --- 5. CI path-argument probe (edits a real file) ---------------------------
-Write-Host "[$i] probe: CI cannot silently skip tests"
-$ci = '.github/workflows/ci.yml'
-$ciHash = (Get-FileHash $ci -Algorithm SHA256).Hash
-$ciBak = Join-Path ([System.IO.Path]::GetTempPath()) 'ci.yml.guardprobe.bak'
-Copy-Item $ci $ciBak -Force
-try {
-    # Reintroduce exactly the bug Fable found: a hand-listed directory.
-    (Get-Content $ci -Raw).Replace(
-        'flutter test --no-pub --reporter expanded --exclude-tags golden',
-        'flutter test --no-pub --reporter expanded test/core test/dev'
-    ) | Set-Content $ci -Encoding UTF8 -NoNewline
-    Check 'CI test discovery' (RunGuards) 'CI never passes a directory to flutter test'
-}
-finally {
-    Copy-Item $ciBak $ci -Force
-    if ((Get-FileHash $ci -Algorithm SHA256).Hash -eq $ciHash) {
-        Info 'ci.yml restored (sha256 verified)'
-    } else {
-        Write-Host "  *** RESTORE FAILED - recover: Copy-Item '$ciBak' '$ci' -Force" -ForegroundColor Red
-        exit 1
-    }
-    Remove-Item $ciBak -Force -ErrorAction SilentlyContinue
-}
-Write-Host ''
-$i++
+# --- 5 & 6: probes that edit a real file -------------------------------------
+# Backed up, restored in Probe's finally, then SHA-256 verified here.
+$editProbes = @(
+    @{ Name = 'CI test discovery'
+       Test = 'CI never passes a directory to flutter test'
+       Path = '.github/workflows/ci.yml'
+       Bak  = 'ci.yml.guardprobe.bak'
+       # Reintroduce verbatim the bug Fable found in Wave 2.
+       From = 'flutter test --no-pub --reporter expanded --exclude-tags golden'
+       To   = 'flutter test --no-pub --reporter expanded test/core test/dev'
+       Label = 'CI cannot silently skip tests' },
 
-# --- 6. release INTERNET probe (edits a real file) ---------------------------
-Write-Host "[$i] probe: release INTERNET permission (Tier-0 C-1)"
-$man = 'android/app/src/main/AndroidManifest.xml'
-$manHash = (Get-FileHash $man -Algorithm SHA256).Hash
-$manBak = Join-Path ([System.IO.Path]::GetTempPath()) 'AndroidManifest.guardprobe.bak'
-Copy-Item $man $manBak -Force
-try {
-    (Get-Content $man -Raw).Replace(
-        '<uses-permission android:name="android.permission.INTERNET"/>', ''
-    ) | Set-Content $man -Encoding UTF8 -NoNewline
-    Check 'Release INTERNET permission' (RunGuards) 'the main manifest declares INTERNET'
-}
-finally {
-    Copy-Item $manBak $man -Force
-    if ((Get-FileHash $man -Algorithm SHA256).Hash -eq $manHash) {
-        Info 'AndroidManifest.xml restored (sha256 verified)'
+    @{ Name = 'Release INTERNET permission'
+       Test = 'the main manifest declares INTERNET'
+       Path = 'android/app/src/main/AndroidManifest.xml'
+       Bak  = 'AndroidManifest.guardprobe.bak'
+       From = '<uses-permission android:name="android.permission.INTERNET"/>'
+       To   = ''
+       Label = 'release INTERNET permission (Tier-0 C-1)' }
+)
+
+foreach ($p in $editProbes) {
+    Write-Host "[$i] probe: $($p.Label)"
+    $path = $p.Path
+    $from = $p.From
+    $to   = $p.To
+    $hash = (Get-FileHash $path -Algorithm SHA256).Hash
+    $bak  = Join-Path ([System.IO.Path]::GetTempPath()) $p.Bak
+    Copy-Item $path $bak -Force
+
+    # Fail loudly if the probe would be a no-op: a Replace() that matches
+    # nothing leaves the file untouched, the guard stays green, and the harness
+    # would report "not detected" for the wrong reason.
+    if ((Get-Content $path -Raw) -notlike "*$from*") {
+        Bad "$($p.Name) - HARNESS ERROR: probe text not found in $path"
+        Info 'The probe would be a no-op. Update the From string in this script.'
+        $results += [pscustomobject]@{ Rule = $p.Name; Detected = $false }
+        Remove-Item $bak -Force -ErrorAction SilentlyContinue
+        Write-Host ''
+        $i++
+        continue
+    }
+
+    Probe $p.Name $p.Test `
+        { (Get-Content $path -Raw).Replace($from, $to) |
+            Set-Content $path -Encoding UTF8 -NoNewline } `
+        { Copy-Item $bak $path -Force }
+
+    if ((Get-FileHash $path -Algorithm SHA256).Hash -eq $hash) {
+        Info "$path restored (sha256 verified)"
     } else {
-        Write-Host "  *** RESTORE FAILED - recover: Copy-Item '$manBak' '$man' -Force" -ForegroundColor Red
+        Write-Host "  *** RESTORE FAILED - recover: Copy-Item '$bak' '$path' -Force" -ForegroundColor Red
         exit 1
     }
-    Remove-Item $manBak -Force -ErrorAction SilentlyContinue
+    Remove-Item $bak -Force -ErrorAction SilentlyContinue
+    Write-Host ''
+    $i++
 }
-Write-Host ''
 
 # --- final: clean tree again -------------------------------------------------
 Write-Host '[final] tree restored'
-$out = RunGuards
-$restored = $out -match 'All tests passed'
-if ($restored) { Ok 'guards pass again - nothing was left broken' }
-else { Bad 'guards still failing after restore - INSPECT THE TREE'; Write-Host $out }
-
 Remove-Item $probe -Force -ErrorAction SilentlyContinue
+$out = RunAll
+$restored = $out.Output -match 'All tests passed'
+if ($restored) { Ok 'the whole guard suite passes again - nothing was left broken' }
+else { Bad 'guards still failing after restore - INSPECT THE TREE'; Write-Host $out.Output }
 
 # --- summary -----------------------------------------------------------------
 Write-Host ''
@@ -177,10 +253,12 @@ $results | ForEach-Object {
     $mark = if ($_.Detected) { 'detected' } else { 'NOT DETECTED' }
     Write-Host (" {0,-34} {1}" -f $_.Rule, $mark)
 }
-$all = ($results | Where-Object { -not $_.Detected }).Count -eq 0
+$passed = ($results | Where-Object { $_.Detected }).Count
+$total  = $results.Count
 Write-Host '===================='
-if ($all -and $restored) {
-    Write-Host 'RESULT: VERIFIED - every probed guard fails when its rule is broken' -ForegroundColor Green
+Write-Host " $passed/$total guards proved"
+if ($passed -eq $total -and $restored) {
+    Write-Host 'RESULT: VERIFIED - each guard fails, in isolation, when its own rule is broken' -ForegroundColor Green
     exit 0
 }
 Write-Host 'RESULT: NOT VERIFIED' -ForegroundColor Red
