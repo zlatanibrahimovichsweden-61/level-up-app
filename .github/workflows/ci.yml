@@ -24,9 +24,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [dev, main, merged]
   push:
-    branches: [dev, main]
+    branches: [dev, main, merged]
   workflow_dispatch:
 
 # One run per ref. A force-push to a PR branch cancels the superseded run
@@ -49,7 +49,7 @@ env:
   # `test/guards/workflow_test.dart` fails if CI stops reading the file.
   #
   # Currently pinned to 3.44.7 — the version the suite was actually validated
-  # against (806 passing, Dart 3.12.2). PIN, do not float on `channel: stable`;
+  # against (Dart 3.12.2). PIN, do not float on `channel: stable`;
   # a silent SDK bump is the most common cause of "CI broke and nobody changed
   # code". To move it: run `flutter --version` on the dev machine, put that
   # number in `.flutter-version`, and re-run the suite before committing.
@@ -124,7 +124,7 @@ jobs:
       # Tier-0 finding C-1. The INTERNET permission lived only in the debug and
       # profile source sets, which merge into their own build types and NOT into
       # release — so release networking was dead while development worked
-      # perfectly. Nothing in analyze or the 792-case suite can see that.
+      # perfectly. Nothing in analyze or the test suite can see that.
       #
       # This is the cheap deterministic half of the guard: it asserts the line is
       # in `main`, which is the only source set that reaches every build type.
