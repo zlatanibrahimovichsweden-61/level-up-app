@@ -38,6 +38,10 @@
   "privacyPolicy": "Privacy Policy",
   "cookiePolicy": "Cookie Policy",
   "legalAnd": "and",
+  "legalSeparator": ", ",
+  "@legalSeparator": {
+    "description": "Punctuation between the first two legal links on Login. It IS locale-specific: Arabic uses U+060C ARABIC COMMA, not U+002C. It was previously hardcoded as the Arabic comma in both locales, so the English line read 'User Agreement، Privacy Policy'. Trailing space is intentional — the Wrap has no gap of its own."
+  },
 
   "checkOtpTitle": "Check OTP code",
   "otpSubtitle": "We have sent a verification code to your phone. Enter the 6-digit code.",

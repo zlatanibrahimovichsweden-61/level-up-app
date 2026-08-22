@@ -98,10 +98,15 @@ void main() {
     // ARB keys — `retry` and `comingSoon` — so no translation was invented and
     // ARB parity was never at risk.
     //
-    // The five that remain are ALL legitimately untranslatable, which is why
+    // The four that remain are ALL legitimately untranslatable, which is why
     // this stays an allowlist rather than becoming a ban: two flag emoji, and
-    // three punctuation joiners between halves that are themselves localized
+    // two punctuation joiners between halves that are themselves localized
     // (`Text('${l10n.legalPrefix} ')`).
+    //
+    // The fifth was NOT untranslatable and is now gone: the legal line's
+    // separator was the literal '، ' — U+060C ARABIC COMMA — rendered in BOTH
+    // locales, so English read "User Agreement، Privacy Policy". It is now the
+    // `legalSeparator` ARB key, ', ' in English and '، ' in Arabic.
     const knownFiles = <String, String>{
       'lib/features/auth/screens/login_screen.dart':
           'Flag emoji + punctuation joining localized legal-link halves.',
@@ -110,9 +115,11 @@ void main() {
     };
 
     /// Frozen 2026-08-14 at 7. Lowered to 5 on 2026-08-15 after Wave 3 removed
-    /// two genuine leaks — remediation, not an artificial reduction. May fall
-    /// further, never rise.
-    const baseline = 5;
+    /// two genuine leaks, and to 4 on 2026-08-21 when the legal separator was
+    /// localized — remediation each time, not an artificial reduction. Lowered
+    /// in the same change as the removal, per RISKS.md R-7. May fall further,
+    /// never rise.
+    const baseline = 4;
 
     test('no NEW file introduces a hardcoded string', () {
       final offenders = rawTextLiterals(sources)

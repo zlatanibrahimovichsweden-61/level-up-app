@@ -68,6 +68,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get legalAnd => 'and';
 
   @override
+  String get legalSeparator => ', ';
+
+  @override
   String get checkOtpTitle => 'Check OTP code';
 
   @override

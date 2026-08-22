@@ -428,7 +428,10 @@ class _LegalLine extends StatelessWidget {
       children: [
         Text('${l10n.legalPrefix} ', style: base),
         linkText(l10n.userAgreement, userAgreementUrl),
-        Text('، ', style: base),
+        // Localized, because a comma is not the same character in both
+        // locales. This was the literal '، ' — U+060C ARABIC COMMA — in
+        // BOTH, so English read "User Agreement، Privacy Policy".
+        Text(l10n.legalSeparator, style: base),
         linkText(l10n.privacyPolicy, privacyPolicyUrl),
         Text(' ${l10n.legalAnd} ', style: base),
         linkText(l10n.cookiePolicy, cookiePolicyUrl),

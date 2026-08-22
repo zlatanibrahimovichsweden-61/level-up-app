@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'and'**
   String get legalAnd;
 
+  /// Punctuation between the first two legal links on Login. It IS locale-specific: Arabic uses U+060C ARABIC COMMA, not U+002C. It was previously hardcoded as the Arabic comma in both locales, so the English line read 'User Agreement، Privacy Policy'. Trailing space is intentional — the Wrap has no gap of its own.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get legalSeparator;
+
   /// No description provided for @checkOtpTitle.
   ///
   /// In en, this message translates to:

@@ -21,6 +21,7 @@
   "privacyPolicy": "سياسة الخصوصية",
   "cookiePolicy": "سياسة ملفات تعريف الارتباط",
   "legalAnd": "و",
+  "legalSeparator": "، ",
 
   "checkOtpTitle": "التحقق من الرمز",
   "otpSubtitle": "لقد أرسلنا رمز التحقق إلى هاتفك. أدخل الرمز المكوّن من 6 أرقام.",

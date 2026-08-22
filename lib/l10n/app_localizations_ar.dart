@@ -68,6 +68,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get legalAnd => 'و';
 
   @override
+  String get legalSeparator => '، ';
+
+  @override
   String get checkOtpTitle => 'التحقق من الرمز';
 
   @override
