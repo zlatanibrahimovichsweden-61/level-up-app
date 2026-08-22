@@ -163,12 +163,17 @@ void main() {
     // "we should add a TextTheme one day" from an aspiration into a boundary —
     // new screens cannot make it worse while the debt is paid down deliberately.
     //
-    // Frozen 2026-08-14 at 153. Lowered to 11 on 2026-08-22: the designer
+    // Frozen 2026-08-14 at 153. **Lowered to 0 on 2026-08-21**: the designer
     // supplied the scale (`typography-style-inter.md`), `AppType` transcribes
-    // it, and every call site except the eleven in `otp_screen.dart` is
-    // migrated in this commit; that screen follows in the next one. Lowered
-    // in the same commit as the reduction, per RISKS.md R-7.
-    const baseline = 11;
+    // it, and all 153 call sites were migrated onto it. R-1 is closed.
+    //
+    // The real enforcement now lives in
+    // `test/core/theme/typography_discipline_test.dart`, which is the palette
+    // guard's twin and also names the offending file:line. This stays as the
+    // ratchet half of the pair — it counts, that one locates — and it is
+    // deliberately redundant, because the count is the thing that regressed
+    // for two months while everyone believed the prose rule was holding.
+    const baseline = 0;
 
     final n = hardcodedFontSizeCount(sources);
     expect(

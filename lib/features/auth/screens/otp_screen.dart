@@ -7,6 +7,8 @@ import 'package:pinput/pinput.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
@@ -81,26 +83,35 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final succeeded = state.outcome is AuthenticatedOutcome;
 
     return Scaffold(
-      // No AppBar on the success frame (155:786) — and no back button is right:
-      // once tokens are stored, "back" to the OTP input is meaningless.
-      appBar: succeeded ? null : AppBar(),
+      // No AppBar at all now. It used to be `succeeded ? null : AppBar()`,
+      // which made OTP the only screen in the app wearing Material's stock
+      // back arrow while every other pushed screen wears the design's chevron
+      // chip (`CircleBackButton`, Figma `90:208`). Same control, third
+      // appearance. The affordance itself stays — a student who mistyped their
+      // number needs a way back to Login — it is only the widget that changes.
       body: SafeArea(
         child: Column(
           children: [
             if (offline) const _OfflineBanner(),
-            // The frame carries the language pill (155:809); the input view
-            // doesn't have one because the AppBar occupies that row.
-            if (succeeded)
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 0),
-                child: Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: LanguagePill(
-                    label: l10n.switchLanguage,
-                    onTap: () => ref.read(localeProvider.notifier).toggle(),
-                  ),
-                ),
-              ),
+            // One header row, 24dp gutters to match `_InputView` below it.
+            // Before verification it carries the back chip; after it, the
+            // language pill from the success frame (155:809). Never both:
+            // once tokens are stored, "back" to the OTP input is meaningless.
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 0),
+              child: succeeded
+                  ? Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: LanguagePill(
+                        label: l10n.switchLanguage,
+                        onTap: () => ref.read(localeProvider.notifier).toggle(),
+                      ),
+                    )
+                  : Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: CircleBackButton(onPressed: () => context.pop()),
+                    ),
+            ),
             Expanded(
               child: succeeded
                   ? _SuccessView(onContinue: () => context.go('/home'))
@@ -158,11 +169,7 @@ class _OfflineBanner extends StatelessWidget {
               child: Text(
                 l10n.offline,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: cs.onErrorContainer,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppType.labelLarge.copyWith(color: cs.onErrorContainer),
               ),
             ),
           ],
@@ -201,11 +208,7 @@ class _InputView extends StatelessWidget {
     final defaultPinTheme = PinTheme(
       width: 48,
       height: 56,
-      textStyle: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        color: ext.textPrimary,
-      ),
+      textStyle: AppType.h2.copyWith(color: ext.textPrimary),
       decoration: BoxDecoration(
         color: ext.fieldFill,
         border: Border.all(color: ext.fieldBorder, width: 1.17),
@@ -235,17 +238,13 @@ class _InputView extends StatelessWidget {
           Text(
             l10n.checkOtpTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: ext.textPrimary,
-            ),
+            style: AppType.h1.copyWith(color: ext.textPrimary),
           ),
           const SizedBox(height: 12),
           Text(
             l10n.otpSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: ext.textSecondary),
+            style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
           ),
           const SizedBox(height: 32),
           // OTP boxes fill left-to-right regardless of UI locale.
@@ -288,13 +287,7 @@ class _InputView extends StatelessWidget {
                       color: cs.onPrimary,
                     ),
                   )
-                : Text(
-                    l10n.verify,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                : Text(l10n.verify, style: AppType.buttonLarge),
           ),
           const SizedBox(height: 16),
           _ResendRow(
@@ -309,6 +302,10 @@ class _InputView extends StatelessWidget {
   }
 }
 
+/// The resend block · Figma `82:1328` → Frame `427319517` (161 × hug, vertical,
+/// gap 20). While the countdown runs it stacks the timer pill over the
+/// "Resend OTP" label exactly as the frame does; at zero only the label is
+/// left, now tappable. Resending itself shows a spinner in place of both.
 class _ResendRow extends StatelessWidget {
   const _ResendRow({
     required this.l10n,
@@ -325,7 +322,6 @@ class _ResendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final ext = Theme.of(context).extension<AppColors>()!;
 
     if (isResending) {
       return Center(
@@ -336,24 +332,105 @@ class _ResendRow extends StatelessWidget {
         ),
       );
     }
-    if (secondsRemaining > 0) {
-      return Center(
-        child: Text(
-          l10n.resendIn(secondsRemaining),
-          style: TextStyle(fontSize: 14, color: ext.hint),
+    final counting = secondsRemaining > 0;
+
+    // The label is drawn in full colour even while counting — the frame shows
+    // it that way under the pill — but `onPressed` is null until zero, which is
+    // what keeps the notifier's `canResend` rule honest. The explicit colour on
+    // the Text is what stops Material greying a disabled button.
+    final label = TextButton(
+      onPressed: counting ? null : onResend,
+      child: Text(
+        l10n.resendOtp,
+        style: AppType.buttonMedium.copyWith(color: cs.primary),
+      ),
+    );
+    if (!counting) return Center(child: label);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ResendTimerPill(l10n: l10n, secondsRemaining: secondsRemaining),
+        const SizedBox(height: _ResendTimerPill.gapBelow),
+        label,
+      ],
+    );
+  }
+}
+
+/// The countdown pill · Figma `82:1328` → Frame `427319517`, first child.
+///
+/// A stadium holding a stroke-drawn stopwatch and the remaining time as
+/// `mm.ss`. The frame really does separate with a DOT ("00.21"); that is built
+/// verbatim and flagged (docs/DESIGN_ISSUES.md #49) rather than silently
+/// "corrected" to a colon.
+///
+/// **Every number below except [gapBelow] is measured off a 100%-zoom
+/// screenshot, not read from Dev Mode** — the Figma MCP connector is on a
+/// view-only seat (issue #49) — so treat them as ±2dp until the designer
+/// confirms. The fill, shadow and tint are approved tokens reused rather than
+/// hexes invented: [AppColors.cardFill] is the raised surface, the shadow is
+/// the recipe the five measured card shadows share (issue #47), and the glyph
+/// and digits take [AppColors.textSecondary].
+class _ResendTimerPill extends StatelessWidget {
+  const _ResendTimerPill({required this.l10n, required this.secondsRemaining});
+
+  final AppLocalizations l10n;
+  final int secondsRemaining;
+
+  /// Frame 427319517's vertical gap to "Resend OTP" — the ONE value here that
+  /// comes from the Properties panel rather than a measurement.
+  static const gapBelow = 20.0;
+
+  static const _height = 36.0;
+  static const _radius = _height / 2; // a full stadium, holds at any width
+  static const _inset = 14.0;
+  static const _gap = 8.0;
+  static const _iconSize = 18.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppColors>()!;
+    final minutes = (secondsRemaining ~/ 60).toString().padLeft(2, '0');
+    final seconds = (secondsRemaining % 60).toString().padLeft(2, '0');
+
+    return Semantics(
+      // A screen reader gets the sentence, not "zero zero dot two one".
+      label: l10n.resendIn(secondsRemaining),
+      excludeSemantics: true,
+      child: Container(
+        height: _height,
+        padding: const EdgeInsetsDirectional.symmetric(horizontal: _inset),
+        decoration: BoxDecoration(
+          color: ext.cardFill,
+          borderRadius: BorderRadius.circular(_radius),
+          boxShadow: [
+            BoxShadow(
+              color: ext.elevationShadow.withValues(alpha: 0.25),
+              offset: const Offset(0.5, 0.5),
+              blurRadius: 4,
+            ),
+          ],
         ),
-      );
-    }
-    return Center(
-      child: TextButton(
-        onPressed: onResend,
-        child: Text(
-          l10n.resendOtp,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: cs.primary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // TODO(design-asset): `assets/icons/stopwatch.svg` is a PLACEHOLDER
+            // drawn to the language.svg recipe (stroke currentColor, round
+            // caps). Replace the file with "Copy as SVG" of the icon layer in
+            // Frame 427319517 — no code change needed — then delete this marker.
+            SvgPicture.asset(
+              'assets/icons/stopwatch.svg',
+              width: _iconSize,
+              height: _iconSize,
+              colorFilter: ColorFilter.mode(ext.textSecondary, BlendMode.srcIn),
+            ),
+            const SizedBox(width: _gap),
+            Text(
+              l10n.resendTimer(minutes, seconds),
+              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
+            ),
+          ],
         ),
       ),
     );
@@ -384,25 +461,18 @@ class _SuccessView extends StatelessWidget {
           Text(
             l10n.otpSuccessTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: ext.textPrimary,
-            ),
+            style: AppType.h1.copyWith(color: ext.textPrimary),
           ),
           const SizedBox(height: 14),
           Text(
             l10n.otpSuccessSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, height: 1.3, color: ext.bodyMuted),
+            style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
           ),
           const SizedBox(height: 60),
           FilledButton(
             onPressed: onContinue,
-            child: Text(
-              l10n.continueLabel,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-            ),
+            child: Text(l10n.continueLabel, style: AppType.buttonLarge),
           ),
         ],
       ),
@@ -465,7 +535,7 @@ class _InlineMessage extends StatelessWidget {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: TextStyle(color: color, fontSize: 14),
+            style: AppType.captionRegular.copyWith(color: color),
           ),
         ),
       ],

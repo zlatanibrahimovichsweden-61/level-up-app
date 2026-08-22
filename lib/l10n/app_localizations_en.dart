@@ -89,6 +89,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String resendTimer(String minutes, String seconds) {
+    return '$minutes.$seconds';
+  }
+
+  @override
   String get onboardingTitle => 'Level Up';
 
   @override

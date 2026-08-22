@@ -1082,3 +1082,55 @@ what "unsaved" means when the app has already visibly changed language.
   — is pushed over the shell and renders without a bar; moving Settings alone would make it the
   exception, change back-navigation for a screen that has already shipped, and leave the page with
   two different ways out of it. Designer should treat the bar in this frame as decoration.
+
+---
+
+## 49. 🟡 OTP resend-timer pill — built from a 100%-zoom screenshot, not Dev Mode; icon is a placeholder
+
+**Where:** OTP (`82:1328`, "Frame 1000002977") → its third child, Frame `427319517` (161 × hug,
+vertical, gap 20): a stadium pill holding a stopwatch glyph and `00.21`, with "Resend OTP" under
+it. Code: `lib/features/auth/screens/otp_screen.dart` (`_ResendRow`, `_ResendTimerPill`),
+`assets/icons/stopwatch.svg`, ARB key `resendTimer`.
+
+**What blocked a proper pull.** The Figma MCP connector authenticates as **Seif's account**
+(`whoami` on 2026-08-22: `seifhamdii012@gmail.com`, Full seat on "Seif Hamdy's team"), which has
+**view-only** rights on this file — so `get_design_context`, `get_screenshot`, `get_metadata` and
+`download_assets` all return "you don't have edit access". Issue #1 records `download_assets`
+working on Day 00; the connector's identity has changed since. The frame was read through the
+owner's own logged-in browser instead, which gives the Properties panel (Layout only — no Dev
+Mode) and a screenshot at 100% zoom.
+
+**What is measured vs read.**
+
+| Value | Built as | Source |
+|---|---|---|
+| Gap pill → label | 20 | Properties panel (Frame 427319517 · Gap) — **the only read value** |
+| Pill height / radius | 36 / 18 | measured; equals `LanguagePill`'s 36.10 stadium |
+| Pill horizontal inset | 14 | measured |
+| Glyph size / gap to digits | 18 / 8 | measured |
+| Digits | `AppType.bodyMedium` (14/20, 400) | measured; 14 vs 16 is within the reading error |
+| Pill fill | `AppColors.cardFill` | approved raised-surface token, not a read hex |
+| Pill shadow | `elevationShadow` @ 0.25, 0.5/0.5/4 | the recipe the five #47 shadows share; the frame's looks softer/wider |
+| Glyph + digit tint | `AppColors.textSecondary` | approved token, not a read hex |
+
+**The separator is a dot, on purpose.** The frame draws `00.21`, not `00:21`. Built verbatim
+(`resendTimer` = `{minutes}.{seconds}` in both ARBs, digits zero-padded) because changing it is a
+copy decision, not an engineering one — but a dot between minutes and seconds reads as a decimal
+to many students. **Designer: confirm dot vs colon.** The change is one character in two ARB
+files.
+
+**The glyph is a placeholder.** `assets/icons/stopwatch.svg` is drawn to the `language.svg`
+recipe (stroke `currentColor`, round caps) and tinted at the call site; its header and a
+`TODO(design-asset)` in `otp_screen.dart` say so. **To land the real one, no code change is
+needed:** in Figma, drill into Frame 427319517 → the pill → the icon layer (its layer name is the
+Iconify id, e.g. `meteor-icons:…`), right-click → *Copy/Paste as → Copy as SVG* (works on a view
+seat), paste over the file, delete the marker. Also worth reading off the Properties panel while
+there: the pill's Width / Height / Padding / Gap / corner radius, and the digits' text style —
+each replaces a measured row above.
+
+**Behaviour, which the frame does not show.** Only the counting state is drawn. Built: while
+`secondsRemaining > 0` the label is rendered in full colour under the pill (as drawn) but is
+**inert** (`onPressed: null`); at zero the pill goes away and the label becomes the tappable
+resend. The old "Resend in 21s" caption survives as the pill's **semantics label**, so a screen
+reader says the sentence rather than "zero zero dot two one". Dark canvas: no dark OTP frame was
+readable; every colour is a theme token, so it follows the palette (same caveat as #25).

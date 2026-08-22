@@ -49,11 +49,25 @@
   "resendOtp": "Resend OTP",
   "resendIn": "Resend in {seconds}s",
   "@resendIn": {
-    "description": "Countdown until the resend action becomes available.",
+    "description": "Countdown until the resend action becomes available. Since the timer pill landed this is the pill's SEMANTICS label (what a screen reader says), not visible text.",
     "placeholders": {
       "seconds": {
         "type": "int",
         "example": "60"
+      }
+    }
+  },
+  "resendTimer": "{minutes}.{seconds}",
+  "@resendTimer": {
+    "description": "The visible countdown inside the OTP resend-timer pill, as mm.ss. The separator is a DOT because Figma 82:1328 draws '00.21' — see docs/DESIGN_ISSUES.md #49; do not 'fix' it to a colon here. Both placeholders arrive already zero-padded to two digits.",
+    "placeholders": {
+      "minutes": {
+        "type": "String",
+        "example": "00"
+      },
+      "seconds": {
+        "type": "String",
+        "example": "21"
       }
     }
   },

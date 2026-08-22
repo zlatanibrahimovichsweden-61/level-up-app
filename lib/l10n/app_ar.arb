@@ -28,6 +28,7 @@
   "verify": "تحقّق",
   "resendOtp": "إعادة إرسال الرمز",
   "resendIn": "إعادة الإرسال خلال {seconds} ث",
+  "resendTimer": "{minutes}.{seconds}",
   "onboardingTitle": "ليفل أب",
   "onboardingTaglineAccent": "رحلتك",
   "onboardingTaglineRest": "التعليمية",

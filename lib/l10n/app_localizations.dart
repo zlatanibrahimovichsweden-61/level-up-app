@@ -242,11 +242,17 @@ abstract class AppLocalizations {
   /// **'Resend OTP'**
   String get resendOtp;
 
-  /// Countdown until the resend action becomes available.
+  /// Countdown until the resend action becomes available. Since the timer pill landed this is the pill's SEMANTICS label (what a screen reader says), not visible text.
   ///
   /// In en, this message translates to:
   /// **'Resend in {seconds}s'**
   String resendIn(int seconds);
+
+  /// The visible countdown inside the OTP resend-timer pill, as mm.ss. The separator is a DOT because Figma 82:1328 draws '00.21' — see docs/DESIGN_ISSUES.md #49; do not 'fix' it to a colon here. Both placeholders arrive already zero-padded to two digits.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}.{seconds}'**
+  String resendTimer(String minutes, String seconds);
 
   /// No description provided for @onboardingTitle.
   ///

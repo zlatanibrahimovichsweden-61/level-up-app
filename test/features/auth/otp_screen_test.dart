@@ -35,7 +35,7 @@ const _tokens = TokenPair(
   refreshExpiresInSeconds: 5184000,
 );
 
-Widget _harness(ProviderContainer container) {
+Widget _harness(ProviderContainer container, {OtpArgs args = _args}) {
   return UncontrolledProviderScope(
     container: container,
     child: MaterialApp(
@@ -43,10 +43,20 @@ Widget _harness(ProviderContainer container) {
       theme: AppTheme.light,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const OtpScreen(args: _args),
+      home: OtpScreen(args: args),
     ),
   );
 }
+
+/// The stopwatch glyph inside the resend-timer pill, matched by ASSET for the
+/// same reason the success badge is below: the screen carries several SVGs.
+final _stopwatch = find.byWidgetPredicate(
+  (w) =>
+      w is SvgPicture &&
+      w.bytesLoader is SvgAssetLoader &&
+      (w.bytesLoader as SvgAssetLoader).assetName ==
+          'assets/icons/stopwatch.svg',
+);
 
 void main() {
   setUpAll(() => registerFallbackValue(_device));
@@ -91,6 +101,51 @@ void main() {
     expect(pinput.length, 6);
     expect(find.widgetWithText(TextButton, 'Resend OTP'), findsOneWidget);
   });
+
+  testWidgets(
+    'countdown > 0 → timer pill with the stopwatch; Resend inert until 0',
+    (tester) async {
+      // Disposed at the END OF THE BODY, not in addTearDown: the framework
+      // checks for live handles before tearDowns run.
+      final semantics = tester.ensureSemantics();
+      const args = OtpArgs(
+        phone: '+201021871999',
+        resendAfterSeconds: 21,
+        expiresInSeconds: 300,
+      );
+      await tester.pumpWidget(_harness(makeContainer(), args: args));
+
+      // Figma 82:1328 → Frame 427319517: the pill reads `mm.ss`, with the
+      // frame's DOT separator (DESIGN_ISSUES #49), and carries the glyph.
+      expect(find.text('00.21'), findsOneWidget);
+      expect(_stopwatch, findsOneWidget);
+      // The old caption is no longer visible text — it is what a screen
+      // reader says for the pill.
+      expect(find.text('Resend in 21s'), findsNothing);
+      expect(find.bySemanticsLabel('Resend in 21s'), findsOneWidget);
+      // The label is drawn under the pill, as the frame draws it, but inert.
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Resend OTP'))
+            .onPressed,
+        isNull,
+      );
+
+      // Run the clock down. The notifier's periodic timer cancels itself at
+      // zero, so the test ends with nothing pending.
+      await tester.pump(const Duration(seconds: 21));
+      await tester.pump();
+      expect(find.text('00.21'), findsNothing);
+      expect(_stopwatch, findsNothing);
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Resend OTP'))
+            .onPressed,
+        isNotNull,
+      );
+      semantics.dispose();
+    },
+  );
 
   testWidgets('offline → distinct banner shown, Verify + Resend disabled', (
     tester,
