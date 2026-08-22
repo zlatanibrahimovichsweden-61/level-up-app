@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/reference_models.dart';
@@ -99,16 +100,14 @@ class _UniversityDetailScreenState
                     const SizedBox(height: 8),
                     Text(
                       l10n.universityRegistrationTitle,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.universityRegistrationSubtitle,
-                      style: TextStyle(fontSize: 16, color: ext.textSecondary),
+                      style: AppType.bodyLarge.copyWith(
+                        color: ext.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 28),
 
@@ -270,10 +269,7 @@ class _UniversityDetailScreenState
                             )
                           : Text(
                               l10n.startLearning,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppType.buttonLarge,
                             ),
                     ),
                   ],

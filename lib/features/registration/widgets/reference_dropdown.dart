@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 import '../registration_error_copy.dart';
@@ -89,7 +90,7 @@ class ReferenceDropdown extends ConsumerWidget {
       control = shell(
         Text(
           disabledHint ?? l10n.selectHint,
-          style: TextStyle(fontSize: 18, color: ext.hint),
+          style: AppType.bodyLarge.copyWith(color: ext.hint),
         ),
       );
     } else {
@@ -105,7 +106,7 @@ class ReferenceDropdown extends ConsumerWidget {
               const SizedBox(width: 12),
               Text(
                 l10n.selectHint,
-                style: TextStyle(fontSize: 18, color: ext.hint),
+                style: AppType.bodyLarge.copyWith(color: ext.hint),
               ),
             ],
           ),
@@ -116,7 +117,10 @@ class ReferenceDropdown extends ConsumerWidget {
           onRetry: onRetry,
         ),
         AsyncData(value: final rows) when rows.isEmpty => shell(
-          Text(l10n.noOptions, style: TextStyle(fontSize: 18, color: ext.hint)),
+          Text(
+            l10n.noOptions,
+            style: AppType.bodyLarge.copyWith(color: ext.hint),
+          ),
         ),
         AsyncData(value: final rows) => shell(
           _Dropdown(
@@ -164,8 +168,8 @@ class _Dropdown extends StatelessWidget {
         // Directional by default — the arrow sits at the end edge, which flips
         // under RTL along with the rest of the row.
         icon: Icon(Icons.keyboard_arrow_down, color: ext.hint),
-        hint: Text(hint, style: TextStyle(fontSize: 18, color: ext.hint)),
-        style: TextStyle(fontSize: 18, color: ext.textPrimary),
+        hint: Text(hint, style: AppType.bodyLarge.copyWith(color: ext.hint)),
+        style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
         dropdownColor: ext.fieldFill,
         borderRadius: BorderRadius.circular(20),
         items: [
@@ -224,7 +228,7 @@ class _PickerFailure extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(fontSize: 14, color: cs.error),
+              style: AppType.captionRegular.copyWith(color: cs.error),
               overflow: TextOverflow.ellipsis,
             ),
           ),

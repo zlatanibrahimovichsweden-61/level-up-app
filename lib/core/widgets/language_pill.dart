@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// The AR/EN language-toggle pill · Figma `82:1093` (light) / `337:19693`
 /// (dark). Shows the OTHER language's endonym (its `label`) and flips the
@@ -56,10 +57,8 @@ class LanguagePill extends StatelessWidget {
             const SizedBox(width: _gap),
             Text(
               label,
-              style: TextStyle(
+              style: AppType.labelLarge.copyWith(
                 color: ext.languagePillContent,
-                fontSize: 14,
-                height: 21 / 14,
               ),
             ),
           ],

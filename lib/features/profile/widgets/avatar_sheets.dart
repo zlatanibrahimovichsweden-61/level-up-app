@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 // CROSS-FEATURE IMPORT, and deliberate: `avatarsProvider` is
 // `GET /reference/avatars`, a single reference list that registration and Edit
@@ -58,11 +59,7 @@ class _SheetCard extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: ext.textPrimary,
-                    ),
+                    style: AppType.h2.copyWith(color: ext.textPrimary),
                   ),
                   PositionedDirectional(
                     start: 0,
@@ -142,8 +139,7 @@ class AvatarActionSheet extends StatelessWidget {
           Text(
             l10n.uploadPhotoUnavailable,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
+            style: AppType.captionRegular.copyWith(
               color: Theme.of(context).extension<AppColors>()!.textSecondary,
             ),
           ),
@@ -194,11 +190,7 @@ class _SheetRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: ext.textPrimary,
-              ),
+              style: AppType.h3.copyWith(color: ext.textPrimary),
             ),
           ),
         ],
@@ -267,14 +259,16 @@ class ChooseAvatarSheet extends ConsumerWidget {
           error: (error, _) => Center(
             child: Text(
               isOffline(error) ? l10n.offline : l10n.genericError,
-              style: TextStyle(fontSize: 14, color: ext.textSecondary),
+              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
             ),
           ),
           data: (items) => items.isEmpty
               ? Center(
                   child: Text(
                     l10n.genericError,
-                    style: TextStyle(fontSize: 14, color: ext.textSecondary),
+                    style: AppType.bodyMedium.copyWith(
+                      color: ext.textSecondary,
+                    ),
                   ),
                 )
               : ListView.separated(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The shared body of the four not-yet-built tabs.
@@ -28,7 +29,7 @@ class TabPlaceholder extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               l10n.comingSoon,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.captionRegular.copyWith(color: ext.textSecondary),
             ),
           ],
         ),

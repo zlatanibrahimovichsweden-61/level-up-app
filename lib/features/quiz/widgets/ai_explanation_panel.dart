@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/explanation_state.dart';
 
@@ -60,12 +61,7 @@ class AiExplanationPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.aiExplanation,
-                  style: TextStyle(
-                    fontSize: 13.145,
-                    height: 19.718 / 13.145,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
+                  style: AppType.h4.copyWith(color: theme.colorScheme.primary),
                 ),
               ),
             ],
@@ -110,11 +106,8 @@ class AiExplanationPanel extends StatelessWidget {
     );
   }
 
-  TextStyle _bodyStyle(AppColors ext) => TextStyle(
-    fontSize: 13.145,
-    height: 21.033 / 13.145,
-    color: ext.quizExplanationBody,
-  );
+  TextStyle _bodyStyle(AppColors ext) =>
+      AppType.bodyMedium.copyWith(color: ext.quizExplanationBody);
 }
 
 /// The inner card the frame draws around each explanation body (`159:1826`).

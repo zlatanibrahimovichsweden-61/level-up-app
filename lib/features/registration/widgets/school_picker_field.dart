@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/reference_models.dart';
@@ -100,7 +101,7 @@ class SchoolPickerField extends ConsumerWidget {
               Expanded(
                 child: Text(
                   text,
-                  style: TextStyle(fontSize: 18, color: colour),
+                  style: AppType.bodyLarge.copyWith(color: colour),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -227,7 +228,7 @@ class _SchoolSearchSheetState extends ConsumerState<_SchoolSearchSheet> {
                     child: Text(
                       l10n.noSchoolsFound,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: ext.hint),
+                      style: AppType.bodyLarge.copyWith(color: ext.hint),
                     ),
                   ),
                 ),

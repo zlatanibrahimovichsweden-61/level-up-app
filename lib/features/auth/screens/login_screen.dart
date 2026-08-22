@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/network/exceptions.dart';
@@ -157,28 +158,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       l10n.welcomeBack,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.loginSubtitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 28),
                     Text(
                       l10n.phoneLabel,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                      style: AppType.labelLarge.copyWith(
                         color: ext.textSecondary,
                       ),
                     ),
@@ -216,19 +207,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: cs.onPrimary,
                               ),
                             )
-                          : Text(
-                              l10n.sendOtp,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          : Text(l10n.sendOtp, style: AppType.buttonLarge),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.orDivider,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 14, color: ext.textSecondary),
+                      style: AppType.bodyMedium.copyWith(
+                        color: ext.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     OutlinedButton(
@@ -246,9 +233,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       child: Text(
                         l10n.createNewAccount,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                        style: AppType.buttonLarge.copyWith(
                           color: ext.textPrimary,
                         ),
                       ),
@@ -296,11 +281,7 @@ class _OfflineBanner extends StatelessWidget {
               child: Text(
                 l10n.offline,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: cs.onErrorContainer,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppType.labelLarge.copyWith(color: cs.onErrorContainer),
               ),
             ),
           ],
@@ -337,15 +318,11 @@ class _PhoneField extends StatelessWidget {
       child: Row(
         children: [
           // Flag placeholder (Figma EG flag not yet exported to assets).
-          const Text('🇪🇬', style: TextStyle(fontSize: 20)),
+          const Text('🇪🇬', style: AppType.h2),
           const SizedBox(width: 8),
           Text(
             Phone.egyptDialCode, // +20 (Figma shows +02 — a design typo)
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ext.textPrimary,
-            ),
+            style: AppType.h4.copyWith(color: ext.textPrimary),
           ),
           Icon(Icons.arrow_drop_down, color: ext.hint),
           const SizedBox(width: 4),
@@ -360,12 +337,12 @@ class _PhoneField extends StatelessWidget {
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
               ],
               onSubmitted: onSubmitted,
-              style: TextStyle(fontSize: 18, color: ext.textPrimary),
+              style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isCollapsed: true,
                 hintText: hint,
-                hintStyle: TextStyle(fontSize: 18, color: ext.hint),
+                hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
               ),
             ),
           ),
@@ -390,7 +367,10 @@ class _InlineMessage extends StatelessWidget {
           const SizedBox(width: 6),
         ],
         Expanded(
-          child: Text(text, style: TextStyle(color: color, fontSize: 14)),
+          child: Text(
+            text,
+            style: AppType.captionRegular.copyWith(color: color),
+          ),
         ),
       ],
     );
@@ -414,8 +394,8 @@ class _LegalLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
-    final base = TextStyle(fontSize: 14, color: ext.legalText);
-    final link = base.copyWith(color: ext.link, fontWeight: FontWeight.w600);
+    final base = AppType.captionRegular.copyWith(color: ext.legalText);
+    final link = AppType.buttonSmall.copyWith(color: ext.link);
 
     Widget linkText(String label, String url) => GestureDetector(
       onTap: () => onOpen(url),

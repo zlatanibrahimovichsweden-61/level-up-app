@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 
 /// One immutable fact about the student, shown on Edit Profile · Figma
@@ -50,7 +51,7 @@ class ReadOnlyField extends StatelessWidget {
       value,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: TextStyle(fontSize: 18, color: ext.textSecondary),
+      style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
     );
 
     return Semantics(

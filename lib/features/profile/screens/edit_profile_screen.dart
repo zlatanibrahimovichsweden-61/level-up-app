@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/offline_banner.dart';
@@ -128,11 +129,7 @@ class EditProfileChrome extends StatelessWidget {
               children: [
                 Text(
                   l10n.editProfile,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.h2.copyWith(color: ext.textPrimary),
                 ),
                 PositionedDirectional(
                   start: 0,
@@ -349,8 +346,7 @@ class _FormState extends ConsumerState<_Form> {
               const SizedBox(height: 8),
               Text(
                 l10n.emailClearHelp,
-                style: TextStyle(
-                  fontSize: 13,
+                style: AppType.captionRegular.copyWith(
                   color: Theme.of(
                     context,
                   ).extension<AppColors>()!.textSecondary,
@@ -408,7 +404,7 @@ class _ReadOnlySection extends StatelessWidget {
       children: [
         Text(
           l10n.fixedAfterRegistration,
-          style: TextStyle(fontSize: 13, color: ext.textSecondary),
+          style: AppType.captionRegular.copyWith(color: ext.textSecondary),
         ),
         const SizedBox(height: 16),
         ReadOnlyField(
@@ -633,13 +629,7 @@ class _SaveButton extends StatelessWidget {
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2.5),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            : Text(label, style: AppType.buttonLarge),
       ),
     );
   }
@@ -660,7 +650,14 @@ class _SaveError extends StatelessWidget {
         Icon(Icons.error_outline, size: 18, color: cs.error),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(message, style: TextStyle(color: cs.error, fontSize: 14)),
+          child: Text(
+            message,
+            // bodyMedium, matching `_SectionMessage` in settings_screen.dart:
+            // same shape (18px glyph + one line of failure copy), so the two
+            // must not drift. It also preserves this row's original 14px --
+            // captionRegular would have shrunk a failure message to 12.
+            style: AppType.bodyMedium.copyWith(color: cs.error),
+          ),
         ),
       ],
     );
@@ -737,7 +734,7 @@ class _Message extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 20),

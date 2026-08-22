@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The Profile confirmation dialog · Figma `180:4445`.
@@ -91,17 +92,25 @@ class ProfileConfirmDialog extends StatelessWidget {
           children: [
             SizedBox(
               height: 35,
+              // FULL WIDTH, deliberately. Without it the Column (which centres
+              // its children) hands this box a LOOSE width constraint, so it
+              // shrinks to the Stack, and the Stack shrinks to its only
+              // non-positioned child -- the title Text. `start: 0` then
+              // resolves to the start edge of the TEXT rather than the dialog,
+              // and the close button lands on top of the title. Device-verified
+              // on Pixel 8, 2026-08-21: the X was painted over the first letter
+              // of "تسجيل الخروج". It would do the same to any short title in
+              // either direction. The dialog's own width is unchanged -- the
+              // confirm button below is already `width: double.infinity`, so
+              // the dialog was always as wide as `insetPadding` allows.
+              width: double.infinity,
               child: Stack(
                 alignment: AlignmentDirectional.center,
                 children: [
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: ext.profileStatLabel,
-                    ),
+                    style: AppType.h2.copyWith(color: ext.profileStatLabel),
                   ),
                   PositionedDirectional(
                     start: 0,
@@ -130,10 +139,7 @@ class ProfileConfirmDialog extends StatelessWidget {
                   Text(
                     body,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      height: 1.3,
+                    style: AppType.bodyLarge.copyWith(
                       color: ext.profileStatLabel,
                     ),
                   ),
@@ -142,10 +148,7 @@ class ProfileConfirmDialog extends StatelessWidget {
                     Text(
                       note!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        height: 1.3,
+                      style: AppType.bodyMediumStrong.copyWith(
                         color: ext.dialogNote,
                       ),
                     ),
@@ -178,13 +181,7 @@ class ProfileConfirmDialog extends StatelessWidget {
                   // both.
                   disabledForegroundColor: cs.onPrimary.withValues(alpha: 0.7),
                 ),
-                child: Text(
-                  confirmLabel,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: Text(confirmLabel, style: AppType.buttonLarge),
               ),
             ),
             if (!confirmEnabled && disabledReason != null) ...[
@@ -192,7 +189,9 @@ class ProfileConfirmDialog extends StatelessWidget {
               Text(
                 disabledReason!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: ext.textSecondary),
+                style: AppType.captionRegular.copyWith(
+                  color: ext.textSecondary,
+                ),
               ),
             ],
           ],

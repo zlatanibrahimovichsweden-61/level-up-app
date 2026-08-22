@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 // CROSS-FEATURE IMPORT, deliberate — the same reason `settings_rows.dart`
 // carries it: unavailable must look identical everywhere in this cluster, so
 // the dim is Step 1's constant and not a second one beside it.
@@ -47,7 +48,7 @@ class ShellBody extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.captionRegular.copyWith(color: ext.textSecondary),
             ),
             if (action != null) ...[const SizedBox(height: 24), action!],
           ],
@@ -101,11 +102,7 @@ class DisabledActionButton extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-                color: cs.onPrimary,
-              ),
+              style: AppType.buttonLarge.copyWith(color: cs.onPrimary),
             ),
           ),
         ),

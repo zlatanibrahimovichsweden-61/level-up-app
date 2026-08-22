@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The "Learn Today, Lead Tomorrow" banner · Figma `337:5485`.
@@ -42,11 +43,7 @@ class HomeBanner extends StatelessWidget {
           Expanded(
             child: Text(
               l10n.learnTodayLeadTomorrow,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: ext.textPrimary,
-              ),
+              style: AppType.displayLarge.copyWith(color: ext.textPrimary),
             ),
           ),
         ],

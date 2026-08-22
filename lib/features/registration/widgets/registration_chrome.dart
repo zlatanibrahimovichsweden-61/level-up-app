@@ -3,13 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The chrome both track-detail frames share (`337:5269`, `337:10373`).
 
-/// Back chevron + language pill, matching the frames' top row. The chevron is
-/// the platform back arrow, so it mirrors under RTL automatically.
+/// Back chip + language pill, matching the frames' top row.
+///
+/// The chip is the shared [CircleBackButton] (Figma `90:208`) that the rest of
+/// the wizard uses, not Material's platform arrow — the two were mixed across
+/// the four registration screens, so the same control had two appearances one
+/// step apart. It mirrors under RTL on its own.
 class RegistrationHeader extends ConsumerWidget {
   const RegistrationHeader({super.key});
 
@@ -18,11 +24,7 @@ class RegistrationHeader extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-        ),
+        CircleBackButton(onPressed: () => context.pop()),
         const Spacer(),
         LanguagePill(
           label: l10n.switchLanguage,
@@ -53,7 +55,7 @@ class SubmitFailureBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(color: cs.error, fontSize: 14),
+              style: AppType.captionRegular.copyWith(color: cs.error),
             ),
           ),
         ],

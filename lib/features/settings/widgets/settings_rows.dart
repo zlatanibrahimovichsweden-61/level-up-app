@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 // CROSS-FEATURE IMPORT, and deliberate: "disabled" has to LOOK the same on
 // every surface of this cluster, so the opacity is the one Step 1 fixed rather
 // than a second constant that could drift from it by 0.05 and make two screens
@@ -74,12 +75,7 @@ class SettingsChoiceRow extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      height: 21 / 18,
-                      color: ext.textPrimary,
-                    ),
+                    style: AppType.h3.copyWith(color: ext.textPrimary),
                   ),
                 ),
                 _RadioRing(selected: selected, colour: ext.trackRadioRing),
@@ -173,18 +169,13 @@ class SettingsSwitchRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    height: 21 / 18,
-                    color: ext.textPrimary,
-                  ),
-                ),
+                Text(label, style: AppType.h3.copyWith(color: ext.textPrimary)),
                 if (help != null) ...[
                   const SizedBox(height: 4),
-                  Text(help!, style: TextStyle(fontSize: 13, color: ext.hint)),
+                  Text(
+                    help!,
+                    style: AppType.captionRegular.copyWith(color: ext.hint),
+                  ),
                 ],
               ],
             ),

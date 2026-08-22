@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Opacity applied to a control that renders but cannot be used.
 ///
@@ -95,12 +96,7 @@ class ProfileMenuRow extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                height: 21 / 18,
-                color: content,
-              ),
+              style: AppType.h3.copyWith(color: content),
             ),
           ),
           // The two action rows end the list and open a dialog rather than

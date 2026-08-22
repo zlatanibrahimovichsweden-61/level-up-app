@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import 'question_option_tile.dart';
 import 'question_renderer.dart';
@@ -53,9 +54,7 @@ class _McqBody extends StatelessWidget {
             children: [
               Text(
                 l10n.questionLabel(presentation.position),
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 18 / 12,
+                style: AppType.captionRegular.copyWith(
                   color: ext.quizExplanationBody,
                 ),
               ),
@@ -66,12 +65,7 @@ class _McqBody extends StatelessWidget {
                 // exists yet, and stripping or misparsing markup would be worse
                 // than showing the tags the server actually sent.
                 question.text,
-                style: TextStyle(
-                  fontSize: 18,
-                  height: 26 / 18,
-                  fontWeight: FontWeight.w600,
-                  color: ext.textPrimary,
-                ),
+                style: AppType.h3.copyWith(color: ext.textPrimary),
               ),
             ],
           ),

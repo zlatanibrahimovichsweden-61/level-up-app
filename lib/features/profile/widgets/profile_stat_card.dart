@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// One stat card · Figma `661:8571`.
 ///
@@ -44,23 +45,13 @@ class ProfileStatCard extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              height: 16.5 / 18,
-              color: ext.profileStatLabel,
-            ),
+            style: AppType.h3.copyWith(color: ext.profileStatLabel),
           ),
           const SizedBox(height: 8),
           Text(
             value,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              height: 33 / 22,
-              color: ext.profileStatValue,
-            ),
+            style: AppType.displayLarge.copyWith(color: ext.profileStatValue),
           ),
         ],
       ),

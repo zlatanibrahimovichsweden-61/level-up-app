@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/quiz_summary.dart';
 import 'quiz_screen.dart' show QuizResultArgs;
@@ -67,7 +68,7 @@ class QuizResultScreen extends StatelessWidget {
                   // this rode in from the `Quiz` the session was built from.
                   args.scopeName,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: ext.textSecondary),
+                  style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
                 ),
                 const SizedBox(height: 24),
                 _PercentageRing(summary: summary),
@@ -128,7 +129,7 @@ class QuizResultScreen extends StatelessWidget {
                 Text(
                   l10n.reviewQuestionsComingSoon,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: ext.mutedText),
+                  style: AppType.captionRegular.copyWith(color: ext.mutedText),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -181,11 +182,7 @@ class _PercentageRing extends StatelessWidget {
               // tracked as docs/DESIGN_ISSUES.md #19 — doing it for this one
               // string would make the result screen inconsistent with itself.
               '${(summary.fraction * 100).round()}%',
-              style: TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.bold,
-                color: ext.textPrimary,
-              ),
+              style: AppType.displayLarge.copyWith(color: ext.textPrimary),
             ),
           ],
         ),
@@ -232,19 +229,12 @@ class _ScoreCard extends StatelessWidget {
             child: Icon(icon, size: 16, color: theme.colorScheme.onPrimary),
           ),
           const SizedBox(height: 8),
-          Text(
-            '$value',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: badgeColor,
-            ),
-          ),
+          Text('$value', style: AppType.h2.copyWith(color: badgeColor)),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: ext.textPrimary),
+            style: AppType.labelLarge.copyWith(color: ext.textPrimary),
           ),
         ],
       ),
@@ -277,7 +267,7 @@ class _RewardsCard extends StatelessWidget {
         children: [
           Text(
             l10n.rewardsEarned,
-            style: TextStyle(fontSize: 12, color: ext.quizExplanationBody),
+            style: AppType.labelLarge.copyWith(color: ext.quizExplanationBody),
           ),
           const SizedBox(height: 12),
           Row(
@@ -289,29 +279,21 @@ class _RewardsCard extends StatelessWidget {
                 // must never appear to: the design's "+200" is roughly 20x what
                 // the contract can award. seif_fight S12.
                 l10n.pointsAwarded(summary.pointsAwarded),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
+                style: AppType.h2.copyWith(color: theme.colorScheme.primary),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             l10n.resultLevelProgress,
-            style: TextStyle(fontSize: 12, color: ext.mutedText),
+            style: AppType.captionRegular.copyWith(color: ext.mutedText),
           ),
           const SizedBox(height: 4),
           Text(
             // Numbers, not a proportion — there is no level threshold in the
             // contract to draw a bar against. seif_fight S3.
             l10n.levelAndPoints(summary.level, summary.totalPoints),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: ext.textPrimary,
-            ),
+            style: AppType.labelLarge.copyWith(color: ext.textPrimary),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Points per level, CLIENT-SIDE and provisional.
@@ -111,15 +112,11 @@ class LevelCard extends StatelessWidget {
             children: [
               Text(
                 l10n.levelProgress(level),
-                style: TextStyle(fontSize: 11, color: ext.mutedText),
+                style: AppType.captionSmall.copyWith(color: ext.mutedText),
               ),
               Text(
                 l10n.levelProgress(nextLevel),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: ext.mutedText,
-                ),
+                style: AppType.labelSmall.copyWith(color: ext.mutedText),
               ),
             ],
           ),
@@ -140,7 +137,7 @@ class LevelCard extends StatelessWidget {
             alignment: AlignmentDirectional.centerEnd,
             child: Text(
               l10n.levelProgressPoints(totalPoints, nextLevelThreshold(level)),
-              style: TextStyle(fontSize: 10, color: ext.mutedText),
+              style: AppType.captionSmall.copyWith(color: ext.mutedText),
             ),
           ),
         ],
@@ -167,18 +164,14 @@ class _Stat extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 14, color: ext.cardLabel),
+          style: AppType.labelLarge.copyWith(color: ext.cardLabel),
         ),
         const SizedBox(height: 10),
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: ext.cardValue,
-          ),
+          style: AppType.displayLarge.copyWith(color: ext.cardValue),
         ),
       ],
     );

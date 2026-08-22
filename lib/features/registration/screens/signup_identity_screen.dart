@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -117,15 +119,14 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                   children: [
                     Row(
                       children: [
-                        // Directional back chevron (mirrors under RTL). Abandons
-                        // registration → /login.
-                        IconButton(
-                          onPressed: () => context.go('/login'),
-                          icon: const Icon(Icons.arrow_back),
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).backButtonTooltip,
-                        ),
+                        // The wizard's back chip (Figma `90:208`), same as
+                        // Sign Up_2 uses. This was a bare `IconButton` with
+                        // Material's arrow — exactly the drift
+                        // `CircleBackButton`'s docstring says it exists to
+                        // stop. It mirrors under RTL and carries the same
+                        // back-button semantics label. Abandons registration
+                        // → /login.
+                        CircleBackButton(onPressed: () => context.go('/login')),
                         const Spacer(),
                         LanguagePill(
                           label: l10n.switchLanguage,
@@ -137,16 +138,14 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                     const SizedBox(height: 8),
                     Text(
                       l10n.createAccountTitle,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.createAccountSubtitle,
-                      style: TextStyle(fontSize: 16, color: ext.textSecondary),
+                      style: AppType.bodyLarge.copyWith(
+                        color: ext.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 28),
                     // Full Name
@@ -188,10 +187,7 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       onPressed: _continue,
                       child: Text(
                         l10n.continueLabel,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppType.buttonLarge,
                       ),
                     ),
                   ],
@@ -214,11 +210,7 @@ class _FieldLabel extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
     return Text(
       text,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w500,
-        color: ext.textSecondary,
-      ),
+      style: AppType.labelLarge.copyWith(color: ext.textSecondary),
     );
   }
 }
@@ -256,12 +248,12 @@ class _PlainField extends StatelessWidget {
         inputFormatters: maxLength != null
             ? [LengthLimitingTextInputFormatter(maxLength)]
             : null,
-        style: TextStyle(fontSize: 18, color: ext.textPrimary),
+        style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
         decoration: InputDecoration(
           border: InputBorder.none,
           isCollapsed: true,
           hintText: hint,
-          hintStyle: TextStyle(fontSize: 18, color: ext.hint),
+          hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
         ),
       ),
     );
@@ -295,11 +287,7 @@ class _ReadOnlyPhone extends StatelessWidget {
                 textDirection: TextDirection.ltr,
                 child: Text(
                   phone,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textSecondary,
-                  ),
+                  style: AppType.h4.copyWith(color: ext.textSecondary),
                 ),
               ),
             ),
@@ -332,15 +320,11 @@ class _DialCodePhoneField extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text('🇪🇬', style: TextStyle(fontSize: 20)),
+          const Text('🇪🇬', style: AppType.h2),
           const SizedBox(width: 8),
           Text(
             Phone.egyptDialCode,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ext.textPrimary,
-            ),
+            style: AppType.h4.copyWith(color: ext.textPrimary),
           ),
           Icon(Icons.arrow_drop_down, color: ext.hint),
           const SizedBox(width: 4),
@@ -352,12 +336,12 @@ class _DialCodePhoneField extends StatelessWidget {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
               ],
-              style: TextStyle(fontSize: 18, color: ext.textPrimary),
+              style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isCollapsed: true,
                 hintText: hint,
-                hintStyle: TextStyle(fontSize: 18, color: ext.hint),
+                hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
               ),
             ),
           ),
@@ -381,7 +365,10 @@ class _InlineError extends StatelessWidget {
           Icon(Icons.error_outline, size: 18, color: cs.error),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text, style: TextStyle(color: cs.error, fontSize: 14)),
+            child: Text(
+              text,
+              style: AppType.captionRegular.copyWith(color: cs.error),
+            ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/subject.dart';
@@ -106,10 +107,7 @@ class _MistakesButton extends StatelessWidget {
         side: BorderSide(color: cs.error, width: 0.5),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
       ),
-      child: Text(
-        l10n.mistakes,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      ),
+      child: Text(l10n.mistakes, style: AppType.buttonSmall),
     );
   }
 }
@@ -132,12 +130,12 @@ class _SearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       textInputAction: TextInputAction.search,
-      style: TextStyle(fontSize: 16, color: ext.textPrimary),
+      style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
       decoration: InputDecoration(
         filled: true,
         fillColor: ext.cardFill,
         hintText: l10n.searchSubjects,
-        hintStyle: TextStyle(fontSize: 16, color: ext.mutedText),
+        hintStyle: AppType.bodyLarge.copyWith(color: ext.mutedText),
         prefixIcon: Icon(Icons.search, color: ext.mutedText),
         contentPadding: const EdgeInsetsDirectional.symmetric(vertical: 16),
         border: OutlineInputBorder(

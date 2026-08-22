@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The free-plan paywall sheet · Figma `199:2335` (school) ·
@@ -63,17 +64,13 @@ class LimitSheet extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: ext.quizWrongBorder,
-              ),
+              style: AppType.h2.copyWith(color: ext.quizWrongBorder),
             ),
             const SizedBox(height: 12),
             Text(
               body,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             const SizedBox(height: 20),
             Container(
@@ -104,9 +101,7 @@ class LimitSheet extends StatelessWidget {
                           Expanded(
                             child: Text(
                               benefit,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                              style: AppType.labelLarge.copyWith(
                                 color: ext.textPrimary,
                               ),
                             ),

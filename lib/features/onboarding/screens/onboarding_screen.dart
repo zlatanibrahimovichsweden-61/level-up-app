@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -175,11 +176,7 @@ class _Sheet extends StatelessWidget {
                 Text(
                   l10n.onboardingTitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.displayLarge.copyWith(color: ext.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 const _AccentedTagline(),
@@ -188,12 +185,7 @@ class _Sheet extends StatelessWidget {
                   // The `\n` is the design's own deliberate line break.
                   l10n.onboardingSubtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    height: 1.3,
-                    fontWeight: FontWeight.w500,
-                    color: ext.bodyMuted,
-                  ),
+                  style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
                 ),
                 const SizedBox(height: 20),
                 // The theme already supplies primary fill, cream label, h60,
@@ -204,13 +196,7 @@ class _Sheet extends StatelessWidget {
                 // a second control. Not rendered.
                 FilledButton(
                   onPressed: onGetStarted,
-                  child: Text(
-                    l10n.getStarted,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: Text(l10n.getStarted, style: AppType.buttonLarge),
                 ),
                 const SizedBox(height: 20),
                 _LogInButton(onPressed: onLogIn),
@@ -240,11 +226,7 @@ class _AccentedTagline extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    const base = TextStyle(
-      fontSize: 24,
-      height: 1.3,
-      fontWeight: FontWeight.w500,
-    );
+    const base = AppType.h1;
 
     return Text.rich(
       TextSpan(
@@ -295,11 +277,7 @@ class _LogInButton extends StatelessWidget {
       ),
       child: Text(
         l10n.logIn,
-        style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: ext.textPrimary,
-        ),
+        style: AppType.buttonLarge.copyWith(color: ext.textPrimary),
       ),
     );
   }

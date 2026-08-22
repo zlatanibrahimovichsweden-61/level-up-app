@@ -163,8 +163,12 @@ void main() {
     // "we should add a TextTheme one day" from an aspiration into a boundary —
     // new screens cannot make it worse while the debt is paid down deliberately.
     //
-    // Frozen 2026-08-14. Lower it when you remove some; never raise it.
-    const baseline = 153;
+    // Frozen 2026-08-14 at 153. Lowered to 11 on 2026-08-22: the designer
+    // supplied the scale (`typography-style-inter.md`), `AppType` transcribes
+    // it, and every call site except the eleven in `otp_screen.dart` is
+    // migrated in this commit; that screen follows in the next one. Lowered
+    // in the same commit as the reduction, per RISKS.md R-7.
+    const baseline = 11;
 
     final n = hardcodedFontSizeCount(sources);
     expect(

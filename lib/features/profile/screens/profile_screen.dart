@@ -6,6 +6,7 @@ import '../../../core/models/screen_state.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/state_widget.dart';
 import '../../../l10n/app_localizations.dart';
@@ -367,7 +368,14 @@ class _Skeleton extends StatelessWidget {
         children: [
           const _Block(height: 104, radius: 15),
           const SizedBox(height: 20),
-          const _Block(height: 82, radius: 16),
+          // 90, not 82: the stat row's real height is 12 padding + 24 label
+          // line (h3, 18 x 24/18) + 8 gap + 34 value line (displayLarge,
+          // 28 x 34/28) + 12 padding. 82 was tuned to the tight bespoke line
+          // heights the cards carried before the type scale landed, so it had
+          // to follow them up or the row would jump 8px the moment data
+          // arrived. The 104 and 64 blocks above and below are glyph- and
+          // container-driven, so the scale did not move them.
+          const _Block(height: 90, radius: 16),
           const SizedBox(height: 20),
           for (var i = 0; i < 5; i++) ...[
             const _Block(height: 64, radius: 16),
@@ -423,7 +431,7 @@ class _Message extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 20),

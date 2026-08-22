@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/models/student_profile.dart';
@@ -199,7 +200,7 @@ class _Failure extends StatelessWidget {
               // never shown; the mapped copy is.
               wasOffline ? l10n.offline : l10n.genericError,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             const SizedBox(height: 20),
             // Retry re-triggers the same request on tap — never a silent loop.

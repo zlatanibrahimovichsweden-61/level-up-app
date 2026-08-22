@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
@@ -83,16 +84,14 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                     const SizedBox(height: 8),
                     Text(
                       l10n.chooseTrackTitle,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       l10n.chooseTrackSubtitle,
-                      style: TextStyle(fontSize: 16, color: ext.textSecondary),
+                      style: AppType.bodyLarge.copyWith(
+                        color: ext.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 28),
                     _TrackCard(
@@ -115,10 +114,7 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                       onPressed: _selected == null ? null : _continue,
                       child: Text(
                         l10n.continueLabel,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppType.buttonLarge,
                       ),
                     ),
                   ],
@@ -211,11 +207,7 @@ class _TrackCard extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: ext.textPrimary,
-              ),
+              style: AppType.h3.copyWith(color: ext.textPrimary),
             ),
           ),
           _Radio(selected: selected),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// One titled block of the Settings screen — Languages, Mode, Rank,
 /// Notification Preferences.
@@ -38,12 +39,7 @@ class SettingsSection extends StatelessWidget {
           padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 10),
           child: Text(
             title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              height: 21 / 18,
-              color: ext.textPrimary,
-            ),
+            style: AppType.h3.copyWith(color: ext.textPrimary),
           ),
         ),
         Container(

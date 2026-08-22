@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Profile header · Figma `169:4609` — avatar, name, level chip, edit pencil.
 ///
@@ -60,11 +61,7 @@ class ProfileHeaderCard extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.h3.copyWith(color: ext.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -83,9 +80,7 @@ class ProfileHeaderCard extends StatelessWidget {
                         levelLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                        style: AppType.labelLarge.copyWith(
                           color: ext.textPrimary,
                         ),
                       ),

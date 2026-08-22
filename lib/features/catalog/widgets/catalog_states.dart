@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/screen_state.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/state_widget.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -109,7 +110,7 @@ class CatalogMessage extends StatelessWidget {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 20),

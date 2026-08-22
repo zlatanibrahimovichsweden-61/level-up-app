@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../notifier/registration_controller.dart';
 
@@ -35,11 +36,7 @@ class RegistrationExpiredView extends ConsumerWidget {
                 Text(
                   l10n.registrationExpired,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.h2.copyWith(color: ext.textPrimary),
                 ),
                 const SizedBox(height: 32),
                 FilledButton(
@@ -47,13 +44,7 @@ class RegistrationExpiredView extends ConsumerWidget {
                     ref.read(registrationControllerProvider.notifier).reset();
                     context.go('/login');
                   },
-                  child: Text(
-                    l10n.backToLogin,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: Text(l10n.backToLogin, style: AppType.buttonLarge),
                 ),
               ],
             ),

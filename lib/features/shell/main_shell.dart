@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
 
 /// The 5-tab bottom-nav shell · Figma nav `59:1264` (light) / `348:6686` (dark).
@@ -232,11 +233,6 @@ const _centreDiameter = kNavCentreRadius * 2; // 52
 const _centreTop = kNavNotchRadius - kNavCentreRadius; // 6
 const _ruleHeight = 2.0;
 const _ruleWidth = 26.0;
-const _labelStyle = TextStyle(
-  fontSize: 11,
-  height: 14 / 11,
-  fontWeight: FontWeight.w500,
-);
 
 /// One of the four ordinary tabs: the 26×2 top rule when selected, one glyph,
 /// one label. There is no separate on/off artwork in the design — selection
@@ -296,7 +292,8 @@ class _NavTab extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _labelStyle.copyWith(color: color),
+              style: (selected ? AppType.navActive : AppType.navDefault)
+                  .copyWith(color: color),
             ),
           ],
         ),
@@ -360,7 +357,8 @@ class _CentreTab extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: _labelStyle.copyWith(color: labelColor),
+              style: (selected ? AppType.navActive : AppType.navDefault)
+                  .copyWith(color: labelColor),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../theme/app_typography.dart';
 
 /// A distinct, pinned offline indicator (NOT a failed-request error). Shown when
 /// connectivity is definitively down; screens disable their primary action
@@ -31,10 +32,8 @@ class OfflineBanner extends StatelessWidget {
               child: Text(
                 l10n.offline,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: AppType.bodyMediumStrong.copyWith(
                   color: cs.onErrorContainer,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

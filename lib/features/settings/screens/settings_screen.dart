@@ -5,6 +5,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
@@ -214,8 +215,7 @@ class _RankSection extends ConsumerWidget {
           ? Text(
               key: const Key('settings_rank_error'),
               profileSaveErrorMessage(l10n, save.error),
-              style: TextStyle(
-                fontSize: 13,
+              style: AppType.captionRegular.copyWith(
                 color: Theme.of(context).extension<AppColors>()!.destructive,
               ),
             )
@@ -269,7 +269,7 @@ class _NotificationsSection extends StatelessWidget {
 
     return SettingsSection(
       title: l10n.settingsNotifications,
-      note: Text(hint, style: TextStyle(fontSize: 13, color: ext.hint)),
+      note: Text(hint, style: AppType.captionRegular.copyWith(color: ext.hint)),
       children: [
         SettingsSwitchRow(
           key: const Key('settings_notif_announcements'),
@@ -341,7 +341,7 @@ class _SectionMessage extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 15, color: ext.textSecondary),
+              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
             ),
           ),
           if (onRetry != null)

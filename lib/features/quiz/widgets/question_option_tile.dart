@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// How one option is currently being presented.
@@ -112,12 +113,7 @@ class QuestionOptionTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 21 / 14,
-                        fontWeight: FontWeight.w600,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h3.copyWith(color: ext.textPrimary),
                     ),
                   ),
                 ],
@@ -177,10 +173,7 @@ class _Badge extends StatelessWidget {
           ? Icon(icon, size: 14, color: theme.colorScheme.onPrimary)
           : Text(
               letter,
-              style: TextStyle(
-                fontSize: 11,
-                height: 16.5 / 11,
-                fontWeight: FontWeight.bold,
+              style: AppType.labelMedium.copyWith(
                 color: state == OptionTileState.selected
                     ? theme.colorScheme.onPrimary
                     : theme.colorScheme.primary,

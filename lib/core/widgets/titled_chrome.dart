@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 import 'circle_back_button.dart';
 
 /// The Account cluster's title bar: a 35pt back chip pinned to the start edge
@@ -55,11 +56,7 @@ class TitledChrome extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.h2.copyWith(color: ext.textPrimary),
                 ),
                 PositionedDirectional(
                   start: 0,

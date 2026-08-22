@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Home header · Figma `59:1439` (light) / `337:5323` (dark) — avatar +
@@ -55,18 +56,16 @@ class HomeHeader extends StatelessWidget {
               children: [
                 Text(
                   l10n.homeWelcome,
-                  style: TextStyle(fontSize: 12, color: ext.textPrimary),
+                  style: AppType.captionRegular.copyWith(
+                    color: ext.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: ext.textPrimary,
-                  ),
+                  style: AppType.h3.copyWith(color: ext.textPrimary),
                 ),
               ],
             ),

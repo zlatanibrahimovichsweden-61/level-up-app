@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// A Home section whose CONTENT has no endpoint yet — Daily Tasks (`337:5353`),
@@ -39,16 +40,12 @@ class ComingSoonSection extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: ext.textPrimary,
-                ),
+                style: AppType.h3.copyWith(color: ext.textPrimary),
               ),
             ),
             Text(
               l10n.seeAll,
-              style: TextStyle(fontSize: 14, color: ext.mutedText),
+              style: AppType.bodyMedium.copyWith(color: ext.mutedText),
             ),
           ],
         ),
@@ -67,7 +64,7 @@ class ComingSoonSection extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 l10n.comingSoon,
-                style: TextStyle(fontSize: 14, color: ext.mutedText),
+                style: AppType.captionRegular.copyWith(color: ext.mutedText),
               ),
             ],
           ),

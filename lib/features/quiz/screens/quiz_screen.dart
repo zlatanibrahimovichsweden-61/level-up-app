@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/notifier/me_notifier.dart';
 import '../bloc/quiz_bloc.dart';
@@ -289,7 +290,7 @@ class _ProgressBar extends StatelessWidget implements PreferredSizeWidget {
           const SizedBox(width: 12),
           Text(
             l10n.quizProgress(session.position, session.total),
-            style: TextStyle(fontSize: 12, color: ext.mutedText),
+            style: AppType.captionSmall.copyWith(color: ext.mutedText),
           ),
         ],
       ),
@@ -385,7 +386,7 @@ class _RetryRow extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: TextStyle(fontSize: 14, color: ext.quizWrongBorder),
+            style: AppType.captionRegular.copyWith(color: ext.quizWrongBorder),
           ),
         ),
         // A user-tapped button, never a silent auto-retry. The request it

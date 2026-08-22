@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 import 'reference_dropdown.dart';
@@ -154,9 +155,7 @@ class _EscapeLink extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+          style: AppType.buttonMedium.copyWith(
             color: ext.textSecondary,
             decoration: TextDecoration.underline,
             decorationColor: ext.textSecondary,

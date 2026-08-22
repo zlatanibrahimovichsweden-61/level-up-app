@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 /// The shared rounded form primitives from the Figma auth/registration frames
 /// (Login `82:819`, Sign Up_1 `337:15875`, School Registration `337:5269`,
@@ -23,11 +24,7 @@ class FieldLabel extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
     return Text(
       text,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w500,
-        color: ext.textSecondary,
-      ),
+      style: AppType.labelLarge.copyWith(color: ext.textSecondary),
     );
   }
 }
@@ -71,8 +68,7 @@ class FieldShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: DefaultTextStyle.merge(
-        style: TextStyle(
-          fontSize: 18,
+        style: AppType.bodyLarge.copyWith(
           color: enabled ? ext.textPrimary : ext.hint,
         ),
         child: child,
@@ -115,7 +111,10 @@ class InlineFieldError extends StatelessWidget {
           Icon(Icons.error_outline, size: 18, color: cs.error),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text, style: TextStyle(color: cs.error, fontSize: 14)),
+            child: Text(
+              text,
+              style: AppType.captionRegular.copyWith(color: cs.error),
+            ),
           ),
         ],
       ),
@@ -155,12 +154,12 @@ class PlainTextField extends StatelessWidget {
         inputFormatters: maxLength != null
             ? [LengthLimitingTextInputFormatter(maxLength)]
             : null,
-        style: TextStyle(fontSize: 18, color: ext.textPrimary),
+        style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
         decoration: InputDecoration(
           border: InputBorder.none,
           isCollapsed: true,
           hintText: hint,
-          hintStyle: TextStyle(fontSize: 18, color: ext.hint),
+          hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
         ),
       ),
     );

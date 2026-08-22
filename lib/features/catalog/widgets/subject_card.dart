@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/subject.dart';
 import 'catalog_scaffold.dart';
@@ -48,11 +49,7 @@ class SubjectCard extends StatelessWidget {
                       subject.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h3.copyWith(color: ext.textPrimary),
                     ),
                   ),
                   Icon(
@@ -79,11 +76,7 @@ class SubjectCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 // The frame specifies 8.56dp; raised to 10 — 8.5dp is below any
                 // readable minimum on a real phone. Flagged to the designer.
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: ext.cardLabel,
-                ),
+                style: AppType.captionSmall.copyWith(color: ext.cardLabel),
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'catalog_scaffold.dart';
 
 /// One row of the drill-down lists · Figma `337:5926` (Units `337:5894`,
@@ -75,12 +76,7 @@ class TreeListRow extends StatelessWidget {
                       name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 21 / 16,
-                        fontWeight: FontWeight.w600,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h3.copyWith(color: ext.textPrimary),
                     ),
                     if (progress != null) ...[
                       const SizedBox(height: 6),
@@ -102,9 +98,7 @@ class TreeListRow extends StatelessWidget {
                               caption!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                              style: AppType.captionSmall.copyWith(
                                 color: cs.primary,
                               ),
                             ),
@@ -143,11 +137,7 @@ class _IndexBadge extends StatelessWidget {
       child: Text(
         // Locale-aware digits: Arabic renders ١، ٢، ٣ rather than 1, 2, 3.
         MaterialLocalizations.of(context).formatDecimal(index),
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: ext.textPrimary,
-        ),
+        style: AppType.h4.copyWith(color: ext.textPrimary),
       ),
     );
   }

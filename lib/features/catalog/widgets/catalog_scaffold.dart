@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shared chrome for the four browse screens (Subjects → Units → Chapters →
 /// Lessons) · Figma header `404:7413`.
@@ -64,14 +65,7 @@ class CatalogHeader extends StatelessWidget {
       child: Stack(
         alignment: AlignmentDirectional.center,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: ext.textPrimary,
-            ),
-          ),
+          Text(title, style: AppType.h2.copyWith(color: ext.textPrimary)),
           if (canPop)
             PositionedDirectional(
               start: 0,

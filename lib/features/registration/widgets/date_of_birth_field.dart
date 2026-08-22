@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -75,8 +76,7 @@ class DateOfBirthField extends StatelessWidget {
               Expanded(
                 child: Text(
                   display,
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: AppType.bodyLarge.copyWith(
                     color: selected == null ? ext.hint : ext.textPrimary,
                   ),
                 ),

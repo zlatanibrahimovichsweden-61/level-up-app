@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../quiz/models/quiz_type.dart';
 
@@ -90,9 +91,7 @@ class _Tab extends StatelessWidget {
             button: true,
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+              style: AppType.labelMedium.copyWith(
                 color: selected ? cs.onPrimary : ext.textSecondary,
               ),
             ),

@@ -168,13 +168,36 @@ List<String> rawTextLiterals(
   Set<String> allow = const {},
 }) {
   final out = <String>[];
-  final pattern = RegExp('''Text\\(\\s*['"]''');
+  // Capture the WHOLE literal, not just its opening quote, so its content can
+  // be judged. Single- and double-quoted are separate patterns rather than one
+  // with a backreference: clearer, and it cannot mis-pair the delimiters.
+  final quoted = [
+    RegExp(r"""Text\(\s*'((?:\\.|[^'])*)'"""),
+    RegExp(r'''Text\(\s*"((?:\\.|[^"])*)"'''),
+  ];
+  // `${...}` and bare `$identifier`.
+  final interpolation = RegExp(r'\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*');
+
   for (final s in sources) {
     final lines = stripComments(s.text).split('\n');
     for (var i = 0; i < lines.length; i++) {
-      if (pattern.hasMatch(lines[i])) {
+      for (final p in quoted) {
+        final m = p.firstMatch(lines[i]);
+        if (m == null) continue;
+        // A literal made ENTIRELY of interpolation has nothing to translate.
+        // `Text('$value')` renders a number — there is no copy in it, and
+        // flagging it is exactly the false positive this file already warns
+        // gets a guard deleted. It surfaced when the typography migration let
+        // `dart format` collapse that call onto one line, so a line-based
+        // matcher suddenly saw it; the code had not changed at all.
+        //
+        // `Text('${l10n.legalPrefix} ')` is deliberately NOT exempt: strip the
+        // interpolation and a real space remains, and those joiners are the
+        // allowlisted sites this rule exists to keep counting.
+        if (m.group(1)!.replaceAll(interpolation, '').isEmpty) continue;
         final site = '${s.path}:${i + 1}';
         if (!allow.contains(site)) out.add(site);
+        break;
       }
     }
   }
@@ -196,6 +219,12 @@ List<String> rawTextLiterals(
 int hardcodedFontSizeCount(List<Source> sources) {
   var n = 0;
   for (final s in sources) {
+    // `lib/core/theme/` is exempt, exactly as it is for colour: it is where
+    // type metrics are SUPPOSED to live. Before the scale existed this
+    // exemption was pointless — there was nothing in the theme to exempt. Now
+    // `AppType` holds all 18 sizes there, so counting them would mean this
+    // ratchet could never reach zero and would silently stop meaning anything.
+    if (s.path.contains('lib/core/theme/')) continue;
     n += RegExp(r'fontSize:\s*[0-9]').allMatches(stripComments(s.text)).length;
   }
   return n;

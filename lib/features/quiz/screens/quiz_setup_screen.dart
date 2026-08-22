@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/quiz.dart';
@@ -81,10 +82,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                 // Server copy, already in the content language (adr-018) —
                 // rendered verbatim, never looked up in the ARB.
                 widget.args.scopeName,
-                style: TextStyle(
-                  fontSize: 20,
-                  height: 28 / 20,
-                  fontWeight: FontWeight.bold,
+                style: AppType.h2.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -98,11 +96,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                   children: [
                     Text(
                       l10n.selectQuizSize,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: ext.textPrimary,
-                      ),
+                      style: AppType.h3.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 20),
                     Wrap(
@@ -129,8 +123,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                       const SizedBox(height: 20),
                       Text(
                         quizErrorMessage(l10n, error),
-                        style: TextStyle(
-                          fontSize: 14,
+                        style: AppType.captionRegular.copyWith(
                           color: ext.quizWrongBorder,
                         ),
                       ),
@@ -229,9 +222,7 @@ class _LengthChip extends StatelessWidget {
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                style: AppType.h3.copyWith(
                   color: selected
                       ? theme.colorScheme.onPrimary
                       : ext.textPrimary,
