@@ -283,7 +283,21 @@ as int,
 /// @nodoc
 mixin _$Subject {
 
- String get id; String get name; QuestionCounter get questionCounter;
+ String get id; String get name;/// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+/// nullable, and null is NORMAL** — school subjects carry `termId: null`
+/// outright, and a university subject can too when its cohort has no
+/// schedule row. `termId` is opaque (adr-026 §7): never
+/// hardcode one and never derive an order from it. `termNumber` is the
+/// only orderable/labellable term signal on the wire — term NAMES are
+/// never sent, so any label is rendered client-side (adr-026 §5).
+///
+/// No default, deliberately: a defaulted `termNumber` would fabricate an
+/// ordinal the server never sent.
+///
+/// A year-long university course arrives as TWO subjects with an IDENTICAL
+/// [name], one per term (adr-036 §2) — `termNumber` is what tells them
+/// apart.
+ String? get termId; int? get termNumber; QuestionCounter get questionCounter;
 /// Create a copy of Subject
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -296,16 +310,16 @@ $SubjectCopyWith<Subject> get copyWith => _$SubjectCopyWithImpl<Subject>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Subject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.termId, termId) || other.termId == termId)&&(identical(other.termNumber, termNumber) || other.termNumber == termNumber)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+int get hashCode => Object.hash(runtimeType,id,name,termId,termNumber,questionCounter);
 
 @override
 String toString() {
-  return 'Subject(id: $id, name: $name, questionCounter: $questionCounter)';
+  return 'Subject(id: $id, name: $name, termId: $termId, termNumber: $termNumber, questionCounter: $questionCounter)';
 }
 
 
@@ -316,7 +330,7 @@ abstract mixin class $SubjectCopyWith<$Res>  {
   factory $SubjectCopyWith(Subject value, $Res Function(Subject) _then) = _$SubjectCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, QuestionCounter questionCounter
+ String id, String name, String? termId, int? termNumber, QuestionCounter questionCounter
 });
 
 
@@ -333,11 +347,13 @@ class _$SubjectCopyWithImpl<$Res>
 
 /// Create a copy of Subject
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? termId = freezed,Object? termNumber = freezed,Object? questionCounter = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
+as String,termId: freezed == termId ? _self.termId : termId // ignore: cast_nullable_to_non_nullable
+as String?,termNumber: freezed == termNumber ? _self.termNumber : termNumber // ignore: cast_nullable_to_non_nullable
+as int?,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
 as QuestionCounter,
   ));
 }
@@ -432,10 +448,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? termId,  int? termNumber,  QuestionCounter questionCounter)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Subject() when $default != null:
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.termId,_that.termNumber,_that.questionCounter);case _:
   return orElse();
 
 }
@@ -453,10 +469,10 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? termId,  int? termNumber,  QuestionCounter questionCounter)  $default,) {final _that = this;
 switch (_that) {
 case _Subject():
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.termId,_that.termNumber,_that.questionCounter);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -473,10 +489,10 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  QuestionCounter questionCounter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? termId,  int? termNumber,  QuestionCounter questionCounter)?  $default,) {final _that = this;
 switch (_that) {
 case _Subject() when $default != null:
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.termId,_that.termNumber,_that.questionCounter);case _:
   return null;
 
 }
@@ -488,11 +504,27 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 @JsonSerializable()
 
 class _Subject implements Subject {
-  const _Subject({required this.id, required this.name, required this.questionCounter});
+  const _Subject({required this.id, required this.name, this.termId, this.termNumber, required this.questionCounter});
   factory _Subject.fromJson(Map<String, dynamic> json) => _$SubjectFromJson(json);
 
 @override final  String id;
 @override final  String name;
+/// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+/// nullable, and null is NORMAL** — school subjects carry `termId: null`
+/// outright, and a university subject can too when its cohort has no
+/// schedule row. `termId` is opaque (adr-026 §7): never
+/// hardcode one and never derive an order from it. `termNumber` is the
+/// only orderable/labellable term signal on the wire — term NAMES are
+/// never sent, so any label is rendered client-side (adr-026 §5).
+///
+/// No default, deliberately: a defaulted `termNumber` would fabricate an
+/// ordinal the server never sent.
+///
+/// A year-long university course arrives as TWO subjects with an IDENTICAL
+/// [name], one per term (adr-036 §2) — `termNumber` is what tells them
+/// apart.
+@override final  String? termId;
+@override final  int? termNumber;
 @override final  QuestionCounter questionCounter;
 
 /// Create a copy of Subject
@@ -508,16 +540,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Subject&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.termId, termId) || other.termId == termId)&&(identical(other.termNumber, termNumber) || other.termNumber == termNumber)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+int get hashCode => Object.hash(runtimeType,id,name,termId,termNumber,questionCounter);
 
 @override
 String toString() {
-  return 'Subject(id: $id, name: $name, questionCounter: $questionCounter)';
+  return 'Subject(id: $id, name: $name, termId: $termId, termNumber: $termNumber, questionCounter: $questionCounter)';
 }
 
 
@@ -528,7 +560,7 @@ abstract mixin class _$SubjectCopyWith<$Res> implements $SubjectCopyWith<$Res> {
   factory _$SubjectCopyWith(_Subject value, $Res Function(_Subject) _then) = __$SubjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, QuestionCounter questionCounter
+ String id, String name, String? termId, int? termNumber, QuestionCounter questionCounter
 });
 
 
@@ -545,11 +577,13 @@ class __$SubjectCopyWithImpl<$Res>
 
 /// Create a copy of Subject
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? termId = freezed,Object? termNumber = freezed,Object? questionCounter = null,}) {
   return _then(_Subject(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
+as String,termId: freezed == termId ? _self.termId : termId // ignore: cast_nullable_to_non_nullable
+as String?,termNumber: freezed == termNumber ? _self.termNumber : termNumber // ignore: cast_nullable_to_non_nullable
+as int?,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
 as QuestionCounter,
   ));
 }

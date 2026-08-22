@@ -1,10 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/registration/models/registration_body.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
 import 'package:level_up_app/features/registration/models/registration_validation.dart';
 import 'package:level_up_app/features/registration/models/school_registration.dart';
 import 'package:level_up_app/features/registration/models/stage.dart';
 import 'package:level_up_app/features/registration/models/university_registration.dart';
+
+/// The ambient device, contract-REQUIRED on both register bodies since
+/// 2.0.0-m1. It is never drawn from the draft, so one shared fixture stands in
+/// for the `deviceInfoProvider` value the notifier passes in production.
+const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
 
 /// A draft as it looks after Sign Up_1 (identity) + Sign Up_2 (track).
 RegistrationDraft _draft({
@@ -100,7 +106,10 @@ RegistrationDraft _universityDraft({
 void main() {
   group('SchoolRegistration.toJson — Egypt (requiresGovernorate)', () {
     test('emits the full coded-geography body', () {
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
 
       expect(json['track'], 'school');
       expect(json['registrationToken'], 'reg.token');
@@ -118,7 +127,10 @@ void main() {
     test('schoolName does not exist on this contract at all (adr-028 §2)', () {
       // v1.1 removed the field outright; the server rejects it as an unknown
       // property. There is no branch of any draft that can produce the key.
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
 
       expect(json.containsKey('schoolName'), isFalse);
     });
@@ -128,6 +140,7 @@ void main() {
       // and registers anyway. Under v1.0 this threw.
       final json = SchoolRegistration.fromDraft(
         _egyptSchoolDraft(schoolId: null),
+        device: _device,
       ).toJson();
 
       expect(json.containsKey('schoolId'), isFalse);
@@ -136,7 +149,10 @@ void main() {
     });
 
     test('unsent optional fields are omitted entirely', () {
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
       expect(json.containsKey('email'), isFalse);
       expect(json.containsKey('avatarId'), isFalse);
     });
@@ -144,7 +160,10 @@ void main() {
 
   group('SchoolRegistration.toJson — non-Egypt', () {
     test('city only — no coded geography, and no school of any kind', () {
-      final json = SchoolRegistration.fromDraft(_foreignSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _foreignSchoolDraft(),
+        device: _device,
+      ).toJson();
 
       expect(json['track'], 'school');
       expect(json['countryCode'], 'AE');
@@ -158,6 +177,7 @@ void main() {
     test('a stale governorateId is dropped — key absent, not null', () {
       final json = SchoolRegistration.fromDraft(
         _foreignSchoolDraft(governorateId: 'gov-cairo'),
+        device: _device,
       ).toJson();
 
       expect(json.containsKey('governorateId'), isFalse);
@@ -170,6 +190,7 @@ void main() {
       expect(
         () => SchoolRegistration.fromDraft(
           _foreignSchoolDraft(schoolId: 'school-42'),
+          device: _device,
         ),
         throwsA(
           isA<ForbiddenRegistrationField>().having(
@@ -184,7 +205,10 @@ void main() {
 
   group('the adr-028 §1 city union — one key or the other, never both', () {
     test('cityId only: cityName key is absent, not null', () {
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
 
       expect(json['cityId'], 'city-nasr');
       expect(json.containsKey('cityName'), isFalse);
@@ -193,6 +217,7 @@ void main() {
     test('cityName only: cityId key is absent, not null', () {
       final json = SchoolRegistration.fromDraft(
         _foreignSchoolDraft(cityId: null, cityName: 'Al Ain'),
+        device: _device,
       ).toJson();
 
       expect(json['cityName'], 'Al Ain');
@@ -201,7 +226,10 @@ void main() {
 
     test('NEITHER throws, naming cityId', () {
       expect(
-        () => SchoolRegistration.fromDraft(_foreignSchoolDraft(cityId: null)),
+        () => SchoolRegistration.fromDraft(
+          _foreignSchoolDraft(cityId: null),
+          device: _device,
+        ),
         throwsA(
           isA<IncompleteRegistrationDraft>().having(
             (e) => e.field,
@@ -216,6 +244,7 @@ void main() {
       expect(
         () => SchoolRegistration.fromDraft(
           _egyptSchoolDraft(cityName: 'Nasr City'),
+          device: _device,
         ),
         throwsA(
           isA<ForbiddenRegistrationField>().having(
@@ -230,6 +259,7 @@ void main() {
     test('cityName is trimmed, and blank-after-trim counts as absent', () {
       final padded = SchoolRegistration.fromDraft(
         _foreignSchoolDraft(cityId: null, cityName: '  Al Ain  '),
+        device: _device,
       ).toJson();
       expect(padded['cityName'], 'Al Ain');
 
@@ -237,6 +267,7 @@ void main() {
       expect(
         () => SchoolRegistration.fromDraft(
           _foreignSchoolDraft(cityId: null, cityName: '   '),
+          device: _device,
         ),
         throwsA(isA<IncompleteRegistrationDraft>()),
       );
@@ -245,6 +276,7 @@ void main() {
     test('cityName is capped at the contract maxLength of 100', () {
       final json = SchoolRegistration.fromDraft(
         _foreignSchoolDraft(cityId: null, cityName: 'x' * 140),
+        device: _device,
       ).toJson();
 
       expect((json['cityName'] as String).length, 100);
@@ -253,12 +285,14 @@ void main() {
     test('the same union rules apply on the university body', () {
       final coded = UniversityRegistration.fromDraft(
         _universityDraft(),
+        device: _device,
       ).toJson();
       expect(coded['cityId'], 'city-dokki');
       expect(coded.containsKey('cityName'), isFalse);
 
       final free = UniversityRegistration.fromDraft(
         _universityDraft(cityId: null, cityName: '  Dokki  '),
+        device: _device,
       ).toJson();
       expect(free['cityName'], 'Dokki');
       expect(free.containsKey('cityId'), isFalse);
@@ -266,11 +300,15 @@ void main() {
       expect(
         () => UniversityRegistration.fromDraft(
           _universityDraft(cityName: 'Dokki'),
+          device: _device,
         ),
         throwsA(isA<ForbiddenRegistrationField>()),
       );
       expect(
-        () => UniversityRegistration.fromDraft(_universityDraft(cityId: null)),
+        () => UniversityRegistration.fromDraft(
+          _universityDraft(cityId: null),
+          device: _device,
+        ),
         throwsA(isA<IncompleteRegistrationDraft>()),
       );
     });
@@ -280,6 +318,7 @@ void main() {
     test('emits the Egypt-only-by-shape body', () {
       final json = UniversityRegistration.fromDraft(
         _universityDraft(),
+        device: _device,
       ).toJson();
 
       expect(json['track'], 'university');
@@ -297,6 +336,7 @@ void main() {
     test('carries NO countryCode — Egypt-only by shape (adr-010)', () {
       final json = UniversityRegistration.fromDraft(
         _universityDraft(),
+        device: _device,
       ).toJson();
       expect(json.containsKey('countryCode'), isFalse);
     });
@@ -306,23 +346,35 @@ void main() {
     test('referralCode is collected but absent from BOTH bodies', () {
       // DESIGN_ISSUES #7 — no contract field exists for it.
       expect(
-        SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson(),
+        SchoolRegistration.fromDraft(
+          _egyptSchoolDraft(),
+          device: _device,
+        ).toJson(),
         isNot(contains('referralCode')),
       );
       expect(
-        UniversityRegistration.fromDraft(_universityDraft()).toJson(),
+        UniversityRegistration.fromDraft(
+          _universityDraft(),
+          device: _device,
+        ).toJson(),
         isNot(contains('referralCode')),
       );
     });
 
     test("the student's own phone is absent (bound to the token already)", () {
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
       expect(json.containsKey('phone'), isFalse);
       expect(json.values, isNot(contains('+201555000111')));
     });
 
     test('name + parentPhone come from the draft, not re-collected', () {
-      final json = SchoolRegistration.fromDraft(_egyptSchoolDraft()).toJson();
+      final json = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      ).toJson();
       expect(json['name'], 'Nour Hassan');
       expect(json['parentPhone'], '+201021871999');
     });
@@ -332,6 +384,7 @@ void main() {
     test('is a bare yyyy-MM-dd, never an ISO timestamp', () {
       final json = SchoolRegistration.fromDraft(
         _egyptSchoolDraft(),
+        device: _device,
       ).copyWith(dateOfBirth: DateTime(2011, 12, 31)).toJson();
 
       expect(json['dateOfBirth'], '2011-12-31');
@@ -344,6 +397,7 @@ void main() {
       expect(
         () => SchoolRegistration.fromDraft(
           _egyptSchoolDraft().copyWith(dateOfBirth: null),
+          device: _device,
         ),
         throwsA(
           isA<IncompleteRegistrationDraft>().having(
@@ -359,6 +413,7 @@ void main() {
       expect(
         () => SchoolRegistration.fromDraft(
           _egyptSchoolDraft().copyWith(governorateId: null),
+          device: _device,
         ),
         throwsA(
           isA<IncompleteRegistrationDraft>().having(
@@ -374,6 +429,7 @@ void main() {
       expect(
         () => UniversityRegistration.fromDraft(
           _universityDraft().copyWith(studyYearId: null),
+          device: _device,
         ),
         throwsA(
           isA<IncompleteRegistrationDraft>().having(

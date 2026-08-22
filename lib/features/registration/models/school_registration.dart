@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../core/models/date_only_converter.dart';
+import '../../auth/models/device_info.dart';
 import 'registration_body.dart';
 import 'registration_draft.dart';
 
@@ -11,10 +12,18 @@ part 'school_registration.g.dart';
 /// `SchoolRegistration`. Contract keys are already camelCase, so NO `@JsonKey`
 /// name bridge is needed and none must be added.
 ///
-/// Required (contract `required: [...]`, `:1280`): `track, registrationToken,
-/// name, dateOfBirth, countryCode, stage, educationSystem, parentPhone`, PLUS
-/// the `anyOf` at `:1281-1283` — at least one of `cityId` / `cityName`.
+/// Required (contract v2.1.0-m1 `required: [...]`, `:1406`): `track,
+/// registrationToken, device, name, dateOfBirth, countryCode, stage,
+/// educationSystem, parentPhone`, PLUS the `anyOf` at `:1407-1409` — at least
+/// one of `cityId` / `cityName`.
 /// Optional: `governorateId, cityId, cityName, schoolId, email, avatarId`.
+///
+/// `device` (`:1393`) became REQUIRED in contract 2.0.0-m1. It is the same
+/// `DeviceInfo` already sent to `/auth/otp/verify`, and it must be the same
+/// DEVICE: the `registrationToken` is device-bound, so a mismatch answers
+/// `registration_token_invalid` and the flow restarts at `/auth/otp/request`.
+/// It is passed into [SchoolRegistration.fromDraft] rather than carried on the
+/// draft — it is ambient device state, not something the wizard collects.
 ///
 /// **`includeIfNull: false` on every optional field is load-bearing, not
 /// tidiness.** Some optional fields are FORBIDDEN rather than merely absent —
@@ -36,6 +45,11 @@ abstract class SchoolRegistration
     /// contract.
     @Default(kTrackSchool) String track,
     required String registrationToken,
+
+    /// Contract-REQUIRED since 2.0.0-m1. No `@JsonKey`: the key is already
+    /// camelCase, and `includeIfNull` cannot apply to a non-nullable field —
+    /// this is a required field, not one of the omit-when-absent optionals.
+    required DeviceInfo device,
     required String name,
     @DateOnlyConverter() required DateTime dateOfBirth,
     required String countryCode,
@@ -77,13 +91,18 @@ abstract class SchoolRegistration
   ///   carrying one is a cascade bug.
   ///
   /// `name` and `parentPhone` come from Sign Up_1 and are never re-collected.
+  /// [device] is supplied by the caller (the shared `deviceInfoProvider`), not
+  /// read from the draft — see the class doc.
   /// `referralCode` is deliberately absent — there is no contract field for it
   /// (DESIGN_ISSUES #7); it is collected but never submitted.
   ///
   /// Throws [IncompleteRegistrationDraft] if a contract-required field is
   /// missing and [ForbiddenRegistrationField] if a forbidden one is present —
   /// callers must gate on `validateSchoolDraft` first.
-  factory SchoolRegistration.fromDraft(RegistrationDraft draft) {
+  factory SchoolRegistration.fromDraft(
+    RegistrationDraft draft, {
+    required DeviceInfo device,
+  }) {
     final requiresGovernorate = draft.requiresGovernorate ?? false;
     final city = cityUnionFromDraft(draft);
 
@@ -98,6 +117,7 @@ abstract class SchoolRegistration
 
     return SchoolRegistration(
       registrationToken: draft.registrationToken,
+      device: device,
       name: requireField(draft.name, 'name'),
       dateOfBirth: requireField(draft.dateOfBirth, 'dateOfBirth'),
       countryCode: requireField(draft.countryCode, 'countryCode'),

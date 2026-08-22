@@ -1691,7 +1691,17 @@ $NamedRefCopyWith<$Res>? get school {
 /// @nodoc
 mixin _$ProfileUniversity {
 
- NamedRef get university; NamedRef get faculty; int get yearNumber;
+ NamedRef get university; NamedRef get faculty; int get yearNumber;/// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+/// nullable, and null is NORMAL** — null for every school-track resource,
+/// and null on a university profile during the summer gap or when the
+/// cohort has no schedule row. `termId` is opaque (adr-026 §7): never
+/// hardcode one and never derive an order from it. `termNumber` is the
+/// only orderable/labellable term signal on the wire — term NAMES are
+/// never sent, so any label is rendered client-side (adr-026 §5).
+///
+/// No default, deliberately: a defaulted `termNumber` would fabricate an
+/// ordinal the server never sent.
+ String? get termId; int? get termNumber;
 /// Create a copy of ProfileUniversity
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1704,16 +1714,16 @@ $ProfileUniversityCopyWith<ProfileUniversity> get copyWith => _$ProfileUniversit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileUniversity&&(identical(other.university, university) || other.university == university)&&(identical(other.faculty, faculty) || other.faculty == faculty)&&(identical(other.yearNumber, yearNumber) || other.yearNumber == yearNumber));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileUniversity&&(identical(other.university, university) || other.university == university)&&(identical(other.faculty, faculty) || other.faculty == faculty)&&(identical(other.yearNumber, yearNumber) || other.yearNumber == yearNumber)&&(identical(other.termId, termId) || other.termId == termId)&&(identical(other.termNumber, termNumber) || other.termNumber == termNumber));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,university,faculty,yearNumber);
+int get hashCode => Object.hash(runtimeType,university,faculty,yearNumber,termId,termNumber);
 
 @override
 String toString() {
-  return 'ProfileUniversity(university: $university, faculty: $faculty, yearNumber: $yearNumber)';
+  return 'ProfileUniversity(university: $university, faculty: $faculty, yearNumber: $yearNumber, termId: $termId, termNumber: $termNumber)';
 }
 
 
@@ -1724,7 +1734,7 @@ abstract mixin class $ProfileUniversityCopyWith<$Res>  {
   factory $ProfileUniversityCopyWith(ProfileUniversity value, $Res Function(ProfileUniversity) _then) = _$ProfileUniversityCopyWithImpl;
 @useResult
 $Res call({
- NamedRef university, NamedRef faculty, int yearNumber
+ NamedRef university, NamedRef faculty, int yearNumber, String? termId, int? termNumber
 });
 
 
@@ -1741,12 +1751,14 @@ class _$ProfileUniversityCopyWithImpl<$Res>
 
 /// Create a copy of ProfileUniversity
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? university = null,Object? faculty = null,Object? yearNumber = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? university = null,Object? faculty = null,Object? yearNumber = null,Object? termId = freezed,Object? termNumber = freezed,}) {
   return _then(_self.copyWith(
 university: null == university ? _self.university : university // ignore: cast_nullable_to_non_nullable
 as NamedRef,faculty: null == faculty ? _self.faculty : faculty // ignore: cast_nullable_to_non_nullable
 as NamedRef,yearNumber: null == yearNumber ? _self.yearNumber : yearNumber // ignore: cast_nullable_to_non_nullable
-as int,
+as int,termId: freezed == termId ? _self.termId : termId // ignore: cast_nullable_to_non_nullable
+as String?,termNumber: freezed == termNumber ? _self.termNumber : termNumber // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of ProfileUniversity
@@ -1849,10 +1861,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef university,  NamedRef faculty,  int yearNumber)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef university,  NamedRef faculty,  int yearNumber,  String? termId,  int? termNumber)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfileUniversity() when $default != null:
-return $default(_that.university,_that.faculty,_that.yearNumber);case _:
+return $default(_that.university,_that.faculty,_that.yearNumber,_that.termId,_that.termNumber);case _:
   return orElse();
 
 }
@@ -1870,10 +1882,10 @@ return $default(_that.university,_that.faculty,_that.yearNumber);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef university,  NamedRef faculty,  int yearNumber)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef university,  NamedRef faculty,  int yearNumber,  String? termId,  int? termNumber)  $default,) {final _that = this;
 switch (_that) {
 case _ProfileUniversity():
-return $default(_that.university,_that.faculty,_that.yearNumber);case _:
+return $default(_that.university,_that.faculty,_that.yearNumber,_that.termId,_that.termNumber);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1890,10 +1902,10 @@ return $default(_that.university,_that.faculty,_that.yearNumber);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef university,  NamedRef faculty,  int yearNumber)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef university,  NamedRef faculty,  int yearNumber,  String? termId,  int? termNumber)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfileUniversity() when $default != null:
-return $default(_that.university,_that.faculty,_that.yearNumber);case _:
+return $default(_that.university,_that.faculty,_that.yearNumber,_that.termId,_that.termNumber);case _:
   return null;
 
 }
@@ -1905,12 +1917,24 @@ return $default(_that.university,_that.faculty,_that.yearNumber);case _:
 @JsonSerializable()
 
 class _ProfileUniversity implements ProfileUniversity {
-  const _ProfileUniversity({required this.university, required this.faculty, required this.yearNumber});
+  const _ProfileUniversity({required this.university, required this.faculty, required this.yearNumber, this.termId, this.termNumber});
   factory _ProfileUniversity.fromJson(Map<String, dynamic> json) => _$ProfileUniversityFromJson(json);
 
 @override final  NamedRef university;
 @override final  NamedRef faculty;
 @override final  int yearNumber;
+/// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+/// nullable, and null is NORMAL** — null for every school-track resource,
+/// and null on a university profile during the summer gap or when the
+/// cohort has no schedule row. `termId` is opaque (adr-026 §7): never
+/// hardcode one and never derive an order from it. `termNumber` is the
+/// only orderable/labellable term signal on the wire — term NAMES are
+/// never sent, so any label is rendered client-side (adr-026 §5).
+///
+/// No default, deliberately: a defaulted `termNumber` would fabricate an
+/// ordinal the server never sent.
+@override final  String? termId;
+@override final  int? termNumber;
 
 /// Create a copy of ProfileUniversity
 /// with the given fields replaced by the non-null parameter values.
@@ -1925,16 +1949,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileUniversity&&(identical(other.university, university) || other.university == university)&&(identical(other.faculty, faculty) || other.faculty == faculty)&&(identical(other.yearNumber, yearNumber) || other.yearNumber == yearNumber));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileUniversity&&(identical(other.university, university) || other.university == university)&&(identical(other.faculty, faculty) || other.faculty == faculty)&&(identical(other.yearNumber, yearNumber) || other.yearNumber == yearNumber)&&(identical(other.termId, termId) || other.termId == termId)&&(identical(other.termNumber, termNumber) || other.termNumber == termNumber));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,university,faculty,yearNumber);
+int get hashCode => Object.hash(runtimeType,university,faculty,yearNumber,termId,termNumber);
 
 @override
 String toString() {
-  return 'ProfileUniversity(university: $university, faculty: $faculty, yearNumber: $yearNumber)';
+  return 'ProfileUniversity(university: $university, faculty: $faculty, yearNumber: $yearNumber, termId: $termId, termNumber: $termNumber)';
 }
 
 
@@ -1945,7 +1969,7 @@ abstract mixin class _$ProfileUniversityCopyWith<$Res> implements $ProfileUniver
   factory _$ProfileUniversityCopyWith(_ProfileUniversity value, $Res Function(_ProfileUniversity) _then) = __$ProfileUniversityCopyWithImpl;
 @override @useResult
 $Res call({
- NamedRef university, NamedRef faculty, int yearNumber
+ NamedRef university, NamedRef faculty, int yearNumber, String? termId, int? termNumber
 });
 
 
@@ -1962,12 +1986,14 @@ class __$ProfileUniversityCopyWithImpl<$Res>
 
 /// Create a copy of ProfileUniversity
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? university = null,Object? faculty = null,Object? yearNumber = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? university = null,Object? faculty = null,Object? yearNumber = null,Object? termId = freezed,Object? termNumber = freezed,}) {
   return _then(_ProfileUniversity(
 university: null == university ? _self.university : university // ignore: cast_nullable_to_non_nullable
 as NamedRef,faculty: null == faculty ? _self.faculty : faculty // ignore: cast_nullable_to_non_nullable
 as NamedRef,yearNumber: null == yearNumber ? _self.yearNumber : yearNumber // ignore: cast_nullable_to_non_nullable
-as int,
+as int,termId: freezed == termId ? _self.termId : termId // ignore: cast_nullable_to_non_nullable
+as String?,termNumber: freezed == termNumber ? _self.termNumber : termNumber // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

@@ -14,10 +14,17 @@
 #     returned as whole bare arrays — documented exception, they are pickers, not feeds.
 #   - Auth: Authorization: Bearer <JWT>; 401 = refresh or forced logout (see `code`), 403 = forbidden
 #   - Realtime (SignalR) documented in realtime.md, not here
+#
+# `x-behaviour-changed: <version>` (ADR-038) — READ THIS BEFORE IMPLEMENTING A MARKED OPERATION.
+#   The operation's SCHEMA did not break, but its MEANING moved in the named version: it returns a
+#   different set, or returns under different conditions, than it did before. Code generators,
+#   the contract drift diff (adr-030) and Schemathesis are ALL blind to this class of change —
+#   they compare shapes. The marker plus the operation's own `description` are the only signal.
+#   An implementation that satisfies the schema and ignores the description is WRONG.
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 1.1.0-m1
+  version: 2.1.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -54,8 +61,8 @@ info:
     **Question text format:** plain text; the ONLY inline markup is `<u>…</u>` for underline
     (contract v2 rich-text scope). No other HTML/Markdown is ever sent.
 servers:
-  - url: https://staging.TBD.example/api/v1
-    description: staging (URL TBD — announced via contract-changelog.md)
+  - url: https://level-up-backend-staging.up.railway.app/api/v1
+    description: staging
 security:
   - bearerAuth: []
 tags:
@@ -248,8 +255,12 @@ paths:
         adr-019 primary recovery path (lost/changed number). Returns the parent number MASKED
         (UI/UX handoff: never the full number). Heavily rate-limited + audited — this endpoint
         inherently confirms account existence, which is why limits here are stricter than login.
-        `recovery_unavailable` covers BOTH unknown phone and no-parent-number-on-file (single
-        code on purpose — less enumeration signal); the app routes to the support path.
+        `recovery_unavailable` is ONE shared code for every reason the parent-phone rung cannot
+        run — an unknown phone, and an account whose parent number is unusable — and stays shared
+        on purpose: the cases are meant to be indistinguishable, so there is less enumeration
+        signal. Since adr-053 made the stored parent number mandatory, the second case is
+        unreachable in practice; the code is deliberately NOT split, so nothing about the
+        behaviour changes. Either way the app routes to the support path.
       security: []
       requestBody:
         required: true
@@ -347,6 +358,9 @@ paths:
                   resendAfterSeconds: { type: integer, example: 60 }
                   expiresInSeconds: { type: integer, example: 300 }
                 required: [resendAfterSeconds, expiresInSeconds]
+        '400':
+          description: "`validation_failed` — `newPhone` is missing or not a valid E.164 number."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`registration_token_invalid` (rebind token expired — restart recovery)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -502,6 +516,15 @@ paths:
                       items:
                         type: array
                         items: { $ref: '#/components/schemas/NamedRef' }
+        '400':
+          description: "`validation_failed` — a `governorateId` or `cityId` that is not a UUID, or a `limit` outside 1..100 (the `errors` field map names the offending parameter). A well-formed but unrecognised id is `404`, not `400`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`governorate_not_found` / `city_not_found` (a well-formed `governorateId` / `cityId` that is not in the coded list — adr-028 §3)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/education-systems:
     get:
       tags: [reference]
@@ -523,6 +546,9 @@ paths:
                     nameAr: { type: string }
                     nameEn: { type: string }
                   required: [code, nameAr, nameEn]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/universities:
     get:
       tags: [reference]
@@ -563,6 +589,9 @@ paths:
                               required: [id, yearNumber, status]
                         required: [id, nameAr, nameEn, years]
                   required: [id, nameAr, nameEn, faculties]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/avatars:
     get:
       tags: [reference]
@@ -583,6 +612,9 @@ paths:
                     id: { $ref: '#/components/schemas/Uuid' }
                     url: { type: string, format: uri }
                   required: [id, url]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me:
     get:
       tags: [profile]
@@ -712,14 +744,37 @@ paths:
     get:
       tags: [catalog]
       x-stability: stable
+      x-behaviour-changed: 1.2.0-m1
       operationId: listSubjects
       summary: Subjects scoped to the caller's registration (server-derived — no scope params)
       description: >
-        School — scoped by (education system, stage); University — by (university, faculty, year).
+        School — scoped by (education system, stage); University — by (university, faculty, year, TERM).
         The client never sends scope; it comes from the authenticated student (adr-013 scoping).
+
+
+        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-036, adr-037, adr-038) — the schema is unchanged and
+        the returned SET is strictly narrower.** University subjects are now filtered by TWO
+        independent gates, and a read that applies only one fails OPEN (shows unreleased or unpaid
+        content). **Gate A — release:** the subject's term is released for the student's cohort
+        (`term_schedule.released_at IS NOT NULL OR starts_on <= today`; a cohort with NO schedule row
+        is released — fail-open is deliberate, adr-036 §7). **Gate B — entitlement:** the student
+        holds the relevant active entitlement. There is no per-student term state anywhere (adr-037).
+
+
+        **An unreleased term is ABSENT, not flagged** (adr-038 §3). There is no release state on the
+        wire and no terms endpoint by design; the client has no way to know an unreleased term exists.
+        **Therefore `[]` is a NORMAL response** — a university student who registers before their
+        Term 1 start date has an empty catalog. Clients MUST NOT render empty-as-error.
+
+
+        **A year-long course is TWO subjects** (adr-036 §2) — e.g. `Anatomy` term 1 and `Anatomy`
+        term 2 — with identical `name`. Group and order on `termNumber`; render the term label
+        client-side (localized AR/EN). School subjects carry `termId: null`.
       responses:
         '200':
-          description: Bare array (closed per-student set). `name` is in the content language (adr-018).
+          description: >
+            Bare array (closed per-student set), possibly EMPTY — see the behavioural note above.
+            `name` is in the content language (adr-018).
           content:
             application/json:
               schema:
@@ -729,6 +784,8 @@ paths:
                   properties:
                     id: { $ref: '#/components/schemas/Uuid' }
                     name: { type: string }
+                    termId: { $ref: '#/components/schemas/TermId' }
+                    termNumber: { $ref: '#/components/schemas/TermNumber' }
                     questionCounter: { $ref: '#/components/schemas/QuestionCounter' }
                   required: [id, name, questionCounter]
         '401':
@@ -738,11 +795,19 @@ paths:
     get:
       tags: [catalog]
       x-stability: stable
+      x-behaviour-changed: 1.2.0-m1
       operationId: getSubjectTree
       summary: The quiz-build tree — school (units→chapters→lessons) or university (lectures + quiz types)
       description: >
         Per-lesson/lecture `questionCounter` is the contract-v2 answered/total counter — DISPLAY
         ONLY, never locks retakes. University trees additionally list the quiz types available.
+
+
+        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-038).** The subject itself is now gated by release ∩
+        entitlement — see `GET /catalog/subjects`. A `subjectId` that was reachable yesterday can
+        return `403 insufficient_scope` today, without any schema change: the admin un-released its
+        term for the cohort (adr-037 §3), or the student's entitlement lapsed. Clients holding a
+        cached `subjectId` must handle that 403 as a normal state, not a bug.
       parameters:
         - { name: subjectId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -765,10 +830,57 @@ paths:
         '403':
           description: "`insufficient_scope` (subject outside the caller's scope)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /catalog/modules:
+    get:
+      tags: [catalog]
+      x-stability: draft
+      operationId: listModules
+      summary: The picker's module grouping — an ADMIN-OWNED OVERLAY, never a scope (adr-036 §3)
+      description: >
+        University only; **school students get `[]`**. Modules group subjects for navigation and
+        NOTHING else — a module never scopes content, never gates an entitlement, never enters a
+        leaderboard key, never appears in a progress counter, and is never on the import path
+        (adr-036 §4). Same two gates as `GET /catalog/subjects`: a module is listed only when its
+        term is released for the caller's cohort and the caller is entitled, and `subjectIds`
+        contains only subjects that pass both gates.
+
+
+        **There is no "All subjects" entry in this response — `GET /catalog/subjects` IS that view.**
+        A subject filed in ZERO modules is legal and expected (adr-036 §3), so the picker MUST offer
+        the "All subjects" view permanently; a module-only picker would silently hide content.
+
+
+        `x-stability: draft` — the module overlay is not implemented yet and `subjectIds` may become
+        embedded subject objects. Build the "All subjects" view (stable) first; do not ship a
+        module-only picker against this shape.
+      responses:
+        '200':
+          description: Bare array (closed per-student set), possibly EMPTY. Order by `displayOrder`, then `name`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { $ref: '#/components/schemas/Uuid' }
+                    name: { type: string }
+                    displayOrder: { type: integer }
+                    termId: { $ref: '#/components/schemas/TermId' }
+                    termNumber: { $ref: '#/components/schemas/TermNumber' }
+                    subjectIds:
+                      type: array
+                      description: Subjects in this module that pass both gates. May be empty.
+                      items: { $ref: '#/components/schemas/Uuid' }
+                  required: [id, name, displayOrder, subjectIds]
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /quizzes:
     post:
       tags: [quiz]
       x-stability: stable
+      x-behaviour-changed: 1.2.0-m1
       operationId: createQuiz
       summary: Build a quiz — returns questions WITHOUT correct answers (per-question submit model)
       description: >
@@ -777,6 +889,19 @@ paths:
         `retakeWrong`/`favorites` build from the student's own pool (scope optional filter) and may
         return fewer than `length`. Free plan: 50 questions/WEEK — creation that would exceed it
         fails with `weekly_question_limit_reached`.
+
+
+        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-038).** `mode: normal` with a university `lectureId`
+        is subject to the same two gates as the catalog: a lecture whose term is not released for the
+        caller's cohort, or which the caller is not entitled to, is **not buildable** and returns
+        `403 insufficient_scope` — the same code, newly reachable for a `lectureId` that was valid
+        before. No new error code: an unreleased term is absent, not nameable (adr-038 §7).
+
+
+        Whether the two gates also filter the `retakeWrong` / `favorites` pools — which are built
+        from the student's OWN history — is **not yet specified** (adr-038 §6; adr-017 keeps every
+        attempt forever, so applying the release gate there would let an admin's un-release
+        retroactively empty a student's records). Do not infer either answer.
       requestBody:
         required: true
         content:
@@ -1265,6 +1390,7 @@ components:
       properties:
         track: { type: string, enum: [school] }
         registrationToken: { type: string }
+        device: { $ref: '#/components/schemas/DeviceInfo', description: "MUST be the same device that called `/auth/otp/verify` — the `registrationToken` is device-bound. A mismatch → `registration_token_invalid` (restart at `/auth/otp/request`). Same shape as the `device` on `/auth/otp/verify` and `/auth/recovery/confirm`." }
         name: { type: string, maxLength: 100 }
         dateOfBirth: { type: string, format: date }
         countryCode: { type: string, example: "EG" }
@@ -1277,7 +1403,7 @@ components:
         parentPhone: { $ref: '#/components/schemas/Phone' }
         email: { type: string, format: email, description: "Optional — receipts/notifications only, never login (adr-019)." }
         avatarId: { $ref: '#/components/schemas/Uuid', description: One of the 20 defaults; omit for server default. }
-      required: [track, registrationToken, name, dateOfBirth, countryCode, stage, educationSystem, parentPhone]
+      required: [track, registrationToken, device, name, dateOfBirth, countryCode, stage, educationSystem, parentPhone]
       anyOf:
         - required: [cityId]
         - required: [cityName]
@@ -1291,6 +1417,7 @@ components:
       properties:
         track: { type: string, enum: [university] }
         registrationToken: { type: string }
+        device: { $ref: '#/components/schemas/DeviceInfo', description: "MUST be the same device that called `/auth/otp/verify` — the `registrationToken` is device-bound. A mismatch → `registration_token_invalid` (restart at `/auth/otp/request`). Same shape as the `device` on `/auth/otp/verify` and `/auth/recovery/confirm`." }
         name: { type: string, maxLength: 100 }
         dateOfBirth: { type: string, format: date }
         universityId: { $ref: '#/components/schemas/Uuid' }
@@ -1302,7 +1429,7 @@ components:
         parentPhone: { $ref: '#/components/schemas/Phone' }
         email: { type: string, format: email }
         avatarId: { $ref: '#/components/schemas/Uuid' }
-      required: [track, registrationToken, name, dateOfBirth, universityId, facultyId, studyYearId, governorateId, parentPhone]
+      required: [track, registrationToken, device, name, dateOfBirth, universityId, facultyId, studyYearId, governorateId, parentPhone]
       anyOf:
         - required: [cityId]
         - required: [cityName]
@@ -1362,6 +1489,8 @@ components:
             university: { $ref: '#/components/schemas/NamedRef' }
             faculty: { $ref: '#/components/schemas/NamedRef' }
             yearNumber: { type: integer }
+            termId: { $ref: '#/components/schemas/TermId' }
+            termNumber: { $ref: '#/components/schemas/TermNumber' }
           required: [university, faculty, yearNumber]
         points:
           type: object
@@ -1399,6 +1528,22 @@ components:
         inGrace: { type: boolean, description: 2-day grace after expiry (requirements §5). }
         graceEndsAt: { type: [string, "null"], format: date-time }
       required: [type, active, inGrace]
+    TermId:
+      type: [string, "null"]
+      format: uuid
+      description: >
+        Opaque id of the term (adr-036). **Nullable, and null is normal** — null for every
+        school-track resource, and null on a university profile during the summer gap or when the
+        cohort has no schedule row. Opaque per adr-026 §7: do NOT hardcode term ids or derive an
+        order from them — order and label on `termNumber`.
+    TermNumber:
+      type: [integer, "null"]
+      description: >
+        The term's ordinal within the academic year — `1` or `2` today (adr-036 §1 keeps the door
+        open to more). Null exactly when `termId` is null. This is the ONLY orderable/labellable
+        term signal on the wire: term NAMES are never sent, so the client renders its own localized
+        AR/EN label, per adr-026 §5. Needed because a year-long course is two subjects with the same
+        `name` (adr-036 §2).
     QuestionCounter:
       type: object
       description: Contract-v2 per-lesson/lecture counter — display only, never locks retakes.

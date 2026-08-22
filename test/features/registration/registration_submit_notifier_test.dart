@@ -4,8 +4,10 @@ import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/features/auth/models/auth_result.dart';
+import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/auth/models/token_pair.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
+import 'package:level_up_app/features/auth/repository/device_info_provider.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_body.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
@@ -28,6 +30,12 @@ const _args = RegistrationArgs(
   expiresInSeconds: 600,
   phone: '+201555000111',
 );
+
+/// The same fixture the OTP tests use. `deviceInfoProvider` itself is
+/// overridden below rather than its SecureStorage half: the real provider
+/// would otherwise fall through to DeviceInfoPlugin and throw
+/// MissingPluginException under `flutter test`.
+const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
 
 final _authenticated =
     AuthResult.authenticated(
@@ -64,6 +72,7 @@ void main() {
       overrides: [
         registrationRepositoryProvider.overrideWithValue(repo),
         secureStorageProvider.overrideWithValue(storage),
+        deviceInfoProvider.overrideWith((ref) async => _device),
       ],
     );
     addTearDown(c.dispose);

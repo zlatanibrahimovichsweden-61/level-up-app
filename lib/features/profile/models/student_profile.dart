@@ -182,6 +182,19 @@ abstract class ProfileUniversity with _$ProfileUniversity {
     required NamedRef university,
     required NamedRef faculty,
     required int yearNumber,
+
+    /// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+    /// nullable, and null is NORMAL** — null for every school-track resource,
+    /// and null on a university profile during the summer gap or when the
+    /// cohort has no schedule row. `termId` is opaque (adr-026 §7): never
+    /// hardcode one and never derive an order from it. `termNumber` is the
+    /// only orderable/labellable term signal on the wire — term NAMES are
+    /// never sent, so any label is rendered client-side (adr-026 §5).
+    ///
+    /// No default, deliberately: a defaulted `termNumber` would fabricate an
+    /// ordinal the server never sent.
+    String? termId,
+    int? termNumber,
   }) = _ProfileUniversity;
 
   factory ProfileUniversity.fromJson(Map<String, dynamic> json) =>

@@ -30,5 +30,13 @@ Stable machine codes carried in ProblemDetails `code`. The Flutter app maps each
 | `weekly_question_limit_reached` | 403 | Free-plan 50 questions/week exhausted | Paywall prompt (requirements §3) |
 | `not_enough_questions` | 422 | Scope pool smaller than requested quiz length | Normal mode only |
 | `quiz_already_finished` | 409 | Answer submitted after finish | Finish itself is idempotent (returns summary) |
+| `governorate_not_found` | 404 | `governorateId` isn't in the coded governorate list | adr-028 §3 per-resource not-found; `GET /reference/schools` |
+| `city_not_found` | 404 | `cityId` isn't in the coded city list | adr-028 §3 per-resource not-found; `GET /reference/schools` |
+| `school_not_found` | 404 | `schoolId` isn't in the coded school list | adr-028 §3 per-resource not-found; registration (spec-002) |
+| `university_not_found` | 404 | `universityId` isn't in the coded university list | adr-028 §3 per-resource not-found; registration + study-year validation (spec-002) |
+| `faculty_not_found` | 404 | `facultyId` isn't a faculty of the given university | adr-028 §3 per-resource not-found; registration + study-year validation (spec-002) |
+| `study_year_not_found` | 404 | `studyYearId` isn't a study year of the given faculty | adr-028 §3 per-resource not-found; registration + study-year validation (spec-002) |
+| `education_system_not_found` | 404 | `educationSystem` isn't a recognised education-system `code` | adr-028 §3 per-resource not-found; registration (spec-002) |
+| `avatar_not_found` | 404 | `avatarId` isn't in the default avatar list | adr-028 §3 per-resource not-found; registration (spec-002) |
 
 Reserved (add rows as specs land): track-transfer eligibility, chat block/report outcomes.

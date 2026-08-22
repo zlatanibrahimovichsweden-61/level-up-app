@@ -10,6 +10,7 @@ _SchoolRegistration _$SchoolRegistrationFromJson(Map<String, dynamic> json) =>
     _SchoolRegistration(
       track: json['track'] as String? ?? kTrackSchool,
       registrationToken: json['registrationToken'] as String,
+      device: DeviceInfo.fromJson(json['device'] as Map<String, dynamic>),
       name: json['name'] as String,
       dateOfBirth: const DateOnlyConverter().fromJson(
         json['dateOfBirth'] as String,
@@ -30,6 +31,7 @@ Map<String, dynamic> _$SchoolRegistrationToJson(_SchoolRegistration instance) =>
     <String, dynamic>{
       'track': instance.track,
       'registrationToken': instance.registrationToken,
+      'device': instance.device,
       'name': instance.name,
       'dateOfBirth': const DateOnlyConverter().toJson(instance.dateOfBirth),
       'countryCode': instance.countryCode,

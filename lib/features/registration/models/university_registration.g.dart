@@ -11,6 +11,7 @@ _UniversityRegistration _$UniversityRegistrationFromJson(
 ) => _UniversityRegistration(
   track: json['track'] as String? ?? kTrackUniversity,
   registrationToken: json['registrationToken'] as String,
+  device: DeviceInfo.fromJson(json['device'] as Map<String, dynamic>),
   name: json['name'] as String,
   dateOfBirth: const DateOnlyConverter().fromJson(
     json['dateOfBirth'] as String,
@@ -31,6 +32,7 @@ Map<String, dynamic> _$UniversityRegistrationToJson(
 ) => <String, dynamic>{
   'track': instance.track,
   'registrationToken': instance.registrationToken,
+  'device': instance.device,
   'name': instance.name,
   'dateOfBirth': const DateOnlyConverter().toJson(instance.dateOfBirth),
   'universityId': instance.universityId,

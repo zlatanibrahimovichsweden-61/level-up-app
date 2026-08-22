@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/features/auth/models/auth_result.dart';
+import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/registration/models/school_registration.dart';
 import 'package:level_up_app/features/registration/models/university_registration.dart';
 import 'package:level_up_app/features/registration/repository/registration_repository.dart';
@@ -9,8 +10,13 @@ import 'package:mocktail/mocktail.dart';
 
 class MockDio extends Mock implements Dio {}
 
+/// Contract-REQUIRED on both bodies since 2.0.0-m1 — the same device the
+/// `registrationToken` is bound to. One shared fixture for both tracks.
+const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
+
 final _schoolBody = SchoolRegistration(
   registrationToken: 'reg.token',
+  device: _device,
   name: 'Nour Hassan',
   dateOfBirth: DateTime(2009, 5, 1),
   countryCode: 'EG',
@@ -24,6 +30,7 @@ final _schoolBody = SchoolRegistration(
 
 final _universityBody = UniversityRegistration(
   registrationToken: 'reg.token',
+  device: _device,
   name: 'Nour Hassan',
   dateOfBirth: DateTime(2004, 3, 7),
   universityId: 'uni-cairo',

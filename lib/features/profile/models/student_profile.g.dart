@@ -119,6 +119,8 @@ _ProfileUniversity _$ProfileUniversityFromJson(Map<String, dynamic> json) =>
       university: NamedRef.fromJson(json['university'] as Map<String, dynamic>),
       faculty: NamedRef.fromJson(json['faculty'] as Map<String, dynamic>),
       yearNumber: (json['yearNumber'] as num).toInt(),
+      termId: json['termId'] as String?,
+      termNumber: (json['termNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ProfileUniversityToJson(_ProfileUniversity instance) =>
@@ -126,6 +128,8 @@ Map<String, dynamic> _$ProfileUniversityToJson(_ProfileUniversity instance) =>
       'university': instance.university,
       'faculty': instance.faculty,
       'yearNumber': instance.yearNumber,
+      'termId': instance.termId,
+      'termNumber': instance.termNumber,
     };
 
 _ProfilePoints _$ProfilePointsFromJson(Map<String, dynamic> json) =>

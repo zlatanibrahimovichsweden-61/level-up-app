@@ -18,6 +18,8 @@ Map<String, dynamic> _$QuestionCounterToJson(_QuestionCounter instance) =>
 _Subject _$SubjectFromJson(Map<String, dynamic> json) => _Subject(
   id: json['id'] as String,
   name: json['name'] as String,
+  termId: json['termId'] as String?,
+  termNumber: (json['termNumber'] as num?)?.toInt(),
   questionCounter: QuestionCounter.fromJson(
     json['questionCounter'] as Map<String, dynamic>,
   ),
@@ -26,5 +28,7 @@ _Subject _$SubjectFromJson(Map<String, dynamic> json) => _Subject(
 Map<String, dynamic> _$SubjectToJson(_Subject instance) => <String, dynamic>{
   'id': instance.id,
   'name': instance.name,
+  'termId': instance.termId,
+  'termNumber': instance.termNumber,
   'questionCounter': instance.questionCounter,
 };

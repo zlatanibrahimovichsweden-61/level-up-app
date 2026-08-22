@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
+import '../../auth/models/device_info.dart';
 import '../../auth/notifier/auth_controller.dart';
+import '../../auth/repository/device_info_provider.dart';
 import '../models/registration_body.dart';
 import '../models/registration_draft.dart';
 import '../models/registration_validation.dart';
@@ -74,9 +76,18 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
+      // Contract 2.0.0-m1 made `device` required on both register bodies. It is
+      // the SAME DeviceInfo that `/auth/otp/verify` sent — same provider, same
+      // SecureStorage `deviceId` — because the `registrationToken` is bound to
+      // that device and a mismatch answers `registration_token_invalid`.
+      //
+      // Resolved inside the guard so a failure to read it surfaces through the
+      // existing AsyncError path rather than as an unhandled exception.
+      final device = await ref.read(deviceInfoProvider.future);
+
       final result = await ref
           .read(registrationRepositoryProvider)
-          .register(_body(draft));
+          .register(_body(draft, device));
 
       await ref
           .read(secureStorageProvider)
@@ -99,12 +110,16 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
   }
 
   /// The `track` discriminator picks the body shape.
-  RegistrationBody _body(RegistrationDraft draft) => switch (draft.track) {
-    RegTrack.school => SchoolRegistration.fromDraft(draft),
-    RegTrack.university => UniversityRegistration.fromDraft(draft),
-    // Unreachable: validateDraft above rejects a null track.
-    null => throw IncompleteRegistrationDraft('track'),
-  };
+  RegistrationBody _body(RegistrationDraft draft, DeviceInfo device) =>
+      switch (draft.track) {
+        RegTrack.school => SchoolRegistration.fromDraft(draft, device: device),
+        RegTrack.university => UniversityRegistration.fromDraft(
+          draft,
+          device: device,
+        ),
+        // Unreachable: validateDraft above rejects a null track.
+        null => throw IncompleteRegistrationDraft('track'),
+      };
 }
 
 final registrationSubmitProvider =

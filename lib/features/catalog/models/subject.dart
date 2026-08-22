@@ -49,6 +49,23 @@ abstract class Subject with _$Subject {
   const factory Subject({
     required String id,
     required String name,
+
+    /// adr-036 term signals, added in contract 1.2.0-m1. **Optional AND
+    /// nullable, and null is NORMAL** — school subjects carry `termId: null`
+    /// outright, and a university subject can too when its cohort has no
+    /// schedule row. `termId` is opaque (adr-026 §7): never
+    /// hardcode one and never derive an order from it. `termNumber` is the
+    /// only orderable/labellable term signal on the wire — term NAMES are
+    /// never sent, so any label is rendered client-side (adr-026 §5).
+    ///
+    /// No default, deliberately: a defaulted `termNumber` would fabricate an
+    /// ordinal the server never sent.
+    ///
+    /// A year-long university course arrives as TWO subjects with an IDENTICAL
+    /// [name], one per term (adr-036 §2) — `termNumber` is what tells them
+    /// apart.
+    String? termId,
+    int? termNumber,
     required QuestionCounter questionCounter,
   }) = _Subject;
 

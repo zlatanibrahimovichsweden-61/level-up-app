@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../core/models/date_only_converter.dart';
+import '../../auth/models/device_info.dart';
 import 'registration_body.dart';
 import 'registration_draft.dart';
 
@@ -14,11 +15,19 @@ part 'university_registration.g.dart';
 /// That is why this is a separate class rather than a variant of
 /// [SchoolRegistration] — adding a country here would invent contract surface.
 ///
-/// Required (`:1305`): `track, registrationToken, name, dateOfBirth,
-/// universityId, facultyId, studyYearId, governorateId, parentPhone`, PLUS the
-/// `anyOf` at `:1306-1308` — at least one of `cityId` / `cityName`.
+/// Required (contract v2.1.0-m1, `:1432`): `track, registrationToken, device,
+/// name, dateOfBirth, universityId, facultyId, studyYearId, governorateId,
+/// parentPhone`, PLUS the `anyOf` at `:1433-1435` — at least one of `cityId` /
+/// `cityName`.
 /// Optional: `cityId, cityName, email, avatarId` (the last two not collected —
 /// see [SchoolRegistration]).
+///
+/// `device` (`:1420`) became REQUIRED in contract 2.0.0-m1 — the same
+/// `DeviceInfo` already sent to `/auth/otp/verify`, and it must be the same
+/// DEVICE (the `registrationToken` is device-bound; a mismatch answers
+/// `registration_token_invalid`). Passed into
+/// [UniversityRegistration.fromDraft] rather than carried on the draft, being
+/// ambient device state rather than wizard input.
 ///
 /// Note `governorateId` is REQUIRED here (unlike the school body, where it is
 /// conditional). It is missing from the Figma frame —
@@ -33,6 +42,10 @@ abstract class UniversityRegistration
   const factory UniversityRegistration({
     @Default(kTrackUniversity) String track,
     required String registrationToken,
+
+    /// Contract-REQUIRED since 2.0.0-m1. No `@JsonKey`: the key is already
+    /// camelCase, and `includeIfNull` cannot apply to a non-nullable field.
+    required DeviceInfo device,
     required String name,
     @DateOnlyConverter() required DateTime dateOfBirth,
     required String universityId,
@@ -62,14 +75,20 @@ abstract class UniversityRegistration
   ///
   /// `name` and `parentPhone` come from Sign Up_1 (never re-collected);
   /// `referralCode` is never submitted (no contract field — DESIGN_ISSUES #7).
+  /// [device] is supplied by the caller (the shared `deviceInfoProvider`), not
+  /// read from the draft — see the class doc.
   ///
   /// Throws [IncompleteRegistrationDraft] if a required field is missing —
   /// callers must gate on `validateUniversityDraft` first.
-  factory UniversityRegistration.fromDraft(RegistrationDraft draft) {
+  factory UniversityRegistration.fromDraft(
+    RegistrationDraft draft, {
+    required DeviceInfo device,
+  }) {
     final city = cityUnionFromDraft(draft);
 
     return UniversityRegistration(
       registrationToken: draft.registrationToken,
+      device: device,
       name: requireField(draft.name, 'name'),
       dateOfBirth: requireField(draft.dateOfBirth, 'dateOfBirth'),
       universityId: requireField(draft.universityId, 'universityId'),
