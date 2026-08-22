@@ -9,8 +9,8 @@ android.permission.INTERNET.
 Why this needs its own script: C-1 is invisible to every other gate. The
 permission lived only in `src/debug` and `src/profile`, which merge into their
 own build types and never into release. So the app worked perfectly in
-development, compiled cleanly, analysed clean, and passed 792 tests - and would
-have failed every network call the moment a release build reached a device.
+development, compiled cleanly, analysed clean, and passed the whole suite - and
+would have failed every network call the moment a release build reached a device.
 `flutter analyze` cannot see it. The test suite cannot see it. Only a release
 build can.
 

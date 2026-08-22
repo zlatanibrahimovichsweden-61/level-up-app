@@ -2,7 +2,59 @@
 
 How autonomous work is run on this project. Companion to
 `docs/AUDIT_PROTOCOL.md` (which covers audit *passes*); this file covers
-**building features**.
+**building features** and **remediation waves**.
+
+Current project state lives in **`docs/WAVE_STATUS.md`** — read it first. Live
+risks live in **`docs/RISKS.md`**.
+
+---
+
+## The canonical loop
+
+Every wave and every feature runs this. Steps are not optional and not
+reorderable.
+
+```
+DISCOVER → INSPECT → PLAN → IMPLEMENT → FORMAT → ANALYZE → TEST
+        → GUARD PROOF (when a rule changed) → AUDIT EVIDENCE
+        → COMMIT → FABLE (when required) → NEXT WAVE
+```
+
+| Step | Do | Success | Stop if |
+| --- | --- | --- | --- |
+| **DISCOVER** | Read the brief. Read `WAVE_STATUS.md` and `RISKS.md`. List the findings in scope. | You can name every finding and its current status | A finding is already REJECTED with evidence — do not reopen without *new* evidence |
+| **INSPECT** | Re-derive every claim **from source**. Never inherit a prior report's numbers. | Each finding is CONFIRMED, NARROWED or REJECTED with `file:line` | Source contradicts the brief — say so and stop |
+| **PLAN** | Smallest correct change. Search for an existing implementation/token/pattern first. | You can state what changes, what does not, and why | The fix needs a decision from §"Stop and ask" |
+| **IMPLEMENT** | One batch at a time. Never stack unvalidated batches. | The change is minimal and reversible | Scope grows beyond the finding |
+| **FORMAT** | `dart format lib test` | no diff | — |
+| **ANALYZE** | included in validate | 0 issues | any issue |
+| **TEST** | `powershell -ExecutionPolicy Bypass -File tool\validate.ps1` | **OVERALL: PASS** | any failure — fix, do not weaken |
+| **GUARD PROOF** | `powershell -ExecutionPolicy Bypass -File tool\verify_guards.ps1` | every probed guard fires **in isolation** | a guard passes while its rule is broken |
+| **AUDIT EVIDENCE** | Update `.ai/audits/current/`. Record the verification **level** (see below). | claims match evidence exactly | you would have to write "verified" for something unobserved |
+| **COMMIT** | One concern per commit. Code before the guards enforcing it. | tree clean; each commit independently green | — |
+| **FABLE** | Hand off per `AUDIT_PROTOCOL.md` | verdict recorded | — |
+
+### Predict before you run
+
+State the expected test count **before** running validation, then reconcile any
+difference explicitly. This has caught real errors repeatedly — a count that
+differs from prediction is information, and "close enough" discards it.
+
+### Verification levels
+
+SOURCE → BUILD → ARTEFACT → DEVICE → CI. Defined in `WAVE_STATUS.md`. **Never
+report a lower level as a higher one.** Two shipped bugs in this project were
+SOURCE-correct and still broken.
+
+---
+
+## Batch discipline
+
+Hand each batch off for validation before starting the next. It is slower and it
+is not optional: in Wave 3 it caught two defects the author had introduced,
+including one where the fix reproduced the very bug it was fixing.
+
+**Never accumulate unvalidated changes across batches.**
 
 ---
 
@@ -149,6 +201,92 @@ unrelated changes · 8. Produce the package.
 
 **Never merge blindly.** Conflicts between agents are signal — record the
 resolution, do not average it away.
+
+---
+
+## The DO-NOT-GUESS protocol
+
+Every finding gets exactly one classification. The classification determines who
+acts, not how convenient it is.
+
+| | Class | Means | Who acts |
+| --- | --- | --- | --- |
+| **A** | VERIFIED BUG | reproduced or provable from source | Claude — fix it |
+| **B** | LIKELY BUG | needs runtime/device/build evidence | Claude — gather evidence first |
+| **C** | DESIGN DECISION REQUIRED | no authoritative answer in Figma or the repo | **Human** |
+| **D** | PRODUCT DECISION REQUIRED | changes what the product does or earns | **Human** |
+| **E** | REJECTED BY EVIDENCE | investigated, not real | nobody — **record the evidence** |
+| **F** | DEFERRED | real, deliberately not now | scheduled, with a reason |
+| **G** | BLOCKED | cannot proceed without an external input | named blocker + what unblocks it |
+
+Every finding records: **ID · evidence (`file:line`) · affected files ·
+severity · proposed solution · is the solution deterministic? · verification
+method · status.**
+
+### The model case — Wave 3D
+
+Figma defines no semantic type scale. The sizes cluster suggestively (four
+cover 70% of uses), and it would have been easy to map them.
+
+**That is exactly the trap.** Frequency says 18 is common; it does not say
+whether 18 is `titleMedium` or `headlineSmall`. Choosing authors a design system
+under the guise of a refactor and freezes it into 49 files.
+
+→ classified **G · BLOCKED**, ratchet held at 153, unblocking inputs named.
+
+**A reasonable-looking guess is still a guess.** The cost of a wrong guess here
+is not a bug — it is a fabricated design system that everyone downstream
+inherits as fact.
+
+### Never reopen a settled finding without new evidence
+
+`E · REJECTED` findings are listed in `WAVE_STATUS.md` and the Fable verdicts.
+Re-litigating one without new repository evidence wastes a wave. If you believe
+a rejection is wrong, **produce the evidence first**.
+
+---
+
+## Claude's autonomy
+
+**Proceed without asking** — these are inferable from the repository:
+
+code inspection · behaviour-preserving refactors · tests · guards · CI and hook
+fixes · documentation · static-analysis fixes · removing dependencies **proven**
+unused · performance fixes with measured justification · bug fixes with
+repository-backed evidence.
+
+**Always, without being told:**
+
+- inspect existing architecture before introducing a pattern
+- search for an existing implementation before writing a new one
+- prefer existing theme tokens; never hardcode a colour if a token exists
+- preserve light/dark, RTL/LTR, localization, routing and state-management conventions
+- run validation after modifying anything
+- add a regression test where practical
+- extend a guard when a rule is violated repeatedly
+- **document what is unresolved instead of hiding it**
+
+### Stop and ask
+
+Stop when the answer is not in the repository and getting it wrong changes the
+product:
+
+- **product intent** — what the app should do
+- **visual/design interpretation** not defined in Figma
+- **API contract ambiguity** — never invent shapes; raise a change request
+- **destructive migration** — storage, schema, irreversible refactors
+- **security/privacy trade-offs**
+- **business/revenue decisions** — e.g. the `/subscription` entry point
+- **user-visible behaviour with no authoritative specification**
+
+### Never invent
+
+typography scales · product behaviour · API semantics · business rules ·
+translations · design tokens · navigation intent.
+
+Adding a token is legitimate **only** when the value is demonstrably a
+design-system value (see `docs/ENFORCEMENT.md`). Inventing one to satisfy a
+guard is a false fix.
 
 ---
 

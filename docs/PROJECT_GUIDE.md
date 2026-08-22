@@ -62,9 +62,11 @@ semantic tokens. Extract with it, then verify on a device against the frame.
 | Decisions | `docs/DECISIONS.md` + `00_Project/Decisions_Log.md` | |
 | Bugs | `docs/KNOWN_BUGS.md` | Entries keep their history — the "why tests missed it" note is the point |
 | Design ↔ contract gaps | `docs/DESIGN_ISSUES.md` | |
+| **Project state** | **`docs/WAVE_STATUS.md`** | **Wave status, verification levels, open findings, ratchets. If another doc disagrees, this one wins.** |
+| **Active risks** | **`docs/RISKS.md`** | **Live risk register — every entry has an owner and a next action.** |
 | **Automated enforcement** | **`docs/ENFORCEMENT.md`** | **Every rule a machine checks, and how. Read before writing a new rule.** |
-| Agent workflow | `docs/AGENT_WORKFLOW.md` | |
-| Audit protocol | `docs/AUDIT_PROTOCOL.md` | |
+| Agent workflow | `docs/AGENT_WORKFLOW.md` | The canonical loop, the DO-NOT-GUESS protocol, Claude's autonomy boundaries |
+| Audit protocol | `docs/AUDIT_PROTOCOL.md` | Running an audit; the Fable handoff |
 | Current audit | `.ai/audits/current/` | |
 
 ---
@@ -93,7 +95,7 @@ selected via `lib/core/config/app_config.dart`.
 ⚠ Base URLs are `TBD.example` placeholders — blocked on the backend partner.
 
 **Scale.** 178 files / ~36k LOC in `lib`; 66 files / ~15k LOC in `test`
-(~730 cases, 185 groups); 22 of 36 contract paths consumed — **all 21 stable
+(run `flutter test` for the current count); 22 of 36 contract paths consumed — **all 21 stable
 ones**, and every remaining path is `x-stability: draft`.
 
 **Git.** `main` = stable, `dev` = active. Conventional Commits, **43/43**.
@@ -202,3 +204,21 @@ review.
 **Release verification** — `tool/verify_release_manifest.ps1` builds a release
 APK and proves with `aapt2` that it carries `android.permission.INTERNET`.
 Source inspection is not proof; that was Tier-0 C-1.
+
+**Guard proof** — `tool/verify_guards.ps1` breaks each rule on purpose and
+proves the responsible guard fires **in isolation**. A guard that has only run
+against a clean codebase has demonstrated nothing.
+
+### The validation contract
+
+| Command | Required result |
+| --- | --- |
+| `tool\validate.ps1` | format **PASS** · analyze **PASS** · tests **PASS** · **OVERALL: PASS** |
+| `tool\verify_guards.ps1` | every probed guard fires; tree restored, SHA-verified |
+
+**A green static check is not runtime proof.** Claims carry a level —
+SOURCE / BUILD / ARTEFACT / DEVICE / CI — defined in `docs/WAVE_STATUS.md`.
+Never report a lower level as a higher one. This project has shipped two bugs
+that were SOURCE-correct and still broken: the release manifest that lost
+`INTERNET` at merge time, and a PowerShell script whose *content* was verified
+while its *decoding* was not.

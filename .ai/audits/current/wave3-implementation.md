@@ -130,11 +130,26 @@ than faked.
 
 ### ScreenState switch duplication — REJECTED
 
+> **CORRECTED 2026-08-15 (Wave 4), per Fable finding W3-4.** The paragraph
+> below originally claimed `ScreenState` was *"referenced in exactly three
+> places"*. **That was wrong.** It appears in **18 files**. The error was mine
+> and mechanical: the scan was `grep -rn "ScreenState" lib | head -12`, and I
+> read a truncated result as a complete one.
+>
+> The **conclusion still stands** — no screen `switch`es on `ScreenState`, so
+> there is nothing to centralise — but it rests on different evidence than
+> stated. Fable's independent scan found two `AsyncValue → ScreenState` bridges
+> (`catalog_states.dart:42`, `profile_screen.dart:103`) and one bypass
+> (`home_screen.dart:51`). Those are `AsyncValue` mapping sites, not
+> `ScreenState` switches, which is why the no-refactor verdict is unaffected.
+>
+> Recorded rather than quietly edited: a wrong number that produced a right
+> answer is still a wrong number, and the next reader needs to know which part
+> to trust.
+
 `state_widget.dart:5` claims to be *"The ONLY place that switches on
-`ScreenState`"*. A full scan of `lib/` finds **`ScreenState` referenced in
-exactly three places**: its own definition (`core/models/screen_state.dart`),
-two doc comments, and `state_widget.dart`. **No screen switches on it.** The
-claim in the source is accurate.
+`ScreenState`"*. Verified: **no screen switches on it.** The claim in the
+source is accurate.
 
 The prior audit's finding — *"4 parallel AsyncValue→4-state implementations"* —
 is about **`AsyncValue`** handling, a different type. Conflating the two would

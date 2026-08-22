@@ -122,6 +122,62 @@ Target 150–400 lines. Evidence over prose.
 
 ---
 
+## The Fable handoff — required contents
+
+A wave is not ready for review until all ten are present. Anything missing is
+itself a finding.
+
+1. **Wave scope** — what was in, what was explicitly out
+2. **Files changed** — complete, with `git status` proving nothing else moved
+3. **Commits** — SHAs and messages
+4. **Validation result** — verbatim `validate.ps1` output, not a summary
+5. **Guard proof result** — `verify_guards.ps1`, N/N
+6. **Runtime / build evidence** — with its **verification level** (SOURCE /
+   BUILD / ARTEFACT / DEVICE / CI). Say which; never round up.
+7. **Known limitations** — including what a guard *cannot* catch
+8. **Deferred findings** — with reasons
+9. **Rejected findings** — with the evidence that rejects them
+10. **Design/product decisions still required** — named, with what would unblock
+
+**Tell Fable where the work is weakest.** A handoff that only presents strengths
+wastes the review. Every Fable pass in this project has found something real,
+and the passes that found the most were the ones pointed at their own soft spots.
+
+### Fable verifies, never trusts
+
+Fable must independently re-derive claims from the repository. "Claude reported
+X" is not evidence. Fable has already caught: a guard harness that proved the
+wrong thing, a bare `xargs` in the canonical script, and an incomplete lifecycle
+fix (W3-1) — none of which the implementation report flagged as suspect.
+
+### Finding severity
+
+`CRITICAL` · `HIGH` · `MEDIUM` · `LOW` · `INFORMATIONAL`
+
+Weight by **impact × likelihood of going unnoticed**. A defect no gate can
+detect outranks a louder one something would catch.
+
+### After the verdict
+
+```
+Fable verdict
+  → fix valid findings          (smallest correct change)
+  → record rejected findings    (with evidence, so they stay rejected)
+  → rerun validation            (validate + guard proof)
+  → commit remediation
+  → update WAVE_STATUS.md and RISKS.md
+  → only then advance
+```
+
+**Never advance with an unrecorded open finding.** W3-1 is open and is recorded
+in both `WAVE_STATUS.md` and `RISKS.md`; that is what "recorded" means.
+
+**Never fix a bug found during a documentation wave as part of that wave.**
+Record it, report it, fix it deliberately. Wave 4 found W3-1 outstanding and
+left the code untouched.
+
+---
+
 ## Fable's role
 
 Fable is the **final independent reviewer**, not the discoverer. Opus does the

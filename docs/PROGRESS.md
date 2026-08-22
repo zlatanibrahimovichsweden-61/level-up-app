@@ -1,10 +1,24 @@
 # Level Up — build progress & session handoff
 
+> ## ⚠ THIS IS A HISTORICAL LOG, NOT CURRENT STATE
+>
+> Entries below are **dated records of what was true when written** — including
+> test counts like "792 green", which was accurate on that day and is not
+> accurate now. They are deliberately left unedited: rewriting a build log to
+> match today falsifies the history it exists to preserve.
+>
+> **For current project state, read `docs/WAVE_STATUS.md`.** For live risks,
+> `docs/RISKS.md`. For the current test count, run `flutter test` — no document
+> should freeze it.
+>
+> This banner was added in Wave 4 because the numbers below otherwise read as
+> live claims.
+
 > Read this first to re-ground after a chat compaction or in a new session.
 > Durable truth lives in files, not chat memory: this doc + the briefs + the vault
 > `00_Project/Decisions_Log.md` / `Open_Questions.md` + `contract/openapi.yaml`.
 
-_Last updated: 2026-07-23_
+_Last updated: 2026-07-23 (superseded for project state — see `WAVE_STATUS.md`)_
 
 ## Repo & branches
 - App repo: `level_up_app` (GitHub: zlatanibrahimovichsweden-61/level-up-app, private).
