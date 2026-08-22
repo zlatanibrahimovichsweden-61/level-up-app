@@ -92,7 +92,7 @@ void main() {
       expect(find.textContaining('Achive'), findsNothing);
     });
 
-    testWidgets('the illustration renders full-bleed from the top', (
+    testWidgets('the illustration matches the frame WIDTH, anchored top', (
       tester,
     ) async {
       await pumpOnboarding(tester);
@@ -108,7 +108,13 @@ void main() {
                   'assets/images/onboarding_illustration.svg',
         ),
       );
-      expect(svg.fit, BoxFit.cover);
+      // `fitWidth`, NOT `cover`. The artwork is 419x682 in a 402x878 frame:
+      // it overflows the WIDTH by ~4% and stops short of the bottom, where the
+      // sheet covers it. `cover` scales by whichever axis is short, and the
+      // artwork (aspect 0.61) is much squarer than a phone (Pixel 8 is 0.45),
+      // so on device it scaled to the HEIGHT and rendered ~562dp wide inside
+      // 411dp — slicing the books through and cropping the grass away entirely.
+      expect(svg.fit, BoxFit.fitWidth);
       expect(svg.alignment, Alignment.topCenter);
     });
 
@@ -176,13 +182,23 @@ void main() {
   });
 
   group('navigation', () {
-    testWidgets('Get Started → /register', (tester) async {
+    testWidgets('Get Started → /login, NOT /register', (tester) async {
+      // This asserted `/register` until 2026-08-21, and that is exactly what
+      // it shipped: `/register` cannot be entered without a `RegistrationArgs`
+      // carrying a registrationToken, which only a successful OTP verify can
+      // mint. Every new user landed on "registration session expired".
+      //
+      // The test passed because the harness registers a stub `/register` route
+      // that renders unconditionally — it proved the router moved, not that
+      // the student arrived anywhere usable. The negative expectation below is
+      // the half that was missing.
       await pumpOnboarding(tester);
 
       await tester.tap(find.text('Get Started'));
       await tester.pumpAndSettle();
 
-      expect(find.text('register'), findsOneWidget);
+      expect(find.text('login'), findsOneWidget);
+      expect(find.text('register'), findsNothing);
     });
 
     testWidgets('Log In → /login', (tester) async {

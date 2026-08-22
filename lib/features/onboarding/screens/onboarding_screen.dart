@@ -35,10 +35,22 @@ class OnboardingScreen extends ConsumerWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1 — the illustration, full-bleed from the top. In Figma it is
-          // 419×682 at (-19,-19), i.e. deliberately bleeding past the top and
-          // start edges; `cover` from `topCenter` reproduces that at any aspect
-          // ratio without hard-coding either number.
+          // 1 — the illustration, bleeding from the top. In Figma it is
+          // 419×682 at (-19,-19) inside a 402×878 frame: it overflows the
+          // WIDTH by ~4% and stops well short of the bottom, where the sheet
+          // covers it.
+          //
+          // `cover` did not reproduce that. `cover` scales by whichever axis is
+          // short, and the artwork (aspect 0.61) is far squarer than a phone
+          // (Pixel 8 is 0.45), so it scaled to the HEIGHT and rendered ~562dp
+          // wide inside 411dp — cropping about a quarter of the width off both
+          // sides. On device the books were sliced through and the grass they
+          // stand on was gone entirely.
+          //
+          // `fitWidth` from `topCenter` is what the frame's numbers actually
+          // describe: match the width, keep the aspect, anchor the top, let the
+          // bottom run under the sheet. The values come from the geometry
+          // already recorded above, not from a new reading of the design.
           const _Illustration(),
 
           // 2 — the sheet, anchored to the BOTTOM and sized by its content.
@@ -51,7 +63,24 @@ class OnboardingScreen extends ConsumerWidget {
           Align(
             alignment: Alignment.bottomCenter,
             child: _Sheet(
-              onGetStarted: () => context.go('/register'),
+              // BOTH buttons go to /login, and that is not a copy-paste slip.
+              //
+              // `/register` cannot be entered directly: `SignupIdentityScreen`
+              // requires a `RegistrationArgs` carrying a `registrationToken`,
+              // and the ONLY thing that can mint one is a successful
+              // `POST /auth/verify-otp` returning `registrationRequired`
+              // (otp_screen.dart). Going straight to `/register` therefore hit
+              // the `draft == null` guard every single time and showed
+              // "registration session expired" to every new user — the P0 in
+              // the 2026-08-04 device walkthrough, and the reason the four
+              // registration screens had never been photographed.
+              //
+              // This is phone-first auth: the student enters a number, the
+              // server decides whether it already has an account, and the OTP
+              // screen forks to /home or /register. "Get Started" and "Log In"
+              // genuinely share a first step — the fork is the server's to
+              // make, not a button's.
+              onGetStarted: () => context.go('/login'),
               onLogIn: () => context.go('/login'),
             ),
           ),
@@ -89,7 +118,7 @@ class _Illustration extends StatelessWidget {
   Widget build(BuildContext context) {
     return SvgPicture.asset(
       'assets/images/onboarding_illustration.svg',
-      fit: BoxFit.cover,
+      fit: BoxFit.fitWidth,
       alignment: Alignment.topCenter,
     );
   }
