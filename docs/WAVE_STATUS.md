@@ -1,10 +1,11 @@
 # Wave Status — the single source of project truth
 
-**Last updated:** 2026-08-22 (Wave 4 closed; Wave 3D closed)
+**Last updated:** 2026-08-23 (stable API surface exercised against live staging; F-7-01 closed)
 **Branch:** `merged` — `dev` + `main` joined on 2026-08-22 (`99b5cba`); both are kept
 untouched as history and all work continues on `merged`.
-**Unpushed:** nothing — the 2026-08-22 dirty tree was split into ten commits and pushed
-the same day. This file no longer records a HEAD; `git log` is the source for that.
+**Unpushed:** the 2026-08-23 commits (style-fitting pass, OTP glyph landing, F-7-01,
+smoke harness ×2, this note) — pushing is the owner's call (R-3). This file no longer
+records a HEAD; `git log` is the source for that.
 
 If any other document disagrees with this file about wave state, **this file
 wins** and the other document is stale. Fix the other document.
@@ -51,6 +52,35 @@ repository's history and it is why the ladder exists.
 | **3E** | Cache / storage | ✅ COMPLETE | `ac87455` | BUILD VERIFIED | **VERIFIED** |
 | **4** | Documentation + audit protocol | ✅ COMPLETE (2026-08-22) | the docs commit that carries this file | documentation only | — |
 | **Final** | Whole-project Fable review | ⏳ NOT STARTED | — | — | — |
+
+---
+
+## Live staging — the stable surface exercised, 2026-08-23
+
+**First real requests.** `tool/smoke/real_api_smoke_test.dart` now walks all 21
+`x-stability: stable` operations through the real seam (`AppConfig` → `DioClient` →
+interceptors → repositories → freezed decoders; only `SecureStorage` is stubbed) against
+`https://level-up-backend-staging.up.railway.app/api/v1`. Run 2026-08-23 against backend
+commit **`0b53cdcad20cc0029fea0f18ef2e62a980b48aca`** (`/health/version`, built
+2026-08-23T10:53:37Z), staging test number `+2010000000001` (already registered, so no
+account was created). Full output: `.ai/audits/current/smoke-staging-2026-08-23.md`.
+
+| Verdict | Operations |
+| --- | --- |
+| **Decoded — 12** | the 7 `/reference/*` reads (incl. the deliberate EG-without-governorate 400 → typed `ValidationException[governorateId]`), `POST /auth/otp/request`, `POST /auth/otp/verify` → `AuthenticatedResult`, `GET /me` → `StudentProfile`, `POST /auth/refresh` (rotation), `POST /auth/logout` |
+| **Typed server state — 3** | `PATCH /me` → **405** `internal_error` (route not implemented on staging); `GET /me/entitlements` → 404 `not_found`; `GET /catalog/subjects` → 404 `not_found` — see `seif_fight.md` S37 |
+| **Not reachable — 6** | `POST /auth/register` (number already registered; the probe arm was skipped), `/catalog/subjects/{id}/tree`, `POST /quizzes`, `/answers`, `/finish`, `GET /questions/{id}/explanation` — all gated behind the catalog 404 |
+
+Nothing of the F-7-01 class leaked: every operation that answered did so either as a
+decoded model or as a typed `AppException`. F-7-01 itself (`068390d`) is closed — 20
+parse-bearing catches sealed, three `QuizBloc` terminal arms, four tests.
+
+**Verification level: BUILD** (`validate.ps1` 2026-08-23T11:29Z, 861 passed) **plus a
+live-staging run from the dev host under `flutter test`.** That run is not on the ladder:
+it is more than BUILD (real TLS, real JSON, real error bodies) and less than DEVICE (no
+device, no Keystore, no app shell) — do not report it as either. R-8 is **narrowed, not
+closed**: the authenticated suite did not run end to end because staging has not deployed
+the catalog, entitlements or `PATCH /me` routes.
 
 ---
 

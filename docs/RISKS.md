@@ -114,10 +114,10 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 | | |
 | --- | --- |
 | **Impact** | Base URLs are `TBD.example`. Every test has only ever met mocktail stubs or `mock_backend.dart`, which cannot produce 401s, 5xx, timeouts or malformed bodies. |
-| **Evidence** | `app_config.dart` `TODO(contract)`; `api-data.md` finding F-7-01 — a `fromJson` `TypeError` escapes every catch clause. |
+| **Evidence** | **2026-08-23:** `tool/smoke/real_api_smoke_test.dart` against staging `0b53cdc` — 12 of 21 stable operations decoded through the real seam (all `/reference/*`, the OTP walk, `GET /me`, refresh, logout); 3 answered with a typed server state (`PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 — `seif_fight.md` S37); 6 unreachable behind the catalog 404. No untyped error leaked. F-7-01 closed in `068390d`. The `TBD.example` placeholder was replaced earlier (`app_config.dart:43`). |
 | **Owner** | Backend partner + engineering |
-| **Next action** | Read `api-data.md`'s 10-step migration checklist **before** the base URL arrives. |
-| **Status** | **OPEN — external dependency** |
+| **Next action** | Seif: deploy `PATCH /me`, `/me/entitlements`, `/catalog/*` to staging (S37); then re-run the harness on a registered number — the quiz loop, explanation 202 and register arm are the untested remainder. Checklist steps 5 (short-lived token → 401 pipeline) and 9 (forced 500/429) still need Seif's cooperation. |
+| **Status** | **OPEN — NARROWED 2026-08-23.** The client side of the stable surface is proven against a real server for everything staging serves; what remains open is what staging has not deployed. Closes when the authenticated suite runs green end to end, quiz loop included. |
 
 ---
 

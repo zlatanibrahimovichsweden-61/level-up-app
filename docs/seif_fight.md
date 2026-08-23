@@ -17,7 +17,7 @@
 
 | # | Question | Sev | Status | Code marker |
 |---|---|---|---|---|
-| S1 | Staging/prod `baseUrl` still `TBD.example` — nothing has ever run against a real server | 🔴 | Open | `app_config.dart:37` |
+| ~~S1~~ | ~~Staging/prod `baseUrl` still `TBD.example` — nothing has ever run against a real server~~ | 🔴 | **Resolved (2026-08-23)** — 12/21 stable ops decoded against staging `0b53cdc` | `app_config.dart:43` |
 | S2 | No way to resume an interrupted quiz — `GET /quizzes/{quizId}` is `draft` | 🟠 | Open (Day 7) | — |
 | S3 | Level thresholds: `GET /me` returns `level` but no target to progress toward | 🔴 | Open | `level_card.dart:8` |
 | S4 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Open | `tree_list_row.dart` |
@@ -51,6 +51,7 @@
 | S34 | **`parentPhone` is WRITE-ONLY** — required at registration, absent from `GET /me` | 🔴 | Open (Day 8) | — (row not built) |
 | S35 | `GET /me` returns raw wire codes with no display names | 🟠 | Open (Day 8) | `edit_profile_screen.dart` |
 | S36 | A `Friends` screen exists, with no endpoint and no entry point | 🟡 | Open (Day 8) | `friends_screen.dart` |
+| S37 | **Staging does not serve three stable routes** — `PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 | 🔴 | Open (2026-08-23) | `tool/smoke/real_api_smoke_test.dart` |
 
 > **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
 > the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
@@ -67,6 +68,12 @@ repo is validated only against our own 641-line mock** (`lib/dev/mock_backend.da
 construction encodes the same assumptions as the client it's mocking.
 **Ask:** the real staging host, even an unstable one behind a VPN. One afternoon against a real
 server is worth more than another week of mock-green.
+
+**Resolved 2026-08-23.** The host is `https://level-up-backend-staging.up.railway.app/api/v1`
+(`app_config.dart:43`, verbatim from the contract's `servers:` block). The smoke harness
+decoded 12 of the 21 stable operations against backend commit `0b53cdc` through the real
+client seam; every answer arrived either as a model or as a typed `AppException`. What the
+server does *not* yet serve is S37.
 
 ## S2. 🟠 An interrupted quiz cannot be resumed
 
@@ -700,6 +707,33 @@ a sibling block of resolved names. The first is more consistent with the rest of
 **Ask (designer first, then Seif):** where is this screen entered from? If the answer is "it is not
 milestone 1", it comes out of the cluster and we delete the shell. If it is real, it needs both a
 door and a contract, and the privacy toggles in S27 are already written as though it exists.
+
+---
+
+## S37. 🔴 Staging does not serve three routes the contract marks `stable`
+
+**Where:** staging backend commit `0b53cdcad20cc0029fea0f18ef2e62a980b48aca` (`/health/version`,
+built 2026-08-23T10:53:37Z). Observed by `tool/smoke/real_api_smoke_test.dart` on 2026-08-23
+with a registered staging test number; status + `code` only, bodies not logged.
+**What:** three `x-stability: stable` operations answer with a route-level error, not a
+domain one:
+
+| Operation | Staging answers | Contract says |
+| --- | --- | --- |
+| `PATCH /me` (same-name no-op body) | **405** with `code: internal_error` | `200` + `StudentProfile`; `internal_error` is the 500 code in error-codes.md, so a 405 carrying it looks like a fallback handler, not a routed endpoint |
+| `GET /me/entitlements` (Bearer) | **404** `not_found` | `200` + `EntitlementsResponse` — a deployed route would answer 401/200 like `GET /me` does |
+| `GET /catalog/subjects` (Bearer) | **404** `not_found` | `200` + subject list; everything under `/catalog/*`, `/quizzes/*` and `/questions/*` is unreachable from the client until this exists |
+
+The same two 404s were seen by direct curl on 2026-08-21 (build `fbab748`), so this is not a
+one-build regression. Everything else stable — all seven `/reference/*` reads, the full OTP
+walk, `GET /me`, refresh with rotation, logout — decodes cleanly.
+
+**Ask:** (1) when do `PATCH /me`, `/me/entitlements` and `/catalog/*` land on staging, and is
+the 405-as-`internal_error` a routing fallback we should expect elsewhere? (2) Once they are
+up, we need a staging account with a seeded term so `POST /quizzes` has questions to draw —
+the v2.1 empty-catalog state is contract-legal and the harness already handles it, but it
+cannot prove the quiz loop. (3) Still owed from `api-data.md` §4: a ~60 s access token for
+checklist step 5 (the 401 → refresh → retry pipeline) and a forced `500` + `429` for step 9.
 
 ---
 
