@@ -386,7 +386,7 @@ class _RetryRow extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: AppType.captionRegular.copyWith(color: ext.quizWrongBorder),
+            style: AppType.bodyMedium.copyWith(color: ext.quizWrongBorder),
           ),
         ),
         // A user-tapped button, never a silent auto-retry. The request it

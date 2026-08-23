@@ -65,7 +65,9 @@ class HomeHeader extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppType.h3.copyWith(color: ext.textPrimary),
+                  // labelLarge: the frame's 14px semi-bold name. h3 (18) made
+                  // the greeting the same style as a section title. SF-04.
+                  style: AppType.labelLarge.copyWith(color: ext.textPrimary),
                 ),
               ],
             ),

@@ -123,7 +123,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                       const SizedBox(height: 20),
                       Text(
                         quizErrorMessage(l10n, error),
-                        style: AppType.captionRegular.copyWith(
+                        style: AppType.bodyMedium.copyWith(
                           color: ext.quizWrongBorder,
                         ),
                       ),

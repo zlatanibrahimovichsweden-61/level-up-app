@@ -113,7 +113,13 @@ class InlineFieldError extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: AppType.captionRegular.copyWith(color: cs.error),
+              // bodyMedium (14/20): the one style for every error row in the
+              // app — Login/OTP inline messages, the submit banner, picker
+              // failures, Edit Profile's save error, Settings' section
+              // message. Every site was 14px before the scale; captionRegular
+              // (12) would make the one line a student must read the smallest
+              // text on the form. Fable style-fitting register SF-02.
+              style: AppType.bodyMedium.copyWith(color: cs.error),
             ),
           ),
         ],

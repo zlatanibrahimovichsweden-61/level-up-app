@@ -129,6 +129,9 @@ class EditProfileChrome extends StatelessWidget {
               children: [
                 Text(
                   l10n.editProfile,
+                  // One line, like `TitledChrome` (register SF-08).
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppType.h2.copyWith(color: ext.textPrimary),
                 ),
                 PositionedDirectional(
@@ -698,7 +701,10 @@ class _Skeleton extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           for (var i = 0; i < 3; i++) ...[
-            block(22, 6),
+            // 18, not 22: a FieldLabel is one labelLarge line (14 x 18/14)
+            // since the type scale; the block stands in for exactly that, so
+            // the form does not shift when the profile arrives. SF-09.
+            block(18, 6),
             const SizedBox(height: 10),
             block(60, 20),
             const SizedBox(height: 25),

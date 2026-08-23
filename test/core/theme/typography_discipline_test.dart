@@ -184,6 +184,18 @@ void main() {
           theme.textTheme.bodyMedium?.fontSize,
           AppType.bodyMedium.fontSize,
         );
+        // The two framework AlertDialogs follow the app's own dialogs (h2 over
+        // bodyLarge) through dialogTheme, not through the bridge — otherwise
+        // they drift back to h3 over 14px the moment someone "simplifies" the
+        // theme. Fable style-fitting register SF-07.
+        final dialog = theme.dialogTheme;
+        expect(dialog.titleTextStyle?.fontSize, AppType.h2.fontSize);
+        expect(dialog.titleTextStyle?.fontWeight, AppType.h2.fontWeight);
+        expect(dialog.contentTextStyle?.fontSize, AppType.bodyLarge.fontSize);
+        expect(
+          dialog.contentTextStyle?.fontWeight,
+          AppType.bodyLarge.fontWeight,
+        );
       }
     });
   });

@@ -8,6 +8,7 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
+import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -149,35 +150,35 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                     ),
                     const SizedBox(height: 28),
                     // Full Name
-                    _FieldLabel(l10n.fullNameLabel),
+                    FieldLabel(l10n.fullNameLabel),
                     const SizedBox(height: 8),
-                    _PlainField(
+                    PlainTextField(
                       controller: _nameController,
                       hint: l10n.fullNameHint,
                       keyboardType: TextInputType.name,
                       maxLength: 100,
                     ),
-                    if (_nameErrorKey != null) _InlineError(_nameErrorKey!),
+                    if (_nameErrorKey != null) InlineFieldError(_nameErrorKey!),
                     const SizedBox(height: 16),
                     // Phone — read-only, proven at the OTP step, never submitted.
-                    _FieldLabel(l10n.phoneLabel),
+                    FieldLabel(l10n.phoneLabel),
                     const SizedBox(height: 8),
                     _ReadOnlyPhone(phone: draft.phone),
                     const SizedBox(height: 16),
                     // Parent's Number — the one phone that IS submitted.
-                    _FieldLabel(l10n.parentNumberLabel),
+                    FieldLabel(l10n.parentNumberLabel),
                     const SizedBox(height: 8),
                     _DialCodePhoneField(
                       controller: _parentPhoneController,
                       hint: l10n.phoneHint,
                     ),
                     if (_parentPhoneErrorKey != null)
-                      _InlineError(_parentPhoneErrorKey!),
+                      InlineFieldError(_parentPhoneErrorKey!),
                     const SizedBox(height: 16),
                     // Referral — optional, collected but NOT submitted (#1).
-                    _FieldLabel(l10n.referralCodeOptional),
+                    FieldLabel(l10n.referralCodeOptional),
                     const SizedBox(height: 8),
-                    _PlainField(
+                    PlainTextField(
                       controller: _referralController,
                       hint: l10n.referralCodeHint,
                       keyboardType: TextInputType.text,
@@ -201,64 +202,11 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
   }
 }
 
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-    return Text(
-      text,
-      style: AppType.labelLarge.copyWith(color: ext.textSecondary),
-    );
-  }
-}
-
-/// A plain single-line text field styled like the Login inputs. `maxLength` uses
-/// a formatter (no counter) to hard-cap length.
-class _PlainField extends StatelessWidget {
-  const _PlainField({
-    required this.controller,
-    required this.hint,
-    required this.keyboardType,
-    this.maxLength,
-  });
-
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType keyboardType;
-  final int? maxLength;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-    return Container(
-      height: 60,
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-      alignment: AlignmentDirectional.centerStart,
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(color: ext.fieldBorder, width: 1.17),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        inputFormatters: maxLength != null
-            ? [LengthLimitingTextInputFormatter(maxLength)]
-            : null,
-        style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          isCollapsed: true,
-          hintText: hint,
-          hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
-        ),
-      ),
-    );
-  }
-}
+// The field label, plain text field and inline error are the shared
+// `form_fields.dart` primitives (`FieldLabel`, `PlainTextField`,
+// `InlineFieldError`). This screen used to carry private line-for-line copies
+// of all three; that duplication is how the error rows drifted to two sizes
+// across the app (Fable style-fitting register SF-02, SF-10).
 
 /// The proven phone, rendered read-only (disabled look). Never editable, never
 /// submitted — it is already bound to the registrationToken.
@@ -343,31 +291,6 @@ class _DialCodePhoneField extends StatelessWidget {
                 hintText: hint,
                 hintStyle: AppType.bodyLarge.copyWith(color: ext.hint),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InlineError extends StatelessWidget {
-  const _InlineError(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(top: 8),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, size: 18, color: cs.error),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: AppType.captionRegular.copyWith(color: cs.error),
             ),
           ),
         ],

@@ -65,7 +65,15 @@ class CatalogHeader extends StatelessWidget {
       child: Stack(
         alignment: AlignmentDirectional.center,
         children: [
-          Text(title, style: AppType.h2.copyWith(color: ext.textPrimary)),
+          Text(
+            title,
+            // One line, like `TitledChrome`: a long server-side name would
+            // wrap to 52px inside this 35px bar and be clipped over the back
+            // chip. Register SF-08.
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppType.h2.copyWith(color: ext.textPrimary),
+          ),
           if (canPop)
             PositionedDirectional(
               start: 0,

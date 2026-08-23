@@ -102,6 +102,18 @@ class AppTheme {
         // the actual fix, not the background colour alone.
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        // Type follows the app's own dialogs: `ProfileConfirmDialog` and
+        // `LimitSheet` set h2 titles over bodyLarge copy, and every 35px title
+        // bar is h2. Without these two lines the framework `AlertDialog`s
+        // ("Discard changes?", "Leave quiz?") took the TextTheme bridge's
+        // headlineSmall/bodyMedium — h3 over 14px — and the app was back to
+        // two dialog systems, this time in type. The colours are the ones M3
+        // already resolved for these slots; only the metrics change. Fable
+        // style-fitting register SF-07.
+        titleTextStyle: AppType.h2.copyWith(color: scheme.onSurface),
+        contentTextStyle: AppType.bodyLarge.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
       ),
       // The date picker is a THIRD dialog surface, and `DialogThemeData` does
       // not reach it — `DatePickerDialog` reads `DatePickerThemeData` instead.

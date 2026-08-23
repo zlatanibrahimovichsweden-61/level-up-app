@@ -59,6 +59,9 @@ class _SheetCard extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
+                    // One line, like `TitledChrome` (register SF-08).
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppType.h2.copyWith(color: ext.textPrimary),
                   ),
                   PositionedDirectional(

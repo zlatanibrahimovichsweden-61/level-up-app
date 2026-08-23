@@ -215,7 +215,7 @@ class _RankSection extends ConsumerWidget {
           ? Text(
               key: const Key('settings_rank_error'),
               profileSaveErrorMessage(l10n, save.error),
-              style: AppType.captionRegular.copyWith(
+              style: AppType.bodyMedium.copyWith(
                 color: Theme.of(context).extension<AppColors>()!.destructive,
               ),
             )

@@ -48,7 +48,9 @@ class ShellBody extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppType.captionRegular.copyWith(color: ext.textSecondary),
+              // bodyLarge, like every other centred state message (Profile,
+              // Edit Profile, Home, Catalog). Register SF-03.
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             if (action != null) ...[const SizedBox(height: 24), action!],
           ],

@@ -110,6 +110,11 @@ class ProfileConfirmDialog extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
+                    // One line, like `TitledChrome`: a wrapped title would be
+                    // clipped by this 35px bar and land under the X again
+                    // (register SF-08).
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppType.h2.copyWith(color: ext.profileStatLabel),
                   ),
                   PositionedDirectional(

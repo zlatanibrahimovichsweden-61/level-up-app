@@ -12,9 +12,10 @@ import 'package:flutter/material.dart';
 /// ## The rules this file exists to enforce
 ///
 /// 1. **No `fontSize:` outside this file.** Guard-enforced in
-///    `test/guards/project_rules_test.dart`. The old ratchet counted 153 inline
-///    sizes across 49 files; the guard now holds the line at zero in `lib/`
-///    outside `lib/core/theme/`.
+///    `test/core/theme/typography_discipline_test.dart`, with the ratchet in
+///    `test/guards/project_rules_test.dart` pinned at zero. The old ratchet
+///    counted 153 inline sizes across 49 files; the guard now holds the line
+///    at zero in `lib/` outside `lib/core/theme/`.
 /// 2. **Sizes come only from the scale** `28 → 24 → 20 → 18 → 16 → 14 → 12 → 10`
 ///    (plus `11`, which the handoff defines for bottom navigation only). The
 ///    designer's own closing rule: "Do not create random font sizes inside

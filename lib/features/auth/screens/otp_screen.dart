@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/language_pill.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
 import '../../registration/notifier/registration_controller.dart';
@@ -92,7 +93,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (offline) const _OfflineBanner(),
+            if (offline) const OfflineBanner(),
             // One header row, 24dp gutters to match `_InputView` below it.
             // Before verification it carries the back chip; after it, the
             // language pill from the success frame (155:809). Never both:
@@ -144,40 +145,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 }
 
-/// A distinct, pinned offline indicator (NOT a failed-request error). Shown when
-/// connectivity is definitively down; Verify and Resend are disabled alongside it.
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.errorContainer,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                l10n.offline,
-                textAlign: TextAlign.center,
-                style: AppType.labelLarge.copyWith(color: cs.onErrorContainer),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// The offline indicator is the shared `OfflineBanner` (core/widgets). This
+// screen used to carry a private line-for-line copy of it (register SF-01).
 
 class _InputView extends StatelessWidget {
   const _InputView({
@@ -535,7 +504,7 @@ class _InlineMessage extends StatelessWidget {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: AppType.captionRegular.copyWith(color: color),
+            style: AppType.bodyMedium.copyWith(color: color),
           ),
         ),
       ],

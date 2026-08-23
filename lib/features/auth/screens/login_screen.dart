@@ -10,6 +10,7 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/language_pill.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
@@ -130,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            if (offline) const _OfflineBanner(),
+            if (offline) const OfflineBanner(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
@@ -256,40 +257,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
-/// A distinct, pinned offline indicator (NOT a failed-request error). Shown when
-/// connectivity is definitively down; the primary action is disabled alongside it.
-class _OfflineBanner extends StatelessWidget {
-  const _OfflineBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.errorContainer,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                l10n.offline,
-                textAlign: TextAlign.center,
-                style: AppType.labelLarge.copyWith(color: cs.onErrorContainer),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// The offline indicator is the shared `OfflineBanner` (core/widgets). This
+// screen used to carry a private line-for-line copy; two copies of one banner
+// is how it ended up in two type styles across the app (register SF-01).
 
 class _PhoneField extends StatelessWidget {
   const _PhoneField({
@@ -367,10 +337,7 @@ class _InlineMessage extends StatelessWidget {
           const SizedBox(width: 6),
         ],
         Expanded(
-          child: Text(
-            text,
-            style: AppType.captionRegular.copyWith(color: color),
-          ),
+          child: Text(text, style: AppType.bodyMedium.copyWith(color: color)),
         ),
       ],
     );

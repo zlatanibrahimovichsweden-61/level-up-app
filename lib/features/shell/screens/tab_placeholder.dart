@@ -29,7 +29,7 @@ class TabPlaceholder extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               l10n.comingSoon,
-              style: AppType.captionRegular.copyWith(color: ext.textSecondary),
+              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
           ],
         ),

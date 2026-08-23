@@ -267,7 +267,9 @@ class _RewardsCard extends StatelessWidget {
         children: [
           Text(
             l10n.rewardsEarned,
-            style: AppType.labelLarge.copyWith(color: ext.quizExplanationBody),
+            style: AppType.captionRegular.copyWith(
+              color: ext.quizExplanationBody,
+            ),
           ),
           const SizedBox(height: 12),
           Row(

@@ -55,7 +55,7 @@ class SubmitFailureBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppType.captionRegular.copyWith(color: cs.error),
+              style: AppType.bodyMedium.copyWith(color: cs.error),
             ),
           ),
         ],

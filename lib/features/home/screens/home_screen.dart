@@ -141,7 +141,12 @@ class _Skeleton extends StatelessWidget {
           const SizedBox(height: 25),
           const _Block(height: 171, radius: 15),
           const SizedBox(height: 25),
-          const _Block(width: 120, height: 18),
+          // 24, not 18: a section title is one h3 line (18 x 24/18) since the
+          // type scale, so the block stands in for exactly that and the page
+          // does not shift when the profile arrives. The 171 above is the
+          // level card's pre-scale stand-in and is left for the device pass
+          // (register SF-09 / DP-01).
+          const _Block(width: 120, height: 24),
           const SizedBox(height: 12),
           const _Block(height: 96, radius: 15),
         ],

@@ -113,7 +113,12 @@ class QuestionOptionTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       text,
-                      style: AppType.h3.copyWith(color: ext.textPrimary),
+                      // labelLarge: the frame's 14px semi-bold option text
+                      // (`308:5155`). The question above is h3; an option at
+                      // h3 too collapses the hierarchy. Register SF-05.
+                      style: AppType.labelLarge.copyWith(
+                        color: ext.textPrimary,
+                      ),
                     ),
                   ),
                 ],
