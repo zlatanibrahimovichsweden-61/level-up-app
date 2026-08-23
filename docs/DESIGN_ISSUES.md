@@ -1085,7 +1085,7 @@ what "unsaved" means when the app has already visibly changed language.
 
 ---
 
-## 49. 🟡 OTP resend-timer pill — built from a 100%-zoom screenshot, not Dev Mode; icon is a placeholder
+## 49. 🟡 OTP resend-timer pill — built from a 100%-zoom screenshot, not Dev Mode; glyph landed
 
 **Where:** OTP (`82:1328`, "Frame 1000002977") → its third child, Frame `427319517` (161 × hug,
 vertical, gap 20): a stadium pill holding a stopwatch glyph and `00.21`, with "Resend OTP" under
@@ -1107,11 +1107,13 @@ Mode) and a screenshot at 100% zoom.
 | Gap pill → label | 20 | Properties panel (Frame 427319517 · Gap) — **the only read value** |
 | Pill height / radius | 36 / 18 | measured; equals `LanguagePill`'s 36.10 stadium |
 | Pill horizontal inset | 14 | measured |
-| Glyph size / gap to digits | 18 / 8 | measured |
+| Glyph size | 15 × 19 | **read** — the export's own viewBox, drawn at native size |
+| Gap glyph → digits | 8 | measured |
 | Digits | `AppType.bodyMedium` (14/20, 400) | measured; 14 vs 16 is within the reading error |
 | Pill fill | `AppColors.cardFill` | approved raised-surface token, not a read hex |
 | Pill shadow | `elevationShadow` @ 0.25, 0.5/0.5/4 | the recipe the five #47 shadows share; the frame's looks softer/wider |
-| Glyph + digit tint | `AppColors.textSecondary` | approved token, not a read hex |
+| Glyph tint | `colorScheme.primary` | **read** — the export's stroke is `#384F47`, the light primary and the colour of the "Resend OTP" label beneath it; `app_colors_test.dart` pins the two together |
+| Digit tint | `AppColors.textSecondary` | approved token; the frame gives no value — **designer: same green as the glyph, or the dark grey?** |
 
 **The separator is a dot, on purpose.** The frame draws `00.21`, not `00:21`. Built verbatim
 (`resendTimer` = `{minutes}.{seconds}` in both ARBs, digits zero-padded) because changing it is a
@@ -1119,14 +1121,19 @@ copy decision, not an engineering one — but a dot between minutes and seconds 
 to many students. **Designer: confirm dot vs colon.** The change is one character in two ARB
 files.
 
-**The glyph is a placeholder.** `assets/icons/stopwatch.svg` is drawn to the `language.svg`
-recipe (stroke `currentColor`, round caps) and tinted at the call site; its header and a
-`TODO(design-asset)` in `otp_screen.dart` say so. **To land the real one, no code change is
-needed:** in Figma, drill into Frame 427319517 → the pill → the icon layer (its layer name is the
-Iconify id, e.g. `meteor-icons:…`), right-click → *Copy/Paste as → Copy as SVG* (works on a view
-seat), paste over the file, delete the marker. Also worth reading off the Properties panel while
-there: the pill's Width / Height / Padding / Gap / corner radius, and the digits' text style —
-each replaces a measured row above.
+**The glyph landed (2026-08-22).** `assets/icons/stopwatch.svg` is now the owner's *Copy as SVG*
+of the icon layer: 15 × 19, three stroke paths at 1.6 with round caps, stroke `#384F47`. It
+shipped first as a hand-drawn placeholder with a `TODO(design-asset)` marker; both the marker
+and the placeholder are gone. Two things the export settled that a screenshot could not: the
+box is 15 × 19 (it had been drawn in an 18 × 18 square), and the glyph is the **green primary**,
+not the dark body grey — the widget tints it with `colorScheme.primary` so it still follows the
+accent flip on the dark canvas, and `test/core/theme/app_colors_test.dart` asserts the file's
+literal stroke still equals that token, so a re-export in another colour fails a test instead
+of quietly disagreeing with the palette.
+
+**Still worth reading off the Properties panel** (view seat is enough): the pill's Width /
+Height / Padding / Gap / corner radius, and the digits' text style and colour — each replaces a
+measured row above.
 
 **Behaviour, which the frame does not show.** Only the counting state is drawn. Built: while
 `secondsRemaining > 0` the label is rendered in full colour under the pill (as drawn) but is

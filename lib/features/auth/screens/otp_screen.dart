@@ -334,13 +334,19 @@ class _ResendRow extends StatelessWidget {
 /// verbatim and flagged (docs/DESIGN_ISSUES.md #49) rather than silently
 /// "corrected" to a colon.
 ///
-/// **Every number below except [gapBelow] is measured off a 100%-zoom
+/// **The pill's numbers except [gapBelow] are measured off a 100%-zoom
 /// screenshot, not read from Dev Mode** — the Figma MCP connector is on a
 /// view-only seat (issue #49) — so treat them as ±2dp until the designer
-/// confirms. The fill, shadow and tint are approved tokens reused rather than
-/// hexes invented: [AppColors.cardFill] is the raised surface, the shadow is
-/// the recipe the five measured card shadows share (issue #47), and the glyph
-/// and digits take [AppColors.textSecondary].
+/// confirms. The glyph is the exception: it is the designer's own export, so
+/// its 15×19 box and its `#384F47` stroke are read, not measured.
+///
+/// Fill, shadow and tints are approved tokens reused rather than hexes
+/// invented: [AppColors.cardFill] is the raised surface, the shadow is the
+/// recipe the five measured card shadows share (issue #47), the glyph takes
+/// `colorScheme.primary` — `#384F47` in light, i.e. exactly the stroke the
+/// export carries, and the colour the "Resend OTP" label under it already
+/// wears — and the digits take [AppColors.textSecondary], for which the frame
+/// gives no value (issue #49).
 class _ResendTimerPill extends StatelessWidget {
   const _ResendTimerPill({required this.l10n, required this.secondsRemaining});
 
@@ -355,10 +361,16 @@ class _ResendTimerPill extends StatelessWidget {
   static const _radius = _height / 2; // a full stadium, holds at any width
   static const _inset = 14.0;
   static const _gap = 8.0;
-  static const _iconSize = 18.0;
+
+  /// The export's own viewBox (`assets/icons/stopwatch.svg` is 15×19). Drawn
+  /// at native size rather than squeezed into a square, the way
+  /// `CircleBackButton` treats its 15×30 chevron.
+  static const _iconWidth = 15.0;
+  static const _iconHeight = 19.0;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
     final minutes = (secondsRemaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (secondsRemaining % 60).toString().padLeft(2, '0');
@@ -384,15 +396,16 @@ class _ResendTimerPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // TODO(design-asset): `assets/icons/stopwatch.svg` is a PLACEHOLDER
-            // drawn to the language.svg recipe (stroke currentColor, round
-            // caps). Replace the file with "Copy as SVG" of the icon layer in
-            // Frame 427319517 — no code change needed — then delete this marker.
+            // The designer's export of the icon layer in Frame 427319517 — a
+            // STROKE-drawn stopwatch at 1.6 with round caps. The file carries
+            // the stroke as a literal `#384F47`; it is tinted here anyway so the
+            // dark canvas gets the dark accent instead of a fixed green
+            // (`app_colors_test.dart` pins the literal to the token).
             SvgPicture.asset(
               'assets/icons/stopwatch.svg',
-              width: _iconSize,
-              height: _iconSize,
-              colorFilter: ColorFilter.mode(ext.textSecondary, BlendMode.srcIn),
+              width: _iconWidth,
+              height: _iconHeight,
+              colorFilter: ColorFilter.mode(cs.primary, BlendMode.srcIn),
             ),
             const SizedBox(width: _gap),
             Text(

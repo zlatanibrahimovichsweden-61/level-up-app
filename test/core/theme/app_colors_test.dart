@@ -130,6 +130,26 @@ void main() {
     });
   });
 
+  test('the OTP stopwatch export is stroked in the light primary', () {
+    // DESIGN_ISSUES #49. The resend-timer pill tints the glyph with
+    // `colorScheme.primary` BECAUSE the designer's export is stroked #384F47 —
+    // the light primary, and the colour of the "Resend OTP" label under it.
+    // If a re-export changes that stroke, this fails instead of the glyph
+    // quietly disagreeing with the palette.
+    final svg = File('assets/icons/stopwatch.svg').readAsStringSync();
+
+    final strokes = RegExp(
+      r'stroke="(#[0-9A-Fa-f]{6})"',
+    ).allMatches(svg).map((m) => m.group(1)!.toUpperCase()).toSet();
+
+    expect(strokes, {'#384F47'}, reason: 'one stroke colour, the primary');
+    expect(
+      Brand.greenPrimary,
+      const Color(0xFF384F47),
+      reason: 'light colorScheme.primary must match the export stroke',
+    );
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.
