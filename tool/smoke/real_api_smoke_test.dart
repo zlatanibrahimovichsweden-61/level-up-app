@@ -24,7 +24,16 @@ import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/features/auth/models/auth_result.dart';
 import 'package:level_up_app/features/auth/models/device_info.dart';
+import 'package:level_up_app/features/auth/models/token_pair.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
+import 'package:level_up_app/features/catalog/models/subject_tree.dart';
+import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/profile/models/profile_update.dart';
+import 'package:level_up_app/features/profile/repository/profile_repository.dart';
+import 'package:level_up_app/features/quiz/models/quiz_mode.dart';
+import 'package:level_up_app/features/quiz/models/quiz_setup_args.dart';
+import 'package:level_up_app/features/quiz/models/quiz_type.dart';
+import 'package:level_up_app/features/quiz/repository/quiz_repository.dart';
 import 'package:level_up_app/features/registration/models/reference_models.dart';
 import 'package:level_up_app/features/registration/models/school_registration.dart';
 import 'package:level_up_app/features/registration/repository/registration_repository.dart';
@@ -67,6 +76,20 @@ class _MemStorage implements SecureStorage {
 
 late Dio raw;
 late ProviderContainer container;
+
+/// Set by the auth test when a session is obtained — either the phone was
+/// already registered (AuthenticatedResult) or the opt-in SMOKE_REGISTER arm
+/// created one. The authenticated-surface test below needs it.
+TokenPair? sessionTokens;
+
+/// One device identity for the whole run. MUST match what
+/// `_MemStorage.readOrCreateDeviceId` returns — device binding means refresh
+/// is rejected for a deviceId the session was not minted for.
+const smokeDevice = DeviceInfo(
+  deviceId: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
+  platform: 'android',
+  model: 'LevelUp Smoke Harness',
+);
 
 String shapeOf(Object? d) {
   if (d is List) {
@@ -248,11 +271,7 @@ void main() {
       return;
     }
 
-    const device = DeviceInfo(
-      deviceId: 'a1b2c3d4e5f60718293a4b5c6d7e8f90',
-      platform: 'android',
-      model: 'LevelUp Smoke Harness',
-    );
+    const device = smokeDevice;
 
     // One verify only — 5 failures lock the number for 15 minutes.
     final Object? result = await repo
@@ -262,9 +281,10 @@ void main() {
 
     String? regToken;
     switch (result) {
-      case AuthenticatedResult():
+      case AuthenticatedResult(:final tokens):
         report('otp/verify', 'AuthenticatedResult — tokens + profile decoded');
         report('discriminator', 'authenticated');
+        sessionTokens = tokens;
       case RegistrationRequiredResult(:final registrationToken):
         report('otp/verify', 'RegistrationRequiredResult decoded');
         report('discriminator', 'registrationRequired');
@@ -373,5 +393,200 @@ void main() {
       isNot(201),
       reason: 'the incomplete probe must NOT create an account',
     );
+
+    // --- OPT-IN: real registration --------------------------------------
+    // OFF by default because it creates a real account on staging. Enable
+    // with --dart-define=SMOKE_REGISTER=true when SMOKE_PHONE is a fresh
+    // staging test number, to unlock the authenticated-surface test.
+    const doRegister = bool.fromEnvironment('SMOKE_REGISTER');
+    if (!doRegister) {
+      say(
+        '\nregistration SKIPPED (add --dart-define=SMOKE_REGISTER=true to '
+        'create a staging account and unlock the authenticated tests)',
+      );
+      return;
+    }
+    say('\n--- registration: REAL POST /auth/register (school) ---');
+    final refRepo = container.read(referenceRepositoryProvider);
+    final govs = await refRepo.getGovernorates('EG');
+    final cities = await refRepo.getCities(
+      countryCode: 'EG',
+      governorateId: govs.first.id,
+    );
+    try {
+      final auth = await container
+          .read(registrationRepositoryProvider)
+          .register(
+            SchoolRegistration(
+              registrationToken: regToken,
+              device: smokeDevice,
+              name: 'Smoke Harness',
+              dateOfBirth: DateTime.utc(2010, 1, 1),
+              countryCode: 'EG',
+              governorateId: govs.first.id,
+              cityId: cities.first.id,
+              stage: 'secondary',
+              educationSystem: 'national',
+              parentPhone: '+2010000000002',
+            ),
+          );
+      report('register', 'OK — AuthenticatedResult decoded');
+      sessionTokens = auth.tokens;
+    } on AppException catch (e) {
+      report('register', 'FAILED ${e.runtimeType}(code=${e.code})');
+    }
   });
+
+  test('authenticated surface: me → entitlements → catalog → quiz → refresh → '
+      'logout', () async {
+    final tokens = sessionTokens;
+    if (tokens == null) {
+      say(
+        '\n--- authenticated surface SKIPPED — no session. Use a REGISTERED '
+        'staging number for SMOKE_PHONE, or add '
+        '--dart-define=SMOKE_REGISTER=true. ---',
+      );
+      return;
+    }
+    final storage = container.read(secureStorageProvider);
+    await storage.writeTokens(
+      access: tokens.accessToken,
+      refresh: tokens.refreshToken,
+    );
+
+    // -- GET /me + PATCH /me (no-op) + GET /me/entitlements ------------
+    final profileRepo = container.read(profileRepositoryProvider);
+    say('\n--- GET /me ---');
+    final me = await profileRepo.getMe();
+    report('decode', 'OK — StudentProfile');
+    report('track', me.track);
+    say('\n--- PATCH /me (no-op: same name — parse + roundtrip only) ---');
+    final patched = await profileRepo.updateMe(ProfileUpdate(name: me.name));
+    report('decode', 'OK — name unchanged: ${patched.name == me.name}');
+    say('\n--- GET /me/entitlements ---');
+    final ents = await profileRepo.getEntitlements();
+    report('items', ents.length);
+
+    // -- catalog --------------------------------------------------------
+    final catalog = container.read(catalogRepositoryProvider);
+    say('\n--- GET /catalog/subjects ---');
+    final subjects = await catalog.getSubjects();
+    report('count', subjects.length);
+    if (subjects.isEmpty) {
+      report(
+        'empty',
+        'contract-legal (v2.1: pre-term accounts) — quiz loop skipped',
+      );
+      await refreshAndLogout();
+      return;
+    }
+    say('\n--- GET /catalog/subjects/{id}/tree ---');
+    final tree = await catalog.getSubjectTree(subjects.first.id);
+    report('decode', 'OK — ${tree.runtimeType}');
+
+    QuizSetupArgs? scope;
+    switch (tree) {
+      case SchoolSubjectTree(:final units):
+        final lessons = [
+          for (final u in units)
+            for (final c in u.chapters)
+              for (final l in c.lessons) l,
+        ];
+        report('lessons', lessons.length);
+        if (lessons.isNotEmpty) {
+          scope = QuizSetupArgs.lesson(
+            lessonId: lessons.first.id,
+            scopeName: lessons.first.name,
+          );
+        }
+      case UniversitySubjectTree(:final lectures, :final quizTypes):
+        report('lectures', lectures.length);
+        if (lectures.isNotEmpty) {
+          scope = QuizSetupArgs.lecture(
+            lectureId: lectures.first.id,
+            scopeName: lectures.first.name,
+            quizType: quizTypes.isNotEmpty ? quizTypes.first : QuizType.normal,
+          );
+        }
+    }
+    if (scope == null) {
+      report('quiz loop', 'SKIPPED — no lesson/lecture in the tree');
+      await refreshAndLogout();
+      return;
+    }
+
+    // -- quiz loop: create → answer q1 → explanation → finish ----------
+    // NOTE: consumes questions from THIS account's weekly free wall.
+    final quizRepo = container.read(quizRepositoryProvider);
+    say('\n--- POST /quizzes (length 10) ---');
+    try {
+      final quiz = await quizRepo.createQuiz(
+        scope: scope,
+        length: QuizLength.ten,
+      );
+      report('decode', 'OK — ${quiz.questions.length} questions');
+      final q = quiz.questions.first;
+      say('\n--- POST /quizzes/{id}/answers (question 1) ---');
+      final grade = await quizRepo.submitAnswer(
+        quizId: quiz.id,
+        questionId: q.id,
+        optionId: q.options.first.id,
+      );
+      report(
+        'decode',
+        'OK — correct=${grade.correct} pointsDelta=${grade.pointsDelta}',
+      );
+      say('\n--- GET /questions/{id}/explanation (single shot) ---');
+      try {
+        final exp = await quizRepo.getExplanation(q.id);
+        report('decode', 'OK — ${exp.runtimeType}');
+      } on AppException catch (e) {
+        // A 403 without base_subscription is contract-expected. What must
+        // NOT happen is an untyped error — that would fail the test.
+        report('explanation', 'typed ${e.runtimeType}(code=${e.code}) — OK');
+      }
+      say('\n--- POST /quizzes/{id}/finish ---');
+      final summary = await quizRepo.finishQuiz(quiz.id);
+      report(
+        'decode',
+        'OK — score=${summary.score}/${summary.totalQuestions} '
+            'answered=${summary.answeredCount}',
+      );
+    } on AppException catch (e) {
+      // weekly_question_limit_reached / not_enough_questions are real
+      // server states, not harness failures — but they must arrive TYPED.
+      report('quiz loop', 'typed ${e.runtimeType}(code=${e.code}) — OK');
+    }
+
+    await refreshAndLogout();
+  });
+}
+
+/// `POST /auth/refresh` (rotation — the old refresh token dies, so the new
+/// pair is written back) then `POST /auth/logout`, then clear.
+Future<void> refreshAndLogout() async {
+  final authRepo = container.read(authRepositoryProvider);
+  final storage = container.read(secureStorageProvider);
+  say('\n--- POST /auth/refresh (rotation) ---');
+  try {
+    final rotated = await authRepo.refresh(
+      refreshToken: (await storage.readRefreshToken())!,
+      deviceId: await storage.readOrCreateDeviceId(),
+    );
+    report('decode', 'OK — TokenPair rotated');
+    await storage.writeTokens(
+      access: rotated.accessToken,
+      refresh: rotated.refreshToken,
+    );
+  } on AppException catch (e) {
+    report('refresh', 'FAILED ${e.runtimeType}(code=${e.code})');
+  }
+  say('\n--- POST /auth/logout ---');
+  try {
+    await authRepo.logout();
+    report('logout', 'OK (204, or already revoked)');
+  } on AppException catch (e) {
+    report('logout', 'FAILED ${e.runtimeType}(code=${e.code})');
+  }
+  await storage.clearTokens();
 }
