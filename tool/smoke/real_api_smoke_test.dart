@@ -162,6 +162,25 @@ void main() {
     }
   }
 
+  /// The rule the quiz loop already follows, applied to every authenticated
+  /// op: a TYPED server state (a 500, a 404 for a route staging has not
+  /// deployed, a 403) is a real answer from the server — report it and carry
+  /// on, so the ops after it are still exercised. Only an untyped error (the
+  /// F-7-01 class) or a decode failure fails the run. Returns null on a typed
+  /// failure; code + HTTP status only, never the body.
+  Future<T?> typed<T>(String name, Future<T> Function() call) async {
+    try {
+      return await call();
+    } on AppException catch (e) {
+      final status = e is ApiException ? ' status=${e.status}' : '';
+      report(
+        name,
+        'typed ${e.runtimeType}(code=${e.code}$status) — reported, not failed',
+      );
+      return null;
+    }
+  }
+
   test('GET /health/version — which backend commit is deployed', () async {
     // Not an /api/v1 path: strip the version suffix off the configured base.
     final root = AppConfig.instance.baseUrl.replaceFirst('/api/v1', '');
@@ -461,16 +480,29 @@ void main() {
     report('decode', 'OK — StudentProfile');
     report('track', me.track);
     say('\n--- PATCH /me (no-op: same name — parse + roundtrip only) ---');
-    final patched = await profileRepo.updateMe(ProfileUpdate(name: me.name));
-    report('decode', 'OK — name unchanged: ${patched.name == me.name}');
+    final patched = await typed(
+      'PATCH /me',
+      () => profileRepo.updateMe(ProfileUpdate(name: me.name)),
+    );
+    if (patched != null) {
+      report('decode', 'OK — name unchanged: ${patched.name == me.name}');
+    }
     say('\n--- GET /me/entitlements ---');
-    final ents = await profileRepo.getEntitlements();
-    report('items', ents.length);
+    final ents = await typed(
+      'GET /me/entitlements',
+      profileRepo.getEntitlements,
+    );
+    if (ents != null) report('items', ents.length);
 
     // -- catalog --------------------------------------------------------
     final catalog = container.read(catalogRepositoryProvider);
     say('\n--- GET /catalog/subjects ---');
-    final subjects = await catalog.getSubjects();
+    final subjects = await typed('GET /catalog/subjects', catalog.getSubjects);
+    if (subjects == null) {
+      report('quiz loop', 'SKIPPED — no subject list');
+      await refreshAndLogout();
+      return;
+    }
     report('count', subjects.length);
     if (subjects.isEmpty) {
       report(
@@ -481,7 +513,15 @@ void main() {
       return;
     }
     say('\n--- GET /catalog/subjects/{id}/tree ---');
-    final tree = await catalog.getSubjectTree(subjects.first.id);
+    final tree = await typed(
+      'GET /catalog/subjects/{id}/tree',
+      () => catalog.getSubjectTree(subjects.first.id),
+    );
+    if (tree == null) {
+      report('quiz loop', 'SKIPPED — no tree');
+      await refreshAndLogout();
+      return;
+    }
     report('decode', 'OK — ${tree.runtimeType}');
 
     QuizSetupArgs? scope;
