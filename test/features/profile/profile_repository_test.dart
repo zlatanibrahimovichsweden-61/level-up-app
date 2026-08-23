@@ -251,4 +251,33 @@ void main() {
       );
     });
   });
+
+  // F-7-01: fromJson runs outside Dio, so schema drift used to escape as a raw
+  // TypeError that no notifier or copy mapper could branch on. The repository
+  // must seal it behind the typed boundary.
+  group('parse failures (F-7-01)', () {
+    test('a malformed /me body surfaces as UnknownException, never a raw '
+        'TypeError', () async {
+      when(() => dio.get<Map<String, dynamic>>('/me')).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/me'),
+          statusCode: 200,
+          // `name` retyped — the exact class of drift a real backend
+          // produces first.
+          data: <String, dynamic>{...schoolProfileJson(), 'name': 42},
+        ),
+      );
+
+      await expectLater(
+        repo.getMe(),
+        throwsA(
+          isA<UnknownException>().having(
+            (e) => e.detail,
+            'detail',
+            startsWith('parse:'),
+          ),
+        ),
+      );
+    });
+  });
 }

@@ -272,6 +272,31 @@ void main() {
         ),
       );
     });
+
+    // F-7-01: a grading response the model cannot parse must arrive as a typed
+    // AppException — a raw TypeError here used to strand the quiz on
+    // AnswerConfirming because QuizBloc only caught AppException.
+    test(
+      'a malformed grading body surfaces as UnknownException (F-7-01)',
+      () async {
+        when(
+          () => dio.post<Map<String, dynamic>>(any(), data: any(named: 'data')),
+        ).thenAnswer(
+          (_) async => response(<String, dynamic>{'correct': 'yes'}),
+        );
+
+        expect(
+          () => repo.submitAnswer(quizId: 'q', questionId: 'q1', optionId: 'o'),
+          throwsA(
+            isA<UnknownException>().having(
+              (e) => e.detail,
+              'detail',
+              startsWith('parse:'),
+            ),
+          ),
+        );
+      },
+    );
   });
 
   group('finishQuiz', () {

@@ -141,6 +141,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       );
     } on AppException catch (error) {
       emit(AnswerFailed(session, optionId, error));
+    } on Object {
+      // F-7-01: a non-AppException here (e.g. a parse failure that slipped a
+      // future refactor) must still land on a terminal state — the alternative
+      // is a quiz stranded on AnswerConfirming with the student's answer lost.
+      emit(AnswerFailed(session, optionId, const UnknownException()));
     }
   }
 
@@ -266,6 +271,11 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
         // available", never as a failed quiz.
         add(ExplanationUpdated(questionId, ExplanationFailed(error.code)));
         return;
+      } on Object {
+        // F-7-01: same terminal-state guarantee for the poll loop.
+        if (isClosed || _pollingFor != questionId) return;
+        add(ExplanationUpdated(questionId, const ExplanationFailed('unknown')));
+        return;
       }
     }
     if (isClosed || _pollingFor != questionId) return;
@@ -305,6 +315,10 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       emit(QuizCompleted(summary, session.quiz.scopeName));
     } on AppException catch (error) {
       emit(FinishFailed(session, error));
+    } on Object {
+      // F-7-01: FinishFailed keeps the session, so the student can retry —
+      // stranding on QuizFinishing would discard a completed quiz.
+      emit(FinishFailed(session, const UnknownException()));
     }
   }
 

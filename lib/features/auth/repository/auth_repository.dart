@@ -35,6 +35,14 @@ class AuthRepository {
       return OtpRequestResult.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
@@ -54,6 +62,14 @@ class AuthRepository {
       return AuthResult.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
@@ -74,6 +90,14 @@ class AuthRepository {
       return TokenPair.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 

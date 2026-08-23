@@ -207,6 +207,32 @@ void main() {
             .having((s) => s.session.total, 'session intact', 3),
       ],
     );
+
+    // F-7-01: the repositories seal parse failures behind AppException, but
+    // the bloc must not depend on that — a non-AppException still lands on a
+    // terminal state instead of stranding the quiz on AnswerConfirming.
+    blocTest<QuizBloc, QuizState>(
+      'a non-AppException submit failure still reaches AnswerFailed (F-7-01)',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.submitAnswer(
+            quizId: any(named: 'quizId'),
+            questionId: any(named: 'questionId'),
+            optionId: any(named: 'optionId'),
+          ),
+        ).thenThrow(StateError('not an AppException'));
+      },
+      seed: () => QuizInProgress(started(), selectedOptionId: 'q1-opt2'),
+      act: (bloc) => bloc.add(const AnswerSubmitted()),
+      expect: () => [
+        isA<AnswerConfirming>(),
+        isA<AnswerFailed>()
+            .having((s) => s.optionId, 'optionId', 'q1-opt2')
+            .having((s) => s.error, 'error', isA<UnknownException>())
+            .having((s) => s.session.total, 'session intact', 3),
+      ],
+    );
   });
 
   // NON-NEGOTIABLE: the retry re-sends the identical body. The server is
@@ -519,6 +545,26 @@ void main() {
         isA<QuizFinishing>(),
         isA<FinishFailed>()
             .having((s) => s.error, 'error', isA<OfflineException>())
+            .having((s) => s.session.total, 'session intact', 3),
+      ],
+    );
+
+    // F-7-01: FinishFailed keeps the session so the student can retry — a
+    // non-AppException must never strand a completed quiz on QuizFinishing.
+    blocTest<QuizBloc, QuizState>(
+      'a non-AppException finish failure still reaches FinishFailed (F-7-01)',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.finishQuiz(any()),
+        ).thenThrow(StateError('not an AppException'));
+      },
+      seed: () => QuizInProgress(started()),
+      act: (bloc) => bloc.add(const QuizFinishRequested()),
+      expect: () => [
+        isA<QuizFinishing>(),
+        isA<FinishFailed>()
+            .having((s) => s.error, 'error', isA<UnknownException>())
             .having((s) => s.session.total, 'session intact', 3),
       ],
     );

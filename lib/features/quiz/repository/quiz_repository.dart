@@ -62,6 +62,14 @@ class QuizRepository {
       return Quiz.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
@@ -88,6 +96,14 @@ class QuizRepository {
       return AnswerResult.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
@@ -103,6 +119,14 @@ class QuizRepository {
       return QuizSummary.fromJson(res.data!);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
@@ -138,6 +162,14 @@ class QuizRepository {
       return ExplanationReady(text);
     } on DioException catch (e) {
       throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
     }
   }
 
