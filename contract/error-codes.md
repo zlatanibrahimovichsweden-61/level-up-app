@@ -15,7 +15,7 @@ Stable machine codes carried in ProblemDetails `code`. The Flutter app maps each
 | `flashcard_subscription_required` | 403 | Flashcards require `flashcardSubscription` | University-only |
 | `image_rejected_by_moderation` | 422 | SafeSearch rejected the upload | Avatar, chat photo, camera capture (adr-021) |
 | `code_already_redeemed` | 409 | Subscription code used | adr-016 single-use |
-| `insufficient_scope` | 403 | Authenticated but role/track forbids this | Generic BOLA guard; also: explanation before answering, flashcard checkout for school student |
+| `insufficient_scope` | 403 | Authenticated but role/track forbids this | Generic BOLA guard; also: explanation before answering |
 | `authentication_required` | 401 | Missing/expired access token | Client runs refresh flow, retries once (contract v1, 2026-07-19) |
 | `not_found` | 404 | Resource id unknown | Generic — opaque resource ids only; reference-data lookups use a per-resource code instead (see above) |
 | `country_not_found` | 404 | `countryCode` in the path/query isn't in the coded country list | adr-028 §3 — first application of the per-resource not-found convention; `/reference/countries/{countryCode}/governorates`, `/reference/cities` |
@@ -25,9 +25,8 @@ Stable machine codes carried in ProblemDetails `code`. The Flutter app maps each
 | `refresh_token_invalid` | 401 | Refresh expired, revoked, or REUSED (reuse revokes the whole chain) | Full re-login (adr-019 reuse detection) |
 | `phone_already_registered` | 409 | Phone belongs to an existing account | Register/recovery new-phone paths |
 | `recovery_unavailable` | 404 | No recoverable account/parent number for this phone | ONE code for both cases (anti-enumeration); app routes to support path |
-| `payment_initiation_failed` | 502 | Paymob checkout session could not be created | Client offers retry |
 | `code_invalid` | 404 | Subscription code unknown | Distinct from `code_already_redeemed` |
-| `weekly_question_limit_reached` | 403 | Free-plan 50 questions/week exhausted | Paywall prompt (requirements §3) |
+| `weekly_question_limit_reached` | 403 | Free-plan 50 questions/week exhausted | Expected free-plan state, not a fault — the allowance resets at the start of the next week (requirements §3) |
 | `not_enough_questions` | 422 | Scope pool smaller than requested quiz length | Normal mode only |
 | `quiz_already_finished` | 409 | Answer submitted after finish | Finish itself is idempotent (returns summary) |
 | `governorate_not_found` | 404 | `governorateId` isn't in the coded governorate list | adr-028 §3 per-resource not-found; `GET /reference/schools` |

@@ -1,5 +1,6 @@
 # Level Up — API contract (OWNED ARTIFACT, ADR-026)
-# Owner: Seif. The Flutter partner builds ONLY against this file (x-stability: stable paths).
+# Owner: Seif. Two partners build against this file: the Flutter mobile app and the website.
+# Both are bound by the same gate — they build ONLY against x-stability: stable paths.
 # Contract-first: endpoints exist here BEFORE they exist in code. If code and this file
 # disagree, the code is wrong. Every change gets an entry in contract-changelog.md.
 #
@@ -24,10 +25,30 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 2.1.0-m1
+  version: 3.0.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
+
+
+    ## Consumers
+
+    **Operations are mobile-consumed by default.** Therefore the **absence** of `x-consumers`
+    means **mobile-only** — it does not mean "unknown" or "not yet annotated"; an operation
+    without the key is correctly annotated, and no tooling may require it.
+
+
+    **When `x-consumers` IS present it is the COMPLETE consumer set for that operation, and it
+    REPLACES the mobile default rather than adding to it.** So `x-consumers: [mobile, web]` means
+    both consume the operation, while `x-consumers: [web]` means web only — the mobile app does
+    **not** consume it. A value that omits `mobile` is a deliberate statement that the app is not
+    a consumer, not an omission.
+
+
+    `x-consumers` is **documentation metadata only**: it names who must be told when the
+    operation changes. It is **not** an authorization source, **not** a routing input, and
+    **not** a stability signal, and nothing may read it as one. Annotating an operation does not
+    change its `x-stability`.
 
 
     ## Global auth behavior (adr-019 + contract session 2026-07-19)
@@ -79,7 +100,7 @@ tags:
   - name: entitlements
     description: Subscription state (extensible set, adr-018)
   - name: commerce
-    description: Paymob checkout handoff (adr-020) + subscription-code redemption (adr-016)
+    description: Subscription-code redemption (adr-016)
   - name: leaderboard
     description: Scoped boards (adr-015) with privacy filtering (adr-023)
 paths:
@@ -87,6 +108,7 @@ paths:
     post:
       tags: [auth]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: requestOtp
       summary: Send a login OTP to a phone (SMS with WhatsApp failover)
       description: >
@@ -123,6 +145,7 @@ paths:
     post:
       tags: [auth]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: verifyOtp
       summary: Verify OTP — returns tokens (existing account) or a registrationToken (new phone)
       description: >
@@ -411,6 +434,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listCountries
       summary: Launch countries (EG, AE, SA, OM — extensible, adr-010)
       description: Closed set, bare array (documented pagination exception). School track only; university is Egypt-only.
@@ -437,6 +461,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listGovernorates
       summary: Governorates for a country (empty array for non-EG)
       security: []
@@ -463,6 +488,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listCities
       summary: Coded city list (adr-010 — no free-text cities)
       description: For EG pass governorateId; for other countries pass countryCode only.
@@ -491,6 +517,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: searchSchools
       summary: Search the Egyptian coded school list (cursor-paginated)
       description: >
@@ -529,6 +556,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listEducationSystems
       summary: School education systems (National AR/Languages, IG, American, IB; STEM future)
       security: []
@@ -553,6 +581,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listUniversities
       summary: Universities → data-driven faculties → data-driven years (adr-018)
       description: Years carry status `active|soon` — "soon" years are shown but not selectable at registration.
@@ -596,6 +625,7 @@ paths:
     get:
       tags: [reference]
       x-stability: stable
+      x-consumers: [mobile, web]
       operationId: listDefaultAvatars
       summary: The 20 default avatars (public — needed at registration)
       security: []
@@ -719,12 +749,11 @@ paths:
       tags: [entitlements]
       x-stability: stable
       operationId: getMyEntitlements
-      summary: Subscription state — the paywall signal (extensible set, adr-018)
+      summary: Subscription state — the entitlement source of truth (extensible set, adr-018)
       description: >
-        Refetch on app resume and when the checkout deep link returns (adr-020 — no `pending`
-        state exists; a card payment is verified-paid or it isn't). Also embedded read-only in
-        GET /me for first paint. Types are additively extensible (future finalRevision — no
-        version bump).
+        Refetch on app resume. There is no `pending` state — an entitlement is active or it
+        isn't. Also embedded read-only in GET /me for first paint. Types are additively
+        extensible (future finalRevision — no version bump).
       responses:
         '200':
           description: All entitlement states for the caller.
@@ -744,7 +773,7 @@ paths:
     get:
       tags: [catalog]
       x-stability: stable
-      x-behaviour-changed: 1.2.0-m1
+      x-behaviour-changed: 2.3.0-m1
       operationId: listSubjects
       summary: Subjects scoped to the caller's registration (server-derived — no scope params)
       description: >
@@ -752,13 +781,22 @@ paths:
         The client never sends scope; it comes from the authenticated student (adr-013 scoping).
 
 
-        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-036, adr-037, adr-038) — the schema is unchanged and
-        the returned SET is strictly narrower.** University subjects are now filtered by TWO
-        independent gates, and a read that applies only one fails OPEN (shows unreleased or unpaid
-        content). **Gate A — release:** the subject's term is released for the student's cohort
-        (`term_schedule.released_at IS NOT NULL OR starts_on <= today`; a cohort with NO schedule row
-        is released — fail-open is deliberate, adr-036 §7). **Gate B — entitlement:** the student
-        holds the relevant active entitlement. There is no per-student term state anywhere (adr-037).
+        **BEHAVIOURAL CHANGE in 2.3.0-m1 (adr-091) — the schema is unchanged and the returned SET
+        WIDENS.** The catalog is **browse-only and is NOT entitlement-gated**: a free student —
+        school or university — sees the complete catalog they are permitted to browse. This read
+        filters by enrolment scope and, for university, by release; **it does not consult
+        entitlement state at all.** The `1.2.0-m1` "TWO independent gates" note is superseded:
+        **Gate B (entitlement) is not weakened, it is RELOCATED** to quiz creation and question
+        delivery, where the free tier expresses itself as an allowance (50 distinct questions per
+        week) instead of as an empty screen. A subject's *name* is not the product; the bank of
+        questions is.
+
+
+        **Gate A — release — survives unchanged and remains UNIVERSITY-ONLY**, and it applies
+        equally to free and to subscribed students: the subject's term is released for the student's
+        cohort (`term_schedule.released_at IS NOT NULL OR starts_on <= today`; a cohort with NO
+        schedule row is released — **fail-open is deliberate**, adr-036 §7). School subjects are
+        never release-gated (adr-073). There is no per-student term state anywhere (adr-037).
 
 
         **An unreleased term is ABSENT, not flagged** (adr-038 §3). There is no release state on the
@@ -795,7 +833,7 @@ paths:
     get:
       tags: [catalog]
       x-stability: stable
-      x-behaviour-changed: 1.2.0-m1
+      x-behaviour-changed: 2.3.0-m1
       operationId: getSubjectTree
       summary: The quiz-build tree — school (units→chapters→lessons) or university (lectures + quiz types)
       description: >
@@ -803,11 +841,13 @@ paths:
         ONLY, never locks retakes. University trees additionally list the quiz types available.
 
 
-        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-038).** The subject itself is now gated by release ∩
-        entitlement — see `GET /catalog/subjects`. A `subjectId` that was reachable yesterday can
-        return `403 insufficient_scope` today, without any schema change: the admin un-released its
-        term for the cohort (adr-037 §3), or the student's entitlement lapsed. Clients holding a
-        cached `subjectId` must handle that 403 as a normal state, not a bug.
+        **BEHAVIOURAL CHANGE in 2.3.0-m1 (adr-091).** The subject is gated by **release only** — see
+        `GET /catalog/subjects`; **entitlement is not consulted on this read.** A `subjectId` that
+        was reachable yesterday can still return `403 insufficient_scope` today, without any schema
+        change: the subject fell outside the caller's enrolment scope, or the admin un-released its
+        term for the cohort (adr-037 §3). **A lapsed entitlement is NOT a cause** — that clause of
+        the `1.2.0-m1` note is withdrawn (adr-091 §1). Clients holding a cached `subjectId` must
+        still handle that 403 as a normal state, not a bug.
       parameters:
         - { name: subjectId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -840,9 +880,9 @@ paths:
         University only; **school students get `[]`**. Modules group subjects for navigation and
         NOTHING else — a module never scopes content, never gates an entitlement, never enters a
         leaderboard key, never appears in a progress counter, and is never on the import path
-        (adr-036 §4). Same two gates as `GET /catalog/subjects`: a module is listed only when its
-        term is released for the caller's cohort and the caller is entitled, and `subjectIds`
-        contains only subjects that pass both gates.
+        (adr-036 §4). Same single gate as `GET /catalog/subjects` (adr-091 §1): a module is listed
+        only when its term is released for the caller's cohort, and `subjectIds` contains only
+        subjects that pass that gate. **Entitlement is not consulted** — this is a catalog read.
 
 
         **There is no "All subjects" entry in this response — `GET /catalog/subjects` IS that view.**
@@ -870,7 +910,7 @@ paths:
                     termNumber: { $ref: '#/components/schemas/TermNumber' }
                     subjectIds:
                       type: array
-                      description: Subjects in this module that pass both gates. May be empty.
+                      description: Subjects in this module that pass the release gate. May be empty.
                       items: { $ref: '#/components/schemas/Uuid' }
                   required: [id, name, displayOrder, subjectIds]
         '401':
@@ -880,7 +920,7 @@ paths:
     post:
       tags: [quiz]
       x-stability: stable
-      x-behaviour-changed: 1.2.0-m1
+      x-behaviour-changed: 2.3.0-m1
       operationId: createQuiz
       summary: Build a quiz — returns questions WITHOUT correct answers (per-question submit model)
       description: >
@@ -891,11 +931,18 @@ paths:
         fails with `weekly_question_limit_reached`.
 
 
-        **BEHAVIOURAL CHANGE in 1.2.0-m1 (adr-038).** `mode: normal` with a university `lectureId`
-        is subject to the same two gates as the catalog: a lecture whose term is not released for the
-        caller's cohort, or which the caller is not entitled to, is **not buildable** and returns
-        `403 insufficient_scope` — the same code, newly reachable for a `lectureId` that was valid
-        before. No new error code: an unreleased term is absent, not nameable (adr-038 §7).
+        **BEHAVIOURAL CHANGE in 2.3.0-m1 (adr-091).** `mode: normal` with a university `lectureId`
+        is subject to **release AND entitlement/quota** — which is **no longer "the same two gates
+        as the catalog"**, because after adr-091 the catalog applies release alone. A lecture whose
+        term is not released for the caller's cohort is **not buildable** and returns
+        `403 insufficient_scope` — the same code, reachable for a `lectureId` that was valid before.
+        No new error code: an unreleased term is absent, not nameable (adr-038 §7).
+
+
+        **Entitlement is enforced HERE, not on the catalog read** (adr-091 §1). A student without an
+        active `baseSubscription` may still browse the whole catalog and build quizzes, drawing on
+        the free allowance above; creation that would exceed it fails with
+        `403 weekly_question_limit_reached`.
 
 
         Whether the two gates also filter the `retakeWrong` / `favorites` pools — which are built
@@ -1024,10 +1071,13 @@ paths:
       tags: [quiz]
       x-stability: stable
       operationId: finishQuiz
-      summary: Close the quiz — summary, points awarded, level/badge changes. Idempotent.
+      summary: Close the quiz — summary, points awarded, level/badge events. Idempotent.
       description: >
         Unanswered questions are recorded unanswered (not counted wrong). Repeat calls return the
         same summary (safe on retry). Unfinished quizzes auto-finish server-side after 24h.
+        The summary reports what THIS attempt did — it does not report the student's current
+        standing. `leveledUp` and `newBadge` are frozen events; the student's current total and
+        level are state and are read from `GET /me` (3.0.0-m1).
       parameters:
         - { name: quizId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -1133,50 +1183,11 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
-  /checkout/sessions:
-    post:
-      tags: [commerce]
-      x-stability: draft
-      operationId: createCheckoutSession
-      summary: Start Paymob web checkout — returns checkoutUrl; result read via /me/entitlements
-      description: >
-        adr-020/026 §10 — the app opens `checkoutUrl` externally (card-only Paymob, incl. Tier-1
-        foreign cards), returns via deep link, then REFETCHES /me/entitlements. There is NO
-        pending state and the payment webhook is backend-internal (Interfaces §2 boundary).
-        School students requesting flashcardSubscription get `insufficient_scope` (university-only).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                entitlementType: { $ref: '#/components/schemas/EntitlementType' }
-              required: [entitlementType]
-      responses:
-        '201':
-          description: Checkout session created.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  checkoutUrl: { type: string, format: uri }
-                  expiresAt: { type: string, format: date-time }
-                required: [checkoutUrl]
-        '401':
-          description: "`authentication_required` · `session_superseded`"
-          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
-        '403':
-          description: "`insufficient_scope` (flashcards for a school student)"
-          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
-        '502':
-          description: "`payment_initiation_failed` (Paymob unavailable — client offers retry)"
-          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /subscription-codes/redemptions:
     post:
       tags: [commerce]
       x-stability: draft
+      x-consumers: [web]   # adr-049 §4 — the app never mentions voucher redemption
       operationId: redeemSubscriptionCode
       summary: Redeem a prepaid subscription code (adr-016 — single-use, 4-month, atomic)
       description: Same entitlement-grant path as a verified payment; single-use enforced atomically server-side.
@@ -1511,7 +1522,7 @@ components:
           required: [leaderboardVisible, scoreHidden]
         entitlements:
           type: array
-          description: Read-only embed for first paint; the paywall source of truth is GET /me/entitlements.
+          description: Read-only embed for first paint; the entitlement-state source of truth is GET /me/entitlements.
           items: { $ref: '#/components/schemas/EntitlementState' }
         createdAt: { type: string, format: date-time }
       required: [id, track, name, phone, dateOfBirth, avatar, geography, points, level, badges, privacy, entitlements, createdAt]
@@ -1646,10 +1657,17 @@ components:
         totalQuestions: { type: integer }
         answeredCount: { type: integer }
         pointsAwarded: { type: integer }
-        totalPoints: { type: integer, description: New total after award. }
-        level: { type: integer }
-        leveledUp: { type: boolean }
-        newBadge: { type: boolean }
+        leveledUp:
+          type: boolean
+          description: >
+            Whether THIS attempt's awards crossed a level threshold. An EVENT, frozen on the attempt
+            when it happened — it never changes afterwards, and a later quiz cannot turn it on or off.
+            The student's CURRENT level and total are state, not events: read them from GET /me.
+        newBadge:
+          type: boolean
+          description: >
+            Whether THIS attempt's awards earned a badge. Frozen at the moment it happened, on the
+            same rule as leveledUp.
         questions:
           type: array
           description: Recap rows (full review at GET /quizzes/{id}).
@@ -1660,7 +1678,7 @@ components:
               answered: { type: boolean }
               correct: { type: [boolean, "null"], description: null when unanswered. }
             required: [questionId, answered]
-      required: [quizId, score, totalQuestions, answeredCount, pointsAwarded, totalPoints, level, leveledUp, newBadge, questions]
+      required: [quizId, score, totalQuestions, answeredCount, pointsAwarded, leveledUp, newBadge, questions]
     QuizHistoryItem:
       type: object
       properties:
