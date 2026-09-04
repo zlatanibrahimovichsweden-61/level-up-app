@@ -148,12 +148,29 @@ void main() {
       expect(parsed.totalQuestions, 10);
       expect(parsed.answeredCount, 8);
       expect(parsed.pointsAwarded, 5);
-      expect(parsed.totalPoints, 1255);
-      expect(parsed.level, 3);
       expect(parsed.leveledUp, isFalse);
       expect(parsed.newBadge, isFalse);
       expect(parsed.questions, hasLength(10));
     });
+
+    // 3.0.0-m1 (adr-102) removed `totalPoints` and `level`. A server still on
+    // the 2.x shape sends them anyway; json_serializable ignores unknown keys,
+    // so the client must not break in either direction.
+    test(
+      'a 2.x body still carrying totalPoints and level parses unchanged',
+      () {
+        final stale = quizSummaryJson()
+          ..['totalPoints'] = 1255
+          ..['level'] = 3;
+
+        final parsed = QuizSummary.fromJson(stale);
+
+        expect(parsed.pointsAwarded, 5);
+        expect(parsed.leveledUp, isFalse);
+        expect(parsed.toJson().containsKey('totalPoints'), isFalse);
+        expect(parsed.toJson().containsKey('level'), isFalse);
+      },
+    );
 
     test('recap rows carry a null `correct` for unanswered questions', () {
       final parsed = QuizSummary.fromJson(quizSummaryJson());

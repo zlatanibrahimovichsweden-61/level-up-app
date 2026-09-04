@@ -416,24 +416,6 @@
       }
     }
   },
-  "resultLevelProgress": "Level Progress",
-  "@resultLevelProgress": {
-    "description": "The result card's level section heading. Distinct from the Home `levelProgress` key, which is the parameterised \"Level {level}\" medallion label."
-  },
-  "levelAndPoints": "Level {level} · {points} points",
-  "@levelAndPoints": {
-    "description": "Numbers, not a proportion: the contract exposes level and totalPoints but NO level threshold, so a progress fraction cannot be drawn (seif_fight S3).",
-    "placeholders": {
-      "level": {
-        "type": "int",
-        "example": "3"
-      },
-      "points": {
-        "type": "int",
-        "example": "1255"
-      }
-    }
-  },
   "reviewQuestions": "Review Questions",
   "reviewQuestionsComingSoon": "Reviewing your answers is coming soon.",
   "backToLearn": "Back to Learn",

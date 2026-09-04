@@ -570,14 +570,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get resultLevelProgress => 'Level Progress';
-
-  @override
-  String levelAndPoints(int level, int points) {
-    return 'Level $level · $points points';
-  }
-
-  @override
   String get reviewQuestions => 'Review Questions';
 
   @override

@@ -1094,18 +1094,6 @@ abstract class AppLocalizations {
   /// **'+{points} Points'**
   String pointsAwarded(int points);
 
-  /// The result card's level section heading. Distinct from the Home `levelProgress` key, which is the parameterised "Level {level}" medallion label.
-  ///
-  /// In en, this message translates to:
-  /// **'Level Progress'**
-  String get resultLevelProgress;
-
-  /// Numbers, not a proportion: the contract exposes level and totalPoints but NO level threshold, so a progress fraction cannot be drawn (seif_fight S3).
-  ///
-  /// In en, this message translates to:
-  /// **'Level {level} · {points} points'**
-  String levelAndPoints(int level, int points);
-
   /// No description provided for @reviewQuestions.
   ///
   /// In en, this message translates to:

@@ -649,6 +649,10 @@ class MockBackendInterceptor extends Interceptor {
 
   /// `POST /quizzes/{quizId}/finish` → `200 QuizSummary`. Idempotent — the
   /// summary is computed once and replayed, so points cannot be awarded twice.
+  ///
+  /// 3.0.0-m1 (adr-102): the summary carries no `totalPoints` or `level` —
+  /// those are state and are read from `GET /me`, which is why `_totalPoints`
+  /// still moves here. `leveledUp` is the frozen event the contract keeps.
   void _finishQuiz(
     RequestInterceptorHandler handler,
     RequestOptions options,
@@ -674,8 +678,6 @@ class MockBackendInterceptor extends Interceptor {
         'totalQuestions': quiz.questions.length,
         'answeredCount': quiz.answers.length,
         'pointsAwarded': score,
-        'totalPoints': _totalPoints,
-        'level': _levelFor(_totalPoints),
         'leveledUp': _levelFor(_totalPoints) > _levelFor(before),
         'newBadge': false,
         'questions': <dynamic>[

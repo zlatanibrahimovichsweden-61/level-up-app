@@ -94,8 +94,6 @@ Map<String, dynamic> quizSummaryJson({
   int totalQuestions = 10,
   int answeredCount = 8,
   int pointsAwarded = 5,
-  int totalPoints = 1255,
-  int level = 3,
   bool leveledUp = false,
   bool newBadge = false,
 }) => <String, dynamic>{
@@ -104,8 +102,6 @@ Map<String, dynamic> quizSummaryJson({
   'totalQuestions': totalQuestions,
   'answeredCount': answeredCount,
   'pointsAwarded': pointsAwarded,
-  'totalPoints': totalPoints,
-  'level': level,
   'leveledUp': leveledUp,
   'newBadge': newBadge,
   'questions': <dynamic>[
@@ -124,8 +120,6 @@ QuizSummary quizSummary({
   int totalQuestions = 10,
   int answeredCount = 8,
   int pointsAwarded = 5,
-  int totalPoints = 1255,
-  int level = 3,
   bool leveledUp = false,
   bool newBadge = false,
 }) => QuizSummary.fromJson(
@@ -134,8 +128,6 @@ QuizSummary quizSummary({
     totalQuestions: totalQuestions,
     answeredCount: answeredCount,
     pointsAwarded: pointsAwarded,
-    totalPoints: totalPoints,
-    level: level,
     leveledUp: leveledUp,
     newBadge: newBadge,
   ),

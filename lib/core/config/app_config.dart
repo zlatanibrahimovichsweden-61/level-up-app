@@ -35,7 +35,7 @@ class AppConfig {
   }
 
   /// The staging host, taken verbatim from the contract's `servers:` block
-  /// (`contract/openapi.yaml:64`, contract v2.1.0-m1). This closes seif_fight
+  /// (`contract/openapi.yaml:85`, contract v3.0.0-m1). This closes seif_fight
   /// S1 — the placeholder `staging.TBD.example` is gone and real requests are
   /// possible. `dev` deliberately resolves to the same host: there has only
   /// ever been one server, and the two flavors have pointed at the same URL

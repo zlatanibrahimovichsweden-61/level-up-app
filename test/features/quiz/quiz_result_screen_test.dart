@@ -135,14 +135,15 @@ void main() {
       expect(find.text('+30 Points'), findsNothing);
     });
 
-    // S3 — the threshold between levels is not in the contract.
-    testWidgets('level progress is numbers, not a proportion', (tester) async {
-      await openResult(
-        tester,
-        summary: quizSummary(level: 3, totalPoints: 1255),
-      );
+    // 3.0.0-m1 (adr-102) / D-006: the summary no longer carries the student's
+    // standing, and the frame draws no level number or points total.
+    testWidgets('no level number or points total is rendered', (tester) async {
+      await openResult(tester, summary: quizSummary(pointsAwarded: 5));
 
-      expect(find.text('Level 3 · 1255 points'), findsOneWidget);
+      expect(find.text('+5 Points'), findsOneWidget);
+      expect(find.text('Level Progress'), findsNothing);
+      expect(find.textContaining('Level'), findsNothing);
+      expect(find.textContaining(RegExp(r'\d+ points')), findsNothing);
     });
 
     testWidgets('the subject line is absent — QuizSummary carries no scope', (

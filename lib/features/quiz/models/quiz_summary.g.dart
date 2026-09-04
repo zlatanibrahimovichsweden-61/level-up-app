@@ -12,8 +12,6 @@ _QuizSummary _$QuizSummaryFromJson(Map<String, dynamic> json) => _QuizSummary(
   totalQuestions: (json['totalQuestions'] as num).toInt(),
   answeredCount: (json['answeredCount'] as num).toInt(),
   pointsAwarded: (json['pointsAwarded'] as num).toInt(),
-  totalPoints: (json['totalPoints'] as num).toInt(),
-  level: (json['level'] as num).toInt(),
   leveledUp: json['leveledUp'] as bool,
   newBadge: json['newBadge'] as bool,
   questions: (json['questions'] as List<dynamic>)
@@ -28,8 +26,6 @@ Map<String, dynamic> _$QuizSummaryToJson(_QuizSummary instance) =>
       'totalQuestions': instance.totalQuestions,
       'answeredCount': instance.answeredCount,
       'pointsAwarded': instance.pointsAwarded,
-      'totalPoints': instance.totalPoints,
-      'level': instance.level,
       'leveledUp': instance.leveledUp,
       'newBadge': instance.newBadge,
       'questions': instance.questions,

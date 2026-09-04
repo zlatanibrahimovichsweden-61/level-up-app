@@ -3,10 +3,17 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'quiz_summary.freezed.dart';
 part 'quiz_summary.g.dart';
 
-/// Contract `QuizSummary` (`openapi.yaml:1446`) — the `200` body of
+/// Contract `QuizSummary` (`openapi.yaml:1652`, 3.0.0-m1) — the `200` body of
 /// `POST /quizzes/{quizId}/finish`, required `[quizId, score, totalQuestions,
-/// answeredCount, pointsAwarded, totalPoints, level, leveledUp, newBadge,
-/// questions]`.
+/// answeredCount, pointsAwarded, leveledUp, newBadge, questions]`.
+///
+/// **3.0.0-m1 (adr-102) removed `totalPoints` and `level`.** The contract's
+/// rule: a field that describes an EVENT is frozen, a field that describes
+/// STATE is live. The student's current total and level are state and come
+/// from `GET /me` (`StudentProfile.points.total`, `.level`); this summary
+/// reports only what THIS attempt did. A 2.x server that still sends the two
+/// keys parses unchanged — json_serializable ignores unknown keys — so the
+/// client cannot break in either direction.
 ///
 /// Contract keys are already camelCase, so NO `@JsonKey(name:)` bridge is
 /// needed and none must be added.
@@ -32,24 +39,24 @@ abstract class QuizSummary with _$QuizSummary {
     /// predicted or previewed. See docs/seif_fight.md S12.
     required int pointsAwarded,
 
-    /// The student's new total after the award — server-authoritative, same as
-    /// everywhere else in the app.
-    required int totalPoints,
-    required int level,
-
-    /// True when this quiz crossed a level boundary.
+    /// True when THIS quiz crossed a level boundary.
+    ///
+    /// A frozen EVENT (adr-102): set at the moment it happened and never
+    /// changed by a later quiz. Do not recompute it by comparing two `GET /me`
+    /// reads — that approximation is wrong whenever another quiz awarded
+    /// points while this one was open.
     ///
     /// **Parsed, not celebrated.** The contract goes to the trouble of telling
     /// us, but the result frame has no level-up state to render — flagged in
     /// docs/DESIGN_ISSUES.md rather than invented here.
     required bool leveledUp,
 
-    /// True when this quiz earned a badge (every 5,000 total_points past
-    /// Level 12).
+    /// True when THIS quiz earned a badge (every 5,000 total_points past
+    /// Level 12). Frozen on the same rule as [leveledUp].
     ///
-    /// Identical treatment to [leveledUp]: required by the contract, so it is
-    /// parsed; no badge celebration exists in the result frame, so nothing is
-    /// rendered. Owner decision — no celebration UI this ticket.
+    /// Identical treatment: required by the contract, so it is parsed; no
+    /// badge celebration exists in the result frame, so nothing is rendered.
+    /// Owner decision — no celebration UI this ticket.
     required bool newBadge,
 
     /// Per-question recap rows. The contract points at
@@ -101,7 +108,7 @@ abstract class QuizSummary with _$QuizSummary {
   }
 }
 
-/// One recap row inside [QuizSummary.questions] (`openapi.yaml:1461`),
+/// One recap row inside [QuizSummary.questions] (`openapi.yaml:1671`),
 /// required `[questionId, answered]`.
 @freezed
 abstract class QuizSummaryQuestion with _$QuizSummaryQuestion {

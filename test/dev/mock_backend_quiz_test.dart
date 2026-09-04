@@ -272,7 +272,12 @@ void main() {
     });
 
     test('is idempotent — a repeat call replays the same summary', () async {
-      final quiz = repo();
+      final dio = buildMockDio(latency: Duration.zero);
+      final quiz = QuizRepository(dio);
+      Future<Object?> liveTotal() async =>
+          ((await dio.get<Map<String, dynamic>>('/me')).data!['points']
+              as Map<String, dynamic>)['total'];
+
       final created = await quiz.createQuiz(
         scope: bigLesson,
         length: QuizLength.ten,
@@ -284,11 +289,13 @@ void main() {
       );
 
       final first = await quiz.finishQuiz(created.id);
+      final totalAfterFirst = await liveTotal();
       final second = await quiz.finishQuiz(created.id);
 
       expect(second, first);
-      // Critically: totalPoints did not move a second time.
-      expect(second.totalPoints, first.totalPoints);
+      // Critically: the live total did not move a second time. It lives on
+      // GET /me — the summary no longer carries it (3.0.0-m1, adr-102).
+      expect(await liveTotal(), totalAfterFirst);
     });
 
     test(
@@ -323,7 +330,6 @@ void main() {
           after['total'],
           (before['total']! as int) + summary.pointsAwarded,
         );
-        expect(after['total'], summary.totalPoints);
       },
     );
   });

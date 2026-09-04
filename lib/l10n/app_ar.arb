@@ -183,8 +183,6 @@
   "resultSkipped": "متروكة",
   "rewardsEarned": "النقاط المكتسبة",
   "pointsAwarded": "+{points} نقطة",
-  "resultLevelProgress": "تقدّم المستوى",
-  "levelAndPoints": "المستوى {level} · {points} نقطة",
   "reviewQuestions": "مراجعة الأسئلة",
   "reviewQuestionsComingSoon": "مراجعة إجاباتك قريبًا.",
   "backToLearn": "العودة إلى التعلّم",

@@ -22,19 +22,22 @@ mixin _$QuizSummary {
 /// below are two different numbers.
  int get answeredCount;/// Points awarded for THIS quiz. Rendered verbatim; never computed,
 /// predicted or previewed. See docs/seif_fight.md S12.
- int get pointsAwarded;/// The student's new total after the award — server-authoritative, same as
-/// everywhere else in the app.
- int get totalPoints; int get level;/// True when this quiz crossed a level boundary.
+ int get pointsAwarded;/// True when THIS quiz crossed a level boundary.
+///
+/// A frozen EVENT (adr-102): set at the moment it happened and never
+/// changed by a later quiz. Do not recompute it by comparing two `GET /me`
+/// reads — that approximation is wrong whenever another quiz awarded
+/// points while this one was open.
 ///
 /// **Parsed, not celebrated.** The contract goes to the trouble of telling
 /// us, but the result frame has no level-up state to render — flagged in
 /// docs/DESIGN_ISSUES.md rather than invented here.
- bool get leveledUp;/// True when this quiz earned a badge (every 5,000 total_points past
-/// Level 12).
+ bool get leveledUp;/// True when THIS quiz earned a badge (every 5,000 total_points past
+/// Level 12). Frozen on the same rule as [leveledUp].
 ///
-/// Identical treatment to [leveledUp]: required by the contract, so it is
-/// parsed; no badge celebration exists in the result frame, so nothing is
-/// rendered. Owner decision — no celebration UI this ticket.
+/// Identical treatment: required by the contract, so it is parsed; no
+/// badge celebration exists in the result frame, so nothing is rendered.
+/// Owner decision — no celebration UI this ticket.
  bool get newBadge;/// Per-question recap rows. The contract points at
 /// `GET /quizzes/{id}` for the full review, which is `draft` — so these
 /// rows are the only post-quiz per-question data available today.
@@ -55,16 +58,16 @@ $QuizSummaryCopyWith<QuizSummary> get copyWith => _$QuizSummaryCopyWithImpl<Quiz
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuizSummary&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.score, score) || other.score == score)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&(identical(other.answeredCount, answeredCount) || other.answeredCount == answeredCount)&&(identical(other.pointsAwarded, pointsAwarded) || other.pointsAwarded == pointsAwarded)&&(identical(other.totalPoints, totalPoints) || other.totalPoints == totalPoints)&&(identical(other.level, level) || other.level == level)&&(identical(other.leveledUp, leveledUp) || other.leveledUp == leveledUp)&&(identical(other.newBadge, newBadge) || other.newBadge == newBadge)&&const DeepCollectionEquality().equals(other.questions, questions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuizSummary&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.score, score) || other.score == score)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&(identical(other.answeredCount, answeredCount) || other.answeredCount == answeredCount)&&(identical(other.pointsAwarded, pointsAwarded) || other.pointsAwarded == pointsAwarded)&&(identical(other.leveledUp, leveledUp) || other.leveledUp == leveledUp)&&(identical(other.newBadge, newBadge) || other.newBadge == newBadge)&&const DeepCollectionEquality().equals(other.questions, questions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quizId,score,totalQuestions,answeredCount,pointsAwarded,totalPoints,level,leveledUp,newBadge,const DeepCollectionEquality().hash(questions));
+int get hashCode => Object.hash(runtimeType,quizId,score,totalQuestions,answeredCount,pointsAwarded,leveledUp,newBadge,const DeepCollectionEquality().hash(questions));
 
 @override
 String toString() {
-  return 'QuizSummary(quizId: $quizId, score: $score, totalQuestions: $totalQuestions, answeredCount: $answeredCount, pointsAwarded: $pointsAwarded, totalPoints: $totalPoints, level: $level, leveledUp: $leveledUp, newBadge: $newBadge, questions: $questions)';
+  return 'QuizSummary(quizId: $quizId, score: $score, totalQuestions: $totalQuestions, answeredCount: $answeredCount, pointsAwarded: $pointsAwarded, leveledUp: $leveledUp, newBadge: $newBadge, questions: $questions)';
 }
 
 
@@ -75,7 +78,7 @@ abstract mixin class $QuizSummaryCopyWith<$Res>  {
   factory $QuizSummaryCopyWith(QuizSummary value, $Res Function(QuizSummary) _then) = _$QuizSummaryCopyWithImpl;
 @useResult
 $Res call({
- String quizId, int score, int totalQuestions, int answeredCount, int pointsAwarded, int totalPoints, int level, bool leveledUp, bool newBadge, List<QuizSummaryQuestion> questions
+ String quizId, int score, int totalQuestions, int answeredCount, int pointsAwarded, bool leveledUp, bool newBadge, List<QuizSummaryQuestion> questions
 });
 
 
@@ -92,15 +95,13 @@ class _$QuizSummaryCopyWithImpl<$Res>
 
 /// Create a copy of QuizSummary
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? quizId = null,Object? score = null,Object? totalQuestions = null,Object? answeredCount = null,Object? pointsAwarded = null,Object? totalPoints = null,Object? level = null,Object? leveledUp = null,Object? newBadge = null,Object? questions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? quizId = null,Object? score = null,Object? totalQuestions = null,Object? answeredCount = null,Object? pointsAwarded = null,Object? leveledUp = null,Object? newBadge = null,Object? questions = null,}) {
   return _then(_self.copyWith(
 quizId: null == quizId ? _self.quizId : quizId // ignore: cast_nullable_to_non_nullable
 as String,score: null == score ? _self.score : score // ignore: cast_nullable_to_non_nullable
 as int,totalQuestions: null == totalQuestions ? _self.totalQuestions : totalQuestions // ignore: cast_nullable_to_non_nullable
 as int,answeredCount: null == answeredCount ? _self.answeredCount : answeredCount // ignore: cast_nullable_to_non_nullable
 as int,pointsAwarded: null == pointsAwarded ? _self.pointsAwarded : pointsAwarded // ignore: cast_nullable_to_non_nullable
-as int,totalPoints: null == totalPoints ? _self.totalPoints : totalPoints // ignore: cast_nullable_to_non_nullable
-as int,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,leveledUp: null == leveledUp ? _self.leveledUp : leveledUp // ignore: cast_nullable_to_non_nullable
 as bool,newBadge: null == newBadge ? _self.newBadge : newBadge // ignore: cast_nullable_to_non_nullable
 as bool,questions: null == questions ? _self.questions : questions // ignore: cast_nullable_to_non_nullable
@@ -189,10 +190,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  int totalPoints,  int level,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QuizSummary() when $default != null:
-return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.totalPoints,_that.level,_that.leveledUp,_that.newBadge,_that.questions);case _:
+return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.leveledUp,_that.newBadge,_that.questions);case _:
   return orElse();
 
 }
@@ -210,10 +211,10 @@ return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  int totalPoints,  int level,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)  $default,) {final _that = this;
 switch (_that) {
 case _QuizSummary():
-return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.totalPoints,_that.level,_that.leveledUp,_that.newBadge,_that.questions);case _:
+return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.leveledUp,_that.newBadge,_that.questions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -230,10 +231,10 @@ return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  int totalPoints,  int level,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String quizId,  int score,  int totalQuestions,  int answeredCount,  int pointsAwarded,  bool leveledUp,  bool newBadge,  List<QuizSummaryQuestion> questions)?  $default,) {final _that = this;
 switch (_that) {
 case _QuizSummary() when $default != null:
-return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.totalPoints,_that.level,_that.leveledUp,_that.newBadge,_that.questions);case _:
+return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCount,_that.pointsAwarded,_that.leveledUp,_that.newBadge,_that.questions);case _:
   return null;
 
 }
@@ -245,7 +246,7 @@ return $default(_that.quizId,_that.score,_that.totalQuestions,_that.answeredCoun
 @JsonSerializable()
 
 class _QuizSummary extends QuizSummary {
-  const _QuizSummary({required this.quizId, required this.score, required this.totalQuestions, required this.answeredCount, required this.pointsAwarded, required this.totalPoints, required this.level, required this.leveledUp, required this.newBadge, required final  List<QuizSummaryQuestion> questions}): _questions = questions,super._();
+  const _QuizSummary({required this.quizId, required this.score, required this.totalQuestions, required this.answeredCount, required this.pointsAwarded, required this.leveledUp, required this.newBadge, required final  List<QuizSummaryQuestion> questions}): _questions = questions,super._();
   factory _QuizSummary.fromJson(Map<String, dynamic> json) => _$QuizSummaryFromJson(json);
 
 @override final  String quizId;
@@ -260,22 +261,23 @@ class _QuizSummary extends QuizSummary {
 /// Points awarded for THIS quiz. Rendered verbatim; never computed,
 /// predicted or previewed. See docs/seif_fight.md S12.
 @override final  int pointsAwarded;
-/// The student's new total after the award — server-authoritative, same as
-/// everywhere else in the app.
-@override final  int totalPoints;
-@override final  int level;
-/// True when this quiz crossed a level boundary.
+/// True when THIS quiz crossed a level boundary.
+///
+/// A frozen EVENT (adr-102): set at the moment it happened and never
+/// changed by a later quiz. Do not recompute it by comparing two `GET /me`
+/// reads — that approximation is wrong whenever another quiz awarded
+/// points while this one was open.
 ///
 /// **Parsed, not celebrated.** The contract goes to the trouble of telling
 /// us, but the result frame has no level-up state to render — flagged in
 /// docs/DESIGN_ISSUES.md rather than invented here.
 @override final  bool leveledUp;
-/// True when this quiz earned a badge (every 5,000 total_points past
-/// Level 12).
+/// True when THIS quiz earned a badge (every 5,000 total_points past
+/// Level 12). Frozen on the same rule as [leveledUp].
 ///
-/// Identical treatment to [leveledUp]: required by the contract, so it is
-/// parsed; no badge celebration exists in the result frame, so nothing is
-/// rendered. Owner decision — no celebration UI this ticket.
+/// Identical treatment: required by the contract, so it is parsed; no
+/// badge celebration exists in the result frame, so nothing is rendered.
+/// Owner decision — no celebration UI this ticket.
 @override final  bool newBadge;
 /// Per-question recap rows. The contract points at
 /// `GET /quizzes/{id}` for the full review, which is `draft` — so these
@@ -312,16 +314,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuizSummary&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.score, score) || other.score == score)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&(identical(other.answeredCount, answeredCount) || other.answeredCount == answeredCount)&&(identical(other.pointsAwarded, pointsAwarded) || other.pointsAwarded == pointsAwarded)&&(identical(other.totalPoints, totalPoints) || other.totalPoints == totalPoints)&&(identical(other.level, level) || other.level == level)&&(identical(other.leveledUp, leveledUp) || other.leveledUp == leveledUp)&&(identical(other.newBadge, newBadge) || other.newBadge == newBadge)&&const DeepCollectionEquality().equals(other._questions, _questions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuizSummary&&(identical(other.quizId, quizId) || other.quizId == quizId)&&(identical(other.score, score) || other.score == score)&&(identical(other.totalQuestions, totalQuestions) || other.totalQuestions == totalQuestions)&&(identical(other.answeredCount, answeredCount) || other.answeredCount == answeredCount)&&(identical(other.pointsAwarded, pointsAwarded) || other.pointsAwarded == pointsAwarded)&&(identical(other.leveledUp, leveledUp) || other.leveledUp == leveledUp)&&(identical(other.newBadge, newBadge) || other.newBadge == newBadge)&&const DeepCollectionEquality().equals(other._questions, _questions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,quizId,score,totalQuestions,answeredCount,pointsAwarded,totalPoints,level,leveledUp,newBadge,const DeepCollectionEquality().hash(_questions));
+int get hashCode => Object.hash(runtimeType,quizId,score,totalQuestions,answeredCount,pointsAwarded,leveledUp,newBadge,const DeepCollectionEquality().hash(_questions));
 
 @override
 String toString() {
-  return 'QuizSummary(quizId: $quizId, score: $score, totalQuestions: $totalQuestions, answeredCount: $answeredCount, pointsAwarded: $pointsAwarded, totalPoints: $totalPoints, level: $level, leveledUp: $leveledUp, newBadge: $newBadge, questions: $questions)';
+  return 'QuizSummary(quizId: $quizId, score: $score, totalQuestions: $totalQuestions, answeredCount: $answeredCount, pointsAwarded: $pointsAwarded, leveledUp: $leveledUp, newBadge: $newBadge, questions: $questions)';
 }
 
 
@@ -332,7 +334,7 @@ abstract mixin class _$QuizSummaryCopyWith<$Res> implements $QuizSummaryCopyWith
   factory _$QuizSummaryCopyWith(_QuizSummary value, $Res Function(_QuizSummary) _then) = __$QuizSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String quizId, int score, int totalQuestions, int answeredCount, int pointsAwarded, int totalPoints, int level, bool leveledUp, bool newBadge, List<QuizSummaryQuestion> questions
+ String quizId, int score, int totalQuestions, int answeredCount, int pointsAwarded, bool leveledUp, bool newBadge, List<QuizSummaryQuestion> questions
 });
 
 
@@ -349,15 +351,13 @@ class __$QuizSummaryCopyWithImpl<$Res>
 
 /// Create a copy of QuizSummary
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? quizId = null,Object? score = null,Object? totalQuestions = null,Object? answeredCount = null,Object? pointsAwarded = null,Object? totalPoints = null,Object? level = null,Object? leveledUp = null,Object? newBadge = null,Object? questions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? quizId = null,Object? score = null,Object? totalQuestions = null,Object? answeredCount = null,Object? pointsAwarded = null,Object? leveledUp = null,Object? newBadge = null,Object? questions = null,}) {
   return _then(_QuizSummary(
 quizId: null == quizId ? _self.quizId : quizId // ignore: cast_nullable_to_non_nullable
 as String,score: null == score ? _self.score : score // ignore: cast_nullable_to_non_nullable
 as int,totalQuestions: null == totalQuestions ? _self.totalQuestions : totalQuestions // ignore: cast_nullable_to_non_nullable
 as int,answeredCount: null == answeredCount ? _self.answeredCount : answeredCount // ignore: cast_nullable_to_non_nullable
 as int,pointsAwarded: null == pointsAwarded ? _self.pointsAwarded : pointsAwarded // ignore: cast_nullable_to_non_nullable
-as int,totalPoints: null == totalPoints ? _self.totalPoints : totalPoints // ignore: cast_nullable_to_non_nullable
-as int,level: null == level ? _self.level : level // ignore: cast_nullable_to_non_nullable
 as int,leveledUp: null == leveledUp ? _self.leveledUp : leveledUp // ignore: cast_nullable_to_non_nullable
 as bool,newBadge: null == newBadge ? _self.newBadge : newBadge // ignore: cast_nullable_to_non_nullable
 as bool,questions: null == questions ? _self._questions : questions // ignore: cast_nullable_to_non_nullable

@@ -24,9 +24,11 @@ import 'quiz_screen.dart' show QuizResultArgs;
 /// - **"Review Questions" is disabled.** Reviewing needs
 ///   `GET /quizzes/{quizId}`, the only endpoint that returns correct answers
 ///   for a finished quiz, and it is `x-stability: draft`. seif_fight S14.
-/// - **Level progress is numbers, not a bar.** `level` and `totalPoints` are
-///   available; the THRESHOLD between levels is not, so a proportion cannot be
-///   drawn honestly. seif_fight S3.
+/// - **No level number or points total.** Contract 3.0.0-m1 (adr-102) removed
+///   `totalPoints` and `level` from the summary — they are state, read from
+///   `GET /me` — and the frames draw a partial-fill meter rather than numbers.
+///   The line the app used to draw here is removed by owner ruling (D-006);
+///   the meter itself is with the designer (DESIGN_ISSUES #50).
 ///
 /// `leveledUp` and `newBadge` are parsed and not celebrated: the frame has no
 /// level-up or badge state to render. Flagged in docs/DESIGN_ISSUES.md.
@@ -284,18 +286,6 @@ class _RewardsCard extends StatelessWidget {
                 style: AppType.h2.copyWith(color: theme.colorScheme.primary),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.resultLevelProgress,
-            style: AppType.captionRegular.copyWith(color: ext.mutedText),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            // Numbers, not a proportion — there is no level threshold in the
-            // contract to draw a bar against. seif_fight S3.
-            l10n.levelAndPoints(summary.level, summary.totalPoints),
-            style: AppType.labelLarge.copyWith(color: ext.textPrimary),
           ),
         ],
       ),
