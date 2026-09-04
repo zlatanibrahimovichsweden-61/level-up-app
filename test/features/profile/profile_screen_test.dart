@@ -32,13 +32,13 @@ void main() {
   /// that tracks each.
   ///
   /// Shorter than it was in Step 1: four of the original seven now open a
-  /// SHELL (below). These three do not, because a shell for them would have to
+  /// SHELL (below). These two do not, because a shell for them would have to
   /// invent the very thing that is missing — a favourites list, a progress
-  /// history, a checkout session.
+  /// history. The seventh, Subscription, is gone altogether: adr-049 makes the
+  /// app purchase-silent, so the row is absent, not disabled (D-007).
   const disabledRows = <String, String>{
     'profile_row_favorites': 'S11 — /me/favorites is draft',
     'profile_row_progress': 'S32 — "your progress" has no endpoint',
-    'profile_row_subscription': 'S8 — /checkout/sessions is draft',
   };
 
   /// Rows that navigate to a disabled SHELL screen (Step 3), by `Key` → route.
@@ -110,18 +110,19 @@ void main() {
       },
     );
 
-    testWidgets('all ten of the frame\'s rows render', (tester) async {
+    testWidgets('nine of the frame\'s ten rows render', (tester) async {
       await pumpProfileScreen(tester, profile: profileRepo());
 
-      // Eight navigation rows plus the two action rows (Go to Uni, Logout).
-      expect(find.byType(ProfileMenuRow), findsNWidgets(10));
+      // Seven navigation rows plus the two action rows (Go to Uni, Logout).
+      // The frame's tenth row, Subscription, is absent by product rule
+      // (adr-049 §3 — purchase-silent; D-007), not by omission.
+      expect(find.byType(ProfileMenuRow), findsNWidgets(9));
       for (final label in [
         'Settings',
         'Favorite questions',
         'Your progress',
         'Refer a Friend',
         'Customer Support',
-        'Subscription',
         'Privacy & policy',
         'Terms & Conditions',
         'Go to University',
@@ -141,10 +142,22 @@ void main() {
 
       expect(find.text('Mona Adel'), findsOneWidget);
       expect(find.text('2,450'), findsOneWidget);
-      expect(find.byType(ProfileMenuRow), findsNWidgets(10));
+      expect(find.byType(ProfileMenuRow), findsNWidgets(9));
       // Still offered the switch: the contract cannot express a track change in
       // either direction, so the row is not branched on `track`.
       expect(find.text('Go to University'), findsOneWidget);
+    });
+  });
+
+  group('purchase-silent (adr-049 §3)', () {
+    testWidgets('the Subscription row is absent, not disabled', (tester) async {
+      await pumpProfileScreen(tester, profile: profileRepo());
+
+      // The Profile frame draws a Subscription row. The contract forbids any
+      // purchase surface in the app, so the row is gone — not dimmed, not
+      // routed to a shell. D-007.
+      expect(find.byKey(const Key('profile_row_subscription')), findsNothing);
+      expect(find.text('Subscription'), findsNothing);
     });
   });
 
@@ -498,7 +511,7 @@ void main() {
       );
 
       expect(find.text('2,450'), findsOneWidget);
-      expect(find.byType(ProfileMenuRow), findsNWidgets(10));
+      expect(find.byType(ProfileMenuRow), findsNWidgets(9));
       expect(tester.takeException(), isNull);
     });
 

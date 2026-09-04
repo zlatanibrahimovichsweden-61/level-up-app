@@ -44,13 +44,14 @@ final meProvider = AsyncNotifierProvider<MeNotifier, StudentProfile>(
 /// Returning `null` tells Riverpod not to schedule a retry.
 Duration? _noRetry(int retryCount, Object error) => null;
 
-/// `GET /me/entitlements` — the paywall signal, kept available for the
-/// subscription work rather than displayed prominently on Home (this frame has
-/// no entitlement widget).
+/// `GET /me/entitlements` — the entitlement-state source of truth, kept
+/// available rather than displayed on Home (this frame has no entitlement
+/// widget). The app is purchase-silent (adr-049): it reads this state and
+/// never offers a way to change it.
 ///
-/// Refetched on app RESUME as the contract instructs: a student can pay on the
-/// Paymob web page and come back, and the app must not keep showing the
-/// pre-payment state. The listener is torn down with the provider.
+/// Refetched on app RESUME as the contract instructs: a student can buy on the
+/// website and come back, and the app must not keep showing the stale state.
+/// The listener is torn down with the provider.
 class EntitlementsNotifier extends AsyncNotifier<List<EntitlementState>> {
   @override
   Future<List<EntitlementState>> build() {

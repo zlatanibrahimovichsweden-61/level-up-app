@@ -237,17 +237,8 @@ class _Menu extends ConsumerWidget {
           label: l10n.profileCustomerSupport,
           onTap: () => context.push('/support'),
         ),
-        const SizedBox(height: 16),
-        // TODO(contract): seif_fight.md S8 — `/checkout/sessions` is draft and
-        // the Paymob return deep link is undefined, so the subscription flow
-        // cannot be entered. The `/subscription` placeholder route exists; the
-        // row stays disabled until there is something behind it.
-        ProfileMenuRow(
-          key: const Key('profile_row_subscription'),
-          icon: Icons.credit_card,
-          label: l10n.profileSubscription,
-          disabledHint: unavailable,
-        ),
+        // No Subscription row. The frame draws one; adr-049 §3 makes the app
+        // purchase-silent, so it is absent rather than disabled (D-007).
         const SizedBox(height: 16),
         // TODO(contract): seif_fight.md S30 — no endpoint is needed, but the
         // legal TEXT does not exist. Writing it is not this app's call. The

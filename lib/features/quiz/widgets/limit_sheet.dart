@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// The free-plan paywall sheet · Figma `199:2335` (school) ·
+/// The free-plan limit sheet · Figma `199:2335` (school) ·
 /// `225:6634` / `225:7001` (university).
 ///
 /// Opened by the two 403s on `POST /quizzes` that are not inline errors:
 /// `weekly_question_limit_reached` and `subscription_required`. Same sheet,
 /// different heading and body.
+///
+/// **Purchase-silent (adr-049 §3).** The frames draw an "Upgrade To Premium"
+/// button over a benefits list; the contract forbids both — the app never
+/// shows a paywall, a price, an upgrade link or where to buy. The sheet
+/// explains the 403 and offers "Not now", nothing else (D-007,
+/// docs/DESIGN_ISSUES.md #51).
 ///
 /// **Weekly, not daily.** The frame family says "Daily Limit Reached"; the
 /// contract says *"Free plan: 50 questions/WEEK"* and names the code
@@ -29,8 +34,8 @@ class LimitSheet extends StatelessWidget {
   /// `weekly_question_limit_reached` or `subscription_required`.
   final String code;
 
-  /// Shows the sheet for [error]. Dismissible — a student who is not going to
-  /// pay right now must be able to get back to what they were doing.
+  /// Shows the sheet for [error]. Dismissible — the student must be able to
+  /// get back to what they were doing, and there is nothing else to do here.
   static Future<void> show(BuildContext context, ApiException error) {
     return showModalBottomSheet<void>(
       context: context,
@@ -73,56 +78,8 @@ class LimitSheet extends StatelessWidget {
               style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
             ),
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsetsDirectional.all(16),
-              decoration: BoxDecoration(
-                color: ext.quizOptionFill,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: ext.quizOptionBorder, width: 0.5),
-              ),
-              child: Column(
-                children: [
-                  for (final benefit in [
-                    l10n.benefitUnlimitedQuestions,
-                    l10n.benefitAiExplanations,
-                    l10n.benefitPrioritySupport,
-                    l10n.benefitNoAds,
-                  ])
-                    Padding(
-                      padding: const EdgeInsetsDirectional.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 22,
-                            color: ext.successBadge,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              benefit,
-                              style: AppType.labelLarge.copyWith(
-                                color: ext.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              // Hands off to the existing /subscription placeholder and stops
-              // there. Day 7 builds no purchase flow — Paymob is its own day,
-              // and the app never confirms a payment in any case.
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.push('/subscription');
-              },
-              child: Text(l10n.upgradeCta),
-            ),
+            // No CTA. The frames draw "Upgrade To Premium" over a benefits
+            // list; adr-049 §3 forbids both. Dismissal is the only action.
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.notNow),

@@ -427,14 +427,6 @@
   },
   "subscriptionRequiredTitle": "Subscription Required",
   "subscriptionRequiredBody": "This lesson is part of the paid plan. Subscribe to start practising.",
-  "benefitUnlimitedQuestions": "Unlimited quiz questions",
-  "benefitAiExplanations": "AI-powered explanations",
-  "benefitPrioritySupport": "Priority support",
-  "benefitNoAds": "Remove all ads",
-  "upgradeCta": "Upgrade",
-  "@upgradeCta": {
-    "description": "The frame says \"Upgrade To Premium\", but the glossary forbids \"premium\" for base_subscription. Neutral copy until the designer confirms wording."
-  },
   "notNow": "Not now",
 
   "errorNotEnoughQuestions": "This lesson doesn't have enough questions for that quiz size. Try a shorter quiz.",
@@ -457,7 +449,6 @@
   "profileYourProgress": "Your progress",
   "profileReferAFriend": "Refer a Friend",
   "profileCustomerSupport": "Customer Support",
-  "profileSubscription": "Subscription",
   "profilePrivacyPolicy": "Privacy & policy",
   "@profilePrivacyPolicy": {
     "description": "The Profile menu row (Figma 170:4905). Deliberately NOT the `privacyPolicy` key, which is the Login screen's legal LINK — the two can be reworded independently."

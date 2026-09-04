@@ -1136,36 +1136,6 @@ abstract class AppLocalizations {
   /// **'This lesson is part of the paid plan. Subscribe to start practising.'**
   String get subscriptionRequiredBody;
 
-  /// No description provided for @benefitUnlimitedQuestions.
-  ///
-  /// In en, this message translates to:
-  /// **'Unlimited quiz questions'**
-  String get benefitUnlimitedQuestions;
-
-  /// No description provided for @benefitAiExplanations.
-  ///
-  /// In en, this message translates to:
-  /// **'AI-powered explanations'**
-  String get benefitAiExplanations;
-
-  /// No description provided for @benefitPrioritySupport.
-  ///
-  /// In en, this message translates to:
-  /// **'Priority support'**
-  String get benefitPrioritySupport;
-
-  /// No description provided for @benefitNoAds.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove all ads'**
-  String get benefitNoAds;
-
-  /// The frame says "Upgrade To Premium", but the glossary forbids "premium" for base_subscription. Neutral copy until the designer confirms wording.
-  ///
-  /// In en, this message translates to:
-  /// **'Upgrade'**
-  String get upgradeCta;
-
   /// No description provided for @notNow.
   ///
   /// In en, this message translates to:
@@ -1249,12 +1219,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Customer Support'**
   String get profileCustomerSupport;
-
-  /// No description provided for @profileSubscription.
-  ///
-  /// In en, this message translates to:
-  /// **'Subscription'**
-  String get profileSubscription;
 
   /// The Profile menu row (Figma 170:4905). Deliberately NOT the `privacyPolicy` key, which is the Login screen's legal LINK — the two can be reworded independently.
   ///

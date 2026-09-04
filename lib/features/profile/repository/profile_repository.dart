@@ -72,9 +72,9 @@ class ProfileRepository {
     }
   }
 
-  /// `GET /me/entitlements` — the paywall source of truth. The contract says to
-  /// refetch this on app resume and when the checkout deep link returns; the
-  /// resume half is wired in `entitlementsProvider`.
+  /// `GET /me/entitlements` — the entitlement-state source of truth. The
+  /// contract says to refetch it on app resume (there is no in-app checkout and
+  /// no deep-link return — adr-049); that is wired in `entitlementsProvider`.
   Future<List<EntitlementState>> getEntitlements() async {
     try {
       final res = await _dio.get<Map<String, dynamic>>('/me/entitlements');

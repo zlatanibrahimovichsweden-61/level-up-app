@@ -80,8 +80,6 @@ String? authRedirect(AuthStatus status, String matchedLocation) {
 /// The [AuthController] is the single source of auth truth: a `ValueNotifier`
 /// mirror feeds `refreshListenable`, so any auth-state change (e.g. forceLogout
 /// on `session_superseded`) re-runs [authRedirect] and lands the user on /login.
-/// TODO(deep-link): register the Paymob return route scheme once Seif provides
-/// it (contract says "returns via deep link" but the scheme/host is TBD).
 final routerProvider = Provider<GoRouter>((ref) {
   // Mirror AuthController state into a Listenable go_router can watch.
   final authListenable = ValueNotifier<AuthStatus>(
@@ -253,14 +251,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/subscription',
-        builder: (_, _) => const _Placeholder('Subscription'),
-      ),
-      GoRoute(
-        path: '/subscription/return',
-        builder: (_, _) => const _Placeholder('Paymob return'),
-      ),
       // `/profile` is the same hub as the `/account` tab, reachable outside the
       // shell (deep links, and the parent of `/profile/edit`). `/profile/edit`
       // is NESTED so the pencil pushes a child of the profile it came from.
@@ -355,14 +345,12 @@ class _QuizUnavailableScreen extends StatelessWidget {
 /// [title] is a DEVELOPER label naming the unbuilt route, not product copy —
 /// it only reaches the app bar so a half-built build is navigable. The body
 /// uses the existing `comingSoon` key, because that line is the one a student
-/// actually reads: `/subscription` is reachable from the quiz paywall
-/// (`limit_sheet.dart`), and it previously rendered hardcoded English
-/// ("Subscription — not built yet") in an app whose baseline locale is Arabic.
+/// actually reads, in an app whose baseline locale is Arabic.
 ///
-/// Localising the placeholder is the interim fix, not the resolution. The real
-/// choice — disable the paywall's entry point the way Profile's was, or build
-/// the screen — is a product decision and is recorded in
-/// `.ai/audits/current/wave3-implementation.md`.
+/// Only `/track-select` uses it now. `/subscription` and `/subscription/return`
+/// went with the purchase surface (adr-049 — the app is purchase-silent;
+/// D-007), which settled the product decision Wave 3 recorded in
+/// `.ai/audits/current/wave3-implementation.md`: removed, not built.
 class _Placeholder extends StatelessWidget {
   const _Placeholder(this.title);
   final String title;

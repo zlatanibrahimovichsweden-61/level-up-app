@@ -594,21 +594,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'This lesson is part of the paid plan. Subscribe to start practising.';
 
   @override
-  String get benefitUnlimitedQuestions => 'Unlimited quiz questions';
-
-  @override
-  String get benefitAiExplanations => 'AI-powered explanations';
-
-  @override
-  String get benefitPrioritySupport => 'Priority support';
-
-  @override
-  String get benefitNoAds => 'Remove all ads';
-
-  @override
-  String get upgradeCta => 'Upgrade';
-
-  @override
   String get notNow => 'Not now';
 
   @override
@@ -654,9 +639,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileCustomerSupport => 'Customer Support';
-
-  @override
-  String get profileSubscription => 'Subscription';
 
   @override
   String get profilePrivacyPolicy => 'Privacy & policy';

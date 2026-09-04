@@ -276,6 +276,14 @@ void main() {
         expect(find.textContaining('Premium'), findsNothing);
         // No questions-used bar — the contract exposes neither number.
         expect(find.textContaining('50/50'), findsNothing);
+        // adr-049 §3: purchase-silent. No CTA of any kind inside the sheet.
+        expect(
+          find.descendant(
+            of: find.byType(LimitSheet),
+            matching: find.byType(FilledButton),
+          ),
+          findsNothing,
+        );
       },
     );
 
@@ -299,6 +307,14 @@ void main() {
 
       expect(find.byType(LimitSheet), findsOneWidget);
       expect(find.text('Subscription Required'), findsOneWidget);
+      // adr-049 §3: purchase-silent. No CTA of any kind inside the sheet.
+      expect(
+        find.descendant(
+          of: find.byType(LimitSheet),
+          matching: find.byType(FilledButton),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('offline shows the banner and disables Start', (tester) async {

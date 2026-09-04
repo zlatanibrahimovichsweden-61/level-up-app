@@ -592,21 +592,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذا الدرس ضمن الخطة المدفوعة. اشترك لتبدأ التدريب.';
 
   @override
-  String get benefitUnlimitedQuestions => 'أسئلة بلا حدود';
-
-  @override
-  String get benefitAiExplanations => 'شرح بالذكاء الاصطناعي';
-
-  @override
-  String get benefitPrioritySupport => 'دعم ذو أولوية';
-
-  @override
-  String get benefitNoAds => 'إزالة كل الإعلانات';
-
-  @override
-  String get upgradeCta => 'اشترك الآن';
-
-  @override
   String get notNow => 'ليس الآن';
 
   @override
@@ -649,9 +634,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileCustomerSupport => 'دعم العملاء';
-
-  @override
-  String get profileSubscription => 'الاشتراك';
 
   @override
   String get profilePrivacyPolicy => 'سياسة الخصوصية';
