@@ -584,14 +584,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weeklyLimitBody =>
-      'You\'ve used all your free questions for this week. Upgrade for unlimited practice.';
+      'You\'ve used all your questions for this week.';
 
   @override
   String get subscriptionRequiredTitle => 'Subscription Required';
 
   @override
   String get subscriptionRequiredBody =>
-      'This lesson is part of the paid plan. Subscribe to start practising.';
+      'This lesson needs an active subscription.';
 
   @override
   String get notNow => 'Not now';

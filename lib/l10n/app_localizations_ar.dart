@@ -581,15 +581,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get freeUsageReachedTitle => 'انتهت أسئلتك المجانية';
 
   @override
-  String get weeklyLimitBody =>
-      'استخدمت كل أسئلتك المجانية لهذا الأسبوع. اشترك للحصول على تدريب بلا حدود.';
+  String get weeklyLimitBody => 'استخدمت كل أسئلتك لهذا الأسبوع.';
 
   @override
   String get subscriptionRequiredTitle => 'الاشتراك مطلوب';
 
   @override
-  String get subscriptionRequiredBody =>
-      'هذا الدرس ضمن الخطة المدفوعة. اشترك لتبدأ التدريب.';
+  String get subscriptionRequiredBody => 'هذا الدرس يحتاج إلى اشتراك فعّال.';
 
   @override
   String get notNow => 'ليس الآن';

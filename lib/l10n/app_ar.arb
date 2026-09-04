@@ -188,9 +188,9 @@
   "backToLearn": "العودة إلى التعلّم",
 
   "freeUsageReachedTitle": "انتهت أسئلتك المجانية",
-  "weeklyLimitBody": "استخدمت كل أسئلتك المجانية لهذا الأسبوع. اشترك للحصول على تدريب بلا حدود.",
+  "weeklyLimitBody": "استخدمت كل أسئلتك لهذا الأسبوع.",
   "subscriptionRequiredTitle": "الاشتراك مطلوب",
-  "subscriptionRequiredBody": "هذا الدرس ضمن الخطة المدفوعة. اشترك لتبدأ التدريب.",
+  "subscriptionRequiredBody": "هذا الدرس يحتاج إلى اشتراك فعّال.",
   "notNow": "ليس الآن",
 
   "errorNotEnoughQuestions": "لا يحتوي هذا الدرس على أسئلة كافية لهذا العدد. جرّب اختبارًا أقصر.",

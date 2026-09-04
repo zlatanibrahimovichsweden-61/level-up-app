@@ -1118,10 +1118,10 @@ abstract class AppLocalizations {
   /// **'Free Usage Reached'**
   String get freeUsageReachedTitle;
 
-  /// WEEKLY, not daily — the contract says "Free plan: 50 questions/WEEK" and the code is weekly_question_limit_reached. The frame's wording is flagged in DESIGN_ISSUES (seif_fight S16).
+  /// WEEKLY, not daily — the contract says "Free plan: 50 questions/WEEK" and the code is weekly_question_limit_reached. The frame's wording is flagged in DESIGN_ISSUES (seif_fight S16). Purchase-silent (adr-049 §3): no upgrade, price or where-to-buy — provisional wording pending the designer (D-007, DESIGN_ISSUES #51).
   ///
   /// In en, this message translates to:
-  /// **'You\'ve used all your free questions for this week. Upgrade for unlimited practice.'**
+  /// **'You\'ve used all your questions for this week.'**
   String get weeklyLimitBody;
 
   /// No description provided for @subscriptionRequiredTitle.
@@ -1130,10 +1130,10 @@ abstract class AppLocalizations {
   /// **'Subscription Required'**
   String get subscriptionRequiredTitle;
 
-  /// No description provided for @subscriptionRequiredBody.
+  /// Provisional engineering copy (D-007): names the entitlement the 403 reports, with no price, link or destination (adr-049 §3). "plan", "premium" and "pro" are glossary-forbidden for base_subscription. Pending the designer — DESIGN_ISSUES #51.
   ///
   /// In en, this message translates to:
-  /// **'This lesson is part of the paid plan. Subscribe to start practising.'**
+  /// **'This lesson needs an active subscription.'**
   String get subscriptionRequiredBody;
 
   /// No description provided for @notNow.
