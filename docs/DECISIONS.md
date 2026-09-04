@@ -204,3 +204,77 @@ step that still looks empty is one students go back and worry at. That copy is o
 candidate for the designer to overrule.
 
 **Revisit when.** The design revision lands, or the wording is user-tested.
+
+---
+
+## Contract v3.0.0-m1 — adr-049 (purchase-silent app), adr-102 (events vs state)
+
+### D-006 · The result screen stops rendering the student's level and points total
+**Feature:** Quiz · **Date:** 2026-09-04 · **Status:** Accepted · **Raised by:** contract 3.0.0-m1
+(adr-102); ruled by the owner
+
+**Context.** adr-102 removed `totalPoints` and `level` from `QuizSummary`: they are **state**, not
+events of the attempt, and a half-frozen summary could not keep `finish`'s "repeat calls return the
+same summary" promise. The changelog entry records as design evidence that the live result frames
+`159:1964` (LTR) and `549:20247` (RTL) *"render no absolute level number and no points total anywhere"*
+— the level element is a partial-fill meter. Since Day 7 the app had drawn *"Level 3 · 1255 points"*
+in the rewards card, from the summary, on the reasoning (S3) that no threshold existed to draw a bar
+against — a reasoning the contract's own `StudentProfile.level` description had already answered.
+We could not open the frames ourselves (the Figma connector is view-only on Seif's account), so the
+contradiction could not be settled from the repo.
+
+**Options.** (a) Remove the element — matches the changelog's reading of the frames. (b) Keep it and
+feed it from `GET /me`, which the app already refetches after a finish. (c) Build the meter from
+`GET /me` on the 500-point rule Home already uses.
+
+**Decision.** **(a)** — owner's ruling, 2026-09-04. The rewards card shows `pointsAwarded` only.
+`leveledUp` and `newBadge` stay parsed and uncelebrated; D-002 stands, with the two flags now
+documented as frozen events that must never be recomputed from two `GET /me` reads.
+
+**Consequences.** Two model fields gone (`b7d0dfb`); ARB keys `resultLevelProgress` and `levelAndPoints`
+deleted from both locales; one result-screen test rewritten to assert absence; one model test added
+proving a 2.x body that still carries the keys parses unchanged (json_serializable ignores unknown
+keys), so an un-upgraded staging cannot break the client in either direction. The meter is a design
+question and is filed as DESIGN_ISSUES #50. Home's level card is untouched — it always read `GET /me`.
+
+**Revisit when.** The designer confirms the meter on `159:1964` / `549:20247` (then option (c) is a
+widget change with no model churn), or supplies a level-up / badge celebration state (D-002).
+
+---
+
+### D-007 · The purchase surface is removed, and the limit-sheet bodies stop telling the student to upgrade
+**Feature:** Quiz / Profile / Router / l10n · **Date:** 2026-09-04 · **Status:** Accepted — surface
+final, wording provisional · **Raised by:** contract 2.2.0-m1 (adr-049 §3); ruled by the owner
+
+**Context.** adr-049 §3: the mobile app is **purchase-silent** — never a paywall, a price, an upgrade
+link, or where to buy; purchases happen on the website only, and voucher redemption is web-only
+(`x-consumers: [web]`). The app carried an "Upgrade" button pushing the `/subscription` placeholder,
+a four-row benefits card, a disabled Profile "Subscription" row, a `/subscription/return` Paymob route,
+and two sheet bodies that read *"Upgrade for unlimited practice"* and *"part of the paid plan.
+Subscribe to start practising."* All of it now contradicted the contract the app is built against.
+
+**Options for the copy.** **A (minimal)** — *"You've used all your questions for this week."* /
+*"This lesson isn't available on your current plan."* **B (warmer)** — adds *"You can still review your
+past quizzes and favourites"* and *"Try another lesson from your subjects"*, which promises screens
+that do not exist (Day 9 review unbuilt, `/me/favorites` draft). **Keep the current strings** until the
+designer rules — which would ship an instruction the product forbids.
+
+**Decision.** Owner, 2026-09-04: comply with the contract now. The surface is removed (`5c4b855`). The
+copy (`ce7da9a`): `weeklyLimitBody` takes **A verbatim** — EN *"You've used all your questions for this
+week."*, AR *"استخدمت كل أسئلتك لهذا الأسبوع."* `subscriptionRequiredBody` does **not** take A verbatim:
+A says *"on your current plan"*, and DESIGN_ISSUES #30 records that the glossary never calls
+`base_subscription` "plan" (nor "premium", nor "pro"). It ships with the glossary term instead — EN
+*"This lesson needs an active subscription."*, AR *"هذا الدرس يحتاج إلى اشتراك فعّال."* — which names
+the entitlement state the 403 reports without a price, a link or a destination.
+`subscriptionRequiredTitle` (*"Subscription Required"* / *"الاشتراك مطلوب"*) is unchanged. Both bodies
+and the title are **engineering copy pending the designer**, on the same footing as D-005's.
+
+**Consequences.** Six ARB keys deleted from both locales (`upgradeCta`, `benefitUnlimitedQuestions`,
+`benefitAiExplanations`, `benefitPrioritySupport`, `benefitNoAds`, `profileSubscription`); routes
+`/subscription` and `/subscription/return` gone; the sheet keeps title + body + "Not now" so the two
+403s still get a dismissible explanation; R-6 closed; S8 withdrawn; DESIGN_ISSUES #51 filed for the
+three frames that still draw the CTA. Nothing in the app tells the student where to buy — that is the
+product decision, not an omission to fix later.
+
+**Revisit when.** The designer supplies approved copy for the two bodies and the title, or product
+rules on whether "subscription" may appear at all in student-facing copy.

@@ -4,7 +4,7 @@ Live risks only. A risk leaves this file when it is closed by evidence, not when
 it stops being mentioned. Every entry has an owner and a next action — an item
 with neither is not a risk, it is a wish.
 
-**Last reviewed:** 2026-08-15 (Wave 4)
+**Last reviewed:** 2026-09-04 (contract v3.0.0-m1 adoption)
 
 Severity reflects **impact × likelihood of going unnoticed**. A defect nothing
 can detect ranks above a louder one that any gate would catch.
@@ -37,12 +37,17 @@ silently — see the reconciliation register.
 | **Impact** | If `Ref` is dead after disposal, the OTP verify path throws in exactly the scenario Wave 3A set out to fix, and `markAuthenticated()` never runs — a student left authenticated but unrouted. |
 | **Evidence** | Fable Wave-3 verdict, W3-1. Three `await`s in `verify()`; `ref.read` at lines ~110, ~115, ~123, guard only after. Contradicts the premise stated in `edit_profile_notifier.dart` source. |
 | **Owner** | Engineering |
-| **Next action** | **First** confirm `Ref.read`-after-dispose semantics in `flutter_riverpod` 3.3.2 (one pub-cache lookup). The fix direction depends on the answer. Then capture dependencies before the first `await`, and add a dispose-mid-`verify` test. |
+| **Next action** | ~~First confirm `Ref.read`-after-dispose semantics~~ **Confirmed 2026-09-04** (see below). Capture `deviceInfo`, the repository, secure storage and the auth controller before the first `await` in `verify()`, and add a dispose-mid-`verify` test. Deliberately not applied in the 2026-09-04 contract wave — out of its scope. |
 | **Status** | **OPEN — MEDIUM.** Deliberately not fixed during Wave 4 (documentation must not silently change code). |
 
 **Either way this is a defect.** If `ref` dies on disposal, the OTP path is
 broken. If it does not, `EditProfileNotifier` accepted a real staleness cost for
 nothing. One of the two is wrong and the same lookup settles both.
+
+**Settled 2026-09-04:** `ref` dies. `riverpod-3.3.2/lib/src/core/ref.dart:232-240` —
+`_throwIfInvalidUsage` throws `UnmountedRefException` once `!mounted`, and every
+`read`/`watch` goes through it. The OTP path is the broken one; `EditProfileNotifier`'s
+premise was right. Status stays **OPEN — MEDIUM** until the fix and its test land.
 
 ---
 
@@ -85,15 +90,15 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 
 ---
 
-## R-6 · `/subscription` is an unbuilt screen on the revenue path
+## R-6 · `/subscription` is an unbuilt screen on the revenue path — **CLOSED 2026-09-04**
 
 | | |
 | --- | --- |
-| **Impact** | Students hitting the weekly quiz limit reach a placeholder. Back works (`context.push`), so not a trap — but it is the paywall. |
-| **Evidence** | `limit_sheet.dart:127` → `app_router.dart:258`. Body copy localized in 3B; screen unbuilt. |
-| **Owner** | **Product** |
-| **Next action** | Disable the entry point (as Profile's was) **or** build the screen. |
-| **Status** | **OPEN — product decision**, deliberately not invented |
+| **Was** | Students hitting the weekly quiz limit reached a placeholder behind an "Upgrade" button. Back worked, so not a trap — but it was the paywall, and whether to build or disable it was a product decision this project refused to invent. |
+| **Closed by** | The contract decided it. adr-049 §3 (contract 2.2.0-m1, vendored at `184d6ec`): the mobile app is **purchase-silent** — no paywall, no price, no upgrade link, no where-to-buy, no voucher redemption (`x-consumers: [web]`). The entry point was therefore **removed, not built** (`5c4b855`): the Upgrade button and benefits card left `limit_sheet.dart`, `/subscription` and `/subscription/return` left the router, the disabled Profile row left `profile_screen.dart`, six ARB keys left both locales. The sheet bodies stopped saying upgrade/subscribe in `ce7da9a` (D-007). |
+| **Enforcement** | None mechanised. A route that no longer exists cannot be pushed without a failing test, and the ARB parity guard catches a re-added key in one locale only. A grep guard for `Upgrade`/`/subscription` was considered and not added — the surface is gone, not merely hidden. |
+| **Owner** | — |
+| **Status** | **CLOSED.** The open remainder is copy, not product: DESIGN_ISSUES #51. |
 
 ---
 
@@ -114,10 +119,10 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 | | |
 | --- | --- |
 | **Impact** | Base URLs are `TBD.example`. Every test has only ever met mocktail stubs or `mock_backend.dart`, which cannot produce 401s, 5xx, timeouts or malformed bodies. |
-| **Evidence** | **2026-08-23:** `tool/smoke/real_api_smoke_test.dart` against staging `0b53cdc` — 12 of 21 stable operations decoded through the real seam (all `/reference/*`, the OTP walk, `GET /me`, refresh, logout); 3 answered with a typed server state (`PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 — `seif_fight.md` S37); 6 unreachable behind the catalog 404. No untyped error leaked. F-7-01 closed in `068390d`. The `TBD.example` placeholder was replaced earlier (`app_config.dart:43`). |
+| **Evidence** | **2026-09-04:** same harness against staging `78c6e5d` — **13 of 21** decoded: `GET /catalog/subjects` is deployed and answers `200 []` (contract-legal empty catalog for the test account); `PATCH /me` 405 and `/me/entitlements` 404 unchanged across three builds; 6 still unreachable behind the empty catalog (tree, the quiz loop, explanation). `.ai/audits/current/smoke-staging-2026-09-04.md`. **2026-08-23:** `tool/smoke/real_api_smoke_test.dart` against staging `0b53cdc` — 12 of 21 stable operations decoded through the real seam (all `/reference/*`, the OTP walk, `GET /me`, refresh, logout); 3 answered with a typed server state (`PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 — `seif_fight.md` S37); 6 unreachable behind the catalog 404. No untyped error leaked. F-7-01 closed in `068390d`. The `TBD.example` placeholder was replaced earlier (`app_config.dart:43`). |
 | **Owner** | Backend partner + engineering |
-| **Next action** | Seif: deploy `PATCH /me`, `/me/entitlements`, `/catalog/*` to staging (S37); then re-run the harness on a registered number — the quiz loop, explanation 202 and register arm are the untested remainder. Checklist steps 5 (short-lived token → 401 pipeline) and 9 (forced 500/429) still need Seif's cooperation. |
-| **Status** | **OPEN — NARROWED 2026-08-23.** The client side of the stable surface is proven against a real server for everything staging serves; what remains open is what staging has not deployed. Closes when the authenticated suite runs green end to end, quiz loop included. |
+| **Next action** | Seif: deploy `PATCH /me` and `/me/entitlements` (S37 — two left), and seed a released term for `+2010000000001` so `POST /quizzes` has questions to draw (S37 ask 2). Then re-run the harness — the quiz loop, explanation 202 and register arm are the untested remainder, and the `finish` body is the first chance to see the 3.0.0-m1 `QuizSummary` on the wire (the client accepts both shapes, so nothing waits on it). Checklist steps 5 (short-lived token → 401 pipeline) and 9 (forced 500/429) still need Seif's cooperation. |
+| **Status** | **OPEN — NARROWED again 2026-09-04** (13/21 decoded; two routes missing; the quiz loop gated on seed data, not on the client). Closes when the authenticated suite runs green end to end, quiz loop included. |
 
 ---
 
@@ -132,3 +137,4 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 | Bare `xargs` in canonical script | Wave 2.1 — NUL-delimited + guard on all shell entry points |
 | Stale test counts in docs and CI | Wave 4 — replaced with "run `flutter test`" |
 | 3C rejection rested on an inaccurate scan | Wave 4 — record corrected (W3-4) |
+| `/subscription` placeholder on the revenue path (R-6) | 2026-09-04 — the contract decided it (adr-049): purchase surface removed, not built |

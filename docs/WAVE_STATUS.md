@@ -1,10 +1,11 @@
 # Wave Status — the single source of project truth
 
-**Last updated:** 2026-08-23 (stable API surface exercised against live staging; F-7-01 closed)
+**Last updated:** 2026-09-04 (contract v3.0.0-m1 adopted; purchase surface removed; staging re-probed)
 **Branch:** `merged` — `dev` + `main` joined on 2026-08-22 (`99b5cba`); both are kept
 untouched as history and all work continues on `merged`.
 **Unpushed:** the 2026-08-23 commits (style-fitting pass, OTP glyph landing, F-7-01,
-smoke harness ×2, this note) — pushing is the owner's call (R-3). This file no longer
+smoke harness ×2) and the 2026-09-04 commits (contract 3.0.0-m1, model adoption,
+purchase-surface removal, limit-sheet copy, records) — pushing is the owner's call (R-3). This file no longer
 records a HEAD; `git log` is the source for that.
 
 If any other document disagrees with this file about wave state, **this file
@@ -52,6 +53,47 @@ repository's history and it is why the ladder exists.
 | **3E** | Cache / storage | ✅ COMPLETE | `ac87455` | BUILD VERIFIED | **VERIFIED** |
 | **4** | Documentation + audit protocol | ✅ COMPLETE (2026-08-22) | the docs commit that carries this file | documentation only | — |
 | **Final** | Whole-project Fable review | ⏳ NOT STARTED | — | — | — |
+
+---
+
+## Contract v3.0.0-m1 adopted — 2026-09-04
+
+**Pin.** `contract/` re-vendored from `seifhamdii-collab/level-up-contract` at `184d6ec`
+(mirror of backend `4a8e7cf`); previous pin `61905ce` (2.1.0-m1). The delta was verified by
+diff, not read from the changelog: 2.2.0-m1 (adr-049/057 — checkout path deleted,
+`x-consumers`, purchase-silent app), 2.3.0-m1 (adr-091 — catalog no longer
+entitlement-gated, BEHAVIOURAL), 3.0.0-m1 (adr-102 — `QuizSummary` loses `totalPoints` and
+`level`, BREAKING). The schema proof shows that one hunk and nothing else. Provenance detail,
+including the hours the source repo was unreachable, is in `contract/SOURCE.md`.
+
+| Commit | Concern | validate.ps1 |
+| --- | --- | --- |
+| `3db4f04` | contract + `SOURCE.md`; no Dart | 861 passed (predicted 861) |
+| `b7d0dfb` | `QuizSummary` drops the two fields; the result screen stops drawing "Level N · P points" (D-006); mock and fixtures follow; one test added proving a 2.x body still parses | 862 passed (predicted 862) |
+| `5c4b855` | purchase surface removed — Upgrade button + benefits card, `/subscription*` routes, the Profile row, six ARB keys (adr-049 §3, D-007); one generated profile test gone with its row, one added asserting absence | 862 passed (predicted 862) |
+| `ce7da9a` | limit-sheet bodies stop saying upgrade/subscribe (D-007 — provisional copy) | 862 passed (predicted 862) |
+| records | this file, `RISKS.md`, `seif_fight.md` S3/S8/S18/S37/S38, `DECISIONS.md` D-006/D-007, `DESIGN_ISSUES.md` #50/#51, the smoke evidence, `zna.md` | docs only |
+
+**Staging re-probed** (backend `78c6e5d`, built 2026-09-03T15:38Z — later than the mirror
+commit; the backend repo is private, so whether it carries adr-102 is unverified):
+`GET /catalog/subjects` is now deployed and answers `200 []` for the test account — **13 of
+21** stable operations decode (was 12); `PATCH /me` 405 and `GET /me/entitlements` 404 are
+unchanged; the quiz loop (6 operations) is still gated on an empty catalog, i.e. on seed
+data, not on the client. Full output: `.ai/audits/current/smoke-staging-2026-09-04.md`.
+
+**Verification level: BUILD** (`validate.ps1` per commit, counts above) **plus the same
+dev-host live-staging run as 08-23** — not DEVICE, not CI. The 3.0.0-m1 `finish` body has
+not been observed on the wire; the client accepts both shapes, so nothing depends on it.
+
+**Settled in passing.** W3-1's blocking question is answered (below). S3 had been answered by
+the contract's own prose all along. The `/subscription` product decision (R-6) was made by the
+contract — removed, not built.
+
+**Deliberately not done in this wave** (listed so nobody infers they were): the silent
+auto-retry on the seven registration `FutureProvider`s, `deviceInfoProvider` and
+`schoolSearchProvider` (they need `retry:` returning null); the W3-1 fix itself; Day 9 quiz
+review; the account-deletion screen (S38 — no endpoint); voucher redemption (`x-consumers:
+[web]`, must not be built).
 
 ---
 
@@ -152,6 +194,13 @@ so they survive disposal without going through a dead `ref`.
 semantics in `flutter_riverpod` 3.3.2 — one lookup in the pub cache, which the
 developer has and the audit environment does not. **The fix direction depends
 on the answer**, so it should be settled before code changes.
+
+**Answered 2026-09-04.** `riverpod-3.3.2/lib/src/core/ref.dart:232-240` —
+`_throwIfInvalidUsage` throws `UnmountedRefException` when `!mounted`, and every
+`read`/`watch` goes through it. So `ref` IS dead after disposal: the OTP path throws
+if the screen is disposed mid-`verify`, and `EditProfileNotifier`'s premise was right.
+The fix direction is now fixed — capture before the first `await` — and the fix
+itself is still not applied (out of the 2026-09-04 wave's scope; R-2).
 
 ### W3-4 · LOW · **RESOLVED (record corrected, Wave 4)**
 

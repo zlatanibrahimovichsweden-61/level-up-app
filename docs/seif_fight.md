@@ -4,7 +4,7 @@
 > answer, contradicts, or leaves us guessing goes here — one place, so nothing gets lost in
 > chat and Seif gets a single list rather than a trickle.
 >
-> Contract: `contract/openapi.yaml` (vendored, pinned commit 23f0535) · App repo: `level_up_app`
+> Contract: `contract/openapi.yaml` (vendored, pinned commit 184d6ec — v3.0.0-m1, 2026-09-04) · App repo: `level_up_app`
 >
 > **Ground rule stays: the contract wins.** Where the contract is silent we build the safe
 > thing, ship it, and log it here. Nothing in this file blocks a build — it records what we
@@ -19,12 +19,12 @@
 |---|---|---|---|---|
 | ~~S1~~ | ~~Staging/prod `baseUrl` still `TBD.example` — nothing has ever run against a real server~~ | 🔴 | **Resolved (2026-08-23)** — 12/21 stable ops decoded against staging `0b53cdc` | `app_config.dart:43` |
 | S2 | No way to resume an interrupted quiz — `GET /quizzes/{quizId}` is `draft` | 🟠 | Open (Day 7) | — |
-| S3 | Level thresholds: `GET /me` returns `level` but no target to progress toward | 🔴 | Open | `level_card.dart:8` |
+| ~~S3~~ | ~~Level thresholds: `GET /me` returns `level` but no target to progress toward~~ | 🔴 | **Resolved by contract prose (2026-09-04)** — `StudentProfile.level`: "thresholds every 500 points; static, not configurable" | `level_card.dart:21` |
 | S4 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Open | `tree_list_row.dart` |
 | S5 | Referral is a designed SCREEN with no contract, not the stray signup field we filed | 🟠 | Open (upgraded Day 8) | `registration_draft.dart:18`, `refer_a_friend_screen.dart` |
 | S6 | Flashcards: full screen designed + sellable entitlement, zero contract support | 🔴 | Open | `quiz_type_tabs.dart` |
 | S7 | Quiz timer drawn in the design, no field in the contract | 🟠 | Open | — |
-| S8 | Paymob return deep-link scheme/host not specified | 🟠 | Open | `app_router.dart:72` |
+| ~~S8~~ | ~~Paymob return deep-link scheme/host not specified~~ | 🟠 | **Withdrawn (2026-09-04)** — adr-049: there is no in-app checkout, so there is no return link to specify | — |
 | S9 | University Home "Learning Tools" cards have no endpoint in M1 | 🟠 | Open | `home_screen.dart` |
 | S10 | `error-codes.md` mapping is per-feature guesswork | 🟡 | Open | `error_interceptor.dart:9` |
 | S11 | Favourites: reading state is stable+required, writing it is draft | 🟡 | Open, built around (Day 7) | `quiz_question.dart:50` |
@@ -34,7 +34,7 @@
 | S15 | Setup draws a question-pool progress bar with no data source | 🟠 | Open, built around (Day 7) | `quiz_setup_screen.dart:24` |
 | S16 | Limit sheet says "Daily"; the contract limit is weekly | 🟡 | Open, built around (Day 7) | `limit_sheet.dart:16` |
 | S17 | AI explanation is drawn as TWO sections; the endpoint returns ONE string | 🟠 | Open, built around (Day 7) | `ai_explanation_panel.dart:9` |
-| S18 | `AnswerResult.pointsDelta` — "original result" vs "0 on retry replay" | 🟢 | Open, no impact | `mock_backend.dart:_submitAnswer` |
+| ~~S18~~ | ~~`AnswerResult.pointsDelta` — "original result" vs "0 on retry replay"~~ | 🟢 | **Resolved (2026-09-04)** — adr-102 D2: the field doc governs; a replay returns `pointsDelta: 0`, which the mock already did | `mock_backend.dart:_submitAnswer` |
 | S19 | No quiz endpoint returns a subject name; two frames show one | 🟡 | Open, built around (Day 7) | `quiz.dart:32` |
 | S20 | `PATCH /me` cannot edit school or geography — one design option you offered is unbuildable | 🟠 | Open (Day 7c) | `openapi.yaml:614-624` |
 | S21 | v1.1 internal inconsistencies found by diffing the vendored contract | 🟡 | Open (Day 7c) | `openapi.yaml:483`, `:1281` |
@@ -51,7 +51,8 @@
 | S34 | **`parentPhone` is WRITE-ONLY** — required at registration, absent from `GET /me` | 🔴 | Open (Day 8) | — (row not built) |
 | S35 | `GET /me` returns raw wire codes with no display names | 🟠 | Open (Day 8) | `edit_profile_screen.dart` |
 | S36 | A `Friends` screen exists, with no endpoint and no entry point | 🟡 | Open (Day 8) | `friends_screen.dart` |
-| S37 | **Staging does not serve three stable routes** — `PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 | 🔴 | Open (2026-08-23) | `tool/smoke/real_api_smoke_test.dart` |
+| S37 | **Staging does not serve two stable routes** — `PATCH /me` 405, `/me/entitlements` 404 (`/catalog/subjects` deployed since 2026-09-03) | 🔴 | Open, narrowed (2026-09-04) | `tool/smoke/real_api_smoke_test.dart` |
+| S38 | **Account deletion has no endpoint** — required by Google Play and Apple 5.1.1(v); never filed until now | 🔴 | Open (2026-09-04) | `docs/STORE_READINESS.md` §6 |
 
 > **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
 > the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
@@ -106,6 +107,14 @@ and current points, but never the points needed to reach level N+1 — so the ba
 and no denominator.
 **Ask:** either a `nextLevelAt` / `pointsToNextLevel` field on `StudentProfile`, or a static
 thresholds table we can hard-code (and a promise it won't move server-side without a contract bump).
+
+**Update 2026-09-04 — answered by the contract itself, and had been for a while.**
+`StudentProfile.level` carries the description *"1–12, thresholds every 500 points; static, not
+configurable."* (`openapi.yaml:1514` at the 3.0.0-m1 pin, and already present at 2.1.0-m1), and
+adr-102's changelog entry restates it as the result-frame meter formula `(points.total mod 500) / 500`.
+That is the static thresholds table plus the no-move promise this entry asked for. `level_card.dart`
+already builds the Home bar on it (`kPointsPerLevel = 500`, `kMaxLevel = 12`). Closed; nothing further
+owed — the entry stayed open only because nobody re-read the field description after Day 4.
 
 ## S4. 🔴 Units/Chapters progress % has no source
 
@@ -221,6 +230,13 @@ server ever enforces it, a client-only timer is a cheating vector.
 link as a hint to refetch, never as proof of payment** — on return the client re-queries
 `GET /me/entitlements` and trusts only the server. Any app on the device can fire that intent, so
 if the intended design is "trust the deep-link payload", say so now and we will push back.
+
+**Update 2026-09-04 — withdrawn.** Contract 2.2.0-m1 (adr-049) deleted `POST /checkout/sessions`
+and made the app **purchase-silent**: every purchase happens on the website, and there is no deep-link
+return. The `/subscription/return` placeholder, the `TODO(deep-link)` in `app_router.dart` and the
+disabled Profile "Subscription" row went with the rest of the purchase surface. The security stance
+above — a return link is a hint to refetch, never proof of payment — survives as the on-resume refetch
+of `GET /me/entitlements`, which is the only entitlement signal the app now acts on.
 
 ## S9. 🟠 "Learning Tools" cards have nothing behind them
 
@@ -370,6 +386,14 @@ later by someone who *does* try to use it, e.g. for an in-quiz running total.
 `correct`/`correctOptionId` with `pointsDelta: 0`.
 
 **Ask:** low priority. Confirm which sentence governs, and reword the other.
+
+**Update 2026-09-04 — resolved by adr-102 D2 (3.0.0-m1 changelog).** The field doc governs:
+`pointsDelta` reports what THIS call awarded, and a replay awards nothing, so it returns `0`. The
+server had been returning the original award and was corrected; `openapi.yaml` is unchanged and
+`submitAnswer` carries no `x-behaviour-changed` stamp because the published text already said so.
+The mock backend implemented the field doc from the start (`_submitAnswer`: `'pointsDelta': replay ?
+0 : …`), so nothing changed on our side. Verdict, correct option and explanation flag stay
+byte-identical on a replay.
 
 ---
 
@@ -734,6 +758,36 @@ up, we need a staging account with a seeded term so `POST /quizzes` has question
 the v2.1 empty-catalog state is contract-legal and the harness already handles it, but it
 cannot prove the quiz loop. (3) Still owed from `api-data.md` §4: a ~60 s access token for
 checklist step 5 (the 401 → refresh → retry pipeline) and a forced `500` + `429` for step 9.
+
+**Update 2026-09-04 — narrowed to two.** Against backend `78c6e5dc7c0a287046ea5428fa72c3cdebf3c9c1`
+(built 2026-09-03T15:38:17Z): `GET /catalog/subjects` answers `401 authentication_required`
+unauthenticated and **`200 []`** for the test account — **deployed**, and the empty list is the
+contract-legal pre-term state. `PATCH /me` still answers **405** `internal_error` and
+`GET /me/entitlements` still **404** `not_found`, unchanged across three builds (`fbab748`, `0b53cdc`,
+`78c6e5d`). Evidence: `.ai/audits/current/smoke-staging-2026-09-04.md`. Asks (1) and (3) stand for the
+two remaining routes. Ask (2) — a seeded, released term for `+2010000000001` so `POST /quizzes` has
+questions to draw — is now the only thing between us and proving the quiz loop, and it would also be
+the first observation of the 3.0.0-m1 `QuizSummary` on the wire (whether `78c6e5d` includes adr-102
+cannot be checked from outside the private backend repo; the client accepts both shapes meanwhile).
+
+---
+
+## S38. 🔴 Account deletion has no endpoint, and it had never been filed
+
+**Where:** the whole contract — 3.0.0-m1 has no `DELETE /me`, no deletion-request operation, and no
+mention of deletion anywhere in `contract-changelog.md`. `docs/STORE_READINESS.md` §6 records the
+store requirement.
+**What:** both stores require an in-app path to delete the account — Google Play's account-deletion
+requirement under Data safety, and Apple's App Review Guideline 5.1.1(v). The app can draw the screen;
+it cannot do anything when the student confirms. This is a hard store blocker, not a polish item, and
+it had never appeared in this file — that is the gap this entry closes.
+**Ask:** (1) an operation — `DELETE /me`, or a `POST /me/deletion-requests` that starts a grace
+period — marked `stable` before the store-submission wave; (2) the semantics for a minor's data:
+immediate hard delete or a grace period, what happens to leaderboard rows, quiz history and the parent
+phone number, and whether the same phone may register again afterwards; (3) the `ProblemDetails` codes
+it can return (`authentication_required` and `session_superseded` at least). Until it lands the app can
+only ship a `TODO(contract)` shell that says deletion is not available in-app yet, which does not satisfy
+either policy.
 
 ---
 

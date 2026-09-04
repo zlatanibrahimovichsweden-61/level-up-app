@@ -5,7 +5,7 @@
 > what's wrong, where (Figma node / screen), why it matters, the fix we need, and — where a
 > placeholder already exists in code — the exact `file:line` + `TODO(design)` marker to grep.
 >
-> Figma file: `P6044i0giD9TmdQ7C2AmLq` · Contract: `contract/openapi.yaml` (commit 23f0535)
+> Figma file: `P6044i0giD9TmdQ7C2AmLq` · Contract: `contract/openapi.yaml` (commit 184d6ec — v3.0.0-m1)
 > Rule of thumb: **the contract wins**. Where the design lacks a required field, we build it
 > anyway and flag it here so the design catches up.
 
@@ -443,6 +443,9 @@ wording decision.
 
 **Fix we need:** confirm weekly; drop the bar or tell us where its numbers come from; and an
 approved CTA string that is not "Premium".
+
+**Update 2026-09-04:** the CTA question is superseded by #51 — adr-049 removed the button entirely,
+so there is no upgrade string to approve. Items 1 (weekly) and 2 (the bar) still stand.
 
 ---
 
@@ -1141,3 +1144,52 @@ measured row above.
 resend. The old "Resend in 21s" caption survives as the pill's **semantics label**, so a screen
 reader says the sentence rather than "zero zero dot two one". Dark canvas: no dark OTP frame was
 readable; every colour is a theme token, so it follows the palette (same caveat as #25).
+
+---
+
+## 50. 🟠 The result frame's level element — the app drew numbers, the contract says the frame draws a meter; element removed, meter unbuilt
+
+**Where:** result `159:1964` (LTR) / `549:20247` (RTL) — the "Level Progress" element inside the
+Rewards Earned card (`159:2020`).
+
+**What:** since Day 7 the app rendered *"Level 3 · 1255 points"* there, fed from the `finish`
+response. Contract 3.0.0-m1 (adr-102) removed those two fields from `QuizSummary` and states, as
+design evidence, that the live frames *"render no absolute level number and no points total
+anywhere"* — the level element is a **partial-fill meter**, `(points.total mod 500) / 500`. We could
+not open either frame to confirm (the Figma connector is view-only on Seif's account), so either the
+frames moved after Day 7 or the app built something the design never had.
+
+**Built as:** the element is **removed** (owner ruling, D-006, `b7d0dfb`). The card shows the points
+awarded and nothing else.
+
+**Fix we need:** (1) confirm the meter exists on `159:1964` / `549:20247`, and if so its geometry —
+height, fill and track colours, corner radius, and whether any caption (level number, "next level")
+sits beside it; the data to draw it is on `GET /me` and the same 500-point rule Home already uses, so
+it is a widget change once specified. (2) `549:20247` is an RTL result frame we had never catalogued
+— confirm it is the Arabic counterpart of `159:1964` and whether other Day 7 frames now have RTL
+twins (see #34).
+
+---
+
+## 51. 🔴 Three limit-sheet frames draw an upgrade CTA and a benefits list the product now forbids
+
+**Where:** `199:2335` (school) · `225:6634` / `225:7001` (university).
+
+**What:** adr-049 §3 (contract 2.2.0-m1, 2026-08-19): the mobile app is **purchase-silent** — never a
+paywall, a price, an upgrade link, or where to buy; purchases happen on the website only, and voucher
+redemption is web-only. The three frames draw **"Upgrade To Premium"** and a four-row benefits card
+(unlimited questions, AI explanations, priority support, no ads). Both are dead by product rule, not
+by our choice, and were removed from the app on 2026-09-04 (D-007, `5c4b855`). #30's ask for an
+approved CTA string is moot — there is no CTA.
+
+**Built as:** title + body + *"Not now"*. The bodies are **provisional engineering copy** (D-007,
+`ce7da9a`): EN *"You've used all your questions for this week."* / *"This lesson needs an active
+subscription."*, AR *"استخدمت كل أسئلتك لهذا الأسبوع."* / *"هذا الدرس يحتاج إلى اشتراك فعّال."*
+
+**Fix we need:** (1) redraw the three frames without the CTA and the benefits list; (2) approved body
+copy for `weekly_question_limit_reached` and `subscription_required` — neither may mention upgrading,
+subscribing, a price or the website, and neither may use "premium" / "plan" / "pro" (glossary); (3) a
+ruling on the title *"Subscription Required"* / *"الاشتراك مطلوب"* — it names the entitlement without
+pointing anywhere, which we read as allowed, but that is product's call; (4) the reset moment may be
+stated at week granularity (*"resets next week"* — the contract now says so) but **not** as a weekday:
+Monday 00:00 Africa/Cairo is adr-091 §3 and is not on the wire.
