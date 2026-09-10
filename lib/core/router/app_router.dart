@@ -144,6 +144,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
+              // The real LeaderboardScreen is built and tested, but
+              // `GET /leaderboard` is `x-stability: draft` — this stays on the
+              // placeholder until it is promoted. One-line swap (D-008).
               GoRoute(
                 path: '/leaderboard',
                 builder: (_, _) => const LeaderboardPlaceholderScreen(),

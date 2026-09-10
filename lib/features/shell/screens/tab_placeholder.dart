@@ -38,8 +38,15 @@ class TabPlaceholder extends StatelessWidget {
   }
 }
 
-/// `/leaderboard` — real data is `GET /leaderboard` (stable, paginated, SignalR
-/// live updates). Not Day 4.
+/// `/leaderboard` — real data is `GET /leaderboard`, which is
+/// **`x-stability: draft`** at the pinned contract (`openapi.yaml:1221`;
+/// `/leaderboard/me` likewise at `:1263`). The board itself is fully built and
+/// tested under `lib/features/leaderboard/` — it is held behind this
+/// placeholder, not unwritten, because the app builds only against stable
+/// paths. Swap the route back when Seif promotes the two operations (D-008).
+///
+/// No live updates either way: `contract/realtime.md:9` lists the `leaderboard`
+/// hub as "not drafted".
 class LeaderboardPlaceholderScreen extends StatelessWidget {
   const LeaderboardPlaceholderScreen({super.key});
 

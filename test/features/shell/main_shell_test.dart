@@ -101,7 +101,9 @@ void main() {
 
     // Learn left this list in Day 5 (real SubjectsScreen) and Account left it
     // in Day 8 (real ProfileScreen) — Leaderboard and Message are what remain,
-    // and both are blocked on draft/absent endpoints.
+    // and both are blocked on draft/absent endpoints. Leaderboard's screen IS
+    // built (`lib/features/leaderboard/`, tested separately); it is held here
+    // because `GET /leaderboard` is `x-stability: draft` — D-008.
     for (final (label, type) in <(String, Type)>[
       ('Leaderboard', LeaderboardPlaceholderScreen),
       ('Message', MessagePlaceholderScreen),

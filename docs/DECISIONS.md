@@ -278,3 +278,52 @@ product decision, not an omission to fix later.
 
 **Revisit when.** The designer supplies approved copy for the two bodies and the title, or product
 rules on whether "subscription" may appear at all in student-facing copy.
+
+---
+
+## Leaderboard — built ahead of the contract
+
+### D-008 · The leaderboard is finished but held behind its placeholder, because `GET /leaderboard` is draft
+**Feature:** Leaderboard / Router / Shell · **Date:** 2026-09-10 · **Status:** Accepted — gate is
+final until the contract moves · **Raised by:** session audit; ruled by the owner
+
+**Context.** A complete leaderboard shipped into the working tree on 2026-09-08 (13 files —
+models, freezed/json parts, notifier, repository, screen, four widgets, 25 tests) and was wired
+live: `app_router.dart` served `LeaderboardScreen` on the shell's second branch, reachable from
+the nav bar. The work is good — typed exception boundary, `runtimeType`-only error details so
+minors' names and scores cannot leak into a log, contract-faithful `limit` bounds validated
+rather than clamped, `/leaderboard/me` deliberately not called because the contract forbids a
+synthetic self-rank row.
+
+It is nevertheless built against a **draft** path. `openapi.yaml:1221` marks `GET /leaderboard`
+`x-stability: draft`, and `:1263` marks `GET /leaderboard/me` the same. Both have been draft since
+1.0.0-m1 (`seif_fight.md:124`) and neither moved at the 3.0.0-m1 pin. The project's first
+non-negotiable is that the app builds only against `x-stability: stable`.
+
+**How it got there.** `tab_placeholder.dart` carried a comment stating the placeholder was removed
+"when `GET /leaderboard` and `GET /leaderboard/me` reached `x-stability: stable`". They never did.
+The comment is right that the *old* placeholder doc had also been wrong (it claimed stable plus
+SignalR live updates, and `realtime.md:9` lists the `leaderboard` hub as "not drafted") — so a
+correct observation about one stale claim was turned into a second, opposite stale claim. No
+ruling authorising the build exists in this log or in `seif_fight.md`.
+
+**Options.** **A** — leave it live and accept a draft dependency. **B** — delete the feature.
+**C** — keep the code, restore the placeholder on the route.
+
+**Decision.** Owner, 2026-09-10: **C**. `LeaderboardPlaceholderScreen` is restored in
+`tab_placeholder.dart` and `/leaderboard` serves it again; the feature stays on disk, analysed and
+tested. Nothing about the board is deleted, because nothing about it is known to be wrong — only
+its readiness to face a server. Deleting would throw away correct work and re-open a question the
+contract will answer on its own schedule.
+
+**Consequences.** Endpoint coverage returns to **0 draft paths consumed**. `main_shell_test.dart`
+goes back to asserting two coming-soon placeholders. `leaderboard_screen_test.dart` mounts
+`LeaderboardScreen` directly instead of tapping the nav tab, so its 13 behavioural tests still run;
+the one test that was genuinely about the shell branch (`back goes to the Home tab, not off the
+shell`) is **skipped, not deleted** — it asserts on `MainShell`, which the board no longer sits
+inside. Restoring the route is a one-line change in `app_router.dart` plus un-skipping that test
+and re-pointing the screen test's mount at the nav tab; all three sites say so in source.
+
+**Revisit when.** Seif promotes `GET /leaderboard` (and `/leaderboard/me`, if self-rank is ever
+wanted) to `x-stability: stable` and the contract is re-vendored. That ask is not yet filed with
+him — see `seif_fight.md`.
