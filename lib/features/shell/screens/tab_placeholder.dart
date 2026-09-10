@@ -43,7 +43,16 @@ class TabPlaceholder extends StatelessWidget {
 /// `/leaderboard/me` likewise at `:1263`). The board itself is fully built and
 /// tested under `lib/features/leaderboard/` — it is held behind this
 /// placeholder, not unwritten, because the app builds only against stable
-/// paths. Swap the route back when Seif promotes the two operations (D-008).
+/// paths.
+///
+/// **Both operations are already `stable` UPSTREAM** — promoted in `3.5.0-m1`
+/// (2026-09-05); the source repo is ten minor versions ahead of our pin. This
+/// gate is therefore a holding action until `contract/` is re-vendored, not a
+/// verdict on the board. Un-gating is NOT a plain revert: the board predates
+/// six behavioural changes (top-200 bound, signed/expiring cursor, short pages
+/// while `hasMore` is true, `scoreHidden` exclusion, `403` on self-rank,
+/// `404 not_ranked`). Audit against them first — D-008, Correction of
+/// 2026-09-10.
 ///
 /// No live updates either way: `contract/realtime.md:9` lists the `leaderboard`
 /// hub as "not drafted".

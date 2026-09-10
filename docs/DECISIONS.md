@@ -284,8 +284,10 @@ rules on whether "subscription" may appear at all in student-facing copy.
 ## Leaderboard — built ahead of the contract
 
 ### D-008 · The leaderboard is finished but held behind its placeholder, because `GET /leaderboard` is draft
-**Feature:** Leaderboard / Router / Shell · **Date:** 2026-09-10 · **Status:** Accepted — gate is
-final until the contract moves · **Raised by:** session audit; ruled by the owner
+**Feature:** Leaderboard / Router / Shell · **Date:** 2026-09-10 · **Status:** Accepted — the gate
+stands, but it is **temporary and its trigger has already fired upstream**; the attribution in
+*How it got there* is **CORRECTED — see the Correction of 2026-09-10 at the end of this entry**
+· **Raised by:** session audit; ruled by the owner
 
 **Context.** A complete leaderboard shipped into the working tree on 2026-09-08 (13 files —
 models, freezed/json parts, notifier, repository, screen, four widgets, 25 tests) and was wired
@@ -300,12 +302,15 @@ It is nevertheless built against a **draft** path. `openapi.yaml:1221` marks `GE
 1.0.0-m1 (`seif_fight.md:124`) and neither moved at the 3.0.0-m1 pin. The project's first
 non-negotiable is that the app builds only against `x-stability: stable`.
 
-**How it got there.** `tab_placeholder.dart` carried a comment stating the placeholder was removed
-"when `GET /leaderboard` and `GET /leaderboard/me` reached `x-stability: stable`". They never did.
-The comment is right that the *old* placeholder doc had also been wrong (it claimed stable plus
-SignalR live updates, and `realtime.md:9` lists the `leaderboard` hub as "not drafted") — so a
-correct observation about one stale claim was turned into a second, opposite stale claim. No
-ruling authorising the build exists in this log or in `seif_fight.md`.
+**How it got there.** ⚠️ **The reading in this paragraph is WRONG. It is kept verbatim because the
+commit body of `26591fd` repeats it and the record should show what was believed; read the
+Correction at the end of this entry instead.** `tab_placeholder.dart` carried a comment stating
+the placeholder was removed "when `GET /leaderboard` and `GET /leaderboard/me` reached
+`x-stability: stable`". They never did. The comment is right that the *old* placeholder doc had
+also been wrong (it claimed stable plus SignalR live updates, and `realtime.md:9` lists the
+`leaderboard` hub as "not drafted") — so a correct observation about one stale claim was turned
+into a second, opposite stale claim. No ruling authorising the build exists in this log or in
+`seif_fight.md`.
 
 **Options.** **A** — leave it live and accept a draft dependency. **B** — delete the feature.
 **C** — keep the code, restore the placeholder on the route.
@@ -324,6 +329,53 @@ shell`) is **skipped, not deleted** — it asserts on `MainShell`, which the boa
 inside. Restoring the route is a one-line change in `app_router.dart` plus un-skipping that test
 and re-pointing the screen test's mount at the nav tab; all three sites say so in source.
 
-**Revisit when.** Seif promotes `GET /leaderboard` (and `/leaderboard/me`, if self-rank is ever
-wanted) to `x-stability: stable` and the contract is re-vendored. That ask is not yet filed with
-him — see `seif_fight.md`.
+**Revisit when.** ⚠️ **Already met — see the Correction below.** Seif promotes `GET /leaderboard`
+(and `/leaderboard/me`, if self-rank is ever wanted) to `x-stability: stable` and the contract is
+re-vendored. That ask is not yet filed with him — see `seif_fight.md`.
+
+---
+
+#### Correction, 2026-09-10 (same day) — the pin was stale, not the engineer
+
+Checking upstream for contract updates, hours after the gate was committed in `26591fd`, produced
+facts that **invert this entry's attribution**. The decision stands; the reason given for it does
+not.
+
+**1. The promotion had already happened, five days before the gate.** `seifhamdii-collab/level-up-contract`
+is at `f860408`, **13 commits and ten minor versions** past our pin: `3.0.0-m1` → **`3.10.0-m1`**.
+`GET /leaderboard` and `GET /leaderboard/me` became `x-stability: stable` in **`3.5.0-m1` on
+2026-09-05**. This entry's "Revisit when" trigger was met before the entry was written.
+
+**2. The engineer was reading the live contract; the vendored copy was the stale artefact.** The
+board's repository quotes the contract verbatim — *"Do not add a synthetic self-rank row to the
+board"* — and states the rule that `limit` is *validated, not clamped*. **Neither exists at our
+pin.** The word `synthetic` appears **zero** times in `184d6ec`'s `openapi.yaml` and once at
+`origin/main` (`:1492`); "validated, not clamped" is a **`3.7.0-m1`** clarification, and the "top
+200" bound the repository comment relies on arrived in **`3.4.0-m1`**. The board was therefore
+built against **`3.7.0-m1` or later**. It was not built on a misread marker — it was built on a
+contract this repository had not vendored. *How it got there* blames the wrong party and is
+withdrawn.
+
+**3. The gate is still correct, for a narrower reason.** The rule is that the app builds against
+the **pinned** contract, and at `184d6ec` the path is draft. Restoring the placeholder keeps the
+tree honest about what it is entitled to call. But this is now explicitly a **holding action until
+the contract is re-vendored**, not a judgement that the board was built wrongly.
+
+**4. Un-gating is not a revert, and must not be treated as one.** Nine of the fourteen new
+changelog entries are leaderboard changes, and the board predates at least six behavioural ones:
+the **top-200 bound** (`3.4.0-m1`); a **signed, expiring cursor** that must not be decoded, built
+or retained (`3.1.0-m1`); **`scoreHidden` exclusion** so a page can be short (`3.1.0-m1`); a
+**`403 score_hidden_leaderboard_unavailable`** on self-rank (`3.2.0-m1`); **short pages while
+`hasMore` is `true`** — keep paging until it is false (`3.7.0-m1`); and **`404 not_ranked`** for a
+student who has never scored (`3.9.0-m1`). Whether the built code honours these is **UNAUDITED**.
+There is also a new cross-cutting **`403 account_pending_deletion`** returned by every
+authenticated endpoint but four (`3.3.0-m1`).
+
+**Revised order of work.** Re-vendor the contract and write the impact analysis → audit the board
+against the six behavioural changes above → un-gate (route, the skipped shell test, and the screen
+test's mount). Un-gating before the re-vendor would put the app back on a path the pinned contract
+still calls draft, which is the same fault in the opposite direction.
+
+**What this does not change.** The code stays on disk; nothing was deleted, and point 2 is a
+reason to trust it more, not less. `26591fd` is left as committed — its body carries the withdrawn
+reasoning and is corrected here rather than rewritten, so the record shows the sequence.
