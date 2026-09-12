@@ -1468,7 +1468,70 @@ be read rather than having the light values reused.
 >
 > **Still owed:** the dark frame's own shadow values, if they differ. Folded into #70.
 
-## 70. 🟠 The dark Mistakes frames exist but their VALUES are unread
+## 70. ❌ RULING WITHDRAWN — the dark frames draw DARK cards; the carry-over rested on a misread
+
+> 🔴 **Corrected 2026-09-12 (late) — the owner ruling recorded below is WITHDRAWN.** It is
+> kept, not deleted: the way it went wrong is the reusable part.
+>
+> *Originally filed as: "The dark Mistakes frames exist but their VALUES are unread".*
+>
+> **The sequence, in order:**
+>
+> 1. **The observation.** `404:7428` was opened and *seen* drawing "the same pink cards and red
+>    counts" on the `#232428` canvas. Only the frame's canvas fill was read off the Properties
+>    panel. No card, row, text or border hex was.
+> 2. **The decision it produced.** On that observation, all four Mistakes tokens were carried into
+>    the dark palette unchanged, and the ruling below was written to defend the carry-over.
+> 3. **The arithmetic was right.** 11.06:1, 6.30:1, 4.40:1, 2.68:1, 1.36:1 and 1.91:1 were each
+>    re-derived independently and reproduce exactly — for a pink card on a dark canvas.
+> 4. **The premise was wrong.** The owner compared the device build with the dark frames and they
+>    did not match. Read off the Properties panel, the dark family draws a **dark** card and row
+>    with **cream** text. Nobody had checked the thing being measured.
+> 5. **So the ruling is invalid.** "What `404:7428` was observed drawing" was never true, and the
+>    "measurably safer" comparison ranked two candidates the dark design does not contain.
+> 6. **The Figma values are now the source of truth** — the table below.
+> 7. **The implementation follows them.** The dark palette in `app_colors.dart` is corrected, and
+>    two tokens are added because dark separates what light had merged.
+>
+> **Why step 3 did not catch it:** re-deriving a ratio verifies the sum, not the question. The
+> 2026-09-12 device pass then saw pink-on-dark render "correctly" and recorded that as
+> confirmation — it checked the build against the code, not against the frames.
+> `docs/DEVICE_VERIFICATION_2026-09-12.md` carries its own correction.
+>
+> **Read values — dark family, 2026-09-12.** Figma desktop, signed-in view seat, Properties panel;
+> node IDs from *Copy link to selection*. The same values were read on the dark **Units, Chapters
+> and Lessons** rows, the dark school **overview**, and the dark **University** overview
+> (`404:8623`) and **Lectures** (`404:8686`) frames, so they are family values, not
+> frame-specific. Every colour row showed a raw hex — none is a named style or variable.
+>
+> | Element | Node · layer | Figma property | Figma value | Dark, before | Dark, now |
+> | --- | --- | --- | --- | --- | --- |
+> | Card fill | `404:7637` · `Container` | fill | `#27282C` @ **30%** | `mistakesCardFill` `#EAD5D5` | `mistakesCardFill` `#27282C` @ 30% |
+> | Card title | `404:7642` · `Biology` | text fill | `#FCFBF9` | `mistakesContent` `#384F47` | `mistakesContent` `#FCFBF9` |
+> | Card caption | `404:7649` · `20 questions` | text fill | `#EF4444` | `mistakesCount` `#EF4444` | unchanged |
+> | Card chevron | `404:7651` · `Vector` | fill | `#FCFBF9` | `mistakesContent` `#384F47` | `mistakesContent` `#FCFBF9` |
+> | Card shadows | `404:7637` | 2 × drop shadow | `#000000` @ 25%, same as light | via `elevationShadow` (#69) | unchanged |
+> | Card border | `404:7637` | Layout "Border 0.63px" | no stroke colour exposed — same as light | none drawn | none drawn |
+> | Row fill | `404:7765` · `Button` | fill | `#27282C` @ 100% | `mistakesCardFill` `#EAD5D5` | **new** `mistakesRowFill` `#27282C` |
+> | Row hairline | `404:7765` · `Button` | stroke 0.5px, inside | `#FCFBF9` | `mistakesRowBorder` `#4B675E` | `mistakesRowBorder` `#FCFBF9` |
+> | Row name | `404:7771` · `Cell Biology` | text fill | `#FCFBF9` | `mistakesContent` `#384F47` | `mistakesContent` `#FCFBF9` |
+> | Row count | `404:7884` · `20 questions` | text fill | `#EF4444` | `mistakesCount` `#EF4444` | unchanged |
+> | Badge disc | `404:7767` · `Container` 40×40 | fill (+ 1 effect) | `#27282C` @ **20%** | `cardFill` `#232428` @ 20% | **new** `mistakesBadgeFill` `#27282C` @ 20% |
+> | Badge numeral | `404:7768` · `1` | text fill | `#FCFBF9` | `mistakesContent` `#384F47` | `mistakesContent` `#FCFBF9` |
+> | Row chevron | `404:7778` · `Vector` | stroke 1.33px | `#FCFBF9` | `mistakesContent` `#384F47` | `mistakesContent` `#FCFBF9` |
+>
+> **Light is unchanged**, the badge disc included: its light Figma colour has never been read, so
+> it keeps the shipped light `cardFill` `#FDFDFD` through the new `mistakesBadgeFill`. Both
+> palettes are pinned value-by-value in `test/core/theme/app_colors_test.dart`.
+>
+> **Still unread, and not guessed:** the badge disc's single **effect** (its popover would not
+> open on a view seat, so its type and values are unknown and nothing is built for it), and
+> whether the light disc really is `#FDFDFD`.
+>
+> **Separate, and unchanged by this correction:** the dark rows draw chevrons toward the replay
+> Quiz page; the built leaves stay inert because the replay quiz is deferred (owner ruling
+> 2026-09-12). That is a deferred feature, not a theme defect. The count caption's contrast is
+> re-measured in **#71**.
 
 **Where:** `404:7428` (dark Mistakes overview — 402×841, radius 30, canvas `#232428`), plus
 `404:7894`, `404:7990` and the rest of the dark family.
@@ -1512,7 +1575,30 @@ it is not mistaken for a design gap.
 > values from #69 belong to the same pass. The red-on-pink contrast problem the capture did NOT
 > cause is split out as **#71**.
 
-## 71. 🔴 The count caption measures 2.68:1 on its own card — in BOTH canvases
+## 71. 🔴 REOPENED — the count caption fails AA in both palettes, on different grounds: 2.68:1 light, 3.91:1 / 4.07:1 dark
+
+> 🔴 **Reopened and revised 2026-09-12 (late), with #70.** The original finding is kept below.
+>
+> *Originally filed as: "The count caption measures 2.68:1 on its own card — in BOTH canvases".*
+>
+> | | Light | Dark |
+> | --- | --- | --- |
+> | **Previous finding** | `#EF4444` on `#EAD5D5` = **2.68:1** | "identical in both canvases" — the same 2.68:1 |
+> | **Status of that finding** | ✅ still valid — the light frame really is pink | ❌ invalid — it rested on #70's pink premise |
+> | **Actual surface** | `#EAD5D5` (`404:6322`, `404:6642`) | row `#27282C` (`404:7765`); card `#27282C` @ 30% over `#232428` = `#242529` (`404:7637`) |
+> | **Actual count colour** | `#EF4444` (`404:6338`) | `#EF4444` (`404:7884` row, `404:7649` card) |
+> | **Measurement** | **2.68:1** | **3.91:1** on the row · **4.07:1** on the card |
+> | **WCAG AA, 14px normal text (4.5:1)** | ❌ fails | ❌ fails, on both surfaces |
+>
+> **Final accessibility conclusion.** The caption fails AA in **both** palettes, as designed. Dark
+> comes closer but is still short, and **the failure now lives in the Figma design itself, not in
+> the build** — the build reproduces the frames' values exactly. So the red was **not** darkened:
+> that would contradict the frame and invent a token. The `#B91C1C` idea below was measured on the
+> pink only; on the dark row it measures **2.28:1**, so it cannot be the fix for both palettes.
+> **Escalated to the designer** as one question covering both grounds.
+>
+> Every figure is WCAG 2.x relative luminance, with translucent fills composited source-over
+> before measuring.
 
 > **Found by measurement during the Day 10 build, 2026-09-12.** Not a capture gap and not a
 > dark-mode problem: this one is in the light frames, where it was specified.

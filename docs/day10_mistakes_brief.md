@@ -453,6 +453,12 @@ Confirmed by direct selection: **`404:7428` is a dark Mistakes overview** — 40
 canvas `#232428`, with the same pink cards and red counts drawn on the dark ground. Two further
 dark family members were selected in passing: **`404:7894`** and **`404:7990`**.
 
+> 🔴 **Corrected 2026-09-12 (late).** "The same pink cards and red counts" above is **wrong**. It
+> was seen, not read: the dark family draws **dark** cards and rows (`#27282C`, the card at 30%)
+> with cream `#FCFBF9` text and a `#FCFBF9` row hairline, and only the red `#EF4444` count is
+> shared with light. Values and node IDs: `docs/DESIGN_ISSUES.md` **#70**. This brief is a dated
+> record, so the sentence is left as written.
+
 ⚠️ **What is still open:** the individual node-ID → screen mapping for the dark and RTL
 families, beyond the three IDs above. Figma's URL only syncs `node-id` lazily after a selection
 settles, so enumerating 12 IDs from the search panel costs one round trip each and the session

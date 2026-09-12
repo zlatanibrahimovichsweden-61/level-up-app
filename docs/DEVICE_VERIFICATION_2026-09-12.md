@@ -112,6 +112,14 @@ and every figure in #70/#71 reproduced exactly — 11.06, 6.30, 4.40, 2.68, 4.61
 `#71` is also visible rather than merely calculated: the red count on the pink card reads
 faint at a glance, in both canvases.
 
+> 🔴 **Corrected 2026-09-12 (late) — the two paragraphs above record a false
+> confirmation.** The pink card on the dark canvas rendered exactly as the code said, and that is
+> all this pass checked: it compared the build with the code, not with the dark frames. The owner
+> compared the device with the frames, and they draw a **dark** card and row with cream text.
+> Re-deriving the ratios proved the arithmetic, not the premise. `DESIGN_ISSUES.md` **#70** now
+> carries the read values and **#71** the re-measured contrast. The finding that dark mode itself
+> is alive is unaffected.
+
 ---
 
 ## What was NOT verified, and why
