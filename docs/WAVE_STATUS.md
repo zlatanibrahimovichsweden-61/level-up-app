@@ -1,6 +1,6 @@
 # Wave Status — the single source of project truth
 
-**Last updated:** 2026-09-04 (contract v3.0.0-m1 adopted; purchase surface removed; staging re-probed)
+**Last updated:** 2026-09-12 (Day 10 Mistakes shipped — contract re-vendored to 3.13.0-m1, models/repository/notifiers, overview + both tree shapes, entry point live; previous: 2026-09-04 — contract v3.0.0-m1 adopted; purchase surface removed; staging re-probed)
 **Branch:** `merged` — `dev` + `main` joined on 2026-08-22 (`99b5cba`); both are kept
 untouched as history and all work continues on `merged`.
 **Unpushed:** the 2026-08-23 commits (style-fitting pass, OTP glyph landing, F-7-01,
@@ -52,7 +52,83 @@ repository's history and it is why the ladder exists.
 | **3D** | **Typography** | ✅ COMPLETE (2026-08-21) | `6e2df3d`, `da794de`, `7a16307` | BUILD VERIFIED (validate.ps1 2026-08-22, 856 passed); per-commit analyze + guards in a worktree | not yet reviewed |
 | **3E** | Cache / storage | ✅ COMPLETE | `ac87455` | BUILD VERIFIED | **VERIFIED** |
 | **4** | Documentation + audit protocol | ✅ COMPLETE (2026-08-22) | the docs commit that carries this file | documentation only | — |
+| **Day 10** | Mistakes / "My Fault" — overview + both tree shapes, `docs/day10_mistakes_brief.md` | ✅ **COMPLETE (2026-09-12)** — the gate passed: `contract/` re-vendored to `2dca3c5` (3.13.0-m1), so both operations now exist at our own pin. Read-only; the replay quiz is deliberately NOT built | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 943 passed / 0 failed (1 skipped) | not yet reviewed |
 | **Final** | Whole-project Fable review | ⏳ NOT STARTED | — | — | — |
+
+---
+
+## Day 10 — the Mistakes / "My Fault" flow, 2026-09-12
+
+**What shipped.** `GET /me/mistakes` and `GET /me/mistakes/subjects/{subjectId}`, as five screens:
+the overview (`404:6292` / `404:7110` — **one screen, both tracks, no branch**, because the two
+frames are pixel-identical and the endpoint takes no track parameter), the subject route that
+switches on the payload's `track` discriminator, and the school drill-down's two deeper levels.
+University stops at a flat lecture list with **no quizType tabs** — `UniversityMistakesTree`
+carries no `quizTypes`, and frame `404:7181` draws no tab row, so contract and design agree.
+
+The entry point is live: `_MistakesButton` on the Subjects header pushed a coming-soon snackbar
+from Day 6 until today, deferred four times for one reason — no endpoint. That reason expired at
+contract `3.10.0-m1`.
+
+**Endpoint coverage: 21/29 → 23/29 stable · 0/13 draft.** The denominator was **recounted from
+the vendored file**, not copied from the brief: 42 operation blocks carry `x-stability` at indent
+6, of which **29 stable / 13 draft**. It moved from 21/21 because the re-vendor made eight
+operations stable, not because this day consumed six of them — the numerator rose by exactly two.
+
+**One fetch per subject, four screens.** The tree arrives whole and the levels below are VIEWS
+over the cached object, as the catalog drill-down already is. A test asserts `called(1)` across a
+three-screen walk.
+
+**What was reused rather than rebuilt.** `CatalogScaffold` (it *is* the frame's header component
+`404:7413`), `CatalogMessage`, `CatalogBlock`, `CatalogListSkeleton`, the Subjects grid delegate,
+and `TreeListRow` — whose geometry already matched `404:6642` exactly (363 × 78, radius 16, 0.5px
+border). The row gained an optional `countLabel` slot and a `TreeRowPalette`; it was not cloned.
+
+**Three decisions were the owner's, and were asked before any code was written:**
+
+1. **Dark values.** All four new tokens are identical in both palettes. The dark frames exist but
+   their hexes were never captured, and every alternative measured worse — see DESIGN_ISSUES #70,
+   which also **corrects its own premise** with the numbers.
+2. **Empty-state copy.** Neutral (`noMistakes`), matching the register the app already uses. No
+   celebratory tone was invented (#60).
+3. **Inert leaves.** Lessons and lectures drop their chevron and ripple rather than looking
+   tappable and swallowing the tap — the replay quiz is a separate day.
+
+**Two contract subtleties are held apart by tests, not by prose.**
+`insufficient_scope` means *"this subject isn't yours"* on the subject route and *"you have no
+active enrolment right now"* on the overview — same code string, different meaning, and the
+changelog says outright not to collapse them. `CatalogAsyncView` now takes the meaning as a
+`ScopeErrorCopy` parameter; the overview's `403` also **keeps its retry button**, because a track
+transfer resolves on its own (#61). Separately, **no count is ever computed**: a fixture whose
+parents deliberately disagree with their children proves the client renders the server's number
+rather than the sum (adr-133).
+
+**`account_pending_deletion` is not handled here and that is deliberate** — it belongs in the
+global interceptor, one place for every endpoint. All these screens guarantee is that it is not
+swallowed or mistaken for a scope refusal. `TODO(contract)` → `seif_fight.md` S38.
+
+**A first for this codebase:** `mistakeCount` is the project's only ICU `plural`. Arabic carries
+all six categories, and they are genuinely different words rather than one stem with a number in
+front (#66).
+
+**Ratchets unmoved.** Hardcoded `fontSize` **0**, inline `fontWeight` **0** — the frames' five
+type styles (which mix Inter with Cairo) were mapped to the nearest existing `AppType` entries on
+the #57 precedent, and **Cairo was not added to the design system** (#68). No colour outside
+`lib/core/theme/`. No Bloc outside the quiz. No guard was weakened; two of them caught real bugs
+during Step 1 and were right both times.
+
+**Verification level: BUILD.** Widget tests through the real router, not a device. Dark mode in
+particular is a widget-test claim only — memory records it as dead on device 2026-08-04 and never
+re-confirmed.
+
+**Not done, deliberately:** the replay quiz (`404:6853` / `404:7234`), which is what makes the
+leaves inert; the account-deletion cancel screen; un-gating the leaderboard (D-008 — its own
+decision, its own commit, unaffected by this work); flashcards; favourites; quiz history.
+
+**Still owed by others:** the designer's ruling on the count caption's measured **2.68:1** on its
+own card (#71, found by measurement during this build), on the Arabic count wording (#59), and on
+whether the Cairo/Inter mix was intentional (#68); a capture pass over the dark frames' hexes
+(#70) and the RTL node-ID map (#64).
 
 ---
 

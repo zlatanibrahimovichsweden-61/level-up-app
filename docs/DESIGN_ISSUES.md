@@ -1193,3 +1193,343 @@ ruling on the title *"Subscription Required"* / *"الاشتراك مطلوب"* 
 pointing anywhere, which we read as allowed, but that is product's call; (4) the reset moment may be
 stated at week granularity (*"resets next week"* — the contract now says so) but **not** as a weekday:
 Monday 00:00 Africa/Cairo is adr-091 §3 and is not on the wire.
+
+---
+
+> **#59–#67 filed 2026-09-12 with `docs/day10_mistakes_brief.md`** (the Mistakes / "My Fault"
+> flow). Frames read anonymously in the Figma web app on that date — **no Properties panel**, so
+> no exact geometry, colour or type value was captured for any frame in this family. Contract
+> citations are **upstream `2dca3c5` (`3.13.0-m1`)**, not the vendored pin `184d6ec`, which does
+> not contain this surface at all.
+
+## 59. 🔴 Every Mistakes frame captions the count "N questions" — the field is `mistakeCount`
+
+> ✅ **Built the contract's way, 2026-09-12 (Day 10).** New ARB key `mistakeCount`, an ICU
+> `plural` in both locales; the frame's string is not transcribed anywhere.
+> `test/features/mistakes/mistakes_screens_test.dart` asserts `20 mistakes` renders and
+> `20 questions` does not. **Still open for the designer:** confirm the Arabic wording — the
+> shipped `أخطاء` line was written here, not supplied, and the existing `mistakes` key is
+> `أخطائي` ("my mistakes"), right for a button and wrong for a count caption.
+
+**Where:** the whole `Learn(My Fault)` family — overview `404:6292` / `404:7110` (cards read
+`20 questions`), Units `404:6539`, Chapters `404:6677`, Lessons `404:6762`, Lectures `404:7181`
+(rows read `5 questions`, `15 questions`, `3 questions`, `1 questions`).
+
+**What:** "20 questions" reads to a student as *how many questions this subject contains*. The
+number is the opposite — how many they **currently have wrong** (upstream `openapi.yaml:915-920`,
+`minimum: 1`). On a subject with 400 questions and 20 mistakes the copy is not vague, it is false.
+This is the one number the entire flow exists to display.
+
+**Fix we need:** designer supplies count copy that says *mistakes*, in both languages. The existing
+ARB key `mistakes` is `أخطائي` ("my mistakes") — right for the header button, wrong as a count
+caption, so this is a new string and not a reuse.
+
+**Meanwhile in code:** the brief instructs the build to write mistake-copy and **not** transcribe
+the frame's string. Contract wins.
+
+## 60. 🟠 The Mistakes family has no empty state, and the contract makes empty the happy path
+
+> ✅ **Neutral copy shipped 2026-09-12 by owner ruling; the design gap stays open.** The
+> owner was asked before any copy was written, exactly as this entry demanded, and chose the
+> register the app already uses — `noMistakes` = "No mistakes yet" / "لا توجد أخطاء",
+> alongside `noSubjects`, `noLectures` and `nothingHere`. **No celebratory tone was
+> invented.** Swapping in a warmer line later is a one-key change with no migration, which is
+> why this could ship without blocking. Both empty cases render it — `200 []` on the
+> overview and `mistakeCount: 0` with an empty child list on the tree — and a test asserts
+> neither renders as an error.
+
+**Where:** all six list frames.
+
+**What:** the contract defines **two distinct** normal-empty responses and forbids rendering either
+as an error — *"Clients MUST NOT render empty-as-error"* (upstream `:895-897`) for the overview's
+`200 []`, and *"a normal response, not an error and not a `403`"* (`:960-964`) for an in-scope
+subject returning `mistakeCount: 0` with an empty `units`/`lectures`. Neither frame draws an empty
+state. The overview's empty state is the **happy path** — a student with nothing outstanding is a
+student doing well.
+
+**Fix we need:** a designed empty state for the overview (and ideally the tree), with its copy. The
+*tone* is a product decision.
+
+**Meanwhile in code:** `CatalogMessage`'s defaults render something correct, so this does not block
+the build — but the brief marks celebratory copy as **stop-and-ask**, not something to invent.
+
+## 61. 🟠 `insufficient_scope` means two different things, and the shared view collapses them
+
+> ✅ **Fixed 2026-09-12 (Day 10).** `CatalogAsyncView` now takes a `ScopeErrorCopy` enum
+> (`catalog_states.dart`) and the ROUTE states which meaning it carries, because the wire
+> gives both the same code string. `subjectNotYours` is the default and is unchanged for
+> every catalog screen; the Mistakes overview passes `enrolmentPending`, which swaps in the
+> new `mistakesEnrolmentPending` key **and restores the retry button** the subject route
+> suppresses — the state is transient (adr-032), so retrying is legitimate. Two tests hold
+> the branches apart, including the one this entry asked for by name: the overview's `403`
+> must not show `subjectUnavailable`.
+
+**Where:** `lib/features/catalog/widgets/catalog_states.dart:51-64`, `:74-80`.
+
+**What:** `CatalogAsyncView` maps `insufficient_scope` to `l10n.subjectUnavailable` ("isn't part of
+your course") and suppresses retry. Correct for `getMyMistakesForSubject`. **Wrong for
+`getMyMistakes`**, where the identical code means *"the caller currently has no active enrolment to
+scope their history against"* — reachable in ordinary use because a track transfer closes the old
+enrolment before the new one opens (adr-032, upstream `:925-939`). The contract is explicit:
+*"it means something DIFFERENT from the subject route's `403` — do not collapse the two branches"*,
+and it is *"not a reason to retry, and not a reason to log out"*.
+
+**The code string is identical on both routes** — the client must branch on the **route**, not the
+code.
+
+**Fix we need:** copy for "your enrolment is between states" in both languages.
+
+**Code marker:** `lib/features/catalog/widgets/catalog_states.dart:51`. Related to **S41** but
+distinct — S41 is about two causes behind *one* route's 403; this is one code across *two* routes.
+
+## 62. 🟠 `account_pending_deletion` has a mandated destination that does not exist
+
+**What:** both Mistakes routes can return `403 account_pending_deletion`, and the contract's client
+rule is unambiguous — *"do **not** log the user out and do **not** retry — route to the cancel
+screen, drawn from `GET /me`'s `pendingDeletion.effectiveAt`"* (upstream `:82-83`). The grace-window
+allowlist is an **exact four routes** and neither Mistakes route is on it (adr-114), so the refusal
+lands before either handler runs.
+
+There is no cancel screen, no route, and no `DELETE /me/deletion-request` call anywhere in `lib/`.
+
+**Status change:** `seif_fight.md` **S38** filed this on 2026-09-04 as "Account deletion has no
+endpoint". **That is now out of date** — `requestAccountDeletion` and `cancelAccountDeletion` are
+both `x-stability: stable` at the target pin. The blocker is now build effort, not contract.
+
+**Owner:** **not the Mistakes feature.** The code handling belongs in the global error interceptor
+(one place, every endpoint); the screen belongs to the account surface. Day 10 only ensures the
+code is not swallowed.
+
+## 63. ❌ WITHDRAWN (same day) — the dark-mode frames DO exist; dark VALUES are still owed
+
+> 🔴 **Corrected 2026-09-12, hours after filing.** The claim below — that `Dark mode`
+> carries no Mistakes frames — is **WRONG**, and is kept rather than deleted because the way it
+> went wrong is reusable. A signed-in pass ran Figma's layer search (`ctrl+F`, scope *This
+> page*) for `My Fault`: **19 results — 18 frames plus one layer of that name — i.e. 6 per
+> group across `light mode`, `Dark mode` and `RTL`.** `404:7428` was selected directly and is a
+> **dark Mistakes overview**: 402×841, radius 30, canvas `#232428`, pink cards and red counts on
+> the dark ground. `404:7894` and `404:7990` are two more dark family members.
+>
+> **Root cause — this will bite again.** The layer name carries a stray Arabic **kasratan**:
+> the real string is `Learn(ٍMy Fault) for school student`, not `Learn(My Fault)`. Every search
+> for the clean spelling returns nothing, silently. The same typo is in `Learn(ٍSubject)`.
+> **Search `My Fault`, never `Learn(My Fault)`** — and never conclude absence from a
+> virtualised layer panel.
+>
+> **What survives, and it is the half that mattered:** the dark **values** are still unread. Do
+> not infer them from the light frames — read `404:7428` and its siblings. Still open; see #70.
+
+**Where:** page `design` → group `Dark mode` → `School Student Flow`.
+
+**What:** the group contains the four **catalog** frames (`Learn(lessons)`, `Learn(Chapter)`,
+`Learn(Units)`, `Learn(Subject)`) and **no `Learn(My Fault)` entry**.
+
+⚠️ **Verification level: strong but NOT conclusive.** Confirmed by two overlapping screenshots of
+the layers panel plus an accessibility-tree query returning no match — but the panel is
+**virtualised**, and `Dark mode → University Student Flow` and the **entire `RTL` group** were not
+enumerated (the viewport collapsed mid-session and Figma's sign-up banner covered the panel). Do
+not quote this as settled until a signed-in seat re-checks it with Figma's layer search.
+
+**Why it matters more than usual:** the rows are pink/red on a light canvas and the correct dark
+fill cannot be safely inferred. This repo has already paid for that twice on the review screen —
+**#53** and **#54** — where an opaque correct-row fill produced a measured **1.11:1**
+cream-on-mint in dark.
+
+**Fix we need:** dark values for the Mistakes row fill, border and count caption.
+
+**Meanwhile in code:** derive from the shipped quiz wrong-answer tokens
+(`quizWrongFill`/`quizWrongBorder`/`quizWrongBadge`) rather than inventing, **measure** the
+contrast, and record the figure — per `AGENT_WORKFLOW.md` §"Theme discipline", document the
+uncertainty rather than invent a value.
+
+## 64. 🟡 RTL variants exist; their node IDs are not yet mapped
+
+> **Updated 2026-09-12.** The 19-result layer search (see #63) proves a **complete 6-frame RTL
+> family**. What is missing is only the node-ID → screen mapping — clicking, not research.
+
+**What:** the `RTL` group's individual frame IDs are unmapped. Figma syncs `node-id` into the
+address bar only lazily after a selection settles, so enumerating the 12 dark + RTL IDs costs one
+round trip each. Method: `ctrl+F` → `My Fault` → scope *This page* → click each row, reading the
+`node-id` after each settles (`shift+2` forces the sync); identify the group from the canvas
+ground — light `#FCFBF9`, dark `#232428`, RTL mirrored/Arabic.
+
+**Meanwhile in code:** built mirrored regardless — `EdgeInsetsDirectional`,
+`forwardChevron(context)`, no hardcoded `TextDirection` — because that is how every other list in
+this app works and because reproducing a half-done RTL frame would ship a bug. Precedent: **#58**,
+where the RTL review frame turned out to be half-mirrored and the build correctly ignored it.
+
+## 65. 🟡 The Mistakes frames' placeholder counts do not reconcile across levels
+
+**Where:** `404:6539` shows unit "Cell Biology" = **5**; `404:6677` shows its chapters as **3** and
+**1** (sum 4). The overview's `20` does reconcile with the units (5 + 15).
+
+**What:** placeholder data, not a specification. The contract guarantees *"Every parent's
+`mistakeCount` is the SUM of its descendants'"* (upstream `:953-957`).
+
+**Fix we need:** nothing from the designer — **recorded so that nobody "fixes" the client to
+reproduce the frame's arithmetic, and nobody files the discrepancy as a server bug.** The client
+renders server numbers verbatim and performs no arithmetic at all.
+
+## 66. 🟡 The Mistakes frames do not pluralise ("1 questions")
+
+> ✅ **Built 2026-09-12.** `mistakeCount` is an ICU `plural` and is **the project's first** —
+> `app_en.arb:428` previously recorded "the project has no ICU plural anywhere". Arabic
+> carries all six categories and they are genuinely different words, not one stem with a
+> number in front: `خطأ واحد` (one) · `خطآن` (two) · `3 أخطاء` (few, 3–10) · `20 خطأً`
+> (many, 11–99) · `100 خطأ` (other). A test asserts one of each.
+>
+> **Digits are Western**, not Arabic-Indic — `intl` formats `ar` that way in this app, which
+> #19 already records and two other tests already assert. Not changed here; whether Egyptian
+> students should see ٠١٢ is a design question and is still that one.
+
+**Where:** `404:6762` and `404:6677` both render `1 questions`.
+
+**Fix we need:** nothing — but the ARB entries must use ICU `plural` in both languages. Arabic has
+**six** plural categories (`zero`/`one`/`two`/`few`/`many`/`other`), so a naive interpolation is
+wrong here specifically, not merely untidy.
+
+## 67. 🟠 The replay-quiz frames draw a nav bar; the built quiz screens live outside the shell
+
+**Where:** `404:6853` (school) and `404:7234` (university) — both are **Quiz pages**, the terminal
+"replay" step of the Mistakes flow, not mistakes lists. (`docs/day7_quiz_brief.md:95` had assigned
+them to this flow on positional evidence alone; opening them confirms the membership and corrects
+the kind.)
+
+**What:** both draw the bottom nav bar with `Learn` active, but `/quiz/*` routes sit at top level in
+`app_router.dart`, deliberately outside the `StatefulShell` — the Day 9 brief records the same
+frame detail for `162:2377` as *"drawn, but IGNORE"*. Either the replay quiz is a different,
+in-shell surface, or these frames inherit a template.
+
+**Fix we need:** designer confirms whether the replay quiz keeps the nav bar. **Not urgent** — the
+replay is out of scope for Day 10 (owner ruling 2026-09-12); recorded now so it is not discovered
+late on the day it is built.
+
+## 68. 🔴 The Mistakes family mixes Inter and Cairo, and none of its five type styles is in the scale
+
+> ✅ **Resolved in build 2026-09-12 on the #57 precedent, as this entry instructed —
+> not re-derived.** Every style mapped to the nearest existing `AppType` entry by ROLE:
+> card title and row name (Inter 700/16 and 600/16) → `AppType.h3`; both count captions
+> (Cairo 600/14) → `AppType.labelLarge`. **Cairo was NOT added to the design system** and
+> the scale gained nothing. Both ratchets stayed at **0**.
+>
+> Two sub-findings deliberately not transcribed: the **10.62px line height on a 14px font**
+> (smaller than the glyph box — it would clip its own descenders, a Figma artefact rather
+> than intent) and the row name's **`#000000`** (pure black is not in this palette at all;
+> the shipped `#384F47` is used, per #57).
+>
+> **Still open for the designer:** whether the Cairo/Inter mix was deliberate.
+
+**Where:** measured off the Properties panel, 2026-09-12 (signed-in view seat).
+
+| Element | Node | Font | Weight | Size | Line height | Colour |
+| --- | --- | --- | --- | --- | --- | --- |
+| Card title "Biology" | `404:6329` | **Inter** | 700 Bold | 16 | 14.85 | `#384F47` |
+| Card caption "20 questions" | `404:6338` | **Cairo** | 600 SemiBold | 14 | **10.62** | `#EF4444` |
+| Row name "Cell Biology" | `404:6648` | **Inter** | **600** | 16 | 21 | **`#000000`** |
+| Row caption "5 questions" | — | **Cairo** | 600 SemiBold | 14 | **10.62** | `#EF4444` |
+| Row index badge "1" | — | **Cairo** | 700 Bold | 16 | 24 (cap-height trim) | not captured |
+
+**Four problems in one table:**
+
+1. 🔴 **Cairo is not in the design system.** Wave 3D's handoff `typography-style-inter.md`
+   (2026-08-21) supplied **18 Inter styles**, transcribed verbatim into `AppType`
+   (`lib/core/theme/app_typography.dart`). Cairo appears nowhere else in the app. Deliberate (it
+   renders Arabic-Indic digits well) or drift? **We will not guess** — adding a second family to
+   the design system is precisely the Wave 3D trap.
+2. 🔴 **None of the five styles exists in `AppType`**, and the ratchet is **0** — no inline
+   `fontSize:`/`fontWeight:` may be written. Same situation as **#57**, which the owner settled for
+   the review screen by mapping to nearest-existing rather than extending the scale. **Ask for the
+   same ruling; do not re-derive it.**
+3. 🔴 **Line height 10.62px on a 14px font** — smaller than the glyph box, clipping descenders.
+   Almost certainly a Figma artefact, but it must not be transcribed.
+4. 🟠 **Two different "primary text" colours in one family** — row name `#000000`, card title
+   `#384F47`. **Pure black is not in the palette at all**; `#384F47` *is* a shipped token
+   (`quizReviewRowContent`, added Day 9). Use the token; do not add black.
+
+**Fix we need:** confirm Cairo-vs-Inter; confirm the line height is an artefact; pick one primary
+text colour.
+
+## 69. 🟠 The Mistakes overview card carries two pure-black drop shadows
+
+**Where:** `404:6322` — `#000000` at **25%**, twice: X 0.53 / Y 0 / blur 1.06 / spread −0.53, and
+X 0 / Y 0.53 / blur 1.59 / spread 0.
+
+**What:** **#47** already records *"Five drop shadows are pure black, which does not exist on the
+dark canvas"*. These are instances six and seven.
+
+**Fix we need:** the same ruling as #47, plus the dark frame's own shadow values — `404:7428` must
+be read rather than having the light values reused.
+
+> ✅ **Built 2026-09-12 through `elevationShadow`.** The card routes both shadows through the
+> per-canvas token rather than painting `#000000`, exactly as `profile_header_card.dart:45`
+> already does — so #47's ruling is applied without waiting on a capture. The two are collapsed
+> into one `BoxShadow`: they differ by half a pixel of offset and composite to a single visible
+> edge. The palette guard would have rejected the literal anyway, which is the guard working.
+>
+> **Still owed:** the dark frame's own shadow values, if they differ. Folded into #70.
+
+## 70. 🟠 The dark Mistakes frames exist but their VALUES are unread
+
+**Where:** `404:7428` (dark Mistakes overview — 402×841, radius 30, canvas `#232428`), plus
+`404:7894`, `404:7990` and the rest of the dark family.
+
+**What:** #63 was withdrawn because the frames exist — but only the frame-level canvas fill has
+been read. The **card fill, row fill, border, count colour, text colours and shadows on the dark
+ground are all still unmeasured**, and the light values must not be reused for them.
+
+**Why this is the dangerous one:** the light row is `#EAD5D5` with `#EF4444` text and a `#4B675E`
+border. Carried onto `#232428` unchanged, that is the exact failure **#53/#54** shipped on the
+review screen — a measured **1.11:1**. Every dark token must be read from `404:7428` and its
+siblings and its contrast **measured**, per `AGENT_WORKFLOW.md` §"Theme discipline".
+
+**Fix we need:** nothing from the designer — the frames exist. This is a capture task, recorded so
+it is not mistaken for a design gap.
+
+> ✅ **Resolved by owner ruling 2026-09-12 — and the paragraph above gets a correction.**
+>
+> 🔴 **"Carried onto `#232428` unchanged, that is the exact failure #53/#54 shipped — a measured
+> 1.11:1" is WRONG, and the numbers say so.** #53/#54 was a foreground that FOLLOWED the theme
+> landing on a fill that did not — cream on opaque mint. Carrying *everything* unchanged is the
+> opposite move and cannot reproduce it. Measured before the ruling, not after:
+>
+> | Pair | Ratio | |
+> | --- | --- | --- |
+> | `#EAD5D5` card vs the `#232428` canvas | **11.06:1** | the card reads as its own surface |
+> | `#384F47` title/row name on `#EAD5D5` | **6.30:1** | passes AA |
+> | `#4B675E` border on `#EAD5D5` | 4.40:1 | non-text |
+> | **Rejected** — dark `quizWrongFill` over `#232428` = `#655356`, with `#EF4444` on it | **1.91:1** | WORSE than the light row, and the actual #53/#54 repeat |
+> | **Proof of the rule** — dark `textPrimary` `#FCFBF9` on `#EAD5D5` | **1.36:1** | what a theme-following foreground would do here |
+>
+> So all four tokens are **identical in both palettes** (`mistakesCardFill`, `mistakesContent`,
+> `mistakesCount`, `mistakesRowBorder`), which is also what `404:7428` was observed drawing —
+> "the same pink cards and red counts on the dark ground". The rule is the one
+> `quizReviewRowContent` already states: **a fill that never changes needs a foreground that
+> never changes.**
+>
+> **What is still genuinely unread**, and is now the whole of this entry: the dark frame's own
+> hexes were never taken off the Properties panel — only its canvas fill. If a capture pass ever
+> shows `404:7428` using different values, this decision is reversible in one file. The shadow
+> values from #69 belong to the same pass. The red-on-pink contrast problem the capture did NOT
+> cause is split out as **#71**.
+
+## 71. 🔴 The count caption measures 2.68:1 on its own card — in BOTH canvases
+
+> **Found by measurement during the Day 10 build, 2026-09-12.** Not a capture gap and not a
+> dark-mode problem: this one is in the light frames, where it was specified.
+
+**Where:** `404:6338` (card caption) and the row caption — `#EF4444` on the `#EAD5D5` fill of
+`404:6322` / `404:6642`.
+
+**What:** **2.68:1**, against WCAG AA's 4.5:1 for normal text at 14px. Because the fill and the
+count are both canvas-independent (#70), the figure is identical in light and dark — this is not
+a theme bug that one canvas escapes.
+
+**Why it was shipped rather than corrected:** darkening the red would be inventing a design token
+the designer did not supply, on a surface where every other value is measured. That is precisely
+the Wave-3D trap #68 exists to name. The measured number is recorded in
+`app_colors.dart`'s `mistakesCount` doc so the next reader finds it rather than re-deriving it.
+
+**Fix we need:** a ruling. Either a darker red for the caption (`#B91C1C` on `#EAD5D5` would
+clear AA), a darker pink ground, or an explicit accept — the caption is short, bold-ish and
+paired with the subject name, so the practical harm is smaller than the ratio suggests. What must
+not happen is the number being quietly forgotten.
