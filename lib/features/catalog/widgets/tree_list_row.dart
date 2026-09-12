@@ -85,19 +85,22 @@ class TreeListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
-    final (fill, border, content) = switch (palette) {
+    final (fill, border, content, badgeFill) = switch (palette) {
       TreeRowPalette.catalog => (
         ext.catalogCardFill,
         ext.fieldBorder,
         ext.textPrimary,
+        ext.cardFill,
       ),
-      // The Mistakes row's three values are canvas-INDEPENDENT, so its
-      // foreground has to be too: `ext.textPrimary` is `#FCFBF9` in dark and
-      // measures 1.36:1 on the pink. See [AppColors.mistakesContent].
+      // Every Mistakes value comes from the Mistakes palette, never the
+      // catalog's: in light the foreground is the green the pink needs, and in
+      // dark the row, hairline, text and disc are all read off the dark frame
+      // `404:7765`. See [AppColors.mistakesRowFill].
       TreeRowPalette.mistakes => (
-        ext.mistakesCardFill,
+        ext.mistakesRowFill,
         ext.mistakesRowBorder,
         ext.mistakesContent,
+        ext.mistakesBadgeFill,
       ),
     };
 
@@ -117,7 +120,7 @@ class TreeListRow extends StatelessWidget {
           padding: const EdgeInsetsDirectional.all(16.5),
           child: Row(
             children: [
-              _IndexBadge(index: index, content: content),
+              _IndexBadge(index: index, fill: badgeFill, content: content),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -198,26 +201,32 @@ class TreeListRow extends StatelessWidget {
 
 /// The frame's 40dp numbered circle (`337:5928`).
 ///
-/// The Mistakes frames draw this badge too, but their Properties panel never
-/// gave its colours, so the disc keeps the shipped `cardFill` on both palettes
-/// rather than gaining a fifth unmeasured token. Measured on the pink row:
-/// **8.68:1** light, **4.33:1** dark. Only the digit follows the row's content
-/// colour, which IS measured.
+/// The disc colour arrives as [fill] from the row's palette: `cardFill` on the
+/// catalog, [AppColors.mistakesBadgeFill] on Mistakes.
+///
+/// This badge used to keep `cardFill` on both palettes, because the Mistakes
+/// disc had not been read. The dark one now has (`404:7767`, `#27282C` at 20%)
+/// and it differs from dark `cardFill`, so it is a token of its own. The light
+/// Mistakes disc is still unread and keeps the value it always shipped with.
+/// The digit follows the row's content colour.
 class _IndexBadge extends StatelessWidget {
-  const _IndexBadge({required this.index, required this.content});
+  const _IndexBadge({
+    required this.index,
+    required this.fill,
+    required this.content,
+  });
 
   final int index;
+  final Color fill;
   final Color content;
 
   @override
   Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-
     return Container(
       width: 40,
       height: 40,
       alignment: AlignmentDirectional.center,
-      decoration: BoxDecoration(color: ext.cardFill, shape: BoxShape.circle),
+      decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
       child: Text(
         // Locale-aware formatting — grouping separators, not digit shapes.
         //
@@ -247,7 +256,7 @@ enum TreeRowPalette {
   /// The catalog drill-down - `catalogCardFill` on `fieldBorder`.
   catalog,
 
-  /// The Mistakes drill-down - the pink `404:6642` row. Canvas-independent in
-  /// all three of its values; see [AppColors.mistakesCardFill].
+  /// The Mistakes drill-down - the pink `404:6642` row in light, the dark
+  /// `404:7765` row in dark. See [AppColors.mistakesRowFill].
   mistakes,
 }

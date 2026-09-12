@@ -82,6 +82,61 @@ void main() {
     });
   });
 
+  // The Mistakes tokens once shipped with dark == light, on an observation of
+  // the dark frames that was never measured and turned out to be wrong
+  // (docs/DESIGN_ISSUES.md #70). Every value pinned here is read off a Figma
+  // Properties panel. Pinning them is what stops a later tidy-up from quietly
+  // carrying the light values across again.
+  group('Mistakes tokens follow the dark frames and leave light alone', () {
+    test('light is unchanged by the dark correction', () {
+      final light = AppColors.light;
+
+      expect(light.mistakesCardFill, const Color(0xFFEAD5D5)); // 404:6322
+      expect(light.mistakesRowFill, const Color(0xFFEAD5D5)); // 404:6642
+      expect(light.mistakesContent, const Color(0xFF384F47)); // 404:6329
+      expect(light.mistakesCount, const Color(0xFFEF4444)); // 404:6338
+      expect(light.mistakesRowBorder, const Color(0xFF4B675E)); // 404:6642
+      // The light disc was never read; it keeps what the badge shipped with.
+      expect(light.mistakesBadgeFill, light.cardFill);
+    });
+
+    test('dark is the 404:7428 family, not the light values', () {
+      final dark = AppColors.dark;
+
+      expect(dark.mistakesCardFill, const Color(0x4D27282C)); // 404:7637
+      expect(dark.mistakesRowFill, const Color(0xFF27282C)); // 404:7765
+      expect(dark.mistakesContent, const Color(0xFFFCFBF9)); // 404:7771
+      expect(dark.mistakesCount, const Color(0xFFEF4444)); // 404:7884
+      expect(dark.mistakesRowBorder, const Color(0xFFFCFBF9)); // 404:7765
+      expect(dark.mistakesBadgeFill, const Color(0x3327282C)); // 404:7767
+
+      // The specific regression: no pink ground in dark.
+      expect(dark.mistakesCardFill, isNot(AppColors.light.mistakesCardFill));
+      expect(dark.mistakesRowFill, isNot(AppColors.light.mistakesRowFill));
+    });
+
+    test('the two new tokens are wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(
+        AppColors.light.copyWith(mistakesRowFill: probe).mistakesRowFill,
+        probe,
+      );
+      expect(
+        AppColors.light.copyWith(mistakesBadgeFill: probe).mistakesBadgeFill,
+        probe,
+      );
+
+      // Every Mistakes token that differs between palettes must MOVE at 0.5.
+      final mid = AppColors.light.lerp(AppColors.dark, 0.5);
+      expect(mid.mistakesCardFill, isNot(AppColors.light.mistakesCardFill));
+      expect(mid.mistakesRowFill, isNot(AppColors.light.mistakesRowFill));
+      expect(mid.mistakesContent, isNot(AppColors.light.mistakesContent));
+      expect(mid.mistakesRowBorder, isNot(AppColors.light.mistakesRowBorder));
+      expect(mid.mistakesBadgeFill, isNot(AppColors.light.mistakesBadgeFill));
+    });
+  });
+
   group('successBadge', () {
     test(
       'is identical in both palettes — it must not follow the accent flip',
