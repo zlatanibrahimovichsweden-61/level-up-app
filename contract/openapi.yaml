@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.0.0-m1
+  version: 3.13.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -58,6 +58,29 @@ info:
     endpoint may return `401` + `code: session_superseded` at any moment (logged in on another
     device). Client: one global interceptor — on `session_superseded` purge tokens and show the
     forced-logout screen; on `authentication_required` run the refresh flow, then retry once.
+
+
+    ## Account deletion during grace (adr-114)
+
+    A student with a pending deletion request can still log in, but the account offers **exactly
+    one action**, and that is enforced server-side rather than by the client. Every authenticated
+    `/api/v1` endpoint answers `403` + `code: account_pending_deletion` **except these four**:
+    `GET /me`, `POST /me/deletion-request` (so its `409` is reachable and never shadowed by the
+    `403`), `DELETE /me/deletion-request`, and `POST /auth/logout`. The rule is **default-deny** —
+    an endpoint added to this document later is blocked during grace unless it is added to that
+    list, so do not read the four as a category.
+
+
+    The whole **anonymous** ladder is outside the restriction by construction, because it carries
+    no authenticated principal: `POST /auth/otp/request`, `/auth/otp/verify`, `/auth/register`,
+    `/auth/refresh`, `/auth/recovery/start`, `/auth/recovery/verify-parent`,
+    `/auth/recovery/new-phone` and `/auth/recovery/confirm` all behave normally during grace. That
+    is deliberate and load-bearing: a student who lost their device must be able to recover an
+    account in order to cancel its deletion.
+
+
+    Client rule: on `403` `account_pending_deletion`, do **not** log the user out and do **not**
+    retry — route to the cancel screen, drawn from `GET /me`'s `pendingDeletion.effectiveAt`.
 
 
     **OTP parameters:** 6 digits, 5-minute expiry, 60s resend cooldown, 5 failed verifies →
@@ -97,6 +120,10 @@ tags:
     description: Content taxonomy scoped to the caller's registration (track/system/stage or university/faculty/year)
   - name: quiz
     description: Quiz build → per-question answer → finish; history; favorites; AI explanation
+  - name: flashcards
+    description: >
+      Anatomy Flashcards study surface — university track only, behind the SECOND subscription
+      (adr-004, adr-060) with a shared weekly free preview (adr-091, adr-142)
   - name: entitlements
     description: Subscription state (extensible set, adr-018)
   - name: commerce
@@ -744,6 +771,77 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/deletion-request:
+    post:
+      tags: [profile]
+      x-stability: stable
+      operationId: requestAccountDeletion
+      summary: Request account deletion — starts the 30-day grace window (adr-114)
+      description: >
+        Records a deletion request for the **caller's own** account (there is no id parameter) and
+        returns the window. `effectiveAt` is `requestedAt` + 30 days, UTC, and is a **"no earlier
+        than"** time: erasure runs from a daily job, so execution may lag `effectiveAt` by up to
+        ~24 hours.
+
+
+        **What happens immediately, at request time.** The caller's session and refresh chain are
+        revoked — this `202` is the last thing that token does, so send the student to the login
+        screen and purge the token pair; a retry with it will fail. The student is also removed
+        from every peer-visible surface at once (leaderboards included).
+
+
+        **Confirm-screen copy the app must show BEFORE calling this (adr-114 D3).** The request is
+        reversible only inside the grace window, by logging in again and calling
+        `DELETE /me/deletion-request`. **An active paid subscription is forfeited** — there is no
+        partial refund, the remaining paid time is not restored by cancelling, and it does not
+        carry to a future account. **A new account registered later with the same phone number
+        starts from zero** — no points, no level, no badges, no quiz history. The phone stays
+        blocked for the whole grace window (the account still exists) and is freed at execution.
+
+
+        **During grace the account offers exactly one action**, enforced server-side: every
+        authenticated `/api/v1` endpoint outside a four-endpoint allowlist answers `403`
+        `account_pending_deletion`. The allowlist and the anonymous-recovery carve-out are in this
+        document's top-level description.
+      responses:
+        '202':
+          description: Deletion requested — the grace window has started and this session is dead.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestedAt: { type: string, format: date-time, description: UTC — when the request was recorded. }
+                  effectiveAt: { type: string, format: date-time, description: "UTC — `requestedAt` + 30 days. Erasure runs no EARLIER than this; the daily job may execute it up to ~24 h later." }
+                required: [requestedAt, effectiveAt]
+        '409':
+          description: "`deletion_already_requested` — a request is already pending. This call did NOT start a new window and did not move `effectiveAt`; read the live window from `GET /me`'s `pendingDeletion`. Deliberately explicit rather than an idempotent `202`, so the client can never show a fresh 30 days that isn't real."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    delete:
+      tags: [profile]
+      x-stability: stable
+      operationId: cancelAccountDeletion
+      summary: Cancel the pending deletion request during the grace window
+      description: >
+        One of the four authenticated endpoints a pending-deletion student may reach. On `204` the
+        account is fully usable again **on the next request with the same token** — the grace check
+        is a live read, so nothing is cached and no token reissue is needed.
+
+
+        Peer visibility returns too, but not necessarily instantly: the student is restored to the
+        leaderboards no later than the next projection rebuild. The direction of that lag is
+        over-hiding, never a leak.
+      responses:
+        '204': { description: The pending request is cancelled; the account is unrestricted again. }
+        '404':
+          description: "`no_pending_deletion` — nothing pending to cancel. Also returned once erasure has begun executing for this account: the grace window is over in fact, not just in wording, and the request can no longer be withdrawn."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/entitlements:
     get:
       tags: [entitlements]
@@ -768,6 +866,129 @@ paths:
                 required: [items]
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/mistakes:
+    get:
+      tags: [quiz]
+      x-stability: stable
+      operationId: getMyMistakes
+      summary: The Mistakes overview — subjects the caller currently has wrong answers in
+      description: >
+        The first screen of the Mistakes flow. Returns ONE entry per subject the caller currently
+        has at least one mistake in, with a live `mistakeCount`. Server-derived scope only: there is
+        no scope parameter in the path, the query string or a header.
+
+
+        **"Currently" is the point.** A mistake counts only while the student's MOST RECENT graded
+        answer to that question was wrong. Answer it correctly in a later quiz and it stops counting
+        here, immediately and with no further action. The count is computed on every read and is
+        never cached, so it can differ between two requests seconds apart.
+
+
+        🔴 **This is deliberately NOT the same set as `POST /quizzes` `mode: retakeWrong` draws
+        from.** The retake pool is *ever wrong* and does not decay; this count is *currently wrong*
+        and does. A question you answered wrongly and later got right is **absent from every
+        `mistakeCount` and still present in a retake quiz**. That divergence is intentional (adr-133)
+        — do not reconcile the two numbers in the client, and do not derive one from the other.
+
+
+        **A subject with zero current mistakes is ABSENT, never present with `0`.** `[]` is therefore
+        a NORMAL response — the record of a student who has nothing outstanding. Clients MUST NOT
+        render empty-as-error.
+      responses:
+        '200':
+          description: >
+            Bare array (closed per-student set), possibly EMPTY. Ordered by `name` ascending, then
+            `id` — a stable order the client can render without sorting. `name` is in the content
+            language (adr-018). School subjects carry `termId: null`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { $ref: '#/components/schemas/Uuid' }
+                    name: { type: string }
+                    termId: { $ref: '#/components/schemas/TermId' }
+                    termNumber: { $ref: '#/components/schemas/TermNumber' }
+                    mistakeCount:
+                      type: integer
+                      minimum: 1
+                      description: >
+                        Always at least 1 — a subject with no current mistakes is absent from the
+                        array rather than present with `0`.
+                  required: [id, name, mistakeCount]
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: >
+            `insufficient_scope` — the caller is authenticated but currently has **no active
+            enrolment** to scope their history against, so there is no cohort in which a
+            `mistakeCount` means anything. Reachable in ordinary use: a track transfer closes the
+            old enrolment before the new one opens (adr-032). This is NOT a refusal about a
+            subject — this operation takes no client-supplied id and refuses no id; the subject
+            route's `403` is the membership answer and this one is not. Treat it as
+            "your enrolment is between states", not as an authorization failure to retry or log out
+            on. · `account_pending_deletion` — the caller's account is inside the 30-day deletion
+            grace window, during which every authenticated endpoint but four is unavailable
+            (adr-114); this operation is not on that allowlist, so the refusal happens before any
+            mistake is counted. Route to the cancel screen from the same global interceptor that
+            already handles this code elsewhere; do not log out and do not retry. **Read `code` to
+            tell the two apart** — they are different states and only one of them is about your
+            enrolment.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/mistakes/subjects/{subjectId}:
+    get:
+      tags: [quiz]
+      x-stability: stable
+      operationId: getMyMistakesForSubject
+      summary: The Mistakes tree for ONE subject — school (units→chapters→lessons) or university (lectures)
+      description: >
+        The drill-down behind the Mistakes overview. Same decay rule as `GET /me/mistakes` — see that
+        operation's description, including the deliberate divergence from `mode: retakeWrong`.
+
+
+        🔴 **The tree is PRUNED, and it is not a clone of `getSubjectTree`.** A lesson (or lecture)
+        appears only when its own `mistakeCount` is greater than zero; a chapter appears only when it
+        has such a lesson; a unit only when it has such a chapter. Every parent's `mistakeCount` is
+        the SUM of its descendants'. So there is no dead branch the student can tap into and find
+        empty — and the shape is its own, which is why it has its own schemas.
+
+
+        **An in-scope subject the caller has no current mistakes in returns `200` with an empty
+        `units` (or `lectures`) array and `mistakeCount: 0`** — that is a normal response, not an
+        error and not a `403`. A `subjectId` outside the caller's scope is `403 insufficient_scope`,
+        exactly as `getSubjectTree` answers the same membership question about the same id. **The two
+        cases are different and both are reachable with an empty history.**
+
+
+        **University counts inherit the release gate** (adr-135): a subject whose term the admin
+        un-releases for the caller's cohort drops out of the caller's scope, and its mistakes stop
+        being counted, with no in-app explanation. Re-releasing restores them unchanged. School
+        content is never release-gated (adr-073).
+      parameters:
+        - { name: subjectId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: Track-shaped pruned tree.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SchoolMistakesTree'
+                  - $ref: '#/components/schemas/UniversityMistakesTree'
+                discriminator:
+                  propertyName: track
+                  mapping:
+                    school: '#/components/schemas/SchoolMistakesTree'
+                    university: '#/components/schemas/UniversityMistakesTree'
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`insufficient_scope` — the `subjectId` is outside the caller's scope (a caller with no active enrolment at all gets the same answer here, deliberately: this route refuses an id you supplied, exactly as `getSubjectTree` answers the same membership question about the same id, and the two causes must stay indistinguishable). · `account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114); this operation is not on that allowlist, so the refusal happens before the `subjectId` is resolved at all. Route to the cancel screen from the same global interceptor that already handles this code elsewhere; do not log out and do not retry. **Read `code` to tell the two apart.**"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /catalog/subjects:
     get:
@@ -920,15 +1141,19 @@ paths:
     post:
       tags: [quiz]
       x-stability: stable
-      x-behaviour-changed: 2.3.0-m1
+      x-behaviour-changed: 3.11.0-m1
       operationId: createQuiz
       summary: Build a quiz — returns questions WITHOUT correct answers (per-question submit model)
       description: >
         Correct answers never ship with questions (content protection — the bank is the product).
-        `mode: normal` requires a lessonId (school) or lectureId+quizType (university);
-        `retakeWrong`/`favorites` build from the student's own pool (scope optional filter) and may
-        return fewer than `length`. Free plan: 50 questions/WEEK — creation that would exceed it
-        fails with `weekly_question_limit_reached`.
+        `mode: normal` requires a lessonId (school) or lectureId+quizType (university).
+        `retakeWrong` builds from the student's own wrong answers and accepts **one optional leaf
+        id** — `lessonId` on the school track, `lectureId` on the university track, never both and
+        never the other track's — which **narrows** the pool to that leaf; omit it and the pool is
+        the student's whole history, exactly as before. `favorites` builds from the student's own
+        favourites and accepts **no leaf id at all**. `quizType` is refused on both pool modes.
+        Both pool modes may return fewer than `length`. Free plan: 50 questions/WEEK — creation
+        that would exceed it fails with `weekly_question_limit_reached`.
 
 
         **BEHAVIOURAL CHANGE in 2.3.0-m1 (adr-091).** `mode: normal` with a university `lectureId`
@@ -945,10 +1170,43 @@ paths:
         `403 weekly_question_limit_reached`.
 
 
-        Whether the two gates also filter the `retakeWrong` / `favorites` pools — which are built
-        from the student's OWN history — is **not yet specified** (adr-038 §6; adr-017 keeps every
-        attempt forever, so applying the release gate there would let an admin's un-release
-        retroactively empty a student's records). Do not infer either answer.
+        **BEHAVIOURAL CHANGE in 3.11.0-m1 (adr-136).** `mode: retakeWrong` now accepts an optional
+        leaf id, and a request that reliably returned `400 validation_failed` now returns `201` or
+        `403`. The request and response SCHEMAS do not move — `lessonId` and `lectureId` already
+        exist on this body for `mode: normal` — so a regenerated client is byte-identical and your
+        build will not tell you. There are exactly **three outcomes**, and they must be told apart
+        by status, never by emptiness. **One** — the leaf is inside the caller's closed set (their
+        enrolment scope, and on the university track the release gate too) but they have no wrong
+        answers in it: `201` with `questions: []`, which is a NORMAL response and must not be
+        rendered as an error. **Two** — the leaf is outside that closed set for ANY reason: another
+        school or stage, not enrolled, non-existent, or a university term that is not released for
+        the caller's cohort: `403` `insufficient_scope`, with a body **identical**
+        to the one `mode: normal` returns for an out-of-scope leaf belonging to the same caller.
+        The four causes are deliberately indistinguishable and always will be — do not attempt to
+        tell them apart, and do not report the identical bodies as a defect. **Three** — the shape
+        is malformed (`lessonId` and `lectureId` together, the other track's id — a `school` caller
+        sending `lectureId` or a `university` caller sending `lessonId`, which is a `400` and NOT a
+        `403` because it is judged from the caller's own track and says nothing about whether the id
+        names anything — `quizType` on either pool mode, or any leaf id on `mode: favorites`):
+        `400` `validation_failed`, unchanged, same message. No error code is added; `validation_failed` and
+        `insufficient_scope` are already registered.
+
+
+        **`mode: retakeWrong` with NO leaf id is byte-identical to before** and is not part of this
+        change. `mode: favorites` is not changed in any way — it accepts no leaf id, and asking for
+        one is the same `400` it has always been.
+
+
+        **The question of whether the two gates filter the pool modes is now ANSWERED (adr-135),
+        and it replaces the "not yet specified — do not infer either answer" note this operation
+        used to carry.** `retakeWrong`'s pool **is** release-gated: a university lecture whose term
+        is not released for the caller's cohort is out of the closed set, so it is refused as
+        outcome two above, and its questions do not appear in the unscoped pool either.
+        `favorites`' pool is **not** release-gated. School content is never release-gated at all
+        (adr-073). Re-releasing a term restores the retake pool unchanged; nothing is lost, because
+        adr-017 keeps every attempt forever — the gate filters what is drawable, it does not delete
+        history. There is no release state on the wire and no way to distinguish the cause of a
+        refusal, by design (adr-038 §3).
       requestBody:
         required: true
         content:
@@ -957,9 +1215,9 @@ paths:
               type: object
               properties:
                 mode: { type: string, enum: [normal, retakeWrong, favorites], default: normal }
-                lessonId: { $ref: '#/components/schemas/Uuid', description: School normal mode. }
-                lectureId: { $ref: '#/components/schemas/Uuid', description: University normal mode. }
-                quizType: { type: string, enum: [normal, midTermRevision, finalRevision, practicalRevision], description: University only; default normal. }
+                lessonId: { $ref: '#/components/schemas/Uuid', description: 'School track. Required on `mode: normal`; optional on `mode: retakeWrong`, where it narrows the pool to that lesson. Refused on `mode: favorites`.' }
+                lectureId: { $ref: '#/components/schemas/Uuid', description: 'University track. Required on `mode: normal`; optional on `mode: retakeWrong`, where it narrows the pool to that lecture, after the release gate. Refused on `mode: favorites`.' }
+                quizType: { type: string, enum: [normal, midTermRevision, finalRevision, practicalRevision], description: 'University `mode: normal` only; default normal. Refused on both pool modes.' }
                 length: { type: integer, enum: [10, 30, 50] }
               required: [mode, length]
       responses:
@@ -1098,6 +1356,16 @@ paths:
       x-stability: stable
       operationId: getExplanation
       summary: AI explanation (GPT-4o-mini, generated once, cached — only after answering)
+      description: |
+        DELIBERATELY UNIMPLEMENTED - there is no backend route for this operation today, and a
+        call to it will not succeed. It is published `x-stability: stable` on purpose and is NOT
+        being demoted: the shape documented below is the shape it will have when it ships, so you
+        may model against it, but do NOT put it on a user-facing path yet and do NOT treat its
+        absence as an outage or a regression. The deferral is a recorded owner ruling (2026-09-08,
+        ADR-123, ratifying the original deferral made when the quiz core loop was built); it is
+        owed by the first backend spec that introduces the AI-explanation surface, and no date is
+        set. When the route ships, this note is removed in the same version and announced in
+        contract-changelog.md. `AnswerResult.explanationAvailable` is a hard `false` until then.
       parameters:
         - { name: questionId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -1183,6 +1451,154 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /flashcards/lectures/{lectureId}/cards:
+    get:
+      tags: [flashcards]
+      x-stability: stable
+      operationId: getFlashcardsForLecture
+      summary: One lecture's flashcards — UNIVERSITY track only, unmetered with the subscription, a weekly preview without it
+      description: >
+        The Anatomy Flashcards study surface. **University track only**, and the refusal for
+        everyone else is deliberately indistinguishable — see the `403` below.
+
+
+        **Two ways to receive cards.** With an ACTIVE `flashcardSubscription` (see
+        `GET /me/entitlements`) every page is delivered in full and nothing is counted. Without one,
+        each card you have not already been shown THIS WEEK consumes one unit of the **same 50/week
+        free allowance quiz questions draw from** — one allowance across both surfaces, not 50 each.
+        A card you were already charged for this week re-delivers **free**, so paging back and forth
+        through a lecture never costs twice.
+
+
+        🔴 **A page may come back SHORTER than `pageSize`, and that is not the end of the list.**
+        When your remaining allowance cannot pay for the whole page, the server delivers the prefix
+        it can pay for, sets `hasMore: true` and returns a `nextCursor` pointing at the first card
+        you did NOT receive. **Branch on `hasMore`, never on `items.length`.** When zero cards can be
+        delivered the response is `403 flashcard_subscription_required`, not an empty page — an empty
+        `items` array means the lecture genuinely has no active cards.
+
+
+        **A base subscription changes nothing here.** The two subscriptions are independent
+        (adr-004/adr-060) — a `baseSubscription` holder without `flashcardSubscription` previews
+        exactly like a free student and draws the same shared counter, which their own quiz usage
+        does not touch.
+
+
+        `selfGrade` is YOUR latest grade for that card (see `setFlashcardSelfGrade`) and is `null`
+        until you have graded it. `imageUrl` is `null` until a card image CDN origin is configured —
+        **nothing is provisioned today, so it is `null` in every environment**, permanently and
+        legally; do not treat it as an error.
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+          description: >
+            Opaque lecture id, from `getSubjectTree`. It grants nothing by being well-formed: it is
+            re-resolved against your released enrolment scope on every request.
+        - { $ref: '#/components/parameters/Cursor' }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, default: 20, maximum: 50, minimum: 1 }
+          description: >
+            **Max 50, not 100** — narrower than the shared `Limit` parameter on purpose, because a
+            page is charged per distinct card against a 50/week allowance and a 100-card page could
+            spend a non-holder's whole week in one request.
+      responses:
+        '200':
+          description: >
+            A page of cards, possibly EMPTY (the lecture has no active cards) and possibly SHORTER
+            than `pageSize` (the weekly allowance truncated it). Order is stable and resumable.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FlashcardCard' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor`, or a `pageSize` outside 1..50."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: >
+            `insufficient_scope` · `flashcard_subscription_required` · `account_pending_deletion`.
+
+
+            🔴 **The `insufficient_scope` body is byte-identical for four causes and they are
+            deliberately indistinguishable, permanently**: you are on the School track; the lecture
+            belongs to another cohort; the lecture's university term is not released for your cohort;
+            or that UUID names nothing at all. Do not try to tell them apart and do not build an
+            existence probe on this endpoint.
+
+
+            `flashcard_subscription_required` means the free weekly preview is used up. It is NOT
+            `weekly_question_limit_reached` — that code stays quiz-only, because the cure here is the
+            flashcard subscription rather than next week.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /flashcards/cards/{flashcardId}/self-grade:
+    put:
+      tags: [flashcards]
+      x-stability: stable
+      operationId: setFlashcardSelfGrade
+      summary: Record how the student graded themselves on one card — latest value only
+      description: >
+        Stores YOUR latest grade for one card and answers `204`. Idempotent: sending the same value
+        twice is `204` both times.
+
+
+        🔴 **The server keeps the LATEST grade and nothing else.** There is no history, no score, no
+        streak and no review schedule — a second grade replaces the first. The value exists so the
+        client can offer a "show me my *again* cards" filter that survives a reinstall or a second
+        device. Do not build spaced repetition on it; none is specified anywhere.
+
+
+        **Same gate as the card list.** You may grade a card you could currently be delivered: in
+        released scope, and either covered by an active `flashcardSubscription` or already delivered
+        to you this week. Anything else is the same `403 insufficient_scope` the list returns —
+        including a card that exists but was never shown to you, for the same no-existence-oracle
+        reason.
+      parameters:
+        - name: flashcardId
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Uuid' }
+          description: Opaque card id, from `getFlashcardsForLecture`. Treated as hostile and re-resolved server-side.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grade: { $ref: '#/components/schemas/FlashcardSelfGrade' }
+              required: [grade]
+      responses:
+        '204':
+          description: Recorded. The next `getFlashcardsForLecture` page echoes it back in `selfGrade`.
+        '400':
+          description: "`validation_failed` — `grade` missing, or not one of `gotIt` / `again`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: >
+            `insufficient_scope` · `account_pending_deletion`. The four indistinguishable causes on
+            `getFlashcardsForLecture` apply here too, plus a fifth that collapses into them: a card in
+            released scope that you have neither a subscription for nor were delivered this week.
+
+
+            **`flashcard_subscription_required` is deliberately NOT returned here.** Grading a card
+            you were never shown has exhausted nothing, so saying "a subscription would fix it" would
+            be both false and a confirmation that the card exists.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /subscription-codes/redemptions:
     post:
       tags: [commerce]
@@ -1218,25 +1634,79 @@ paths:
   /leaderboard:
     get:
       tags: [leaderboard]
-      x-stability: draft
+      x-stability: stable
+      x-behaviour-changed: 3.4.0-m1
       operationId: getLeaderboard
       summary: Scoped board (adr-015), privacy-filtered (adr-023), cursor over rank order
       description: >
         The concrete board is derived from the CALLER's registration — no cross-picking.
         School scopes: `system` (own education system + country) · `governorate` (Egypt-only
         sub-scope). University scopes: `cohort` (الدفعة — university+faculty+year) · `global`.
-        Invisible students (adr-023) are excluded before ranking is returned; therefore peer
-        ranks are DENSE over visible students and may differ from self-rank. Entries on a board
-        inherently show points; `scoreHidden` affects profiles/friends, not board rows.
-        Cursor = opaque rank position; a page may shift between calls (live sets) — the client
-        should tolerate duplicates/gaps at page seams.
+        BOTH adr-023 privacy toggles remove a student from this board (adr-111): a student with
+        `leaderboardVisible: false` AND a student with `scoreHidden: true` are excluded before
+        ranking, so *visible* here means NEITHER invisible NOR score-hidden. Peer ranks are
+        therefore DENSE over visible students. Since 3.2.0-m1, board rank and self-rank are
+        computed over the same visible population and agree by construction. A score-hidden
+        student is never rendered with a blanked score — the row is absent entirely, which is why
+        `points` stays required on `LeaderboardEntry`. The exclusion is unconditional and applies
+        to the CALLER too: a score-hidden or invisible caller does not appear on their own page.
+        An INVISIBLE caller reads their own standing from `/leaderboard/me`, which since 3.2.0-m1
+        ranks over this same visible population; a SCORE-HIDDEN caller gets `403` there and has no
+        self-rank to render at all (adr-113).
+        BOUNDED LIST (new in 3.4.0-m1): this endpoint renders AT MOST THE TOP 200 visible students
+        across a complete page-walk. It is a bound on rows emitted — not on the board and not on the
+        ranking. `rank` still means the student's exact position in the visible population, so the
+        last row you can ever reach is `rank: 200`.
+        `hasMore: false` therefore has TWO causes now — the end of the visible board, OR the 200-row
+        limit — and a client cannot tell them apart, nor does it need to: either way there is no
+        further page and `nextCursor` is `null`.
+        IMPORTANT for the client: a caller ranked below 200 appears on NO page, so `isMe` may never
+        be true on any row. A client that wants the caller's own standing calls `GET /leaderboard/me`
+        — DO NOT page looking for `isMe`, because for such a student that loop never terminates.
+        Consequence for the client: a page may carry FEWER rows than `limit` even when
+        `hasMore` is false, and the set of students on a board can shrink without anyone leaving it.
+        SHORT PAGES (clarified in 3.7.0-m1): this endpoint bounds the work ONE request will do, so a
+        page may return FEWER ROWS THAN YOU ASKED FOR — including zero — while `hasMore` is `true`.
+        KEEP PAGING UNTIL `hasMore` IS `false`. A short page is not the end of the list and never
+        was: `hasMore` has always been the terminal signal and `nextCursor` the resume token. This
+        is a clarification of a state the schema already permitted, not a new field, code, `rank`
+        meaning, `boardSize` meaning or cursor semantic — nothing on the wire moved.
+        `limit` IS VALIDATED, NOT CLAMPED (clarified in 3.7.0-m1): on THIS operation a `limit`
+        outside `1…100` is rejected with `400 validation_failed` on field `limit` — it is not
+        quietly reduced to `100`. That is what the published `minimum: 1, maximum: 100` schema has
+        said all along; it is stated here in prose because the schema alone left it ambiguous.
+        Figma rendering: this endpoint is ONE ranked board. The top three entries may be rendered
+        as the podium and the remaining entries as the ordinary ranked rows shown below it; those
+        are two visual treatments of the same ordered list, not two ranking systems. Do not add a
+        synthetic self-rank row to the board. If the client needs the caller's exact standing below
+        the published display bound (currently 200), call `GET /leaderboard/me` as a separate optional read; a `scoreHidden` caller
+        receives its documented `403` and the board is rendered without a self-rank element.
+        Cursor: an OPAQUE, server-signed token resuming after the last row you were shown. It is
+        not decodable, not constructible client-side, and expires — treat it as a value to echo
+        back unchanged, never to parse, store long-term, or share. A cursor is valid only for the
+        `scope` it was issued for; an altered, expired, foreign-scope or hand-made cursor is
+        `validation_failed` on field `cursor`, and the remedy is always the same: request page one
+        again. A page may also shift between calls (live sets) — tolerate duplicates/gaps at page
+        seams.
       parameters:
         - name: scope
           in: query
           required: true
           schema: { type: string, enum: [system, governorate, cohort, global] }
           description: Must be valid for the caller's track — else `validation_failed`.
-        - { $ref: '#/components/parameters/Cursor' }
+        # Declared inline instead of $ref'ing components.parameters.Cursor: that shared description
+        # says "base64 keyset", which is true of the other paginated lists and NOT of this one. A
+        # generated client renders the parameter description, not the operation prose, so a $ref
+        # here would publish "decode me" next to a token that must never be decoded.
+        - name: cursor
+          in: query
+          required: false
+          schema: { type: string }
+          description: >
+            Opaque, server-signed and EXPIRING. Echo it back unchanged; it is not decodable and
+            cannot be constructed client-side. Omit for the first page. Valid only for the `scope`
+            it was issued for. Altered, expired, foreign-scope or hand-made ⇒ `validation_failed`
+            on field `cursor`; the remedy is always to request page one again.
         - { $ref: '#/components/parameters/Limit' }
       responses:
         '200':
@@ -1257,15 +1727,33 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114). Not an error to retry and not a logout; route to the cancel screen from the same global interceptor that already handles this code elsewhere. DECLARED from 3.5.1-m1, but REACHABLE since 3.3.0-m1 — this operation simply failed to declare it."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — per-student limit on the leaderboard reads. Honour `Retry-After`; do not retry in a tight loop."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '500':
+          description: "`internal_error` — the board's projection could not be reached. `traceId` is the support handle."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /leaderboard/me:
     get:
       tags: [leaderboard]
-      x-stability: draft
+      x-stability: stable
+      x-behaviour-changed: 3.9.0-m1
       operationId: getMyRank
-      summary: Self-rank — computed against the UNFILTERED board (adr-023 private rank)
+      summary: Self-rank — computed over the VISIBLE leaderboard population (adr-113)
       description: >
-        The only path that sees the caller's position on the full board (including while
-        invisible). May differ from the peer-visible dense ranking on /leaderboard.
+        The caller's own position among the students a board actually shows. Since adr-113 this is
+        the SAME population `GET /leaderboard` pages, so `rank` here and the caller's rank there
+        agree — they used to be able to disagree, and differencing them recovered how many students
+        the board was hiding. A caller with `leaderboardVisible: false` still gets a rank: their
+        notional position within the visible population, since hiding from peers has never meant
+        hiding from yourself. A caller with `scoreHidden: true` gets `403`; see below.
+        UNAFFECTED by `GET /leaderboard`'s 200-row display limit (new in 3.4.0-m1): `rank` here is
+        exact and uncapped for every caller, so a student at position 5,000 is told 5,000. This is
+        the endpoint to call for the caller's own standing, and below the published display bound
+        (currently 200) it is the only one that can answer.
       parameters:
         - name: scope
           in: query
@@ -1273,21 +1761,57 @@ paths:
           schema: { type: string, enum: [system, governorate, cohort, global] }
       responses:
         '200':
-          description: The caller's own rank.
+          description: The caller's own rank among the visible population.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  rank: { type: integer, example: 1234 }
-                  points: { type: integer }
-                  boardSize: { type: integer, description: Total ranked students on the unfiltered board. }
+                  rank:
+                    type: integer
+                    minimum: 1
+                    example: 1234
+                    description: >
+                      1-based position among VISIBLE students, ordered exactly as GET /leaderboard
+                      orders them. Changed in 3.2.0-m1 — it was the position on the unfiltered board.
+                      Guaranteed `>= 1` and `<= boardSize + 1` on every 200, bounded at the response
+                      boundary since 3.9.0-m1 (adr-120). The upper bound is a relationship between
+                      two fields and cannot be expressed as a schema `maximum`, so it is stated here.
+                  points:
+                    type: integer
+                    description: >
+                      The caller's score on this board's pool. Deliberately carries NO `minimum`:
+                      unlike `rank` and `boardSize` it is not bounded at the response boundary, so a
+                      lower bound here would be a promise the server does not enforce.
+                  boardSize:
+                    type: integer
+                    minimum: 0
+                    description: >
+                      Number of VISIBLE students on the board. Changed in 3.2.0-m1 — it was the
+                      unfiltered total, so this number is now SMALLER for any board holding a
+                      student who has opted out. It is the TOTAL visible population and MAY EXCEED
+                      the number of rows `GET /leaderboard` will ever render (200) — it is not a
+                      page count and must not be used to predict how far the list can be paged.
+                      Guaranteed `>= 0` on every 200, bounded at the response boundary since
+                      3.9.0-m1 (adr-120).
                 required: [rank, points, boardSize]
         '400':
           description: "`validation_failed` (scope invalid for track)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`score_hidden_leaderboard_unavailable` — the caller has `scoreHidden: true`, so this operation is unavailable to them. Not an error to retry; render the board without a self-rank row. · `account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114); route to the cancel screen, do not log out and do not retry. DECLARED from 3.5.1-m1, but REACHABLE since 3.3.0-m1 — this operation simply failed to name it. Read `code` to tell the two apart."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_ranked` — the caller has never been awarded points, so they are on no leaderboard and have no rank. This is NOT an error to retry and NOT a missing endpoint: it is the ordinary state of a student who has not answered a question yet. Render the board without a self-rank element — the same display state you already use for `403 score_hidden_leaderboard_unavailable` — and show the not-ranked-yet copy. A caller who has scored ALWAYS receives 200, including a caller with 0 points in this board's pool and a caller with `leaderboardVisible: false`, who still receives their notional position (adr-113)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — per-student limit on the leaderboard reads. Honour `Retry-After`; do not retry in a tight loop."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '500':
+          description: "`internal_error` — the board's projection could not be reached. `traceId` is the support handle."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
 components:
   securitySchemes:
@@ -1525,6 +2049,15 @@ components:
           description: Read-only embed for first paint; the entitlement-state source of truth is GET /me/entitlements.
           items: { $ref: '#/components/schemas/EntitlementState' }
         createdAt: { type: string, format: date-time }
+        pendingDeletion:
+          type: object
+          description: >
+            Present ONLY while an account-deletion request is pending (adr-114). **Absent
+            otherwise — never `null`**, so presence is the flag: if the key is there, draw the
+            cancel screen. Not in `required`, and adding it does not change any existing field.
+          properties:
+            effectiveAt: { type: string, format: date-time, description: "UTC — erasure runs no earlier than this. Cancel with DELETE /me/deletion-request before then." }
+          required: [effectiveAt]
       required: [id, track, name, phone, dateOfBirth, avatar, geography, points, level, badges, privacy, entitlements, createdAt]
     EntitlementType:
       type: string
@@ -1555,6 +2088,40 @@ components:
         term signal on the wire: term NAMES are never sent, so the client renders its own localized
         AR/EN label, per adr-026 §5. Needed because a year-long course is two subjects with the same
         `name` (adr-036 §2).
+    FlashcardSelfGrade:
+      type: string
+      description: >
+        The two self-grades. **A CLOSED set, unlike `EntitlementType`** — the server stores the
+        latest value per (student, card) and the client filters on `again`; a third value would
+        render as neither and decides product behaviour nobody has specified.
+      enum: [gotIt, again]
+    FlashcardCard:
+      type: object
+      description: One flashcard as the study surface serves it (spec-028).
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        front: { type: string, description: The prompt side. }
+        back:
+          type: string
+          description: >
+            The answer side. **Free multi-line text, and it may hold several answers** — render it as
+            a block, not as a single label.
+        imageUrl:
+          type: [string, "null"]
+          description: >
+            Absolute CDN URL for the card's image, or `null`. **`null` is normal and is the answer in
+            every environment today** — no card-image CDN origin is provisioned anywhere. Do not treat
+            it as an error or as a missing image. When a value does appear it is content-addressed and
+            immutable: a corrected image produces a DIFFERENT URL, never new bytes at the same one, so
+            it is safe to cache forever.
+        selfGrade:
+          oneOf:
+            - $ref: '#/components/schemas/FlashcardSelfGrade'
+            - type: "null"
+          description: >
+            YOUR latest grade for this card, or `null` if you have never graded it. It is a property
+            of the reader, not of the card — two students holding the same page see different values.
+      required: [id, front, back, imageUrl, selfGrade]
     QuestionCounter:
       type: object
       description: Contract-v2 per-lesson/lecture counter — display only, never locks retakes.
@@ -1607,8 +2174,87 @@ components:
               id: { $ref: '#/components/schemas/Uuid' }
               name: { type: string }
               questionCounter: { $ref: '#/components/schemas/QuestionCounter' }
-            required: [id, name, questionCounter]
+              hasFlashcards:
+                type: boolean
+                description: >
+                  Whether this lecture has at least one active flashcard — the signal that decides
+                  whether to draw the Flashcards affordance. **Content presence, never subscription
+                  state**: it is `true` for a free student too, and tapping through then hits the
+                  weekly preview or `403 flashcard_subscription_required` on
+                  `getFlashcardsForLecture`. A faculty whose whole tree returns `false` everywhere
+                  has no flashcard content, and the surface should not be offered at all.
+
+
+                  Added additively in `3.12.0-m1`. **It is NOT on `SchoolSubjectTree` and never will
+                  be** — flashcards are university-track only, and a school tree carries no signal
+                  that they exist.
+            required: [id, name, questionCounter, hasFlashcards]
       required: [track, quizTypes, lectures]
+    SchoolMistakesTree:
+      type: object
+      description: >
+        The school Mistakes tree — PRUNED and SUMMED. Deliberately not `SchoolSubjectTree`: that one
+        is the whole catalogue with an answered/total counter, this one is only the branches the
+        student currently has mistakes in.
+      properties:
+        track: { type: string, enum: [school] }
+        mistakeCount:
+          type: integer
+          minimum: 0
+          description: Sum over the whole subject. `0` exactly when `units` is empty.
+        units:
+          type: array
+          description: >
+            Only units containing at least one mistake. May be EMPTY — that is a normal response for
+            an in-scope subject the student has nothing outstanding in.
+          items:
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/Uuid' }
+              name: { type: string }
+              mistakeCount: { type: integer, minimum: 1, description: Sum over this unit's chapters. }
+              chapters:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { $ref: '#/components/schemas/Uuid' }
+                    name: { type: string }
+                    mistakeCount: { type: integer, minimum: 1, description: Sum over this chapter's lessons. }
+                    lessons:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id: { $ref: '#/components/schemas/Uuid' }
+                          name: { type: string }
+                          mistakeCount: { type: integer, minimum: 1 }
+                        required: [id, name, mistakeCount]
+                  required: [id, name, mistakeCount, lessons]
+            required: [id, name, mistakeCount, chapters]
+      required: [track, mistakeCount, units]
+    UniversityMistakesTree:
+      type: object
+      description: >
+        The university Mistakes tree — PRUNED. There is deliberately no `quizTypes` here, unlike
+        `UniversitySubjectTree`: a mistakes tree is a history view, not a quiz-build tree.
+      properties:
+        track: { type: string, enum: [university] }
+        mistakeCount:
+          type: integer
+          minimum: 0
+          description: Sum over the whole subject. `0` exactly when `lectures` is empty.
+        lectures:
+          type: array
+          description: Only lectures containing at least one mistake. May be EMPTY.
+          items:
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/Uuid' }
+              name: { type: string }
+              mistakeCount: { type: integer, minimum: 1 }
+            required: [id, name, mistakeCount]
+      required: [track, mistakeCount, lectures]
     QuizQuestion:
       type: object
       description: NO correct answer here — grading is server-side on submit.
@@ -1616,8 +2262,8 @@ components:
         id: { $ref: '#/components/schemas/Uuid' }
         order: { type: integer }
         text: { type: string, description: Plain text; only <u>…</u> markup allowed. }
-        imageUrl: { type: [string, "null"], format: uri, description: "Full image (DO Spaces CDN, WebP)." }
-        thumbnailUrl: { type: [string, "null"], format: uri }
+        imageUrl: { type: [string, "null"], format: uri, description: "Full image (DO Spaces CDN, WebP). Composed from the configured CDN origin and a content-addressed object key; null when the question has no published image or the environment has no CDN origin configured." }
+        thumbnailUrl: { type: [string, "null"], format: uri, description: "Deliberately null in every environment: no thumbnail rendition is generated yet. A value appears only after a future contract change announces it." }
         options:
           type: array
           minItems: 2
@@ -1715,9 +2361,21 @@ components:
       required: [id, subjectName, scopeName, score, totalQuestions, finishedAt, questions]
     LeaderboardEntry:
       type: object
-      description: "Privacy-filtered (adr-023): invisible students never appear; board rows inherently show points."
+      description: >-
+        Privacy-filtered (adr-023, adr-111): neither invisible students nor score-hidden students
+        ever appear. Every row that IS emitted shows points — suppression removes the row, not the
+        score — which is why `points` is required.
       properties:
-        rank: { type: integer, description: Dense rank over VISIBLE students (may differ from self-rank). }
+        rank:
+          type: integer
+          description: >-
+            Dense rank over VISIBLE students, where *visible* means NEITHER `leaderboardVisible:
+            false` NOR `scoreHidden: true` (adr-111). Excluded students are removed from the rank
+            population, so the ranks around them close and leave no gap. It is the student's exact
+            position in that population, NOT a position within the page — so on a board with more
+            than 200 visible students the last row this endpoint will ever render is `rank: 200`.
+            Since 3.2.0-m1 it AGREES with `GET /leaderboard/me`'s `rank` by construction; the two
+            are computed over the same population and cannot differ.
         studentId: { $ref: '#/components/schemas/Uuid' }
         name: { type: string }
         avatarUrl: { type: string, format: uri }
