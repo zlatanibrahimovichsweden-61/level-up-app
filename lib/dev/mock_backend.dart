@@ -218,6 +218,54 @@ class MockBackendInterceptor extends Interceptor {
       });
     }
 
+    // ---- mistakes ---------------------------------------------------------
+    // Day 10's two operations, both `stable` at the 3.13.0-m1 pin.
+    //
+    // They are served here because they cannot be driven with real data: the
+    // only staging test account has an empty catalog (seif_fight.md S44), so
+    // both operations answer empty there regardless of deployment. Both routes
+    // ARE deployed on staging - probed 2026-09-12, they answer 401 rather than
+    // the 404 an absent route gives - so this harness stands in for the DATA,
+    // not for the endpoints.
+    if (method == 'GET' && path == '/me/mistakes') {
+      return _ok(
+        handler,
+        options,
+        200,
+        _isUniversity ? _universityMistakes : _schoolMistakes,
+      );
+    }
+
+    final mistakesTree = RegExp(
+      r'^/me/mistakes/subjects/([^/]+)$',
+    ).firstMatch(path);
+    if (method == 'GET' && mistakesTree != null) {
+      final subjectId = mistakesTree.group(1)!;
+
+      // `insufficient_scope` carries TWO meanings behind one code string, and
+      // the route decides which copy is shown. This is the subject-level one -
+      // "not yours", no retry. The overview's enrolment-pending reading is the
+      // other, and is not reachable from here.
+      if (subjectId == 'sub-locked' || subjectId == 'uni-locked') {
+        return _problem(
+          handler,
+          options,
+          403,
+          'insufficient_scope',
+          'This subject is not in your scope.',
+        );
+      }
+
+      return _ok(
+        handler,
+        options,
+        200,
+        _isUniversity
+            ? _universityMistakesTrees[subjectId] ?? _emptyUniversityTree
+            : _schoolMistakesTrees[subjectId] ?? _emptySchoolTree,
+      );
+    }
+
     // ---- catalog ----------------------------------------------------------
     // The Learn tab. Server-scoped in production — the client sends no scope
     // params, so there is nothing to branch on here either.
@@ -1625,3 +1673,227 @@ final _entitlements = <dynamic>[
     'graceEndsAt': null,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Mistakes fixtures - GET /me/mistakes and /me/mistakes/subjects/{id}
+// ---------------------------------------------------------------------------
+
+/// One row of the overview.
+///
+/// `termId`/`termNumber` are adr-036 term signals: school subjects carry them
+/// as null outright, university subjects carry a real term. Both keys are sent
+/// explicitly rather than omitted, because the client models them as
+/// optional-AND-nullable and the tolerant reading should be exercised.
+Map<String, dynamic> _mistakesSubject(
+  String id,
+  String name,
+  int mistakeCount, {
+  String? termId,
+  int? termNumber,
+}) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'termId': termId,
+  'termNumber': termNumber,
+  'mistakeCount': mistakeCount,
+};
+
+int _sumMistakes(List<dynamic> nodes) => nodes.fold<int>(
+  0,
+  (a, n) => a + ((n as Map<String, dynamic>)['mistakeCount'] as int),
+);
+
+Map<String, dynamic> _mistakesLeaf(String id, String name, int count) =>
+    <String, dynamic>{'id': id, 'name': name, 'mistakeCount': count};
+
+/// Parents are SUMMED from their children rather than written by hand.
+///
+/// The server sums (openapi.yaml:953-957) and the client is forbidden from
+/// doing arithmetic, so the fixture must arrive already correct. Computing it
+/// here also means a later edit to a leaf cannot silently desynchronise the
+/// parent - which is a different goal from the UNIT-test fixture, where the
+/// parents deliberately DISAGREE with their children to prove the client
+/// renders whatever the server sent.
+Map<String, dynamic> _mistakesChapter(
+  String id,
+  String name,
+  List<dynamic> lessons,
+) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'mistakeCount': _sumMistakes(lessons),
+  'lessons': lessons,
+};
+
+Map<String, dynamic> _mistakesUnit(
+  String id,
+  String name,
+  List<dynamic> chapters,
+) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'mistakeCount': _sumMistakes(chapters),
+  'chapters': chapters,
+};
+
+Map<String, dynamic> _mistakesSchoolTree(List<dynamic> units) =>
+    <String, dynamic>{
+      'track': 'school',
+      'mistakeCount': _sumMistakes(units),
+      'units': units,
+    };
+
+Map<String, dynamic> _mistakesUniversityTree(List<dynamic> lectures) =>
+    <String, dynamic>{
+      'track': 'university',
+      'mistakeCount': _sumMistakes(lectures),
+      'lectures': lectures,
+    };
+
+/// A subject the student has nothing outstanding in. `200` with a zero count
+/// and an empty child list - a NORMAL response, not an error and not a 403
+/// (openapi.yaml:960-964). This is what the tree's `noMistakes` state renders.
+final _emptySchoolTree = _mistakesSchoolTree(<dynamic>[]);
+final _emptyUniversityTree = _mistakesUniversityTree(<dynamic>[]);
+
+/// `GET /me/mistakes` - SCHOOL.
+///
+/// The counts walk the Arabic plural through every category the ARB declares,
+/// because `mistakeCount` is this project's first ICU plural and Arabic's six
+/// categories are genuinely different words: 1 -> one, 2 -> two, 3-10 -> few,
+/// 11-99 -> many, 100+ -> other. `zero` is unreachable by design - the wire
+/// publishes `minimum: 1` and a subject with nothing outstanding is ABSENT
+/// from this array rather than present with `0` (openapi.yaml:915-920).
+final _schoolMistakes = <dynamic>[
+  _mistakesSubject('sub-chem', 'الكيمياء', 1),
+  _mistakesSubject('sub-phys', 'الفيزياء', 2),
+  _mistakesSubject('sub-bio', 'الأحياء', 7),
+  _mistakesSubject('sub-math', 'الرياضيات', 34),
+  _mistakesSubject('sub-geo', 'الجغرافيا', 100),
+  // Listed with a live count, but its tree answers 200 / 0 / no units. That
+  // is the documented race, not a contradiction: the count is recomputed on
+  // every read and never cached, so two requests seconds apart may legitimately
+  // disagree (openapi.yaml:882-886). It makes the tree empty state reachable
+  // on a device without a second account.
+  _mistakesSubject('sub-arabic', 'اللغة العربية', 5),
+];
+
+/// `GET /me/mistakes` - UNIVERSITY. Carries real term signals (adr-036).
+final _universityMistakes = <dynamic>[
+  _mistakesSubject(
+    'uni-anatomy',
+    'التشريح',
+    3,
+    termId: 'term-01HZY0',
+    termNumber: 1,
+  ),
+  _mistakesSubject(
+    'uni-physio',
+    'الفسيولوجي',
+    1,
+    termId: 'term-01HZY0',
+    termNumber: 1,
+  ),
+  _mistakesSubject(
+    'uni-biochem',
+    'الكيمياء الحيوية',
+    12,
+    termId: 'term-01HZY1',
+    termNumber: 2,
+  ),
+  _mistakesSubject(
+    'uni-histology',
+    'الأنسجة',
+    2,
+    termId: 'term-01HZY1',
+    termNumber: 2,
+  ),
+];
+
+/// Per-subject school trees. Every total matches its overview row above, and
+/// the tree is PRUNED: only branches that actually contain a mistake appear,
+/// so there is no dead row to tap into.
+final _schoolMistakesTrees = <String, Map<String, dynamic>>{
+  'sub-chem': _mistakesSchoolTree(<dynamic>[
+    _mistakesUnit('chem-u1', 'الوحدة الأولى', <dynamic>[
+      _mistakesChapter('chem-u1-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('chem-u1-c1-l1', 'الدرس الأول', 1),
+      ]),
+    ]),
+  ]),
+  'sub-phys': _mistakesSchoolTree(<dynamic>[
+    _mistakesUnit('phys-u1', 'الوحدة الأولى', <dynamic>[
+      _mistakesChapter('phys-u1-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('phys-u1-c1-l1', 'الدرس الأول', 1),
+        _mistakesLeaf('phys-u1-c1-l2', 'الدرس الثاني', 1),
+      ]),
+    ]),
+  ]),
+  // Two units deep, so the three-screen drill-down has something at every
+  // level and the one-fetch-per-subject caching is visible on device.
+  'sub-bio': _mistakesSchoolTree(<dynamic>[
+    _mistakesUnit('bio-u1', 'الوحدة الأولى', <dynamic>[
+      _mistakesChapter('bio-u1-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('bio-u1-c1-l1', 'الدرس الأول', 2),
+        _mistakesLeaf('bio-u1-c1-l2', 'الدرس الثاني', 1),
+      ]),
+      _mistakesChapter('bio-u1-c2', 'الفصل الثاني', <dynamic>[
+        _mistakesLeaf('bio-u1-c2-l1', 'الدرس الأول', 1),
+      ]),
+    ]),
+    _mistakesUnit('bio-u2', 'الوحدة الثانية', <dynamic>[
+      _mistakesChapter('bio-u2-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('bio-u2-c1-l1', 'الدرس الأول', 3),
+      ]),
+    ]),
+  ]),
+  'sub-math': _mistakesSchoolTree(<dynamic>[
+    _mistakesUnit('math-u1', 'الوحدة الأولى', <dynamic>[
+      _mistakesChapter('math-u1-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('math-u1-c1-l1', 'الدرس الأول', 10),
+        _mistakesLeaf('math-u1-c1-l2', 'الدرس الثاني', 7),
+      ]),
+    ]),
+    _mistakesUnit('math-u2', 'الوحدة الثانية', <dynamic>[
+      _mistakesChapter('math-u2-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('math-u2-c1-l1', 'الدرس الأول', 9),
+        _mistakesLeaf('math-u2-c1-l2', 'الدرس الثاني', 8),
+      ]),
+    ]),
+  ]),
+  // A three-digit total, so the widest count the plural can produce is on
+  // screen next to the narrowest - the text-scaling and RTL case worth seeing.
+  'sub-geo': _mistakesSchoolTree(<dynamic>[
+    _mistakesUnit('geo-u1', 'الوحدة الأولى', <dynamic>[
+      _mistakesChapter('geo-u1-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('geo-u1-c1-l1', 'الدرس الأول', 40),
+        _mistakesLeaf('geo-u1-c1-l2', 'الدرس الثاني', 35),
+      ]),
+    ]),
+    _mistakesUnit('geo-u2', 'الوحدة الثانية', <dynamic>[
+      _mistakesChapter('geo-u2-c1', 'الفصل الأول', <dynamic>[
+        _mistakesLeaf('geo-u2-c1-l1', 'الدرس الأول', 25),
+      ]),
+    ]),
+  ]),
+  // Deliberately absent -> falls through to the empty tree. See the note on
+  // its overview row.
+};
+
+/// Per-subject university trees - a FLAT lecture list, and no `quizTypes`:
+/// a mistakes tree is a history view, not a quiz-build tree.
+final _universityMistakesTrees = <String, Map<String, dynamic>>{
+  'uni-anatomy': _mistakesUniversityTree(<dynamic>[
+    _mistakesLeaf('anatomy-lec1', 'المحاضرة الأولى', 2),
+    _mistakesLeaf('anatomy-lec2', 'المحاضرة الثانية', 1),
+  ]),
+  'uni-physio': _mistakesUniversityTree(<dynamic>[
+    _mistakesLeaf('physio-lec1', 'المحاضرة الأولى', 1),
+  ]),
+  'uni-biochem': _mistakesUniversityTree(<dynamic>[
+    _mistakesLeaf('biochem-lec1', 'المحاضرة الأولى', 5),
+    _mistakesLeaf('biochem-lec2', 'المحاضرة الثانية', 4),
+    _mistakesLeaf('biochem-lec3', 'المحاضرة الثالثة', 3),
+  ]),
+  // 'uni-histology' absent -> empty tree, same purpose as sub-arabic.
+};

@@ -98,3 +98,61 @@ Found by walking the app on a Pixel 8 against the additive mock backend
 (`lib/main_mock.dart` + `lib/dev/mock_backend.dart`). It had never surfaced because no
 backend existed to return `registrationRequired` — the harness is what made the fork
 reachable for the first time.
+
+---
+
+## BUG-002 ⚠️ The Mistakes cards overflow at text scale 1.3 — in Arabic only
+
+**Status:** OPEN, found 2026-09-12. DEVICE VERIFIED on a Pixel 8 (Android 17, API 37).
+
+**What breaks.** On the Mistakes overview, the subject card's count caption is clipped by
+a `RenderFlex` overflow once the system font scale passes ~1.2. Android draws its
+yellow-and-black overflow stripe over the caption, so the one number the screen exists to
+show becomes unreadable.
+
+**Measured, not estimated.** `adb shell settings put system font_scale <s>`, Pixel 8,
+mock-backed build, six subjects:
+
+| Locale | 1.0 | 1.15 | 1.2 | 1.3 | 2.0 |
+| --- | --- | --- | --- | --- | --- |
+| Arabic | clean | clean | clean | **1 card: BOTTOM OVERFLOWED BY 2.7 PIXELS** | **all 6 cards: 14-27 px** |
+| English | clean | — | — | clean | — |
+
+At 1.3 only `اللغة العربية` overflows — the longest subject name in the fixture, which wraps
+its title to a second line and leaves the caption no room. At 2.0 every card overflows and
+the bottom-nav labels collide with each other as well, so this is not confined to Mistakes.
+
+**Why it is Arabic-first.** `docs/RESPONSIVE.md` already records that Arabic copy runs
+20-30% longer than English; this is that effect crossing the threshold. English at 1.3 is
+clean, so an English-only check would have reported the screen as fine.
+
+**Root cause.** Not Mistakes-specific. `docs/RESPONSIVE.md` Rule 4 — clamp `textScaler` at
+1.3 — is **proposed and unapplied** (`app.dart:51`, queue 0/11 applied), so the app inherits
+the system scale unbounded. The same audit measured `subject_card` breaking at 1.2 and the
+quiz progress bar at 1.25; the Mistakes card sits in the same family and breaks between 1.2
+and 1.3. Clamping alone would NOT fix it — the clamp's own bound is 1.3, which is exactly
+where this appears — so the card needs to give the caption room as well.
+
+**Why tests missed it.** The widget tests render at the default `textScaler` of 1.0 and
+assert on text presence, not on layout overflow. `RenderFlex` overflow is a paint-time
+error: it does not throw, it does not fail an expectation, and in a test it is invisible
+unless something explicitly pumps at a raised scale and listens for the exception. Nothing
+in the suite does. `docs/RESPONSIVE.md` proposes a 3-sizes x 3-scales x 2-locales matrix
+test for exactly this reason and it has never been written.
+
+**Fix.** Not attempted here — it is a design decision about what gives way (the title
+truncating, the card growing, or the caption moving), and the same call applies to
+`subject_card` and the quiz progress bar. Raise with the designer alongside
+`DESIGN_ISSUES.md` #71, which concerns the same caption.
+
+---
+
+## Note on how BUG-002 was found
+
+The Mistakes flow has no reachable populated data: the only staging test account has an
+empty catalog (`seif_fight.md` S44), so both operations answer empty there regardless of
+deployment. `lib/dev/mock_backend.dart` was taught the two endpoints specifically so the
+flow could be walked on a device at all — and the fixture deliberately includes a
+long-named subject and counts spanning every Arabic plural category. The overflow appeared
+on the longest name, in the language that runs longest. A fixture of short names would have
+reported a clean screen.
