@@ -43,6 +43,7 @@ tst_status="SKIPPED"
 ana_issues="?"
 tst_pass="?"
 tst_fail="?"
+tst_skip="?"
 overall=0
 
 say() { printf '%s\n' "$*"; }
@@ -184,22 +185,48 @@ printf 'Full suite, goldens included. Golden baselines were captured on Windows;
 flutter test --no-pub --reporter=expanded > "$tmp/test.log" 2>&1
 tst_rc=$?
 
-# The expanded reporter's running counter is `+<passed> -<failed>:`. Take the
-# last one it printed; that is the final tally.
-last="$(grep -oE '\+[0-9]+( -[0-9]+)?' "$tmp/test.log" | tail -1)"
+# The expanded reporter's running counter is `+<passed> ~<skipped> -<failed>:`,
+# the three parts in that fixed order with ~ and - INDEPENDENTLY optional.
+#
+# The 2026-09-12 defect read `-<failed>` as optional-directly-after `+<passed>`.
+# On a real failing line - `00:16 +355 ~1 -1:` - the `~1 ` sits between them, so
+# the failed count never matched and the summary said `0 failed` while one test
+# had failed. The skipped count was never surfaced at all. The PowerShell twin
+# carried the identical defect and is fixed the same way.
+#
+# Anchored on the timestamp that opens every counter line, so a `+7` printed
+# inside a test name or an expectation diff cannot be mistaken for a tally.
+last="$(grep -oE '^[[:blank:]]*[0-9]{2,}:[0-9]{2}[[:blank:]]*\+[0-9]+( ~[0-9]+)?( -[0-9]+)?' "$tmp/test.log" | tail -1)"
+# Unanchored fallback, so an unexpected prefix degrades to a reading rather than
+# to nothing. Still the corrected shape - never the pre-fix one.
+[ -z "$last" ] && last="$(grep -oE '\+[0-9]+( ~[0-9]+)?( -[0-9]+)?' "$tmp/test.log" | tail -1)"
 tst_pass="$(printf '%s' "$last" | grep -oE '\+[0-9]+' | tr -d '+')"
+tst_skip="$(printf '%s' "$last" | grep -oE '~[0-9]+' | tr -d '~')"
 tst_fail="$(printf '%s' "$last" | grep -oE '\-[0-9]+' | tr -d '-')"
 [ -z "$tst_pass" ] && tst_pass="?"
+[ -z "$tst_skip" ] && tst_skip="0"
 [ -z "$tst_fail" ] && tst_fail="0"
+# An unparseable tally must never read as "zero failures".
+[ "$tst_pass" = "?" ] && tst_fail="?"
 
-if [ "$tst_rc" -eq 0 ]; then
-  tst_status="PASS"
-else
+# The gate. The exit code stays authoritative and nothing here can make a
+# failing run pass; these are additional ways to FAIL, never a way to PASS:
+#   - a tally that reports failures even if the exit code somehow said 0
+#   - a tally that could not be parsed ('?' is failure, never 0)
+#   - a run that ended without the reporter's completion line, i.e. it crashed
+#     or was cut short partway through
+saw_completion=0
+grep -qE 'All tests passed!|Some tests failed\.' "$tmp/test.log" && saw_completion=1
+
+if [ "$tst_rc" -ne 0 ] || [ "$tst_fail" != "0" ] || [ "$tst_pass" = "?" ] \
+   || [ "$saw_completion" -ne 1 ]; then
   tst_status="FAIL"
   overall=1
+else
+  tst_status="PASS"
 fi
 
-printf '**%s passed, %s failed** (exit %s)\n\n' "$tst_pass" "$tst_fail" "$tst_rc" >> "$body"
+printf '**%s passed, %s failed, %s skipped** (exit %s)\n\n' "$tst_pass" "$tst_fail" "$tst_skip" "$tst_rc" >> "$body"
 
 if [ "$tst_fail" != "0" ]; then
   printf '### Failing tests\n\n' >> "$body"
@@ -225,7 +252,7 @@ finished="$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date)"
   printf '| --- | --- | --- |\n'
   printf '| `dart format` | **%s** | %s hand-written files checked |\n' "$fmt_status" "$fmt_count"
   printf '| `flutter analyze` | **%s** | %s issue(s) |\n' "$ana_status" "$ana_issues"
-  printf '| `flutter test` | **%s** | %s passed / %s failed |\n' "$tst_status" "$tst_pass" "$tst_fail"
+  printf '| `flutter test` | **%s** | %s passed / %s failed / %s skipped |\n' "$tst_status" "$tst_pass" "$tst_fail" "$tst_skip"
   printf '\n'
   if [ "$overall" -eq 0 ]; then
     printf '**OVERALL: PASS**\n'
@@ -243,7 +270,7 @@ say ""
 say "--------------------------------------------------"
 say " format   : $fmt_status"
 say " analyze  : $ana_status ($ana_issues issues)"
-say " tests    : $tst_status ($tst_pass passed / $tst_fail failed)"
+say " tests    : $tst_status ($tst_pass passed / $tst_fail failed / $tst_skip skipped)"
 say "--------------------------------------------------"
 if [ "$overall" -eq 0 ]; then say " OVERALL  : PASS"; else say " OVERALL  : FAIL"; fi
 say ""

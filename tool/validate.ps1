@@ -50,6 +50,7 @@ function Say  ($t) { Write-Host $t }
 
 $fmtStatus = 'SKIPPED'; $anaStatus = 'SKIPPED'; $tstStatus = 'SKIPPED'
 $anaIssues = '?';       $tstPass   = '?';       $tstFail   = '?'
+$tstSkip   = '?'
 $overall   = 0
 
 Say "Level Up validation -> $out"
@@ -192,17 +193,52 @@ $testLog = (& flutter test --no-pub --reporter=expanded 2>&1)
 $tstRc = $LASTEXITCODE
 $testText = ($testLog -join "`n")
 
-# The expanded reporter's running counter is "+<passed> -<failed>:".
-$counters = [regex]::Matches($testText, '\+(\d+)(?:\s+-(\d+))?')
+# The expanded reporter's running counter is "+<passed> ~<skipped> -<failed>:",
+# the three parts in that fixed order with ~ and - INDEPENDENTLY optional.
+#
+# The 2026-09-12 defect read "-<failed>" as optional-directly-after "+<passed>".
+# On a real failing line - "00:16 +355 ~1 -1:" - the "~1 " sits between them, so
+# the failed group never matched and the summary reported "0 failed" while one
+# test had failed. OVERALL was still FAIL (it keys off the exit code), so the
+# gate held and only the human-readable line lied. The skipped count was never
+# surfaced at all, in passing or failing runs.
+#
+# Anchored on the timestamp that opens every counter line, so a "+7" printed
+# inside a test name or an expectation diff cannot be mistaken for a tally.
+# Deliberately free of inline (?m) and of \d so the pattern string stays
+# portable: test/guards/validate_reporting_test.dart extracts THIS literal and
+# runs it against sample reporter output. The rule is mechanised, not prose.
+$counterPattern = '^[ \t]*[0-9]{2,}:[0-9]{2}[ \t]*\+([0-9]+)(?:[ \t]*~([0-9]+))?(?:[ \t]*-([0-9]+))?'
+$counters = [regex]::Matches($testText, $counterPattern,
+                             [System.Text.RegularExpressions.RegexOptions]::Multiline)
+if ($counters.Count -eq 0) {
+  # Unanchored fallback, so an unexpected prefix degrades to a reading rather
+  # than to nothing. Still the corrected shape - never the pre-fix one.
+  $counters = [regex]::Matches($testText,
+    '\+([0-9]+)(?:[ \t]*~([0-9]+))?(?:[ \t]*-([0-9]+))?')
+}
 if ($counters.Count -gt 0) {
   $last = $counters[$counters.Count - 1]
   $tstPass = $last.Groups[1].Value
-  $tstFail = if ($last.Groups[2].Success) { $last.Groups[2].Value } else { '0' }
-} else { $tstPass = '?'; $tstFail = '0' }
+  $tstSkip = if ($last.Groups[2].Success) { $last.Groups[2].Value } else { '0' }
+  $tstFail = if ($last.Groups[3].Success) { $last.Groups[3].Value } else { '0' }
+} else { $tstPass = '?'; $tstSkip = '?'; $tstFail = '?' }
 
-if ($tstRc -eq 0) { $tstStatus = 'PASS' } else { $tstStatus = 'FAIL'; $overall = 1 }
+# The gate. The exit code stays authoritative and nothing here can make a
+# failing run pass; these are additional ways to FAIL, never a way to PASS:
+#   - a tally that reports failures even if the exit code somehow said 0
+#   - a tally that could not be parsed ('?' is treated as failure, never as 0)
+#   - a run that ended without the reporter's completion line, i.e. it crashed
+#     or was cut short partway through
+$sawCompletion = ($testText -match 'All tests passed!') -or
+                 ($testText -match 'Some tests failed\.')
+if     ($tstRc -ne 0)        { $tstStatus = 'FAIL'; $overall = 1 }
+elseif ($tstFail -ne '0')    { $tstStatus = 'FAIL'; $overall = 1 }
+elseif ($tstPass -eq '?')    { $tstStatus = 'FAIL'; $overall = 1 }
+elseif (-not $sawCompletion) { $tstStatus = 'FAIL'; $overall = 1 }
+else                         { $tstStatus = 'PASS' }
 
-Line ("**{0} passed, {1} failed** (exit {2})" -f $tstPass, $tstFail, $tstRc)
+Line ("**{0} passed, {1} failed, {2} skipped** (exit {3})" -f $tstPass, $tstFail, $tstSkip, $tstRc)
 Line ''
 if ($tstFail -ne '0') {
   Line '### Failing tests'
@@ -232,7 +268,7 @@ $head = New-Object System.Text.StringBuilder
 [void]$head.AppendLine('| --- | --- | --- |')
 [void]$head.AppendLine("| ``dart format`` | **$fmtStatus** | $fmtCount hand-written files checked |")
 [void]$head.AppendLine("| ``flutter analyze`` | **$anaStatus** | $anaIssues issue(s) |")
-[void]$head.AppendLine("| ``flutter test`` | **$tstStatus** | $tstPass passed / $tstFail failed |")
+[void]$head.AppendLine("| ``flutter test`` | **$tstStatus** | $tstPass passed / $tstFail failed / $tstSkip skipped |")
 [void]$head.AppendLine('')
 if ($overall -eq 0) { [void]$head.AppendLine('**OVERALL: PASS**') }
 else                { [void]$head.AppendLine('**OVERALL: FAIL** - see the failing sections below.') }
@@ -247,7 +283,7 @@ Say ''
 Say '--------------------------------------------------'
 Say " format   : $fmtStatus"
 Say " analyze  : $anaStatus ($anaIssues issues)"
-Say " tests    : $tstStatus ($tstPass passed / $tstFail failed)"
+Say " tests    : $tstStatus ($tstPass passed / $tstFail failed / $tstSkip skipped)"
 Say '--------------------------------------------------'
 if ($overall -eq 0) { Say ' OVERALL  : PASS' } else { Say ' OVERALL  : FAIL' }
 Say ''
