@@ -379,3 +379,40 @@ still calls draft, which is the same fault in the opposite direction.
 **What this does not change.** The code stays on disk; nothing was deleted, and point 2 is a
 reason to trust it more, not less. `26591fd` is left as committed — its body carries the withdrawn
 reasoning and is corrected here rather than rewritten, so the record shows the sequence.
+
+#### Re-decision of 2026-09-12 — the trigger fired; the gate stays anyway
+
+The condition this entry was waiting on has been met. `contract/` is re-vendored to
+`2dca3c5` (3.13.0-m1) in `f836213`, and `getLeaderboard` / `getMyRank` are
+**`x-stability: stable`** there — 3.5.0-m1 promoted both. **The gate's original stated
+reason has therefore expired.** It is no longer true that the board is built against a
+draft path.
+
+**Owner ruling, 2026-09-12: the placeholder stays up.** Not because the contract still
+forbids the board, but because the *Revised order of work* above has only had its first
+step done. That order was: re-vendor → **audit the board against the behavioural
+changes** → un-gate. The middle step has not been performed, and two of those changes
+are the kind that fail quietly in front of a student rather than loudly in a build:
+
+  * **`3.7.0-m1`** — `GET /leaderboard` may return a **short page while `hasMore` is
+    still `true``. A client that stops when a page arrives short shows a truncated board
+    and an "end of board" footer that is a lie. The board predates this and is UNAUDITED
+    against it.
+  * **`3.9.0-m1`** — `getMyRank` answers **`404 not_ranked`** for a student with no
+    points, instead of inventing a rank. Every new student is in exactly that state. If
+    the board treats 404 as a generic failure, the first thing a new student sees is an
+    error.
+
+Neither moves a schema, so a regenerated client is byte-identical and **the build cannot
+tell you about either**. Un-gating now would ship a board that mis-paginates for everyone
+and breaks for every student who has not yet scored — while looking perfectly green.
+
+**What stays true meanwhile.** The board's 13 files and 25 tests remain on disk and
+compile; nothing is deleted. `test/features/leaderboard/leaderboard_screen_test.dart:230`
+stays `skip: true` and remains the suite's single skipped test — it is the marker for
+this decision, and un-skipping it is part of un-gating, not a tidy-up.
+
+**What would close this.** The audit named above, against the six behavioural changes, with
+`3.7.0-m1` and `3.9.0-m1` handled explicitly and covered by tests. Then the route, the
+skipped test and the screen test's mount go back together, and the board gets a device pass
+before it is called done.
