@@ -8,6 +8,36 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/state_widget.dart';
 import '../../../l10n/app_localizations.dart';
 
+/// How a screen renders `403 insufficient_scope`.
+///
+/// 🔴 **The code string is identical on every route that returns it, and it
+/// does not mean the same thing on all of them.** Branching on the code alone
+/// is therefore wrong, and this enum is how a screen states which meaning
+/// applies to the route it is showing.
+///
+/// The case that forced it (contract 3.10.0-m1, `openapi.yaml:925-939` vs
+/// `:990-991`): `GET /me/mistakes` and `GET /me/mistakes/subjects/{id}` both
+/// answer `403 insufficient_scope`, and the changelog says outright — *"it
+/// means something DIFFERENT from the subject route's 403 — do not collapse
+/// the two branches."* See docs/DESIGN_ISSUES.md #61.
+enum ScopeErrorCopy {
+  /// **The route took a subject id and refused it.** "This subject isn't part
+  /// of your course" — and retry is suppressed, because tapping it would 403
+  /// again with the same answer. The default, because it is what every catalog
+  /// screen means.
+  subjectNotYours,
+
+  /// **The route took no id at all and refuses nothing.** The caller has no
+  /// ACTIVE ENROLMENT to scope a history against — reachable in ordinary use,
+  /// because a track transfer closes the old enrolment before the new one opens
+  /// (adr-032).
+  ///
+  /// So it is not an authorization failure, not a reason to log out, and — the
+  /// difference that matters — **retry is legitimate**: the state is transient
+  /// and the next request may well succeed.
+  enrolmentPending,
+}
+
 /// Bridges an [AsyncValue] onto the shared sealed [ScreenState] and renders it
 /// through the shared [StateWidget] — which stays the ONLY place that switches
 /// on the state. Screens supply the loaded body and a skeleton; loading, empty,
@@ -27,6 +57,7 @@ class CatalogAsyncView<T> extends StatelessWidget {
     required this.onRetry,
     required this.onLoaded,
     required this.skeleton,
+    this.scopeError = ScopeErrorCopy.subjectNotYours,
   });
 
   final AsyncValue<T> value;
@@ -35,6 +66,11 @@ class CatalogAsyncView<T> extends StatelessWidget {
   final VoidCallback onRetry;
   final Widget Function(T data) onLoaded;
   final Widget skeleton;
+
+  /// Which of the two `insufficient_scope` meanings this route carries. Passed
+  /// IN rather than decided here: only the caller knows its own route, and the
+  /// wire gives both the same code. See [ScopeErrorCopy].
+  final ScopeErrorCopy scopeError;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +84,9 @@ class CatalogAsyncView<T> extends StatelessWidget {
           : ScreenError<T>(_messageKeyFor(error), cause: error),
     );
 
-    // `insufficient_scope` (403) means this subject is not in the student's
-    // server-derived scope — tapping retry would 403 again, so no retry button.
-    final scopeError = _isInsufficientScope(value.error);
+    // Only this branch is scope-specific; everything else renders identically.
+    final isScope = _isInsufficientScope(value.error);
+    final scopeIsTransient = scopeError == ScopeErrorCopy.enrolmentPending;
 
     return StateWidget<T>(
       state: state,
@@ -60,8 +96,15 @@ class CatalogAsyncView<T> extends StatelessWidget {
       empty: CatalogMessage(icon: Icons.inbox_outlined, text: emptyMessage),
       error: CatalogMessage(
         icon: Icons.error_outline,
-        text: scopeError ? l10n.subjectUnavailable : l10n.genericError,
-        onRetry: scopeError ? null : onRetry,
+        text: switch ((isScope, scopeIsTransient)) {
+          (true, true) => l10n.mistakesEnrolmentPending,
+          (true, false) => l10n.subjectUnavailable,
+          _ => l10n.genericError,
+        },
+        // Retry is suppressed ONLY where it is genuinely futile — a refused
+        // subject id answers the same way every time. An enrolment between
+        // states resolves on its own, so the student gets the button.
+        onRetry: isScope && !scopeIsTransient ? null : onRetry,
       ),
       offline: CatalogMessage(
         icon: Icons.wifi_off,
@@ -76,8 +119,14 @@ class CatalogAsyncView<T> extends StatelessWidget {
 
   /// `ScreenError.messageKey` is a KEY, not user-facing copy — the server's
   /// `title`/`detail` are developer-facing English and are never shown.
-  static String _messageKeyFor(Object error) =>
-      _isInsufficientScope(error) ? 'subjectUnavailable' : 'genericError';
+  /// `ScreenError.messageKey` is a KEY, not copy — so it names which of the
+  /// two scope meanings was taken, not the sentence either one renders.
+  String _messageKeyFor(Object error) => _isInsufficientScope(error)
+      ? switch (scopeError) {
+          ScopeErrorCopy.subjectNotYours => 'subjectUnavailable',
+          ScopeErrorCopy.enrolmentPending => 'mistakesEnrolmentPending',
+        }
+      : 'genericError';
 }
 
 /// Centred icon + localized line + optional retry. Shared by empty, error and

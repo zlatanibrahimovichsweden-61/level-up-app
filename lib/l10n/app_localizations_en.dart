@@ -464,6 +464,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quizTypePractice => 'Practice';
 
   @override
+  String get mistakesTitle => 'Mistakes';
+
+  @override
+  String mistakeCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString mistakes',
+      one: '1 mistake',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noMistakes => 'No mistakes yet';
+
+  @override
+  String get mistakesEnrolmentPending =>
+      'Your enrolment is being updated. Try again in a moment.';
+
+  @override
   String get noSubjects => 'No subjects yet';
 
   @override

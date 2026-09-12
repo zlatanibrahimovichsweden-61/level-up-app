@@ -464,6 +464,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quizTypePractice => 'عملي';
 
   @override
+  String get mistakesTitle => 'أخطائي';
+
+  @override
+  String mistakeCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString خطأ',
+      many: '$countString خطأً',
+      few: '$countString أخطاء',
+      two: 'خطآن',
+      one: 'خطأ واحد',
+      zero: 'لا أخطاء',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noMistakes => 'لا توجد أخطاء';
+
+  @override
+  String get mistakesEnrolmentPending =>
+      'يتم تحديث تسجيلك. حاول مرة أخرى بعد قليل.';
+
+  @override
   String get noSubjects => 'لا توجد مواد بعد';
 
   @override

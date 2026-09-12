@@ -237,7 +237,17 @@ void main() {
     });
   });
 
-  testWidgets('Mistakes is a Day-6 stub that says so', (tester) async {
+  testWidgets('Mistakes is no longer a stub — the snackbar is gone', (
+    tester,
+  ) async {
+    // This test used to assert the opposite: that tapping Mistakes showed
+    // "Coming soon" and went nowhere. It was right for four waves, for one
+    // reason — no endpoint. `GET /me/mistakes` shipped `stable` at contract
+    // 3.10.0-m1 and the stub was removed on 2026-09-12 (Day 10).
+    //
+    // Kept, inverted, rather than deleted: the snackbar coming back would mean
+    // someone reverted the entry point, and that should fail loudly here. The
+    // destination itself is covered in test/features/mistakes/.
     await pumpCatalogApp(tester, catalog: catalog);
     await openLearnTab(tester);
 
@@ -245,8 +255,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Coming soon'), findsOneWidget);
-    // It must not have navigated anywhere.
-    expect(find.byType(SubjectsScreen), findsOneWidget);
+    expect(find.text('Coming soon'), findsNothing);
   });
 }

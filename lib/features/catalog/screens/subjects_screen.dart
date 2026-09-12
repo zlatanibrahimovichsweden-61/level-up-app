@@ -83,9 +83,21 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
   }
 }
 
-/// Day-6 stub. The "retake your wrong answers" pool is not built yet, so this
-/// says so instead of quietly doing nothing — a button that swallows taps reads
-/// as a bug to the student.
+/// The Subjects header's one action, and the entry point to the Mistakes flow
+/// (Figma `337:5702` → `404:6292`).
+///
+/// It was a coming-soon snackbar from Day 6 until 2026-09-12, deferred four
+/// times for one reason: no endpoint. `GET /me/mistakes` shipped `stable` at
+/// contract 3.10.0-m1 and the reason expired, so the stub is gone.
+///
+/// `push`, not `go`: the overview is a push onto the Learn branch's own
+/// Navigator, which is what makes `CatalogHeader.canPop()` true and draws the
+/// back chevron the frame shows. `go` would replace this screen and leave the
+/// student with no way back short of the nav bar.
+///
+/// The styling is unchanged — `cs.error` foreground, a 0.5 error border,
+/// radius 9, `AppType.buttonSmall`. It already matched the frame; only the
+/// destination was missing.
 class _MistakesButton extends StatelessWidget {
   const _MistakesButton();
 
@@ -95,11 +107,7 @@ class _MistakesButton extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return OutlinedButton(
-      onPressed: () {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(l10n.comingSoon)));
-      },
+      onPressed: () => context.push('/learn/mistakes'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(0, 35),
         padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),

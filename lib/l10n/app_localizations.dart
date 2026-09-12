@@ -902,6 +902,30 @@ abstract class AppLocalizations {
   /// **'Practice'**
   String get quizTypePractice;
 
+  /// Header of the Mistakes overview, Figma 404:6292 / 404:7110 — ONE screen for both tracks. Kept separate from the `mistakes` button label on the Subjects header even though the two strings match today: one is an action, the other a page name.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistakes'**
+  String get mistakesTitle;
+
+  /// The contract's mistakeCount, on the overview card and every tree row. 🔴 The frames caption this "20 questions", which is FALSE — it is how many questions the student currently has WRONG, not how many the subject contains. On a 400-question subject with 20 mistakes the frame's copy inverts the meaning of the one number this whole flow exists to show. Built as mistakes; see DESIGN_ISSUES #59. The frames also do not pluralise ("1 questions") — ICU plural here, and Arabic carries all six categories. Arabic wording needs the designer's confirmation: the existing `mistakes` key is أخطائي ("my mistakes"), right for a button and wrong for a count caption.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 mistake} other{{count} mistakes}}'**
+  String mistakeCount(int count);
+
+  /// GET /me/mistakes returning 200 [] is a NORMAL response — the record of a student with nothing outstanding — and the contract forbids rendering it as an error. No frame draws this state (DESIGN_ISSUES #60); the neutral register of noSubjects/noLectures/nothingHere ships until the designer supplies a warmer one. Owner ruling 2026-09-12.
+  ///
+  /// In en, this message translates to:
+  /// **'No mistakes yet'**
+  String get noMistakes;
+
+  /// 403 insufficient_scope on the OVERVIEW route only, where it means the caller has no active enrolment to scope a history against — reachable in ordinary use, because a track transfer closes the old enrolment before the new one opens (adr-032). It is NOT subjectUnavailable: no subject was refused, this operation takes no id, and retry is legitimate. The SAME code on the subject route keeps subjectUnavailable. Do not collapse the two — DESIGN_ISSUES #61.
+  ///
+  /// In en, this message translates to:
+  /// **'Your enrolment is being updated. Try again in a moment.'**
+  String get mistakesEnrolmentPending;
+
   /// No description provided for @noSubjects.
   ///
   /// In en, this message translates to:

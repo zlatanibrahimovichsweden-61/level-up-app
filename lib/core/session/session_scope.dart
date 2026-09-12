@@ -4,6 +4,7 @@ import '../../features/auth/notifier/login_notifier.dart';
 import '../../features/auth/notifier/otp_notifier.dart';
 import '../../features/catalog/notifier/subject_tree_notifier.dart';
 import '../../features/catalog/notifier/subjects_notifier.dart';
+import '../../features/mistakes/notifier/mistakes_notifiers.dart';
 import '../../features/profile/notifier/edit_profile_notifier.dart';
 import '../../features/profile/notifier/me_notifier.dart';
 import '../../features/quiz/notifier/quiz_setup_notifier.dart';
@@ -60,9 +61,21 @@ void invalidateSessionScope(Ref ref) {
   ref.invalidate(entitlementsProvider); // what this student paid for
   ref.invalidate(editProfileProvider); // in-flight edits to the above
 
-  // --- Catalogue: scoped to the student's track/entitlements. -----------------
+  // --- Catalogue: scoped to enrolment, never to entitlement (adr-091). --------
   ref.invalidate(subjectsProvider);
   ref.invalidate(subjectTreeProvider); // family — clears every subject id
+
+  // --- Mistakes: a per-student answer history, and the most revealing of it. ---
+  // `GET /me/mistakes` returns the subjects this student currently has wrong
+  // answers in, with live counts. That is a record of what one named minor is
+  // failing at — exactly the Tier-0 C-2 class of leak, and worse than the
+  // catalogue, which is merely their cohort's syllabus. `mistakesOverviewProvider`
+  // is non-autoDispose (it survives the drill-down deliberately), so it MUST be
+  // dropped here. `mistakesTreeProvider` is autoDispose by design — the counts
+  // decay on every read — but is invalidated anyway to close the frame-width
+  // window where a forced logout lands while a tree is still mounted.
+  ref.invalidate(mistakesOverviewProvider);
+  ref.invalidate(mistakesTreeProvider); // family — clears every subject id
 
   // --- Auth surfaces that hold the phone number. ------------------------------
   ref.invalidate(loginProvider); // OtpRequestResult for a specific phone

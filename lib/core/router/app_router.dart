@@ -15,6 +15,9 @@ import '../../features/catalog/screens/lessons_screen.dart';
 import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/mistakes/screens/mistakes_overview_screen.dart';
+import '../../features/mistakes/screens/mistakes_subject_screen.dart';
+import '../../features/mistakes/screens/mistakes_tree_screens.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
@@ -171,6 +174,49 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/learn',
                 builder: (_, _) => const SubjectsScreen(),
                 routes: [
+                  // Mistakes — INSIDE the Learn branch, not beside /quiz.
+                  // Every frame in the family draws the bottom nav bar with
+                  // Learn active, so these are pushes onto this branch's own
+                  // Navigator: the bar stays put and the header's back chevron
+                  // appears because the branch can pop.
+                  //
+                  // Same architecture as the catalog stack below it — the
+                  // subject route fetches the whole pruned tree once and the
+                  // nested levels are VIEWS over that one cached object, not
+                  // fetch keys. University stops at the subject route; its tree
+                  // is flat, so the two nested routes are simply never reached
+                  // on that track.
+                  GoRoute(
+                    path: 'mistakes',
+                    builder: (_, _) => const MistakesOverviewScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'subject/:subjectId',
+                        builder: (_, state) => MistakesSubjectScreen(
+                          subjectId: state.pathParameters['subjectId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'unit/:unitId',
+                            builder: (_, state) => MistakesChaptersScreen(
+                              subjectId: state.pathParameters['subjectId']!,
+                              unitId: state.pathParameters['unitId']!,
+                            ),
+                            routes: [
+                              GoRoute(
+                                path: 'chapter/:chapterId',
+                                builder: (_, state) => MistakesLessonsScreen(
+                                  subjectId: state.pathParameters['subjectId']!,
+                                  unitId: state.pathParameters['unitId']!,
+                                  chapterId: state.pathParameters['chapterId']!,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                   // ONE route for both tracks: the screen loads the tree and
                   // switches on the contract's `track` discriminator — school
                   // continues into the nested unit/chapter/lesson routes below,

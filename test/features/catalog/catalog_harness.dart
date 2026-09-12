@@ -15,6 +15,7 @@ import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/mistakes/repository/mistakes_repository.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
@@ -35,6 +36,7 @@ const _learnLabel = {'en': 'Learn', 'ar': 'تعلّم'};
 Future<ProviderContainer> pumpCatalogApp(
   WidgetTester tester, {
   required MockCatalogRepository catalog,
+  MistakesRepository? mistakes,
   String locale = 'en',
   ThemeData? theme,
   bool online = true,
@@ -60,6 +62,12 @@ Future<ProviderContainer> pumpCatalogApp(
       secureStorageProvider.overrideWithValue(storage),
       profileRepositoryProvider.overrideWithValue(profile),
       catalogRepositoryProvider.overrideWithValue(catalog),
+      // The Mistakes flow is entered FROM the Subjects header, so its tests
+      // boot through this same harness rather than a second one. Left
+      // un-overridden for the catalog's own tests: an unstubbed repository
+      // that is never read is not a stub worth writing.
+      if (mistakes != null)
+        mistakesRepositoryProvider.overrideWithValue(mistakes),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
     ],
   );
@@ -89,3 +97,11 @@ Future<void> openLearnTab(WidgetTester tester, {String locale = 'en'}) async {
   await tester.tap(find.text(_learnLabel[locale]!).last);
   await tester.pumpAndSettle();
 }
+
+/// Where the real router currently is.
+///
+/// `GoRouter.state.uri` and NOT `routerDelegate.currentConfiguration.uri` —
+/// the latter reports the last DECLARATIVE match and silently misses an
+/// imperative `push`, which is exactly what the Mistakes flow navigates with.
+String locationOf(ProviderContainer container) =>
+    container.read(routerProvider).state.uri.toString();

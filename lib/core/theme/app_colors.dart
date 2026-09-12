@@ -50,6 +50,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.quizWrongBorder,
     required this.quizWrongBadge,
     required this.quizExplanationBody,
+    required this.mistakesCardFill,
+    required this.mistakesContent,
+    required this.mistakesCount,
+    required this.mistakesRowBorder,
     required this.navBarFill,
     required this.navAccent,
     required this.navCentreIdleFill,
@@ -266,6 +270,69 @@ class AppColors extends ThemeExtension<AppColors> {
   /// the quiz frame really does specify the purple-grey in the LIGHT canvas.
   final Color quizExplanationBody;
 
+  // --- Mistakes tokens (Figma 404:6292 / 404:6539 light · 404:7428 dark) ----
+  //
+  // 🔴 ALL FOUR ARE IDENTICAL IN BOTH PALETTES, and that is a decision, not an
+  // omission. The light frames were measured off the Properties panel on
+  // 2026-09-12; the dark overview `404:7428` was opened and seen drawing "the
+  // same pink cards and red counts" on the `#232428` canvas, but its hexes were
+  // never read. Rather than infer a dark value the file does not specify, the
+  // light values carry over unchanged — which is what the dark frame appears to
+  // draw AND the measurably safer of the two candidates. Owner ruling
+  // 2026-09-12. Logged as docs/DESIGN_ISSUES.md #70.
+  //
+  // The alternative was rejected on measurement, not taste: deriving dark from
+  // the shipped [quizWrongFill] (30% alpha over `#232428` = `#655356`) puts
+  // [mistakesCount] at **1.91:1**, worse than the 1.11:1 cream-on-mint that
+  // #53/#54 already cost this project.
+  //
+  // The rule underneath is the one [quizReviewRowContent] states: **a fill that
+  // never changes needs a foreground that never changes.** Dark [textPrimary]
+  // `#FCFBF9` on `#EAD5D5` measures **1.36:1** — not dim, gone.
+
+  /// The pink ground shared by the overview card (`404:6322`) and the tree row
+  /// (`404:6642`). Figma-verbatim `#EAD5D5`, both canvases.
+  ///
+  /// Measured **11.06:1** against the dark canvas `#232428`, so the card reads
+  /// as a distinct surface there rather than disappearing into the page.
+  final Color mistakesCardFill;
+
+  /// Foreground on [mistakesCardFill] — the card title and the row name.
+  /// `#384F47`, both canvases. Measured **6.30:1** on the fill.
+  ///
+  /// The card title frame (`404:6329`) specifies exactly this. The ROW name
+  /// frame (`404:6648`) specifies `#000000` instead — two different "primary
+  /// text" colours inside one family, and **pure black is not in this palette
+  /// at all**. Resolved the way docs/DESIGN_ISSUES.md **#57** resolved the same
+  /// class of problem on the review screen: use the shipped value, do not add
+  /// black. Logged as #68.
+  ///
+  /// Numerically equal to [quizReviewRowContent] and to [Brand.greenPrimary],
+  /// and kept separate for the reason this file keeps every such pair apart:
+  /// restyling the quiz review must not silently restyle the Mistakes flow.
+  final Color mistakesContent;
+
+  /// The count caption — "20 questions" in the frames, MISTAKES in the build.
+  /// Figma `#EF4444`, both canvases.
+  ///
+  /// ⚠️ **Measured 2.68:1 on [mistakesCardFill], which fails WCAG AA (4.5:1)
+  /// for a 14px caption — in BOTH canvases, inherited from the light frame.**
+  /// Recorded rather than silently corrected: darkening the red would be
+  /// inventing a design token the designer did not supply, which is the Wave-3D
+  /// trap. Logged as docs/DESIGN_ISSUES.md #71 for the designer to rule on.
+  ///
+  /// Numerically equal to [destructive] and [quizWrongBadge]; separate because
+  /// a count of outstanding mistakes is neither a destructive action nor a
+  /// wrong-answer badge.
+  final Color mistakesCount;
+
+  /// The tree row's 0.5px inner hairline (`404:6642`). Figma `#4B675E`, both
+  /// canvases — 4.40:1 on the fill, and it carries no text.
+  ///
+  /// Deliberately NOT [fieldBorder], which the catalog's `TreeListRow` uses:
+  /// that is `#D1D1D1` light / `#FCFBF9` dark and would vanish against pink.
+  final Color mistakesRowBorder;
+
   // --- Bottom-nav tokens (Figma 59:1264 light · 348:6686 dark) --------------
   //
   // BOTH canvases exist for the nav, so every value below is Figma-verbatim.
@@ -478,6 +545,10 @@ class AppColors extends ThemeExtension<AppColors> {
     quizWrongBorder: Color(0xFF921119), // Figma 308:5158
     quizWrongBadge: Color(0xFFEF4444), // Figma 308:5160
     quizExplanationBody: Color(0xFF7070A0), // Figma 159:1831
+    mistakesCardFill: Color(0xFFEAD5D5), // Figma 404:6322
+    mistakesContent: Brand.greenPrimary, // #384F47 — Figma 404:6329
+    mistakesCount: Color(0xFFEF4444), // Figma 404:6338
+    mistakesRowBorder: Color(0xFF4B675E), // Figma 404:6642
     navBarFill: Color(0xFFFCFBF9), // Figma 59:1264
     navAccent: Color(0xFF4B675E), // Figma 59:1264 — NOT Brand.greenPrimary
     navCentreIdleFill: Color(0xFFF3F1F8), // Figma 59:1003
@@ -541,6 +612,13 @@ class AppColors extends ThemeExtension<AppColors> {
     quizWrongBorder: Color(0xFF921119),
     quizWrongBadge: Color(0xFFEF4444),
     quizExplanationBody: Color(0xFF7070A0),
+    // Identical to light ON PURPOSE — all four. The dark frame 404:7428
+    // draws the same pink card on #232428 but its hexes were never read,
+    // and every alternative measured WORSE. See the field docs.
+    mistakesCardFill: Color(0xFFEAD5D5),
+    mistakesContent: Brand.greenPrimary,
+    mistakesCount: Color(0xFFEF4444),
+    mistakesRowBorder: Color(0xFF4B675E),
     navBarFill: Color(0xFF212226), // Figma 348:6686 — NOT the #232428 page fill
     navAccent: Color(0xFFAE87E7), // Figma 348:6686
     navCentreIdleFill: Color(0xFF3E3E3E), // Figma 348:6686
@@ -598,6 +676,10 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? quizWrongBorder,
     Color? quizWrongBadge,
     Color? quizExplanationBody,
+    Color? mistakesCardFill,
+    Color? mistakesContent,
+    Color? mistakesCount,
+    Color? mistakesRowBorder,
     Color? navBarFill,
     Color? navAccent,
     Color? navCentreIdleFill,
@@ -653,6 +735,10 @@ class AppColors extends ThemeExtension<AppColors> {
       quizWrongBorder: quizWrongBorder ?? this.quizWrongBorder,
       quizWrongBadge: quizWrongBadge ?? this.quizWrongBadge,
       quizExplanationBody: quizExplanationBody ?? this.quizExplanationBody,
+      mistakesCardFill: mistakesCardFill ?? this.mistakesCardFill,
+      mistakesContent: mistakesContent ?? this.mistakesContent,
+      mistakesCount: mistakesCount ?? this.mistakesCount,
+      mistakesRowBorder: mistakesRowBorder ?? this.mistakesRowBorder,
       navBarFill: navBarFill ?? this.navBarFill,
       navAccent: navAccent ?? this.navAccent,
       navCentreIdleFill: navCentreIdleFill ?? this.navCentreIdleFill,
@@ -734,6 +820,21 @@ class AppColors extends ThemeExtension<AppColors> {
       quizExplanationBody: Color.lerp(
         quizExplanationBody,
         other.quizExplanationBody,
+        t,
+      )!,
+      // Identical endpoints — the Mistakes pink does not move across a
+      // theme change. Present so a later dark value cannot be forgotten
+      // here, which is the failure mode this file's lerp test exists for.
+      mistakesCardFill: Color.lerp(
+        mistakesCardFill,
+        other.mistakesCardFill,
+        t,
+      )!,
+      mistakesContent: Color.lerp(mistakesContent, other.mistakesContent, t)!,
+      mistakesCount: Color.lerp(mistakesCount, other.mistakesCount, t)!,
+      mistakesRowBorder: Color.lerp(
+        mistakesRowBorder,
+        other.mistakesRowBorder,
         t,
       )!,
       navBarFill: Color.lerp(navBarFill, other.navBarFill, t)!,
