@@ -219,7 +219,19 @@ class _IndexBadge extends StatelessWidget {
       alignment: AlignmentDirectional.center,
       decoration: BoxDecoration(color: ext.cardFill, shape: BoxShape.circle),
       child: Text(
-        // Locale-aware digits: Arabic renders ١، ٢، ٣ rather than 1, 2, 3.
+        // Locale-aware formatting — grouping separators, not digit shapes.
+        //
+        // This comment used to claim Arabic renders ١، ٢، ٣ rather than 1, 2,
+        // 3. It does not. `intl` formats `ar` with WESTERN digits in this app,
+        // which two tests already assert (`lectures_screen_test.dart:294`,
+        // `profile_screen_test.dart:534`) and which was seen on a Pixel 8 on
+        // 2026-09-12: the Arabic Mistakes tree draws its badges as 1 and 2.
+        //
+        // `formatDecimal` is still the right call — it is what applies the
+        // locale's grouping to numbers large enough to need it. Do not
+        // "restore" Arabic-Indic digits here on the strength of the old
+        // comment; that would be a product decision, and the shipped
+        // behaviour is the one under test.
         MaterialLocalizations.of(context).formatDecimal(index),
         style: AppType.h4.copyWith(color: content),
       ),
