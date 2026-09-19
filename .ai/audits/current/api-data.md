@@ -426,6 +426,9 @@ actionable. Two adjacent observations worth acting on when the URL lands: `Flavo
 (`--dart-define`), so pointing the app at a laptop or a preview host means editing a shipped source
 file.
 
+**Forward pointer (2026-09-05):** half-resolved — staging is now a real host (`67bdcc1`,
+`app_config.dart:43`, `contract/SOURCE.md`); only prod remains `TBD.example`.
+
 ---
 
 ### F-7-11 [LOW] [QUALITY IMPROVEMENT] Contract gaps worth a change request (Seif's side, not ours)
@@ -465,6 +468,12 @@ operation-granularity. Correct figures: 21 consumed operations of 36 (21/36 by o
 35 paths; 15 unconsumed operations across 14 paths.
 
 **Recommended fix:** one-line correction in `docs/PROGRESS.md` and add the missing path to the list.
+
+**Forward pointer (2026-09-05):** `POST /checkout/sessions` — one of the 14 unconsumed paths
+counted here — was deleted outright at 2.2.0-m1 (adr-049 §3), not merely left unconsumed. The
+contract still totals 21 stable + 15 draft = 36 operations at 3.0.0-m1 (`contract/SOURCE.md`), so
+this section's arithmetic is unaffected, but the specific path list above is stale — do not use it
+to look up `/checkout/sessions` as still-draft-and-unconsumed; it no longer exists.
 
 ---
 

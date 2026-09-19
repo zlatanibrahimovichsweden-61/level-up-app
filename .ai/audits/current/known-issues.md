@@ -14,7 +14,7 @@ Nothing here has been applied. See `changed-files.md`.
 
 **State:** 141 files are formatted but **not committed**. Verified
 behaviour-preserving (token stream byte-identical to `e3651e6`) and the suite is
-green at 792/0.
+green at 792/0 (count at `e3651e6`; 862 at 2026-09-04).
 
 **Why it needs care:** a 141-file commit rewrites `git blame` for 68% of the
 codebase. The fix is to make it a *pure* formatting commit — no other change
@@ -107,7 +107,7 @@ and asserts B's name on Home. That test does not exist today.
 
 | # | Issue | Where | Size |
 | --- | --- | --- | --- |
-| K-3 | `/subscription` dead-end reachable from the quiz paywall — hardcoded English, unthemed | `limit_sheet.dart:123` → `app_router.dart:250,347` | Disable the entry point (mirror how Profile's was disabled), or build the screen. Small either way. |
+| K-3 | ~~`/subscription` dead-end reachable from the quiz paywall~~ **RETIRED 2026-09-05 — the whole purchase surface (the `/subscription` route, the limit sheet's Upgrade CTA, and the Profile Subscription row) was removed outright by `5c4b855` (adr-049 §3, `docs/DECISIONS.md` D-007). Not fixed — deleted.** | ~~`limit_sheet.dart:123` → `app_router.dart:250,347`~~ (dead citation; see D-007) | — |
 | K-4 | Onboarding "Get Started" dead-ends on `RegistrationExpiredView` — no seeded draft | `onboarding_screen.dart:54`; the fix already exists at `login_screen.dart:76-85` | Small — copy the existing pattern |
 | K-5 | Dark-mode hint text is identical to typed text (`#FCFBF9` for both) | `app_colors.dart:504,506`; `form_fields.dart:156-161` | 1 token value. **Needs a design decision on the correct dark hint colour — do not invent it.** |
 | K-6 | Inactive nav labels at 2.03:1 contrast in light mode | `app_colors.dart` `mutedText`; `main_shell.dart:265,333`, `level_card.dart:147` | 1 token value + re-check the 5 sites. **Design decision.** |
@@ -181,3 +181,8 @@ Deliberately left alone; they are already tracked and already correct.
 - The 14 draft endpoints, Leaderboard and Message — no backend exists. Product
   blockers, not engineering defects.
 - The quiz timer's absence — deliberate, see K-36.
+
+**Dated note (2026-09-05):** `TBD.example` above is now prod-only — staging resolved to a real
+host at `67bdcc1` (`contract/SOURCE.md`, `app_config.dart:43`). "14 draft endpoints" predates the
+deletion of `POST /checkout/sessions` (adr-049 §3, 2.2.0-m1) — 3.0.0-m1 has **15** draft
+operations, not 14.

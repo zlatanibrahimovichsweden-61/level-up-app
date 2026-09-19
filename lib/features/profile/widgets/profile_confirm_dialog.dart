@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/app_modal.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The Profile confirmation dialog · Figma `180:4445`.
@@ -63,8 +66,16 @@ class ProfileConfirmDialog extends StatelessWidget {
     BuildContext context,
     ProfileConfirmDialog dialog,
   ) async {
-    final confirmed = await showDialog<bool>(
+    // Two frames, two scrims: Logout and Go-to-University are both 30% in
+    // light with no blur, and in dark both go to 60% over a blurred page —
+    // 9.95 sigma for Logout, 10.05 for Go to University. A tenth of a pixel
+    // apart and both kept verbatim (edit1.md R2).
+    final elevation = Theme.of(context).extension<AppElevation>()!;
+    final confirmed = await showAppDialog<bool>(
       context: context,
+      scrim: dialog.tone == ProfileConfirmTone.destructive
+          ? elevation.logoutDialogScrim
+          : elevation.goToUniversityDialogScrim,
       builder: (_) => dialog,
     );
     return confirmed ?? false;
@@ -82,7 +93,10 @@ class ProfileConfirmDialog extends StatelessWidget {
     };
 
     return Dialog(
-      backgroundColor: ext.cardFill,
+      // OPAQUE. The Figma dialog panel is `#FCFBF9` / `#232428` — the page
+      // fill, not the 20% `cardFill` wash, which in dark rendered a
+      // see-through dialog with the Profile screen legible through it.
+      backgroundColor: ext.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 29, vertical: 24),
       child: Padding(
@@ -164,29 +178,41 @@ class ProfileConfirmDialog extends StatelessWidget {
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
-              child: FilledButton(
-                key: confirmKey,
-                onPressed: confirmEnabled
-                    ? () => Navigator.of(context).pop(true)
-                    : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: confirmColour,
-                  // Disabled keeps the frame's colours at reduced opacity
-                  // rather than Material's grey: the control must still look
-                  // like the control it is, just unusable.
-                  disabledBackgroundColor: confirmColour.withValues(
-                    alpha: 0.45,
+              // The destructive tone is the Logout frame's red button, which
+              // carries the drop shadow and NO glow — `Frame 1000003068` and
+              // `Frame 427319502` both draw the shadow only. The primary tone
+              // is Go to University, which does glow in dark.
+              child: PrimaryCta(
+                tone: tone == ProfileConfirmTone.destructive
+                    ? CtaTone.destructive
+                    : CtaTone.primary,
+                enabled: confirmEnabled,
+                child: FilledButton(
+                  key: confirmKey,
+                  onPressed: confirmEnabled
+                      ? () => Navigator.of(context).pop(true)
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: confirmColour,
+                    // Disabled keeps the frame's colours at reduced opacity
+                    // rather than Material's grey: the control must still look
+                    // like the control it is, just unusable.
+                    disabledBackgroundColor: confirmColour.withValues(
+                      alpha: 0.45,
+                    ),
+                    // `onPrimary` is where the ENABLED label's colour comes from
+                    // (`AppTheme`'s filledButtonTheme sets `foregroundColor` to
+                    // it), so the disabled state is now that same colour dimmed
+                    // rather than a hardcoded copy of what it happens to be
+                    // today. It used to be a literal `#FCFBF9` — the LIGHT
+                    // surface value — measured on the light canvas and painted on
+                    // both.
+                    disabledForegroundColor: cs.onPrimary.withValues(
+                      alpha: 0.7,
+                    ),
                   ),
-                  // `onPrimary` is where the ENABLED label's colour comes from
-                  // (`AppTheme`'s filledButtonTheme sets `foregroundColor` to
-                  // it), so the disabled state is now that same colour dimmed
-                  // rather than a hardcoded copy of what it happens to be
-                  // today. It used to be a literal `#FCFBF9` — the LIGHT
-                  // surface value — measured on the light canvas and painted on
-                  // both.
-                  disabledForegroundColor: cs.onPrimary.withValues(alpha: 0.7),
+                  child: Text(confirmLabel, style: AppType.buttonLarge),
                 ),
-                child: Text(confirmLabel, style: AppType.buttonLarge),
               ),
             ),
             if (!confirmEnabled && disabledReason != null) ...[

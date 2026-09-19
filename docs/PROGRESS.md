@@ -240,6 +240,46 @@ hardcoded colour compiles, analyses clean and looks perfect on the canvas it was
 **Tests:** 792 green (+28). Goldens: **none moved** — no golden subject carries one of the five
 shadows, and `navShadow` was deliberately left alone.
 
+## Day 8-9 — Quiz Review (brief: `docs/day8-9_quiz_review_brief.md`) — built, awaiting review
+
+`/quiz/:quizId/result/review` · Figma `162:2377` (light) · `337:6705` (dark) · `549:20324` (RTL).
+**Zero endpoints consumed** — coverage before and after is identical.
+
+**Why it was buildable at all.** `seif_fight.md` S14 had it blocked on `GET /quizzes/{quizId}`
+(draft). That holds for review from history; it never held for the CTA on the result screen. When
+`POST /quizzes/{quizId}/finish` returns, `QuizSession` already carries every field the draft
+`QuizReview.questions[]` schema would return. `QuizCompleted` was simply throwing it away.
+
+**Step 1 — the screen, unreachable.**
+- `QuizCompleted` retains its `QuizSession`; `QuizResultArgs` gains a required `review`.
+- `QuizReviewArgs` (`models/quiz_review_args.dart`) — a purpose-built immutable view, not the
+  session. It carries the questions and the grades; **not** `chosen`, because the frame renders no
+  options and never shows the student's own pick.
+- Route nested under the result. Unlike its two ancestors it does **not** force-unwrap `extra` — the
+  payload is in-memory only, so a cold deep link renders the unavailable view instead of throwing.
+- The screen: header, a three-chip client-side filter (`All (n)` · Correct · Wrong — only *All*
+  carries a count, per the frame), and a lazy list of rows in three states.
+- **Screenshot protection is wired by the screen itself.** `QuizScreen` disables it in its own
+  `dispose` and the result screen between them is stateless — so without this, the one screen that
+  lists which answers were right would be the one screen a student could photograph. Asserted by
+  test, not by eye.
+- Three palette tokens added: `quizReviewRowContent`, `quizReviewFilterFill`,
+  `quizReviewFilterLabel`. The row FILLS add none — they reuse the five canvas-independent
+  correct/wrong tokens unchanged; the three new ones are foregrounds, which had to be reasoned about
+  separately because a foreground has to follow the fill it sits on rather than the canvas.
+
+**Step 2 — the door, and the record.** The CTA is live; the `Tooltip` and the coming-soon caption
+are gone and `reviewQuestionsComingSoon` is retired from both ARBs. S14 narrowed; DESIGN_ISSUES
+#52–#58 filed; `CLAUDE.md`'s stale "ratchet is 153 / Wave 3D is BLOCKED" line corrected to 0.
+
+**Verification: BUILD** — `validate.ps1` 890 → 911 passed / 0 failed. RTL and dark are asserted by
+widget test, **not on a device**; the brief's definition of done asks for DEVICE, and dark mode was
+last seen dead on a phone on 2026-08-04. That gap is open and recorded in `WAVE_STATUS.md`.
+
+**Not built** (deliberately): review from history or after a restart (needs the S14 promotion); the
+AI glyph as a tap target (no destination frame); a designed skipped-row state; favouriting; the
+Mistakes flow; a golden test.
+
 ## What the app looks like after Day 8
 A five-tab nav bar with **three real tabs** — Home, Learn, Account — and **two placeholders**:
 
@@ -254,12 +294,24 @@ not have to rediscover it.
 
 ## Endpoint coverage — 21/21 stable (100%) · 22/36 total
 **Every stable path in the contract is consumed.** `PATCH /me` (Day 8 step 2) was the last one.
-**Every one of the 14 remaining paths is `x-stability: draft`**, so there is no further endpoint
-work until Seif promotes something — the next feature day depends on a contract change, not on us.
+Every remaining path is `x-stability: draft`, so there is no further endpoint work until Seif
+promotes something — the next feature day depends on a contract change, not on us.
 
-The 22nd consumed path is `GET /me/entitlements`; the 14 unconsumed are the three favourites, quiz
-history and review, `/checkout/sessions`, both leaderboard paths, `PUT /me/avatar`,
-`PUT /me/fcm-token` and the four `/auth/recovery/*`.
+> **Corrected 2026-09-08.** The heading and the "14 remaining" figure below both predate contract
+> 2.2.0-m1, which **deleted** `POST /checkout/sessions` (adr-049 — the app is purchase-silent).
+> Recounted against the pinned contract (`184d6ec`, v3.0.0-m1): **36 operations — 21 stable, 15
+> draft, none unmarked.** So the live figure is **21/21 stable · 0/15 draft**. The Day 9 brief's
+> `0/16` is wrong for the same reason in the other direction.
+
+The 15 unconsumed draft paths are the three favourites, quiz history and review, both leaderboard
+paths, `PUT /me/avatar`, `PUT /me/fcm-token`, the four `/auth/recovery/*`, `GET /catalog/modules`
+and `POST /subscription-codes/redemptions`.
+
+> Note (2026-09-05): `/checkout/sessions` in the endpoint-coverage list above and the "Paymob
+> return deep-link scheme" change-request line below are both moot as of adr-049 §3 (`5c4b855`) —
+> the purchase surface was removed outright. "staging/prod baseUrl (still `TBD.example`)" is now
+> half-resolved: staging is a real URL (`contract/SOURCE.md`, `app_config.dart:43`); only prod
+> remains outstanding. See `docs/DECISIONS.md` D-007 and `docs/WAVE_STATUS.md`.
 
 ## Endpoint coverage before Day 8 (historical)
 Done: auth otp/request, otp/verify, refresh, logout (4). After Day 2: +7 reference = 11/21 (52%).
@@ -297,7 +349,9 @@ Sign Up_1 337:15875 · Sign Up_2 (track) 337:15947 · bird logo 82:849 · file k
 `docs/day2_registration_brief.md` · `docs/day3_registration_complete_brief.md` ·
 `docs/day4_home_brief.md` · `docs/day5_learn_brief.md` · `docs/day6_university_brief.md` ·
 `docs/day7_quiz_brief.md` · `docs/day7b_design_fixes_brief.md` ·
-`docs/day7c_contract_v11_brief.md` · `docs/day8_account_brief.md`
+`docs/day7c_contract_v11_brief.md` · `docs/day8_account_brief.md` ·
+`docs/day8-9_quiz_review_brief.md` (supersedes `docs/day9_quiz_review_brief.md` for the screen spec;
+that brief stays authoritative on strategy — session-scoped, zero endpoints, two steps)
 
 **Partner notice:** `docs/for_seif_account_surface.md` — sent 2026-08-06 ahead of implementation,
 amended 2026-08-07 with what building it turned up (sections 9–11, and a correction to section 1).

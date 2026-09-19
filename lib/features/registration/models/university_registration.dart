@@ -15,9 +15,10 @@ part 'university_registration.g.dart';
 /// That is why this is a separate class rather than a variant of
 /// [SchoolRegistration] — adding a country here would invent contract surface.
 ///
-/// Required (contract v2.1.0-m1, `:1432`): `track, registrationToken, device,
-/// name, dateOfBirth, universityId, facultyId, studyYearId, governorateId,
-/// parentPhone`, PLUS the `anyOf` at `:1433-1435` — at least one of `cityId` /
+/// Required (`UniversityRegistration.required` at contract v3.0.0-m1, unchanged
+/// since v2.0.0-m1 added `device`): `track, registrationToken, device, name,
+/// dateOfBirth, universityId, facultyId, studyYearId, governorateId,
+/// parentPhone`, PLUS the schema's `anyOf` — at least one of `cityId` /
 /// `cityName`.
 /// Optional: `cityId, cityName, email, avatarId` (the last two not collected —
 /// see [SchoolRegistration]).

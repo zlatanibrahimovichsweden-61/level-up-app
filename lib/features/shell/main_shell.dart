@@ -1,11 +1,14 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_elevation.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/elevation/figma_shadow_painter.dart';
 import '../../l10n/app_localizations.dart';
 
 /// The 5-tab bottom-nav shell · Figma nav `59:1264` (light) / `348:6686` (dark).
@@ -44,6 +47,7 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
+    final elevation = Theme.of(context).extension<AppElevation>()!;
     // The bump must sit ABOVE the gesture inset, not inside it, so the inset is
     // added to the box's height and padded off the tab row rather than being
     // handled by a SafeArea that would also shrink the painted shape.
@@ -87,7 +91,10 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: SizedBox(
         height: kNavTotalHeight + bottomInset,
         child: CustomPaint(
-          painter: _NavBarPainter(fill: ext.navBarFill, shadow: ext.navShadow),
+          painter: _NavBarPainter(
+            fill: ext.navBarFill,
+            shadows: elevation.navBarShadows,
+          ),
           child: ClipPath(
             // Clips the ink splash to the bar's outline. The design does not
             // draw a pressed state (docs/DESIGN_ISSUES.md #37, open question),
@@ -147,11 +154,6 @@ const kNavCornerRadius = 30.0;
 /// ring of bar visible around it.
 const kNavCentreRadius = 26.0;
 
-/// Filter bounds on the exported shadow imply roughly blur 20 / y+4.
-/// TODO(design): confirm — docs/DESIGN_ISSUES.md #37, open question 2.
-const _shadowOffsetY = 4.0;
-const _shadowSigma = 10.0;
-
 /// The bar's outline for a box of [size]. `size.height` may exceed
 /// [kNavTotalHeight] when a gesture inset is present — the extra simply extends
 /// the bottom edge, so the bar reaches the screen edge without moving the notch.
@@ -184,31 +186,31 @@ Path navBarPath(Size size) {
 
 /// Paints the bar: drop shadow, then fill. No top border — the frame has a
 /// shadow under a shaped sheet, not a rule across a rectangle.
+///
+/// The shadow is [AppElevation.navBarShadows], painted by the shared
+/// [paintFigmaShadows]. The two canvases genuinely differ here — light
+/// `59:1264` is a cool grey-lilac at (0, 2.144) blur 16.08, dark `349:16719` a
+/// lavender haze at a tenth alpha and blur 12.5 — which is why the painter
+/// takes the token list rather than one colour with one geometry. The knockout
+/// matters on this shape in particular: the old code drew an offset copy of the
+/// whole path underneath the bar, so the shadow filled the notch's inner curve
+/// instead of ringing it.
 class _NavBarPainter extends CustomPainter {
-  const _NavBarPainter({required this.fill, required this.shadow});
+  const _NavBarPainter({required this.fill, required this.shadows});
 
   final Color fill;
-  final Color shadow;
+  final List<FigmaShadow> shadows;
 
   @override
   void paint(Canvas canvas, Size size) {
     final path = navBarPath(size);
-    canvas
-      ..save()
-      ..translate(0, _shadowOffsetY)
-      ..drawPath(
-        path,
-        Paint()
-          ..color = shadow
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _shadowSigma),
-      )
-      ..restore()
-      ..drawPath(path, Paint()..color = fill);
+    paintFigmaShadows(canvas, path, shadows);
+    canvas.drawPath(path, Paint()..color = fill);
   }
 
   @override
   bool shouldRepaint(_NavBarPainter oldDelegate) =>
-      oldDelegate.fill != fill || oldDelegate.shadow != shadow;
+      oldDelegate.fill != fill || !listEquals(oldDelegate.shadows, shadows);
 }
 
 class _NavBarClipper extends CustomClipper<Path> {

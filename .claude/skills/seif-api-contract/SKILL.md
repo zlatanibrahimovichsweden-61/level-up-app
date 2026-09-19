@@ -52,7 +52,7 @@ Structure every endpoint as: **Service/client method (raw call, returns model) �
 
 - **Standard error format:** every non-2xx body follows the contract's single error shape. Parse it once in the error interceptor; never per-endpoint ad-hoc error parsing.
 - **Pagination convention:** used everywhere lists appear (leaderboards, questions, tickets, inbox). Model the envelope once, reuse it generically (`Paginated<T>`), and never fetch an unpaginated "whole list" — leaderboards are large and Egyptian mobile networks are the baseline, not the edge case.
-- **Server is authoritative:** display `total_points`, `level`, badges, and subscription state exactly as returned. Never compute or "correct" them client-side. Fawry `pending` is its own state — never rendered as loading, never as active.
+- **Server is authoritative:** display `total_points`, `level`, badges, and entitlement state exactly as returned. Never compute or "correct" them client-side. Entitlements have no `pending` state — active or not (`openapi.yaml:754`); the app never renders a paywall, price, or upgrade UI (adr-049 §3).
 
 ## When code and contract disagree
 

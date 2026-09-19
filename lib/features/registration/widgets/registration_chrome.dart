@@ -24,7 +24,10 @@ class RegistrationHeader extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     return Row(
       children: [
-        CircleBackButton(onPressed: () => context.pop()),
+        CircleBackButton(
+          onPressed: () => context.pop(),
+          variant: BackChipVariant.registration,
+        ),
         const Spacer(),
         LanguagePill(
           label: l10n.switchLanguage,

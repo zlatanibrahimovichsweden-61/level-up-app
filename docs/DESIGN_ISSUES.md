@@ -617,8 +617,21 @@ straight runs grow. At 375pt the two agree to within Figma's own rounding of the
 187.5). One derived value: the frame gives the notch geometry and the 96 bar height but no label
 baseline, so all five labels share one row anchored to the centre button.
 
-**Fix we need:** the shadow's exact colour/opacity/blur — **still open**. Built as ~8% black,
-blur 20, y+4 behind the `navShadow` token, which carries a `TODO(design)`.
+**Open question 2 — the shadow — ✅ RESOLVED 2026-09-18 (edit2 #2).** The 2026-09-16/17 elevation
+re-read measured both canvases off the `Union` itself rather than off the export's filter bounds,
+and they differ in colour *and* in blur, which is why one estimate could never have covered both:
+
+| Canvas | Node | Offset | Blur (Figma) | Colour |
+|---|---|---|---|---|
+| Light | `59:1264` | (0, 2.144) | 16.08 | `rgba(184,184,210,0.5)` — a cool grey-lilac, not black |
+| Dark | `349:16719` | (0, 2.144) | 12.5 | `rgba(124,58,237,0.1)` — a lavender haze |
+
+Both now live in `AppElevation.navBarShadows` and are painted by
+`lib/core/widgets/elevation/figma_shadow_painter.dart`, with the CSS sigma conversion (σ = blur/2)
+and the knockout that stops the shadow filling the notch's inner curve. The `~8% black, blur 20,
+y+4` reading was wrong on both counts — it was an estimate off the export's filter bounds, and 8%
+black is invisible on the dark canvas, which is exactly why Figma puts a purple glow there instead.
+`AppColors.navShadow` and its `TODO(design)` are **deleted**.
 
 ---
 
@@ -760,11 +773,31 @@ the inset (explicit in the brief) wins and the card stretches to the available w
 1. The **selected** state of the track card. The frame draws both cards unselected, so the shipped
    `cs.primary` @ 8% + 2px border + filled radio is a Day-2 invention. It was **deliberately left
    untouched** — replacing one guess with a better-looking second guess would only move the problem.
-2. Whether the ring around the back button is a shadow or a stroke. Built with **no** stroke.
+2. ~~Whether the ring around the back button is a shadow or a stroke.~~ **✅ RESOLVED 2026-09-18
+   (edit2 #8): it is a shadow.** `90:208` carries a drop shadow at (0.02833, 0.02833), blur 1.3,
+   black 25% and no stroke at all — so "built with no stroke" was right, and the chip was simply
+   missing its shadow. It is now `AppElevation.backChipShadows`, and on the light canvas the chip
+   is visible for the first time: `#FCFBF9` on a `#FCFBF9` page with nothing else was literally
+   invisible except for its chevron.
 
-Also unmeasured: the **dark** back chip. `backChipFill` and `backChipGlyph` carry `TODO(design)` —
-their dark values are fallbacks (page fill; cream, because `#4B675E` on `#232428` is too low
-contrast for a navigation control), not read off a frame.
+~~Also unmeasured: the **dark** back chip.~~ **✅ MEASURED 2026-09-17, built 2026-09-18 (edit2 #8).**
+There are **two** dark chips, not one, and neither is the old `#232428` fallback:
+
+| Where | Dark surface | Glass |
+|---|---|---|
+| Learn, Mistakes, Setup, Result, Leaderboard, Settings, Edit Profile (`404:7424`) | `#27282C` @ 20% | **G5** frost 4 · refraction 0.80 · depth 20 · angle −45 · intensity 0.80 · dispersion 0.50 · splay 0 |
+| The four registration frames (`337:19690`, `337:15896`, `340:19731`, `349:16811`) | `#333439` @ 20% | **G2** frost 20 · refraction 1.00 · depth 36 · angle 22 · intensity 0.25 · dispersion 0.70 · splay 0.16 |
+
+`CircleBackButton` takes a `BackChipVariant` for that reason — it is a design distinction, not
+something the widget can derive from the theme. **The dark chip has no shadow at all**; it elevates
+with Glass instead (edit1.md R1), so the empty list is a reading, not a gap. `AppColors.backChipFill`
+is deleted in favour of `backChipSurfaceFill` / `registrationBackChipFill`.
+
+Still a fallback: **`backChipGlyph`'s dark value** (cream). The chevron's own colour was not part of
+the elevation read.
+
+The OTP screens have **no** back chip in Figma — the build added one — so it keeps the standard
+variant, there being no evidence for the registration one.
 
 ---
 
@@ -1016,6 +1049,45 @@ Also `seif_fight.md` **S27**.
 
 ## 47. 🟠 Five drop shadows are pure black, which does not exist on the dark canvas
 
+> ✅ **SUPERSEDED 2026-09-17 — owner ruling. The cream derivation below is WITHDRAWN.**
+>
+> The finding rested on one premise: *"no dark frame exists for any of the five components."* It
+> does. The 2026-09-16 elevation audit and the 2026-09-17 Glass reading measured **thirteen** dark
+> nodes that carry a drop shadow — the subject card (`337:5732`), the profile stat card
+> (`661:8579`), the profile header (`337:7455`), the profile edit chip (`337:7466`), the Mistakes
+> card (`404:7637`) and pill (`404:7421`), the AI panel wrapper (`337:9278`), the setup length chips
+> (`337:6289`/`337:6291`), the pool card (`337:6275`), the primary CTA (`348:8911`), the onboarding
+> sheet (`337:15643`) and the avatar badge (`337:7925`).
+>
+> **Every one of them is black, at the same alpha as its light twin.** No dark node in the file has
+> a cream or white *drop* shadow anywhere. White and lavender appear only as **inner** shadows (the
+> scope toggle, the Settings swatches, the University tiles) and as deliberate coloured **glows**
+> (the nav bar, the OTP card).
+>
+> **What the arithmetic above got right, and what it got wrong.** The L\* numbers are correct: black
+> at 25% really does move `#232428` by about five points. What was wrong was the conclusion drawn
+> from them — that the canvas therefore had to elevate *upward in the same shadow*. It elevates
+> upward by a **different mechanism**: Figma's **Glass** effect over a 20%-alpha fill, plus a
+> lavender back-light behind the surface (→ **#72**). The black shadow is then a real edge under a
+> surface that is already lifted, not a failed attempt at one.
+>
+> **What ships now.** `lib/core/theme/app_elevation.dart` (`AppElevation`) carries every measured
+> shadow, Glass setting, back-light and scrim per canvas, and
+> `lib/core/widgets/elevation/` is the only code allowed to paint one. `AppColors.elevationShadow`
+> is **frozen**, with its values unchanged: flipping it to black on its own would darken the
+> 20%-alpha cards that still paint an unclipped shadow beneath their own fill. Each of the eight
+> remaining call sites moves to the measured black in the edit that owns it (edit2 onboarding;
+> edit3 Mistakes card; edit4 review pill and AI panel; edit5 OTP timer, avatar badge, profile
+> header, profile stat card), and **whoever removes the last one deletes the token**, its
+> `copyWith`/`lerp` lines and the `elevationShadow` group in `palette_discipline_test.dart`.
+>
+> `navShadow` is superseded the same way: `AppElevation.navBarShadows` has both canvases measured
+> (light `59:1264`, dark `349:16719`) and they differ in colour *and* blur, so the "it should follow
+> whatever this one becomes" note below is answered — it does not follow, it was read.
+>
+> Reasoning and rejected alternatives: `docs/DECISIONS.md` **D-009**.
+
+
 **Where:** the onboarding sheet (`459:43873`), the Edit Profile avatar badge (`180:3989`), the
 Profile header card (`169:4609`), a Profile stat card (`661:8571`) and the quiz AI panel
 (`159:1851`). Code: `lib/core/theme/app_colors.dart` → `elevationShadow`, `TODO(design)`.
@@ -1047,10 +1119,15 @@ invented hex. The alternative we rejected: keep black and raise the alpha. Arith
 reach a comparable step, because the canvas starts ≈14 L\* off the floor. **One value overrules
 all of this** — send a dark shadow and it drops straight into the token.
 
-Related and deliberately not folded in: **`navShadow` has the same defect** — 8% black in both
+Related and deliberately not folded in: **`navShadow` had the same defect** — 8% black in both
 canvases, itself already a `TODO(design)` (issue #37, open question 2). It was left alone because
 it has its own derivation and restyling the bottom nav on the strength of a decision about card
-shadows would be the wrong trade. It should almost certainly follow whatever this one becomes.
+shadows would be the wrong trade.
+
+> **Settled 2026-09-18 (edit2 #2).** It did not follow this decision: both nav shadows were
+> *measured* off the `Union` and neither is black — light `59:1264` is `rgba(184,184,210,0.5)` at
+> blur 16.08, dark `349:16719` is `rgba(124,58,237,0.1)` at blur 12.5. They live in
+> `AppElevation.navBarShadows`; `AppColors.navShadow` is deleted. See #37, open question 2.
 
 ---
 
@@ -1193,6 +1270,241 @@ ruling on the title *"Subscription Required"* / *"الاشتراك مطلوب"* 
 pointing anywhere, which we read as allowed, but that is product's call; (4) the reset moment may be
 stated at week granularity (*"resets next week"* — the contract now says so) but **not** as a weekday:
 Monday 00:00 Africa/Cairo is adr-091 §3 and is not on the wire.
+
+---
+
+## 52. 🟡 The review row's WRONG colours differ from the shipped quiz page's — by one hex digit and by opacity
+
+**Where:** quiz review `162:2563` (wrong row) vs quiz page `308:5158` (the student's wrong choice).
+
+**What:** the two frames disagree on the wrong-answer pair, and only on that pair:
+
+| | Quiz page `308:5158` (shipped) | Quiz review `162:2563` |
+| --- | --- | --- |
+| fill | `rgba(255,192,192,.3)` — 30% opaque | `#FDE9E8` — opaque |
+| border | `#921119` | `#921019` |
+
+The **correct**-row values are byte-identical across both frames (`#BFFFC3` / `#00D33C`), which is
+what makes the wrong-row divergence read as drift rather than intent — a designer would not restyle
+one semantic pair and leave its twin alone, and `921119` → `921019` is a single-digit slip.
+
+**Built as:** the **shipped** `quizWrongFill` / `quizWrongBorder`, unchanged (owner ruling,
+2026-09-08). The review screen and the quiz page therefore render a wrong answer identically, which
+is the behaviour a student would expect from two screens one tap apart.
+
+**Fix we need:** confirm the drift. If `#FDE9E8` / `#921019` are deliberate for review, say so and
+we will add the pair; if not, correct `162:2563` so the frame matches the shipped tokens and this
+entry can close.
+
+---
+
+## 53. ✅ RESOLVED 2026-09-17 (designer ruling) — the dark review answer rows take the approved Glass treatment
+
+> ✅ **DESIGNER RULING, 2026-09-17. This entry is closed. Do not block implementation on it, and do
+> not re-raise it as an open question.** The 2026-09-08 "opaque in both themes" ruling recorded
+> below is **superseded**, and the original finding is kept underneath for history.
+>
+> *Originally filed as: "The dark review frame draws the rows at 20% alpha, which contradicts the
+> shipped correctness rule".*
+>
+> **The ruling, as given:**
+>
+> - **Do not keep the old opaque treatment.** Use the **approved Glass treatment**.
+> - **The current Figma Glass design is the source of truth** for these rows.
+> - The previous 20% opacity/alpha discussion is **not** a reason to invent a *different* treatment.
+> - The requirement that matters is that the corresponding Review answer rows use the **same Glass
+>   treatment consistently** — make the relevant rows **equal in treatment** rather than preserving
+>   an opaque-vs-Glass difference because of the old 20% value.
+> - The exact **20% value is not a separate product requirement** where it would conflict with
+>   making the corresponding treatments consistent.
+>
+> **What that means for the build (edit4 owns it, item #48).** Take option **(c)** from
+> `edit4.md` §"#48": the dark rows follow the frame — the semantic fills with the frame's alpha,
+> the 0.5 semantic stroke, and **G5** Glass (`337:6731` …) — painted through edit1's
+> `ElevatedSurface` with the `AppElevation` Glass token, never a second glass implementation and
+> never a hardcoded colour. Options (a) "no change" and (b) "opaque plus a rim light" are withdrawn.
+> **Consistency across the row states beats reproducing the literal 20% number**, so if a state's
+> measured alpha would leave one row opaque and its neighbour glassed, the rows are made equal.
+>
+> **What this costs, recorded rather than discovered later:**
+>
+> 1. **`quiz_review_screen_test.dart` currently asserts the old ruling** — it renders the dark theme
+>    and expects the same opaque marks as light. That assertion is now wrong and must be rewritten by
+>    the edit that implements this, not deleted quietly.
+> 2. **The palette rule still stands, and is not contradicted.** *"A correctness signal must never
+>    flip colour with the canvas"* is about **hue** — a wrong answer is still red in dark. What
+>    changes is the **treatment** (alpha + Glass), which is the dark canvas's elevation mechanism
+>    everywhere else in this design (→ **#72**, **D-009**). Green does not become purple.
+> 3. **Scope.** This ruling is about the **Review answer rows**. It does **not** instruct a change to
+>    the quiz page's graded option tiles, which `edit4.md` option (c) noted would otherwise follow.
+>    If, after this lands, the review screen and the quiz page visibly disagree one tap apart, that
+>    is a **new** question for the designer — raise it then, with both renders side by side. Do not
+>    treat it as a reason to delay these rows. The separate wrong-row hex/opacity divergence between
+>    the two screens remains open as **#52**.
+>
+> Decision record: `docs/DECISIONS.md` **D-010**.
+
+---
+
+### The original finding (2026-09-08), kept for history
+
+
+**Where:** quiz review dark `337:6705` (rows `337:6731`) vs `lib/core/theme/app_colors.dart:236`.
+
+**What:** the dark frame does not introduce new row colours — it reuses the light hexes at **20%
+opacity** over `#232428`. The app does the opposite, deliberately: all five semantic correct/wrong
+tokens are **identical in both palettes**, under a rule written into the palette itself — *"a
+correctness signal must never flip colour with the canvas. A wrong answer is red in dark mode too."*
+
+This is a design-system decision, not a screen one: honouring the frame here would leave the review
+screen and the quiz page disagreeing in dark mode, one tap apart.
+
+**Built as (SUPERSEDED by the 2026-09-17 ruling above):** **opaque in both themes**, following the shipped rule (owner ruling, 2026-09-08).
+Asserted by test — `quiz_review_screen_test.dart` renders the dark theme and expects the same marks.
+
+**Fix we needed — ANSWERED 2026-09-17, see the banner above.** The original request read: a ruling. If 20% alpha is genuinely wanted, it must apply to the quiz page too, and
+`app_colors.dart:230-237` needs rewriting — say so and we will do both. Otherwise re-draw
+`337:6705`'s rows opaque.
+
+---
+
+## 54. 🟠 The dark review frame specifies no FOREGROUND anywhere — row text, AI glyph, or chip label
+
+**Where:** quiz review dark `337:6705` — rows (`162:2510` in light), the AI glyph, and the selected
+filter chip (`337:6825`). The light frame gives `#384F47` for the row content and `#FCFBF9` for the
+chip label; the dark frame gives neither.
+
+**What:** a foreground had to come from somewhere, and the obvious answer is wrong in a way worth
+recording, because #53 causes it. Since the dark rows stay **opaque** (that ruling), the two fills
+behave differently from each other:
+
+- `quizCorrectFill` is opaque `#BFFFC3` in **both** canvases — it never follows the theme.
+- `quizWrongFill` is 30% alpha and `quizOptionFill` follows the canvas — both **do**.
+
+So a single foreground that flips with the theme puts cream on mint on every correct row in dark:
+**1.11:1**, measured. Not dim — gone. And a single foreground that never flips puts dark green on
+the dark-composited wrong row: **1.23:1**. Neither one value works for both rows.
+
+**Built as:** the foreground follows the **fill**, not the canvas.
+
+| Row | Foreground | Dark contrast |
+| --- | --- | --- |
+| correct | `quizReviewRowContent` — `#384F47`, identical in both palettes | 7.70:1 |
+| wrong / skipped | `textPrimary` — flips, because their fills do | 6.94:1 |
+
+The selected chip is the same class of fault and gained its own token: `colorScheme.onPrimary` is
+`#FCFBF9` in both themes, right on the light chip's `#4B675E` (5.97:1) and wrong on the dark chip's
+`#AE87E7` (**2.74:1**), so `quizReviewFilterLabel` is cream in light and the `#232428` page fill in
+dark (5.48:1) — following the convention at `app_colors.dart:230-232`, *light is Figma-verbatim and
+dark reuses an already-approved dark value rather than an invented hex.*
+
+**Fix we need:** confirm the three dark values, or supply the intended foregrounds on `337:6705`.
+
+> ⚠ **The same fault is already shipped on the quiz page, and was left alone.**
+> `question_option_tile.dart:119-120` paints the option label with `textPrimary` on
+> `quizCorrectFill` — in dark, the identical **1.11:1** cream-on-mint. It is outside this day's
+> scope and was not changed without a ruling. It needs one.
+
+---
+
+## 55. 🟠 The review frame has NO state for a skipped question
+
+**Where:** quiz review `162:2377` — rows `162:2502` (correct) and `162:2563` (wrong) only.
+
+**What:** the frame draws two row states. A quiz can be finished with questions never answered —
+the result screen one push back has a whole **Skipped** bucket for exactly this, and the default
+case (10 delivered, 8 answered) produces two of them. The frame has nowhere to put them.
+
+**Built as:** a neutral row — the ungraded `quizOptionFill` / `quizOptionBorder` surface, with **no
+✓/✕ mark and no AI glyph**, rather than a guessed third signal colour. Skipped is treated as its own
+bucket throughout: the *Wrong* filter deliberately excludes it, matching `QuizSummary.wrong`, which
+is `answeredCount − score` and not `totalQuestions − score`.
+Code marker: `lib/features/quiz/screens/quiz_review_screen.dart` — `TODO(design)` on the `null` arm.
+
+**Fix we need:** a skipped row design — fill, border, and whether the circle shows a dash, a hollow
+ring, or nothing.
+
+---
+
+## 56. 🟡 The AI glyph on wrong review rows has no destination frame
+
+**Where:** quiz review `162:2563` — the `tdesign:ai-education` glyph, wrong rows only.
+
+**What:** the frame draws the glyph but specifies no tap target and no screen behind it. The
+capability exists — `GET /questions/{id}/explanation` is `x-stability: stable` and
+`AiExplanationPanel` is already built and shipped inside the quiz — so this is buildable the moment
+a destination is specified. It is not buildable *now* without inventing one.
+
+**Built as:** a **non-interactive indicator**, with a screen-reader label
+(`quizReviewAiAvailable`) so it is not silent to assistive tech. Out of scope for Day 8-9 per the
+Day 9 brief's assumption 6.
+
+Two supplied assets differ in shape, not just colour: the light export (`Group.svg`, 27×25) carries
+the cap **and** a 4-point sparkle; the dark export (`Vector.svg`, 27×24) carries the cap only. Read
+as an export slip — the frame names one Iconify component and §1.4 describes dark as a colour
+transform of light — so the app ships the **complete two-path glyph** as `assets/icons/ai_education.svg`
+and recolours it per theme with a `colorFilter`, which is how every other SVG in this app is themed.
+
+**Fix we need:** (1) does tapping it open the explanation, and in what — a sheet, a push, an inline
+expand? (2) confirm the dark glyph should carry the sparkle.
+
+---
+
+## 57. 🟠 None of the review frame's four text styles exists in the type scale
+
+**Where:** quiz review `162:2377` — title `162:2411`, filter label `162:2781`, "QUESTION n"
+`162:2577`, question text `162:2510`.
+
+**What:** all four are off the scale the designer supplied in `typography-style-inter.md`
+(2026-08-21), which `AppType` transcribes verbatim:
+
+| Frame | Nearest `AppType` | Drift |
+| --- | --- | --- |
+| 22 / 30.8 w700 (title) | `h2` 20/26 w700 | no 22px exists anywhere in the scale |
+| 14 / 20 w600 (chip) | `labelLarge` 14/18 w600 | line-height 20 vs 18 |
+| 12 / 18 w400 (QUESTION n) | `captionRegular` 12/16 w400 | line-height 18 vs 16 |
+| 18 / 25.6 w500 (question) | `h3` 18/24 w600 | **weight and height both differ** |
+
+There is no room to split the difference: `typography_discipline_test.dart` bans inline `fontSize`
+**and** inline `fontWeight` outside `lib/core/theme/`, and the ratchet is 0.
+
+**Built as:** mapped to the nearest existing entry — `h2` / `labelLarge` / `captionRegular` / `h3`
+(owner ruling, 2026-09-08). The screen is therefore ~2px off the frame in four places, and the
+question text is w600 where the frame says w500.
+
+**Fix we need:** either extend `typography-style-inter.md` with the four missing entries, so they
+can be transcribed into `AppType`, or re-spec `162:2377` onto the existing scale. The second is
+cleaner long-term — a 22px title that exists once is a scale of one.
+
+---
+
+## 58. 🟡 The RTL review frame is half-done — built mirrored anyway; confirm
+
+**Where:** quiz review RTL `549:20324` (LTR twin `162:2377`).
+
+**What:** the frame exists, which the Day 9 brief did not know, but it is not a clean mirror.
+Verified in a logged-in browser session, 2026-09-08:
+
+| Element | State in `549:20324` |
+| --- | --- |
+| back chevron | ✅ mirrored to the right edge |
+| filter row | ✅ mirrored, runs right→left: `الكل (10)` · `صحيح` · `خطأ` |
+| header title | ❌ still reads **"Quiz Review"** in English |
+| question rows | ❌ **not mirrored** — status circle still left, AI glyph still right |
+| row copy | ❌ still English placeholder ("What is the powerhouse of the cell?") |
+
+**Built as:** **mirrored**, deliberately — the rows use `EdgeInsetsDirectional` and a plain `Row`,
+so they flip with the locale like every other list row in the app. Reproducing the frame here would
+have shipped a bug. Title and copy are localized.
+
+One deliberate copy divergence: the frame's chips read `صحيح` / `خطأ`, the app renders `صحيحة` /
+`خاطئة` — the strings already shipped on the result screen one push back (`resultCorrect` /
+`resultWrong`), human-written, and agreeing in gender with أسئلة. Reusing them beats translating the
+same two words twice. §4 of the Day 8-9 brief sanctions keeping the app's shipped Arabic.
+
+**Fix we need:** (1) mirror the rows in `549:20324` and localize its title and row copy, so the
+frame stops disagreeing with the build; (2) confirm `صحيحة` / `خاطئة` over the frame's masculine
+forms, or tell us to switch both screens.
 
 ---
 
@@ -1619,3 +1931,549 @@ the Wave-3D trap #68 exists to name. The measured number is recorded in
 clear AA), a darker pink ground, or an explicit accept — the caption is short, bold-ish and
 paired with the subject name, so the practical harm is smaller than the ratio suggests. What must
 not happen is the number being quietly forgotten.
+
+---
+
+## 72. 🟠 Glass and lavender back-lights — the dark canvas's real elevation mechanism, read with a plugin because the seat hides it
+
+**Where:** the whole `Dark mode` section of `P6044i0giD9TmdQ7C2AmLq`. Code:
+`lib/core/theme/app_elevation.dart`, `lib/core/theme/glass_mapping.dart`,
+`lib/core/widgets/elevation/`. Supersedes the derivation in **#47**; reasoning in
+`docs/DECISIONS.md` **D-009**.
+
+**What.** The dark frames do not elevate with a shadow. They elevate with Figma's **Glass** effect
+over a 20%-alpha fill, plus a solid lavender ellipse locked behind the surface. Both were invisible
+to this project for two months, and the reason they were invisible is itself the finding:
+
+> **The view-only seat hides Glass in every surface Figma offers.** Design panel (icon only), Dev
+> Mode inspect, CSS / SwiftUI / UIKit export, Copy properties, Copy as SVG. The design-mode Plugins
+> menu reads "Unavailable in view-only". A surface with Glass therefore inspects as a plain
+> translucent rectangle — which is exactly how it was built.
+
+**How the values were read (2026-09-17, with the owner's approval).** A local **Dev Mode development
+plugin** — no network, reading `node.effects` only, removed afterwards — walked every node on the
+`design` page. The Plugin API reports Glass as
+`{type:"GLASS", radius, refraction, depth, lightAngle, lightIntensity, dispersion, splay}`. 2169
+nodes carry effects and **20 distinct Glass settings** exist. Values are the Figma UI values (the
+API returns float32, so `0.7300000190734863` is 0.73).
+
+### The twenty Glass groups
+
+`frost` is the plugin's `radius`. Angles are degrees, in Figma's convention (y-up).
+
+| # | Token | frost | refr | depth | angle | intens | disp | splay | Example node | Built by |
+|---|---|---|---|---|---|---|---|---|---|---|
+| G1 | `onboardingSheetGlass` (**both canvases**) | 80 | 0.73 | 27 | 37 | 0.95 | 0.62 | 0.76 | `459:43873`, `337:15643` | edit2 |
+| G2 | `registrationBackChipGlass` | 20 | 1.00 | 36 | 22 | 0.25 | 0.70 | 0.16 | `337:19690` | edit2 |
+| G3 | `languagePillGlass` | 4 | 0.80 | 20 | −45 | 0.25 | 0.50 | 0 | `340:19734` (all 7 pills) | edit2 |
+| G4 | `fieldGlass` | 0 | 1.00 | 53 | 28 | 0.25 | 0.50 | 0.97 | `348:8659` (19 nodes) | edit2 |
+| G5 | the Figma **default** | 4 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | 363 nodes | edits 2–5 |
+| G6 | `levelCardGlass` | 62 | 0.80 | 78 | −45 | 0.80 | 0.50 | 1.00 | `337:5336` | edit3 |
+| G7 | `dailyTasksGlass` | 39 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `337:5357` | edit3 |
+| G8 | — not built | 4 | 0.80 | 20 | −45 | 0.80 | 0.43 | 0 | Home task discs `337:5359` | — |
+| G9 | `topStudentGlass` | 34 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `337:5460` | edit3 |
+| G10 | `leaderboardRowGroupGlass` | 4 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0.31 | `337:5629` (the GROUP) | edit4 |
+| G11 | — not built | 76 | 0.87 | 38 | −45 | 0.80 | 0.48 | 0.27 | drill-down search `348:7436` | — |
+| G12 | — blocked (S15) | 73 | 0.80 | 20 | −45 | 0.80 | 0.11 | 0.59 | pool card `337:6275` | — |
+| G13 | `quizPrevButtonGlass` | 45 | 0.63 | 17 | 51 | 0.80 | 0.50 | 0.48 | `337:6464` (13 nodes) | edit4 |
+| G14 | `rewardsCardGlass` | 54 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `337:6680` | edit4 |
+| G15 | `profileHeaderGlass` | 57 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `337:7455` | edit5 |
+| G16 | `settingsSectionGlass` | 63 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `642:8583`, `337:8195` | edit5 |
+| G17 | — not built | 48 | 0.82 | 58 | −45 | 0.80 | 0.50 | 0 | Customer Support `337:8543` | — |
+| G18 | `aiPanelGlass` | 33 | 0.80 | 20 | −45 | 0.80 | 0.50 | 0 | `337:9270` | edit4 |
+| G19 | `otpDigitGlass` | 56 | 0.80 | 100 | −45 | 0.80 | 0.65 | 0.50 | `I337:19295;337:19276` | edit5 |
+| G20 | `trackCardGlassFirst` | 4 | 0.80 | 20 | 25 | 0.80 | 0.50 | 0 | `337:15981` | edit5 |
+
+**G1 is the only Glass in a light frame.** Every other row is `Dark mode` only, which is what makes
+Glass a *mechanism* rather than a decoration: the two canvases raise a surface by different means.
+
+Two pairs look like duplicates and are not. **G3 and G5** differ only in `lightIntensity` (0.25
+against 0.80). **G5 and G20** differ only in `lightAngle` (−45 against 25) — and G20 is the FIRST
+sign-up track card while its sibling is G5. Both pairs are kept as separate tokens.
+
+### The sixteen back-lights
+
+All 16 are `ELLIPSE`, fill `#AE87E7` at 100%, opacity 1, blend `PASS_THROUGH`, **no effects of their
+own**, all in `Dark mode`. *Offset* is the ellipse origin minus the covering surface's origin.
+
+| # | Track | Ellipse | Offset in surface | Size | Covering surface | Built by |
+|---|---|---|---|---|---|---|
+| B1 | School | `348:6951` | (23, 25) | 133×21 | level card `337:5336` | edit3 |
+| B2 | School | `348:6952` | (3, 0) | 100×14 | Daily Tasks `337:5357` | edit3 |
+| B3 | School | `348:6954` | (3, 7.57) | 100×14 | Top Student `337:5460` | edit3 |
+| B4 | School | `348:7592` | (4, 6.81) | 100×14 | pool card `337:6275` | **blocked** |
+| B5 | School | `348:7706` | (5, 11.02) | 100×14 | AI outer `337:9270` | edit4 |
+| B6 | School | `348:8971` | (5, 11.83) | 100×14 | rewards `337:6680` | edit4 |
+| B7 | School | `348:8973` | (4, 11) | 100×14 | profile header `337:7455` | edit5 |
+| B8 | School | `348:8975` | (0, 33) | 100×14 | Notification Prefs `337:8195` | edit5 |
+| B9 | Uni | `349:16784` | (23, 23) | 133×21 | level card `349:16593` | edit3 |
+| B10 | Uni | `349:16786` | (13, 0) | 133×21 | Daily Tasks `349:16615` | edit3 |
+| B11 | Uni | `349:16788` | — | 133×21 | **none** — no glass surface covers it | not built |
+| B12 | Uni | `349:15376` | (4, 6.81) | 100×14 | pool card `349:15412` | **blocked** |
+| B13 | Uni | `349:14914` | (5, 11.02) | 100×14 | AI outer `349:15005` | edit4 |
+| B14 | Uni | `349:14523` | (5, 11.83) | 100×14 | rewards `349:14575` | edit4 |
+| B15 | Uni | `349:12114` | (0, 27) | 100×14 | Notification Prefs `349:12171` | edit5 |
+| B16 | Uni | `349:12920` | (4, 11) | 100×14 | profile header `349:12941` | edit5 |
+
+**They are a property of the covering surface, not of the page.** On canvas at 100% zoom the glow is
+a soft lavender haze inside the card near its top-start corner, with **no hard ellipse edge visible
+anywhere** — i.e. what is on screen is the hard ellipse seen *through* the surface's frost. So they
+are built inside the surface: below its tint, blurred with its own frost σ, clipped to its shape,
+and scrolling with it. No light or RTL frame has one.
+
+**B11 is a real gap, recorded rather than guessed:** an ellipse with nothing over it would render as
+a hard lavender blob if it were built literally. It is not built — see edit3 #44.
+
+### What this build actually renders — the tier-1 model
+
+Figma Glass is tint + frost + rim light + refraction + dispersion. Over a **uniform** backdrop —
+the flat page, or an opaque parent row, which is every glass surface in this app except the
+onboarding sheet — frost, refraction and dispersion have nothing to distort. So tier 1 draws the
+tint, a normal-based rim light, and the back-light frosted with the surface's own σ, and reserves a
+real `BackdropFilter` for the one surface with content behind it. The rejected alternatives are in
+D-009.
+
+`refraction`, `dispersion` and `depth` are **stored in the tokens but not rendered**. That is a
+stated limitation, not an oversight: a tier-2 Impeller `ImageFilter.shader` would need a
+`flutter: shaders:` entry, a Skia fallback and the owner's approval, and it would only show a
+difference on the onboarding sheet.
+
+### Conversions (`lib/core/theme/glass_mapping.dart`)
+
+| From | To | Why |
+|---|---|---|
+| drop/inner-shadow **Blur** `B` | σ = B/2 | Figma's Blur *is* the CSS blur radius, and CSS defines that as σ = B/2. **A definition — never tune it.** `BoxShadow(blurRadius: B)` would give σ = 0.57735·B + 0.5, up to 2× too soft on this file's 1.3px shadows |
+| layer-blur panel value `P` | σ = P/2 | Figma's own CSS export halves it (panel 8 → `blur(4px)`) |
+| CSS-exported `backdrop-filter: blur(X)` | σ = X | the export already halved it — which is why the scrim σ values are used as-is |
+| Glass `frost` `R` | σ = R × `kGlassFrostToSigma` (0.50) | the same field name and convention as background blur. **A model constant** |
+
+### ⬆️ Calibration — RUN 2026-09-18, and it found a MODEL fault (SUPERSEDED)
+
+> **Read the 2026-09-19 re-calibration below before using any number in this
+> section.** This pass sampled four points per node — the straight-edge
+> midpoints — which at `lightAngle` −45 all sit at the same `|facing|`. Its
+> sidedness finding held; its rulings on `kGlassRimMaxAlpha`,
+> `kGlassRimStrokeWidth` and the exponents did not, and the ~0.73 "floor" it
+> proposed is refuted. Kept because the shape of the error is instructive.
+
+The side-by-side the 2026-09-17 entry could not run has now run. **Route:** the
+Figma **desktop app**, signed in, view-only — computer-use access to it was
+granted on 2026-09-18 after being declined on the 17th. Each reference is a
+**3x PNG export of the containing frame** (Properties panel → Export → 3x → PNG),
+so every reference pixel is Figma's own render at exactly device pixel ratio 3;
+the Flutter side is `ElevatedSurface` at the node's Figma size and radius on the
+dark canvas, captured through `RenderRepaintBoundary.toImage(pixelRatio: 3)`.
+Both sides were then measured by the same script: **peak luminance of the rim at
+each of the four edge midpoints**, page `#232428` = 36.
+
+| Ref | Node | Ran? | Outcome |
+| --- | --- | --- | --- |
+| C1 | level card `337:5336` + B1 | ✅ | back-light σ **confirmed**; rim sidedness **wrong** |
+| C2 | Notification Prefs `337:8195` + B8 | ❌ **not run** | it calibrates the same `kGlassFrostToSigma` that C1 confirmed, and the model fault below blocks the other four constants. Unchanged at its documented value. |
+| C3 | profile menu row `337:7479` | ✅ | rim **2.5x too dim**; sidedness **wrong** |
+| C4 | language pill `340:19734` | ✅ | intensity scaling **confirmed linear** |
+| C5 | field `348:8659` | ✅ | **inconclusive** — frost 0, so what is measurable is the `depth` bevel and the node's own 0.03px hairline, neither of which tier 1 renders |
+| C6 | quiz previous button `337:6464` | ✅ | **anomalous** — the node carries **Rotation −180°**, which no reading had recorded |
+| C7 | onboarding sheet `337:15643` | ✅ | frost now visible and matching in character (built in **#75**) |
+
+**Measured rim peaks** (luminance at the edge midpoint):
+
+| Node | angle | Figma T | L | B | R | Flutter T | L | B | R |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C1 level card | −45 | **128.6** | **124.2** | 99.6 | 99.2 | 99.3 | 99.3 | 94.3 | 98.0 |
+| C3 menu row | −45 | **123.2** | **123.2** | 98.2 | 98.2 | 48.2 | 48.2 | 48.2 | 48.2 |
+| C4 language pill | −45 | **61.2** | **66.2** | 55.2 | 52.2 | 39.2 | 39.2 | 39.2 | 40.2 |
+| C5 field | 28 | 101.9 | 66.0 | 86.0 | 66.0 | 47.5 | 60.0 | 48.2 | 60.0 |
+| C6 quiz prev | 51 | 81.5 | 113.2 | 97.6 | **148.2** | 72.2 | 53.5 | 72.2 | 53.5 |
+
+#### The five constants
+
+- **`kGlassFrostToSigma` = 0.50 — CONFIRMED. Unchanged.** C1's back-light is the
+  direct test, and it is the cleanest result of the whole pass: sampled down the
+  ellipse's vertical centre line, Figma and Flutter agree within **1–3/255 at
+  every step** of the falloff — `(53,47,69)/(53,50,66)` at 8dp,
+  `(64,56,80)/(61,54,75)` at 40dp, `(45,43,54)/(45,43,53)` at 80dp, both reaching
+  the page by ~115dp. Frost 62 → σ 31 is right, so the halving convention is
+  right.
+- **`kGlassRimStrokeWidth` = 1.0 — CONFIRMED. Unchanged.** Figma's rim occupies
+  ~3px at 3x with the same anti-aliased profile as ours (C3 top edge:
+  123.2 → 93.6 → 44.2 → fill).
+- **`kGlassRimMaxAlpha` = 0.5 — CONFIRMED on the lit side. Unchanged.** Solving
+  Figma's lit-edge luminance back to an alpha gives **0.50–0.51 per unit
+  `lightIntensity`** on both C3 (intensity 0.80 → α 0.411) and C4 (intensity 0.25
+  → α 0.126–0.149). The ratio 0.31 against the intensity ratio 0.3125 also
+  confirms the model's `× lightIntensity` term is linear and correct.
+- **`kGlassRimExponentNarrow` = 6.0 — REFUTED, and deliberately NOT changed.**
+  At splay 0 the model gives `0.5 × intensity × 0.707⁶` = 0.0625 × intensity, i.e.
+  C3 renders 48 where Figma renders 98–123. But no value of this constant fixes
+  C3, because of the fault below — changing it alone would trade one wrong
+  picture for another.
+- **`kGlassRimExponentWide` = 1.0 — not separable. Unchanged.** C1 (splay 1.00)
+  and C5 (splay 0.97) are the only wide nodes; C1 is dominated by the same
+  sidedness fault and C5 by `depth`/hairline.
+
+#### ⬆️ SUPERSEDED 2026-09-19 — the fault was real, the proposed fix was not
+
+Everything in this sub-section is the 2026-09-18 reading. It was right that the
+model is broken and right about which side Figma lights. Its proposed fix — a
+**floor of 0.73** under a one-sided rim — is **refuted** by the fuller
+measurement in the next sub-section, which walked the whole outline instead of
+its four midpoints. Kept verbatim because the way it was wrong is the point:
+four samples that all sit at the same `|facing|` cannot constrain a falloff.
+
+`paintGlassRim` (`lib/core/widgets/elevation/glass_surface.dart:129`) takes the
+**absolute value** of the facing dot product:
+
+```dart
+final facing = (normal.dx * light.dx + normal.dy * light.dy).abs();
+```
+
+At ±45° every edge of a rectangle has `|facing| = 0.707`, so **the model paints
+all four edges identically and has no lit side at all**. Figma does: at −45° it
+lights **top and left** and leaves bottom and right ~25% dimmer, measured on
+three nodes whose other Glass parameters could hardly differ more — C1
+(frost 62, depth 78, splay 1.00, intensity 0.80), C3 (frost 4, depth 20,
+splay 0, 0.80) and C4 (frost 4, depth 20, splay 0, **0.25**). All three agree.
+
+Worse for the current code, the direction is **the opposite of what the comment
+claims**. `light = (cos θ, −sin θ)` is `(0.707, +0.707)` at −45° — right and
+down — which under a *signed* dot product would light exactly the two edges
+Figma leaves dim. The 2026-09-17 note that "at −45° the rim highlight sits on
+the top-left and bottom-right corners" was read off the canvas and is
+half-right: the **top-left** is lit, the bottom-right is the dim side, and the
+appearance of a diagonal comes from `.abs()`-style two-sidedness in Figma's own
+shader, not from symmetry.
+
+So the fix is **a model change, not a calibration**: drop `.abs()`, negate the
+light vector, and give the unlit side a floor of about **0.73 of the lit side**
+(C3: 0.299/0.411; C4: 0.086–0.099 / 0.126–0.149 — the same ratio at both
+intensities). That touches every Glass surface in the app — −45° is the angle
+on G5 (the Figma default, **363 nodes**), G6, G7, G9, G10, G14, G15, G16, G18
+and G19 — so per `edit2_unblock.md` §2 it is **stopped and put to the owner
+rather than applied**. The five constants stay at their documented values until
+that is decided; re-run C1–C7 after it.
+
+*(End of the 2026-09-18 reading. The floor is refuted below; the ratio is 0.65,
+not 0.73, and there is no floor — between the two lobes the rim is absent.)*
+
+**C6 does not fit either model and is set aside.** `337:6464` is
+`tdesign:service-filled`, 79×58 r10, `#27282C` @20%, and it carries
+**Rotation −180°** — a property no previous reading recorded. Its rim is
+brightest on the **right** (148.2) and dimmest on the **top** (81.5), which
+matches neither θ = 51° nor θ = 51−180 = −129° under either sign convention. It
+is the only rotated node in the set and the only one adjacent to a glowing CTA,
+so it is recorded as an open anomaly rather than used as evidence. **The y-up
+question C6 was supposed to settle was settled by C1/C3/C4 instead.**
+
+**One more thing the export shows, recorded but not built:** every Glass surface
+in Figma is *darker inside than the page*, with a gradient running bright at the
+top-start corner to dark at the bottom-end one — C1 `(41,40,47)→(30,30,35)`
+across the card against a page of `(35,36,40)`. That is `depth`/`refraction`
+shading, which tier 1 states it does not render (D-009). It is why a Glass
+surface reads as *recessed* in Figma and *flat* in the build, independently of
+the rim.
+
+### ✅ Re-calibration — RUN 2026-09-19, and the model is now built
+
+The 2026-09-18 pass measured Figma's rim at **four points per node**: the
+midpoints of the four straight edges. On an axis-aligned surface at
+`lightAngle` −45 — the file's default, on 363 nodes — all four sit at exactly
+`|facing|` 0.7071. **Four samples at one value cannot constrain a falloff**,
+which is why that pass could rule on sidedness and nothing else, and why the
+floor it proposed looked like the only shape that fitted.
+
+This pass walked the **whole outline** of the same three nodes in the same 3x
+frame exports — every straight edge and every corner arc, at ~1° resolution —
+and was then re-measured end to end by a second, independent script that fitted
+each node's geometry from the pixels rather than taking it on trust. The two
+agree on every number below.
+
+#### What the corner arcs show that the midpoints could not
+
+| | |
+| --- | --- |
+| **The rim is two-sided, and not symmetric.** | Both the light-facing and the away-facing side carry one. The far side is **0.65** of the near side: matched-`\|facing\|` medians 0.650 (C3), 0.638 (C4), 0.657 (C1); 0.64 at the straight edges, 0.65 at the corner apexes; the same at `lightIntensity` 0.80 and 0.25. An anti-aliasing-invariant integral of the rim's excess luminance returns 0.62–0.64 independently. |
+| **There is no floor — there is a gap.** | The two corner arcs whose normals are square to the light axis are **bare**: the pixel inside the boundary is the surface's own fill to within one level, across roughly half of each arc. On C3 and C4 those diagonals measure alpha **0.0000**. The rim is two arcs, not a closed loop. It dies at `\|facing\|` ≈ 0.40 and is gone below ≈ 0.36. |
+| **The peak is ~0.79, not 0.5.** | Per unit `lightIntensity`, where a corner arc turns square to the light: 0.765 (C1), 0.790 (C3), 0.794 (C4). The old 0.5 was the **straight-edge** value used as if it were the peak. |
+| **The straight edges are 0.50 lit / 0.33 dim.** | Per unit intensity: 0.507 (C3), 0.489–0.525 (C4), 0.501–0.525 (C1) lit; 0.327 dim on all three. Alpha is constant *along* each edge (C3 top p10 = p90 = 0.4057), so the rim is a function of the normal only — not a gradient across the shape. |
+| **`splay` does nothing.** | With the threshold pinned, the two splay-0.00 nodes fit exponent 0.50 and the splay-1.00 node 0.51. Where the rim is visible their predictions differ by under 2%. The splay-driven `narrow`/`wide` lerp was an `edit1.md` §7.4 b *assumption*, never a measurement. |
+| **`lightIntensity` is linear.** | C4 at 0.25 returns the same alpha/intensity as C3 and C1 at 0.80, to ~5%. |
+| **The rim is white and inside the shape.** | Excess RGB is achromatic (92/91/92, 55/56/55, 27/27/27). The pixel immediately outside the boundary is exactly the page, everywhere — including on the lit side. |
+| **The width is constant.** | ~1.9 px at 3x (0.63 dp) everywhere, front lobe and back lobe alike despite the 1.55x brightness difference. Only the brightness varies. |
+
+#### The model, as built
+
+```dart
+travel = (cos t, -sin t)                 // Figma lightAngle, y-up: where light GOES
+facing = -(outwardNormal · travel)       // +1 square to the source, -1 square to its back
+reach  = clamp((|facing| - 0.48) / (1 - 0.48), 0, 1)
+spread = reach * reach * (3 - 2 * reach) // smoothstep: the profile is S-shaped
+alpha  = 0.79 * lightIntensity * (facing >= 0 ? 1 : 0.65) * pow(spread, 0.50)
+```
+
+| Constant | Was | Now | Basis |
+| --- | --- | --- | --- |
+| `kGlassFrostToSigma` | 0.50 | **0.50** | unchanged — confirmed 2026-09-18, C1's back-light matches within 1–3/255 |
+| `kGlassRimStrokeWidth` | 1.0 | **1.33** | Figma's rim is 1.9 px wide at 3x = 0.63 dp; a centred stroke is half-clipped, so 1.33 puts 0.67 dp inside. The shipped 1.0 rendered 1 px at 3x |
+| `kGlassRimMaxAlpha` | 0.5 | **0.79** | the measured apex, per unit intensity |
+| `kGlassRimThreshold` | — | **0.48** | new: where the rim stops |
+| `kGlassRimBackLobe` | — | **0.65** | new: the far lobe |
+| `kGlassRimExponent` | 6.0 / 1.0 | **0.50** | replaces the splay-lerped pair, which splay does not drive |
+
+What that renders, against what Figma renders, per unit `lightIntensity`:
+
+| | model | Figma |
+| --- | --- | --- |
+| straight edge, lit | 0.503 | 0.489–0.525 |
+| straight edge, dim | 0.327 | 0.327 |
+| corner apex, lit | 0.790 | 0.765–0.794 |
+| corner apex, dim | 0.513 | 0.499–0.574 |
+| corners square to the light | 0 | 0 |
+
+**Known residual.** Between `|facing|` 0.36 and 0.48 Figma still paints a faint
+tail (≤ 0.11 per unit intensity) that the threshold cuts. It is a fraction of
+two corner arcs, it errs toward *less* paint, and closing it would cost accuracy
+at the straight edges, which are ~90% of every outline. Recorded, not fixed.
+
+**It is now a test, not a comment.** `test/core/widgets/elevation/glass_rim_calibration_test.dart`
+renders the rim at device pixel ratio 3 and asserts the sidedness, the 0.65
+ratio, the straight-edge alphas and the bare corners against these numbers. The
+`.abs()` fault passed the whole suite for two days; a golden would have frozen
+it just as happily.
+
+#### ✅ RULED 2026-09-19 — the rim ships at 70% of the measured brightness
+
+The question this pass escalated — Figma's rim is measured inside a surface that
+`depth`/`refraction` darken, and tier 1 renders a flat one, so is the measured
+alpha right *here*? — was answered by the owner the same day: **keep every
+calibrated term and scale the strength down, deliberately, behind one constant.**
+See `docs/DECISIONS.md` **D-011**.
+
+`kGlassRimMaxAlpha` ships **0.55** against the measured **0.79**. The fraction
+holds the two most prominent Glass surfaces (level card `splay` 1.00, form field
+0.97) at the brightness the app already shipped — 0.354 per unit intensity at a
+straight edge before, 0.350 now — while the small chrome comes up from 0.06 to
+0.35 against Figma's 0.50.
+
+**This is intentional visual compensation, not a measurement error and not a
+deviation to be "fixed".** The geometry is untouched: direction, the two lobes,
+the 0.65 ratio, the threshold, the width and the falloff all stay pinned to
+Figma, and the calibration test checks the straight-edge *profile* against
+Figma's numbers scaled by the dial, so the shape cannot be bent to dim the rim
+instead. `kGlassRimMeasuredMaxAlpha` carries the 0.79 so the measurement is not
+lost.
+
+What each renders, per unit `lightIntensity`:
+
+| | Figma | shipped (×0.70) |
+| --- | --- | --- |
+| straight edge, lit | 0.50 | 0.35 |
+| straight edge, dim | 0.33 | 0.23 |
+| corner apex, lit | 0.79 | 0.55 |
+| corners square to the light | 0 | 0 |
+
+**Not re-run after the change:** C2, C5, C6, C7. C2 calibrates the frost, which
+did not move. C5 and C6 are confounded (see above) and neither is a rim
+reference. C7 is the frost through a real backdrop and is unaffected by the rim.
+
+### Recorded, not built (#55)
+
+Glass exists on screens this app has not built: Customer Support (`337:8390`, G5 ×46 + G17),
+Notifications (G5 ×46), Messages / chat (G5, G11 search), Friends (G5 chips `Frame 427319502`
+47.5×19 `#384F47` @20%, G11 search), Create Ticket, Your progress, Refer a Friend (all G5), and the
+University Learning Tools tiles (inner shadows — edit3 #43). Listed so the reading is not lost;
+none of them is built by this pass.
+
+---
+
+## 73. ✅ RESOLVED — the dark language pill is drawn ONE way, not two
+
+**Where:** `Button / Light` — light `82:1093`; dark `340:19734`, `349:16814`, `337:19540` (Log in),
+`337:19535` and `337:19530` (OTP), `337:19522` (Sign Up_1), `337:19693` (Sign Up_2).
+Code: `lib/core/widgets/language_pill.dart`.
+
+**What:** the 2026-09-16 sweep recorded the dark pill as drawn two different ways — solid on the OTP
+screens, translucent elsewhere — and left it as an open question. The 2026-09-17 plugin read of all
+seven dark instances shows them **identical**: `#232428` at **20% alpha**, **no stroke at all**, and
+Glass **G3** (frost 4 · refraction 0.80 · depth 20 · angle −45 · intensity 0.25 · dispersion 0.50 ·
+splay 0). The "solid on OTP" reading was wrong.
+
+Light is unchanged and is the only canvas with a stroke: `#FCFBF9` under **0.629032** `#4B675E`.
+
+**Built 2026-09-18 (edit2 #33).** `LanguagePill` is an `ElevatedSurface` on a `StadiumBorder`
+reading `languagePillFill`, `languagePillBorderWidth` and `languagePillGlass`. Two real changes
+came out of it: the pill used to paint `ext.background`, so on the dark canvas it was the page
+colour on the page and **completely invisible**; and the light hairline was Flutter's default 1.0
+rather than the frame's 0.629032. Golden-verified in both canvases
+(`test/goldens/language_pill_{light,dark}.png`) — the dark pill now reads as a faint 20% stadium
+with a two-sided rim highlight instead of nothing at all.
+
+---
+
+## 74. 🔴 BLOCKED — the Limitation sheet has no dark frame, so the dark scrim is unmeasured
+
+**Where:** Limitation notification, `Rectangle 6427`. Code:
+`lib/features/quiz/widgets/limit_sheet.dart`.
+
+**What:** the light frame specifies the scrim exactly — `rgba(49,49,49,0.5)` over a page blurred at
+`backdrop-filter: blur(5.75px)` (already a sigma in the CSS export). **No dark Limitation frame
+exists anywhere in the file**, so there is nothing to measure for the dark canvas.
+
+**Built 2026-09-18 (edit2 #18).** `AppElevation.light.limitSheetScrim` carries the measured light
+values; `AppElevation.dark.limitSheetScrim` is **`null`**, and `showAppModalSheet` falls through to
+the framework's default barrier on that canvas — the sheet is unchanged in dark. Null here means
+"not measured", **not** "no scrim": nobody is to invent one by carrying the light values across or
+by copying another sheet's. `test/core/widgets/elevation/app_modal_test.dart` pins that null so the
+day a dark frame arrives, the test is what notices.
+
+**Searched and still absent, 2026-09-18** (signed-in desktop app, view seat).
+The search `edit2_unblock.md` §2 J3 asked for was run four ways:
+
+1. **Find in file, all pages, "Limitation"** — 16 hits: `design` 10, `prototype`
+   5, `Assets / component` 1. The ten on `design` are five `Limitation
+   notification` frames plus the `limitation` instance inside each. **All five
+   frames read fill `#FCFBF9`** — the light page background; a dark-canvas frame
+   is `#232428`.
+2. **The component set.** `limitation` on `Assets / component` has exactly four
+   variants — `Subscribe now`, `Subscription Expired`, `Explanations Locked`,
+   `daily limit` — and all four are light. That page names its dark twins
+   explicitly (`Component 19_ dark`, `Component 18_ dark`, beside
+   `Component 4_light`, `Component 1_light`), so a dark limitation component
+   would have been called one. There is none.
+3. **The whole `Dark mode` section, enumerated by hand** — all three
+   sub-sections (`Common Sign in/ up Pages`, `University Student Flow`,
+   `School Student Flow`, ~90 frames). No `Limitation notification` in any of
+   them.
+4. **`Rectangle 6427`** — 62 hits, because it is a generic auto-name reused
+   across Messages, Edit Profile, Go to Uni and Logout. The one inside
+   `Limitation notification` re-reads as **`#313131` at 50%** over a
+   **Background blur panel value of 11.5** (→ σ 5.75, matching the CSS export
+   this entry already records). The light values are confirmed; there is no dark
+   twin to measure.
+
+So this is not an unread value, it is an absent frame. **`limitSheetScrim` stays
+`null` in dark and `app_modal_test.dart` keeps pinning it.**
+
+**Fix we need (designer):** a dark Limitation notification frame, or a ruling
+that the dark sheet takes another dark scrim already in the file (the avatar
+sheets are 30% at σ 13.4/14.7; the dialogs are 60% at σ ~10).
+
+Related: the sheet's benefits card and "Upgrade To Premium" CTA are deliberately **not built** — the
+app is purchase-silent (adr-049 §3, D-007, issue #51).
+
+---
+
+## 75. ✅ RESOLVED 2026-09-18 — `337:19256` is the page background, and the light frame has no equivalent
+
+**Where:** `on boarding screen_1` — light `81:92` / `459:43873`, dark `337:15146`
+/ `337:15643`. Code: `lib/features/onboarding/screens/onboarding_screen.dart`,
+`lib/core/theme/app_colors.dart`.
+
+**What.** The sheet is a 20%-alpha fill under Glass **G1** (frost 80) with the
+illustration (`image 79 [Vectorized]`) behind it. Figma keeps the illustration
+from showing through the whole sheet with an oversized opaque rect, and the one
+value this entry was blocked on was that rect's fill.
+
+**Read 2026-09-18** from the Properties panel of the **signed-in Figma desktop
+app** (computer-use access granted; the same request was declined on 2026-09-17,
+which is what blocked it). Node `337:19256` is the layer **`Rectangle 6429`**:
+
+| | |
+| --- | --- |
+| Size / position | **622 × 138** at Left **−140**, Top **540** — exactly the geometry the code comment had assumed |
+| Fill | **`#232428` at 100%** (no alpha shown; contrast a 20% node, which the panel prints as `#27282C 20%`) |
+| Z-order | `Frame 1000003081` (the sheet) → **`Rectangle 6429`** → `image 79 [Vectorized]` → `Status_Bars` — above the illustration, below the sheet |
+
+`#232428` is **`AppColors.dark.background`** (`app_colors.dart:1001`), so this is
+edit2.md §7.8.1's first row: the fill *is* the page background.
+
+**The light frame has no equivalent node, and that is the real finding.** `81:92`
+has exactly three children — `Frame 1000003082` (the sheet, `459:43873`),
+`image 79 [Vectorized]` and `Status_Bars`. There is no rect. And the light
+illustration is **419×682 at (−19, −39)**, so it ends at y 643 against the same
+sheet top of y 529: **light frosts 114pt of artwork through the sheet where dark
+frosts 11.** The two canvases genuinely differ, so the strip is built **dark-only**
+— painting one in light would be inventing a node Figma does not draw (R2).
+
+**Also corrected here:** the screen's own doc comment claimed "only the SHEET
+exists in light… `459:43873` is a detached 402×360 frame". Both halves are
+wrong. `459:43873` is 402×**413** at y 529 *inside* a full 402×878 light frame
+that carries the illustration and the status bar like its dark twin.
+
+**Built 2026-09-18.** New nullable palette token
+**`AppColors.onboardingIllustrationMask`** — `null` light, `Color(0xFF232428)`
+dark, cited to `337:19256` — following the `languagePillBorder` precedent for a
+one-canvas token, mirrored. `_Sheet` drops the full-height opaque `DecoratedBox`
+for a `Stack` whose first child is a `Positioned(top: 11, height: 138, left: 0,
+right: 0)` `ColoredBox`, and the sheet takes **`GlassBackdrop.content`** — the
+app's one real `BackdropFilter`. The strip is a positioned *sibling* rather than
+a wrapper so that `top` measures from the sheet's own content-sized top edge,
+and so that the backdrop frosts the strip's top edge exactly as Figma's Glass
+frosts the rect's.
+
+**Verified (C7 in #72).** Figma's 3x frame export against the real
+`OnboardingScreen` rendered at 402×878 / dpr 3, aligned on the sheet's top edge:
+both now show the illustration frosted into the sheet's top band, decaying to
+the sheet tint over ~20–25dp. The residual difference — Flutter's band starts
+brighter and decays faster — traces to *what is behind the edge*, not to the
+frost: Figma's illustration is 419 wide at x −19 while the build uses
+`BoxFit.fitWidth` at the frame width, so at the sheet's top edge Figma has the
+dark book bottoms where the build has the pale green ellipse. That fit deviation
+is pre-existing and documented in the widget.
+
+**Light was checked the same way** and matters more, because light is where the
+behaviour changed most: it used to sit on a full-height opaque backing and now
+has none at all. Against a 3x export of `81:92`, the build reproduces the
+design's soft green wash at the sheet's top, brightening into the cream over
+the same distance — Figma `(224,226,216)→(236,239,230)` across the first 32dp,
+the build `(202,208,193)→(212,218,203)`. The build's band is ~20/255 greener
+throughout, from the same illustration-fit difference plus the refraction and
+depth terms tier 1 does not render (D-009, and see #72's closing note).
+
+**Not closed by this:** the sheet's top corner notch. Figma's rect is 622 wide
+and clipped by the frame; the build's strip is clipped to the screen width. Both
+leave the same page-coloured gap outside the r25 corners, and because the strip
+*is* the page colour it is invisible in both. Recorded so nobody "fixes" it.
+---
+
+## 76. 🟡 Eight buttons in the app have no Figma frame, so they carry no CTA treatment — deliberately
+
+**Where:** listed below. Code: `lib/core/widgets/elevation/primary_cta.dart` is the treatment they
+do *not* get.
+
+**What.** Figma draws two button shapes and nothing else: the full-width primary CTA
+`Frame 427319502` (r20, 60 tall, drop shadow + a lavender glow layer in dark) and the outline CTA
+`Frame 427319504`. Every button in the build that corresponds to one of those is wrapped in
+`PrimaryCta` by edit2 (#12, #13) or by edits 4/5 for the screens they own.
+
+**Eight buttons correspond to neither, because the design has no frame for the state they belong
+to.** They are error, expiry and fallback affordances — states the Figma file does not draw at all
+(the same gap `docs/screen-states` work keeps hitting). `edit2.md` §7.3 step 2 rules that they stay
+unwrapped and asks for the list to be recorded. This is that record.
+
+| Button | File | State it belongs to |
+| --- | --- | --- |
+| "Retry" | `lib/core/widgets/state_widget.dart` | the shared error state |
+| "Retry" | `lib/features/catalog/widgets/catalog_states.dart` | catalog error — note the 403 branch deliberately suppresses Retry (FINDING-16) |
+| "Retry" | `lib/features/home/screens/home_screen.dart` | Home error |
+| "Retry" | `lib/features/profile/screens/profile_screen.dart` | Profile error |
+| "Retry" | `lib/features/leaderboard/screens/leaderboard_screen.dart` | Leaderboard error |
+| "Retry" | `lib/features/catalog/widgets/school_picker_field.dart` | picker error |
+| the restart affordance | `lib/features/registration/screens/registration_expired_view.dart` | expired registration draft |
+| the fallback action | `lib/core/router/app_router.dart` | unknown-route fallback |
+
+**Why it is a decision and not an omission.** Wrapping them would give an undrawn state the visual
+weight of the drawn primary CTA — including, in dark, the lavender glow that Figma reserves for the
+one full-width purple button per screen. An error state competing with the screen's real CTA is a
+worse outcome than an unstyled error state, and inventing a treatment for a frame that does not
+exist is exactly what R2 forbids.
+
+**Keep it true.** `grep -rn 'PrimaryCta(' lib/` should return only the CTAs listed in `edit2.md`
+§7.3 step 1 plus those edits 4 and 5 own. If one of the eight above ever appears in that output,
+either Figma has grown a frame for that state — in which case update this entry — or someone wrapped
+it by reflex.
+
+**Fix we need (designer):** frames for the error, offline, empty and expired states. Until they
+exist these eight stay as they are.
+
+Related: #21/#22 (the outline CTA's dark fill/border), `docs/DECISIONS.md` D-009.

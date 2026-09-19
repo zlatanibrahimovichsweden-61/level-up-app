@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/models/quiz_summary.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_result_screen.dart';
+import 'package:level_up_app/features/quiz/screens/quiz_review_screen.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_screen.dart';
 
 import 'quiz_fixtures.dart';
@@ -15,11 +17,16 @@ void main() {
     String scopeName = 'Cell Structure',
     String locale = 'en',
     ThemeData? theme,
+    QuizReviewArgs? review,
   }) async {
     final harness = await pumpQuizApp(tester, locale: locale, theme: theme);
     harness.router.push(
       '/quiz/quiz-1/result',
-      extra: QuizResultArgs(summary: summary, scopeName: scopeName),
+      extra: QuizResultArgs(
+        summary: summary,
+        scopeName: scopeName,
+        review: review ?? quizReviewArgs(),
+      ),
     );
     await tester.pumpAndSettle();
     return harness;
@@ -103,21 +110,11 @@ void main() {
       expect(find.textContaining('Pass'), findsNothing);
     });
 
-    // CONFLICT 3 / S14.
-    testWidgets('Review Questions renders, disabled, with a coming-soon note', (
-      tester,
-    ) async {
-      await openResult(tester, summary: quizSummary());
-
-      final review = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('Review Questions'),
-          matching: find.byType(FilledButton),
-        ),
-      );
-      expect(review.onPressed, isNull);
-      expect(find.text('Reviewing your answers is coming soon.'), findsWidgets);
-    });
+    // CONFLICT 3 / S14 is now NARROWED, not open: review-from-result shipped on
+    // Day 8-9 with no endpoint at all. The live CTA is asserted in the
+    // 'Review Questions' group below. What stays blocked on the draft
+    // `GET /quizzes/{quizId}` is review from HISTORY, which has no entry point
+    // on this screen to assert.
 
     // CONFLICT 1 / S12.
     testWidgets('points come from the server verbatim, never computed', (
@@ -154,6 +151,45 @@ void main() {
       // Only the scopeName carried forward from the Quiz.
       expect(find.text('Cell Structure'), findsOneWidget);
       expect(find.text('Biology — Cell Structure'), findsNothing);
+    });
+  });
+
+  group('Review Questions', () {
+    testWidgets('is LIVE and opens the review screen', (tester) async {
+      // It shipped disabled behind a Tooltip until Day 8-9, on the reading that
+      // review needed the draft `GET /quizzes/{quizId}`. It does not: the quiz
+      // just finished is still in hand.
+      final harness = await openResult(tester, summary: quizSummary());
+
+      final cta = find.widgetWithText(FilledButton, 'Review Questions');
+      expect(cta, findsOneWidget);
+      expect(tester.widget<FilledButton>(cta).onPressed, isNotNull);
+      expect(find.byType(Tooltip), findsNothing);
+      expect(find.textContaining('coming soon'), findsNothing);
+
+      await tester.tap(cta);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuizReviewScreen), findsOneWidget);
+      expect(harness.router.state.uri.path, '/quiz/quiz-1/result/review');
+    });
+
+    testWidgets('review is pushed, so Back returns to the result', (
+      tester,
+    ) async {
+      await openResult(tester, summary: quizSummary());
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Review Questions'));
+      await tester.pumpAndSettle();
+      expect(find.byType(QuizReviewScreen), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pumpAndSettle();
+
+      // Back out of review lands on the result, NOT on Learn — the result's own
+      // PopScope only governs the result screen's own Back.
+      expect(find.byType(QuizReviewScreen), findsNothing);
+      expect(find.byType(QuizResultScreen), findsOneWidget);
     });
   });
 

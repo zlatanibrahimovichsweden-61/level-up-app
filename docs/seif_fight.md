@@ -1,14 +1,599 @@
-# Contract questions & change requests — for Seif (backend)
+# Contract history & questions for Seif — the backend counterpart to DESIGN_ISSUES.md
 
-> The backend counterpart to `docs/DESIGN_ISSUES.md`. Everything the **contract** can't
-> answer, contradicts, or leaves us guessing goes here — one place, so nothing gets lost in
-> chat and Seif gets a single list rather than a trickle.
+> Everything the **contract** can't answer, contradicts, or leaves us guessing goes here — one
+> place, so nothing gets lost in chat and Seif gets a single list rather than a trickle.
 >
 > Contract: `contract/openapi.yaml` (vendored, pinned commit 184d6ec — v3.0.0-m1, 2026-09-04) · App repo: `level_up_app`
 >
 > **Ground rule stays: the contract wins.** Where the contract is silent we build the safe
 > thing, ship it, and log it here. Nothing in this file blocks a build — it records what we
 > assumed and what we need confirmed so the assumption can be replaced.
+>
+> **Restructured 2026-09-05 (Phase 3B).** This file now has two parts. **Part A** is the
+> contract-change ladder — a level-by-level history of every pin this app has carried: what
+> each pin communicated, what the client built against it, what changed later, what the rework
+> cost, and an engineering-impact score per transition, so the cost of contract instability is
+> visible rather than anecdotal. **Part B** is the live question register (S1–S44) this file
+> has always been — nothing in it is deleted; a handful of entries are updated where a later
+> pin re-anchored their citations or narrowed their asks (S6, S37), and three new entries
+> (S39–S41) are filed from the 2026-09-04 Phase 2 contract-impact audit. Part A records history
+> and accountability; Part B records open questions. Neither blocks a build.
+
+---
+
+## Part A — Contract change ladder
+
+### A.0 How to read this ladder
+
+**Levels are vendored pins, not every published version.** `contract-changelog.md` publishes a
+new `info.version` far more often than this app re-vendors `contract/`. A "LEVEL" below is a
+commit this app actually pinned (`contract/SOURCE.md`); a published version the app skipped past
+without ever building against it in isolation is recorded as **absorbed** or
+**skipped-then-absorbed** inside the level that eventually adopted it, not scored on its own —
+the client was never exposed to it as a standalone state. **LEVEL 0** predates any contract and
+carries no score.
+
+**Labels used throughout Part A (verbatim, bold):** **Historical**, **Superseded**, **Current**,
+**Open question**, **Backend dependency**, **Confirmed fact**, **Unverified assumption**.
+
+**Evidence categories for behaviour claims (verbatim, bold):** **Confirmed by contract** ·
+**Confirmed by client implementation** · **Confirmed by staging** (date + build) · **Not yet
+observed on the wire** · **Unverifiable from outside the private backend repo**.
+
+**Scoring anchors** — applied identically to every transition (LEVEL 1→2, 2→3, 3→4). Each
+dimension scores 0–5 against the anchor in the matching column; scores are **summed for
+comparability only**, never converted to hours or developer-days.
+
+| Dimension | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| API/schema (contract side) | none | prose only | additive on draft / optional fields | additive on stable needing client handling (codes, responses) | breaking on a stable schema (field removed/renamed/required added) | multiple breaking items, or a path removed plus a breaking schema |
+| Model changes (client) | none | comment | one model, additive | one model restructured or several additive | several models restructured/regenerated | new type hierarchies across features |
+| UI changes | none | copy only | one widget | one screen or several widgets | several screens | a surface removed/added across screens + router |
+| Business-logic | none | comment | one rule | several rules in one feature | rules across features | architectural |
+| Test changes | none | one test | a few tests in one file | several files, or assertions inverted (green-and-wrong) | across features or ≥30 tests net | suite-wide |
+| Mock/fixture | none | comment | one handler/fixture | several handlers or shapes | mock rewrite across features | — |
+| Documentation | none | pin bump only | one record | a reconciliation set (decisions + design issues + S-entries) | plus a new brief or audit document | cross-cutting incl. instruction set / several briefs stamped |
+| Deleted/reworked implementation | none | comments | one element removed | a feature-internal surface removed or rebuilt | shipped work across ≥2 features deleted/rebuilt | a whole product surface deleted |
+| Verification blockage | none | minor | change unverifiable on the wire for reasons external to it | behavioural change with zero build signal | the specific change cannot be observed on staging | cannot be observed AND backend version unconfirmable AND required routes missing |
+
+**Bands:** 0–10 LOW · 11–20 MEDIUM · 21–30 HIGH · 31+ CRITICAL (max 45, nine dimensions × 5).
+
+**Caveat, stated once, applying to every score below:** these are **ordinal judgements**,
+anchored on the table above and assigned by the phase lead reviewing the whole transition, not
+re-derived by whoever next edits this file. They are summed only so two transitions can be
+compared side by side (A.6), never to produce an hours/days estimate. Where the arithmetic band
+and the lead's qualitative reading of the same transition disagree, **both are shown** — the
+qualitative reading is a second, independent signal, not a veto of the number.
+
+---
+
+### LEVEL 0 — Pre-contract product briefs (2026-06) — provenance, not a contract level, NO score
+
+The Paymob web-checkout hand-off and the Fawry `pending`-until-paid state that this app's
+instruction layer taught for six weeks trace to no pinned contract at all. They come from the
+2026-06 product briefs, outside this repo:
+- `F:\level\00_project_brief_and_team_model.md:110` — "Fawry via the existing Paymob account
+  (incl. cash-by-reference-code, `pending`-until-paid state)"
+- `02_role_flutter_partner.md:7,19` — "the paywall screens and the hand-off to the external
+  Paymob web checkout"
+- `04_interfaces_and_handoff_contract.md:76`
+- `F:\level\CLAUDE.md:11-12` — the owner's own standing instructions, stating the same hand-off
+
+**Confirmed fact.** No vendored contract version ever specified a Fawry `pending` state.
+`/checkout/sessions`'s description at pins 1–3 read "There is NO pending state and the payment
+webhook is backend-internal"; pin 4's `GET /me/entitlements` (`openapi.yaml:754`) reads "There is
+no `pending` state — an entitlement is active or it isn't." The word `Fawry` never appears in any
+contract file at any pin. `EntitlementState` has been `required: [type, active, inGrace]` at
+every pin — no `SubscriptionStatus` schema, ever. The contract carried the Paymob checkout only
+as the draft `POST /checkout/sessions` (present 1.0.0-m1 → 2.1.0-m1), deleted at 2.2.0-m1 as "a
+product decision, not a deferral" (`contract-changelog.md`, 2026-08-19).
+
+What the client built from the briefs, before or beside the contract: the `/subscription` +
+`/subscription/return` routes and `TODO(deep-link): register the Paymob return route scheme once
+Seif provides it`, in the very first scaffold commit `5e4a512` (2026-07-22) — **one day before
+the contract was first vendored**; and the instruction set
+(`.claude/skills/{level-up-domain,river,screen-states,build-screen,seif-api-contract}/SKILL.md`,
+`river/evals/evals.json`, `F:\level\CLAUDE.md`) teaching the Paymob hand-off and a Fawry pending
+state. By contrast, `lib/features/profile/models/entitlement_state.dart:14` has said "adr-020:
+card payments have NO pending state" since it was written — **the Dart followed the contract; the
+instructions followed the briefs.**
+
+**Superseded** for the mobile app by adr-049 §3 (contract 2.2.0-m1). The instruction set was
+corrected 2026-09-05 (Phase 3B, workstream W2).
+
+**Stated plainly, with no blame assigned:** the contract was internally consistent on this point
+from its first draft. The product briefs and this app's instruction layer were not updated when
+the product direction changed. The briefs at `F:\level\*.md` remain uncorrected — they sit
+outside this repo and outside this phase's scope. **Superseded (out-of-repo, not edited).**
+
+---
+
+### LEVEL 1 — Contract 1.0.0-m1 (pin 23f0535)
+
+#### Contract (Version · Pin · Source · Date/commit)
+1.0.0-m1, drafted 2026-07-19 (33 paths; scaffold 2026-07-18). Pin `23f0535`, vendored
+2026-07-22, mirrored into the app at commit `47d15a2` (2026-07-23). Source:
+`contract-changelog.md` 2026-07-18/2026-07-19 entries.
+
+#### What was communicated
+**Confirmed by contract.** Stable: OTP request/verify, discriminated `POST /auth/register`
+(school | university bodies, no `device`), refresh (rotation + reuse detection), logout, all
+seven `/reference/*` pickers, `GET`/`PATCH /me`, `GET /me/entitlements`, catalog (subjects + tree
+with `answered`/`total`), the quiz loop (create → per-question answer, idempotent → finish,
+idempotent) + AI explanation. Draft: recovery (4 steps), custom avatar upload, FCM token, quiz
+history/review, favourites, checkout sessions, code redemption, leaderboard + self-rank.
+`SchoolRegistration` carried `schoolName` as a real field; no `device` object existed anywhere;
+several schema descriptions were corrupted by unquoted YAML flow mappings (repaired at 1.1.0-m1;
+the Day 7c diff counted five, not the changelog's six — S21).
+
+#### What the client implemented
+**Confirmed by client implementation** — commits, files, +/− from `git show --stat`/reportC:
+`47d15a2` vendors the contract (20 files +1984/−27) · `99ef322` Login+OTP (39, +3743/−16) ·
+`b3683c6` refresh/route-guard (20, +1067/−29) · `08a0b61` Sign Up_1/2 (26, +4892/−4) ·
+`57fab32` (2026-07-26, Day 3) registration incl. `POST /auth/register` v1.0 shape — no `device`,
+has `schoolName` (48, +6554/−46) · `8d5fc9f` (Day 4) Home/`GET /me` (36, +6279/−3) · `9fa2a61`
+(Day 5) catalog (41, +5863/−15) · `c2ddc30` (Day 6) uni parity (36, +2772/−193) · `7dff9e5`
+(2026-08-04, Day 7) quiz engine (63 files, +10917/−120) — **no commit body, no test count
+recorded**, and this same commit re-pins the contract to `ee2ed8f` (1.1.0-m1).
+
+Two things built here outlived their contract basis: `limit_sheet.dart` (created at `7dff9e5`,
+136 lines, Upgrade `FilledButton` + benefits card) and the ten-field `QuizSummary` (incl.
+`totalPoints`/`level`, also `7dff9e5`) — see Transition C, LEVEL 3. The `/subscription` routes
+are **LEVEL 0** work (built a day before this pin existed).
+
+#### What changed later — Transition A: 1.0.0-m1 → 1.1.0-m1
+2026-07-30, adr-028. **Breaking: yes**, on stable paths. City union — `cityId` OR `cityName`, at
+least one required, both → `validation_failed`; `schoolId` optional for every school-track
+student (was Egypt-required); **`schoolName` removed from the contract entirely** — "rejected
+server-side as an unknown property" (`contract-changelog.md`, 2026-07-30); `StudentProfile
+.geography.city` becomes a union; `country_not_found` + `rate_limited` added; corrupted
+schema descriptions repaired (the changelog says six; the Day 7c diff found five — S21).
+
+**This contract update invalidated previously implemented client work** — `schoolName`, end to
+end.
+
+**Gap facts.** `schoolName` was built 2026-07-26 (`57fab32`); the contract changed 2026-07-30 —
+**4 days** later; the new pin was vendored 2026-08-03, inside the Day 7 commit `7dff9e5`
+(2026-08-04), which **has no commit body**; the reconciliation landed 2026-08-05 (Day 7c).
+Between publication (2026-07-30) and reconciliation (2026-08-05), two feature commits landed on
+the old pin: `c2ddc30` (Day 6, 2026-07-30 — the same day the change was published) and
+`7dff9e5` (Day 7, 2026-08-04 — which re-vendored the new pin without reconciling the
+registration and profile code it invalidated). Days 4 and 5 (`8d5fc9f` 07-28, `9fa2a61` 07-29)
+predate the publication and were built against a pin that was still current.
+
+#### Rework required — Day 7c, 2026-08-05 (seven commits)
+`2b02a11` (17 files +456/−258, tests → 570) → `ffe16c8` (3, +141/−15, → 578) → `7fdc16b` (12,
++621/−42, incl. new `city_field.dart`, → 590) → `26ebba9` `ProfileCity` sealed union (5, +544/−52, → 596)
+→ `bc5ed2b` 429/404 mapping (12, +259/−6, → 608) → `ff23317` mock v1.1 (2, +571/−13, → 625) →
+`b1b6416` docs (7, +874/−5, count unchanged at 625).
+
+`2b02a11`'s body, quoted: "schoolName is deleted, not deprecated… rejected server-side as an
+unknown property." Deleted end to end: the draft field on both registration bodies, the doc
+comments, the `freeTextSchool` branch, the controller setter, the screen branch, the
+`SchoolNameField` widget, `ProfileSchool.schoolName`. `ffe16c8` **inverted two assertions** —
+"Egypt REQUIRES governorate + city + school", an incomplete-draft test — the "green-and-wrong"
+case: tests that passed while asserting a rule the new contract had made false.
+
+#### Evidence
+Commits above (reportC §1). `D-004` (`DECISIONS.md`) records the sharpest single defect this
+transition produced: under 1.0.0-m1 the client modelled city as a bare `NamedRef` with a
+non-null `id` — a free-text city would have **thrown on a well-formed `GET /me`**, the only
+drift in this bump that was a runtime crash rather than a wrong message. It was free to fix on
+Day 7c because `ProfileGeography.city` had zero call sites anywhere in `lib/` at that point; Day
+8 is the day that stopped being true. Docs: `b1b6416`, 7 files +874/−5 — `DECISIONS.md` +103
+(D-003/D-004/D-005), `DESIGN_ISSUES.md` +58 (#44), `PROGRESS.md` +59, a new 572-line
+`day7c_contract_v11_brief.md`, `seif_fight.md` +77 (S20/S21 filed here).
+
+#### Engineering impact
+| Dimension | Score | Basis |
+|---|---|---|
+| API/schema | 4 | Breaking: yes on stable — register bodies, `GET /me` shape; +404/+429/+400 |
+| Model changes | 4 | `SchoolRegistration`, `UniversityRegistration`, `StudentProfile` → `ProfileCity` sealed union with hand-written `toJson` (D-004), `ProfileSchool`; regenerated |
+| UI changes | 3 | `SchoolNameField` deleted; city escape + school skip built ahead of the design, new `city_field.dart` (D-003/D-005) |
+| Business-logic | 3 | body factory `cityId` XOR `cityName`; validation rules inverted; `RegistrationDraft` field |
+| Test changes | 4 | 563 → 625 across the seven commits (570/578/590/596/608/625); two assertions inverted — "green and wrong" (`ffe16c8`) |
+| Mock/fixture | 3 | `ff23317` +571/−13: city union, no `schoolName`, 429/404 paths |
+| Documentation | 4 | `b1b6416` 7 files +874/−5: new 572-line Day 7c brief, D-003/004/005, DESIGN_ISSUES #44, S20/S21, PROGRESS |
+| Deleted/reworked implementation | 4 | `schoolName` end to end in registration AND profile — field, widget, setter, validation, 2 ARB keys, tests; built 2026-07-26, rebuilt 2026-08-05 — **10 days** |
+| Verification blockage | 2 | no real server existed anywhere in Level 1 (`TBD.example`), so the runtime-crash class (free-text city on a well-formed `GET /me`) was undetectable by the suite — external to the change itself |
+| **TOTAL** | **31** | **Band: CRITICAL** (at the threshold) |
+
+**Lead's qualitative reading: HIGH** — the largest single-day reconciliation in the repo (7
+commits, a runtime-crash class caught, shipped work deleted), mitigated by no real user having
+been served yet. Both readings are shown per A.0.
+
+#### Rework summary
+Counted from git only: `schoolName` removed end to end (field, `SchoolNameField` widget,
+controller setter, validation branch, 2 ARB keys, tests) 10 days after being built; two test
+assertions inverted ("green and wrong"); mock rewritten (+571/−13); 7 documentation files
+touched (+874/−5).
+
+#### What should have happened
+Objective, no blame. Registration was built 2026-07-26 (`57fab32`) — four days after the pin was
+vendored (2026-07-22) and four days before the 1.1.0-m1 change was published (2026-07-30). The
+new pin was vendored four days after publication (2026-08-03) and reconciled two days after that
+(2026-08-05): a six-day window in which Day 6 and Day 7 were committed on the old pin, and in
+which the Day 7 commit vendored the new contract without reconciling the code it invalidated.
+Building `schoolName` against a four-day-old contract was an ordinary timing risk on a
+fast-moving spec, not on its own a process failure; the repeatable lesson is the six-day window:
+**check `contract-changelog.md`'s newest entry against the vendored pin before starting each
+day's feature, not only when a build breaks — and never vendor a new pin inside a feature commit
+without reconciling against it in the same step.**
+
+---
+
+### LEVEL 2 — Contract 1.1.0-m1 (pin ee2ed8f)
+
+#### Contract (Version · Pin · Source · Date/commit)
+1.1.0-m1, published 2026-07-30 (adr-028). Pin `ee2ed8f`, vendored 2026-08-03, mirrored into the
+app inside `7dff9e5` (2026-08-04, Day 7 — the same commit that shipped the quiz engine and
+carries no commit body).
+
+#### What was communicated
+**Confirmed by contract.** The city union, optional `schoolId`, no `schoolName`,
+`country_not_found`/`rate_limited` — see Transition A above; this is the state the app carried
+through the whole of Day 7c and Day 8.
+
+#### What the client implemented
+**Confirmed by client implementation.** Day 7c's seven commits (Transition A's "Rework
+required", above) brought the app onto this pin. Built directly on top of it afterward: Day 8 —
+`6edf922` Profile hub, **adds** a disabled Subscription row (18 files +2232/−16) · `fdf8d73` Edit
+Profile/`PATCH /me`, commit body claims "21/21 stable" (18, +2768/−18) · `81d4ea2` Settings (28,
++2811/−50, tests → 764) · `6f96cbc` l10n. `seif_fight.md` S20/S21 (Day 7c) and S24–S36 (Day 8)
+are filed against this pin.
+
+#### What changed later — Transition B: 1.1.0-m1 → 2.1.0-m1
+**Skipped-then-absorbed**, four published versions the app never vendored on their own, all
+folded into one 2026-08-22 commit:
+- **1.2.0-m1** (2026-08-11, adr-036/037/038) — **BEHAVIOURAL**: catalog gated on release ∩
+  entitlement (two independent gates), `[]` becomes a normal response, `termId`/`termNumber`
+  additive, draft `GET /catalog/modules`.
+- **1.2.1-m1** (2026-08-11) — **no**: real staging host replaces `staging.TBD.example`.
+- **1.3.0-m1** (2026-08-13) — **no**: `429` on the four unbuilt `/reference/*` pickers,
+  `400`/`404` on `/reference/schools`, 8 not-found codes registered.
+- 1.3.0-m1 prose fix (2026-08-15) — **no**, no version bump: `recovery_unavailable` description
+  corrected.
+- **2.0.0-m1** (2026-08-16, adr-019) — **yes, "the first genuinely breaking change this contract
+  has ever shipped"** (`contract-changelog.md`): `device` becomes REQUIRED on both registration
+  bodies.
+- 2.1.0-m1 (2026-08-16) — **no**: `POST /auth/recovery/new-phone` declares a `400` it always
+  returned. **This is the pin.**
+- **1.4.0-m1 is invalid** — published 2026-08-14, reverted ~15 minutes later, no changelog
+  entry; permanently skipped.
+
+**The previously communicated contract behaviour was later superseded, requiring client rework**
+on two fronts: the catalog gate (BEHAVIOURAL, appeared and later reversed — see Transition C)
+and `device` (structurally required, never actually exercised against a live server before the
+client caught up).
+
+#### Rework required — 89a8a88 (2026-08-22) + 67bdcc1
+`89a8a88`: 20 files +618/−127. Commit body: "BUILD VERIFIED only as part of the whole
+uncommitted tree (validate.ps1, 856 passed). This commit in isolation is SOURCE VERIFIED." Adds
+`{required DeviceInfo device}` to both `fromDraft` constructors, `RegistrationSubmitNotifier`,
+and 3 test files (`57fab32`'s `school_registration.dart` had no `device` at all). `67bdcc1`
+adopts the real staging host in one file, +16/−5.
+
+Follow-ups the `89a8a88` commit body names but does **not** do: an empty-catalog UI state (the
+lead independently verified `subjects_screen.dart:69` already had a "No subjects yet" empty
+state since Day 5 — **the follow-up was moot**), cached-`subjectId` 403 handling, `termNumber`
+ordering, two AR/EN 404 strings. `termNumber` ordering and the two 404 strings remain open
+follow-ups recorded only in the `89a8a88` commit body — no S-entry exists for them.
+
+#### Evidence
+`89a8a88` (Confirmed by client implementation) + `67bdcc1`. No standalone reconciliation
+document was written for this pin — the follow-ups live only inside the `89a8a88` commit body,
+not in `DECISIONS.md` or `DESIGN_ISSUES.md`. `day9_quiz_review_brief.md` (`0451284`,
+2026-08-20) was written against this pin.
+
+#### Engineering impact
+| Dimension | Score | Basis |
+|---|---|---|
+| API/schema | 4 | 2.0.0-m1 Breaking: yes — `device` required on both stable register bodies; 1.2.0-m1 BEHAVIOURAL catalog gating; 1.3.0-m1 +429 ×4, +400/404 on schools, 8 codes; 1.2.1-m1 real server URL; 1.2.0-m1 `termId`/`termNumber` additive; draft `/catalog/modules` |
+| Model changes | 3 | `Subject` + `ProfileUniversity` gain `termId`/`termNumber` (nullable); both registration bodies gain `device` |
+| UI changes | 0 | none required — the "No subjects yet" empty state already existed since Day 5; `termNumber` ordering and the two 404 strings remain **Open question** follow-ups |
+| Business-logic | 2 | `RegistrationSubmitNotifier` resolves `device` inside `AsyncValue.guard` |
+| Test changes | 3 | 3 registration test files (several files), +94 lines; 856 passed whole-tree |
+| Mock/fixture | 0 | no mock file touched in `89a8a88` |
+| Documentation | 1 | `SOURCE.md` + vendored changelog only — no reconciliation record; follow-ups live only in the commit body |
+| Deleted/reworked implementation | 2 | `fromDraft` signatures rewritten across both tracks; nothing deleted |
+| Verification blockage | 3 | the BEHAVIOURAL catalog gate had zero build signal and could never be observed — `/catalog/subjects` answered 404 on staging on 2026-08-23 (`0b53cdc`) and `200 []` on 2026-09-04 (`78c6e5d`, built 2026-09-03); the deployment moment in between was not observed; 2.0.0-m1's "who is affected: nobody" held for live integrations, but the client had carried device-less bodies since `57fab32` |
+| **TOTAL** | **18** | **Band: MEDIUM** |
+
+**Lead's qualitative reading: MEDIUM** — four published versions absorbed in one 20-file commit;
+the cost was mostly the un-observable behavioural change and the un-done follow-ups, not code
+volume.
+
+#### Rework summary
+`device` added to two registration bodies + notifier + 3 test files; real host swapped in one
+file; the "empty catalog" follow-up in the commit body turned out to already be built (moot);
+`termNumber` ordering and two 404 strings never done — carried forward as open follow-ups
+(recorded only in the `89a8a88` commit body; no S-entry).
+
+#### What should have happened
+The contract published the real staging URL 2026-08-11 (1.2.1-m1); the app adopted it in
+`67bdcc1` on 2026-08-22, and the first real request followed 2026-08-23. 1.2.0-m1's BEHAVIOURAL
+catalog gate published the same day (2026-08-11) and was adopted at `89a8a88` on 2026-08-22 (11
+days); for those same 11 days the app carried the Day 5/6 catalog code (`9fa2a61`/`c2ddc30`)
+with no gating awareness — harmless in practice because the
+client renders whatever set the server returns and already had an empty state; the failure
+adr-038 warns about, a client heuristic built on the old set, never existed here.
+The lesson from Transition A repeats: a BEHAVIOURAL entry produces zero codegen diff by design
+(adr-038), so it will never surface as a compile error — it has to be read, not waited for.
+
+---
+
+### LEVEL 3 — Contract 2.1.0-m1 (pin 61905ce) — absorbs 1.2.0-m1, 1.2.1-m1, 1.3.0-m1, 2.0.0-m1 (1.4.0-m1 invalid)
+
+#### Contract (Version · Pin · Source · Date/commit)
+2.1.0-m1, published 2026-08-16. Pin `61905ce`, vendored 2026-08-18, mirrored into the app at
+`89a8a88` (2026-08-22).
+
+#### What was communicated
+**Confirmed by contract.** `device` required on registration; catalog gated on release ∩
+entitlement (two independent gates, adr-036/037); `termId`/`termNumber` additive; the four
+unbuilt `/reference/*` pickers declare `429`; eight not-found codes registered.
+
+#### What the client implemented
+**Confirmed by client implementation.** `89a8a88` and `67bdcc1` (Transition B's "Rework
+required", above) — this is the state the app carried from 2026-08-22 to 2026-09-04. The Day 9
+brief (`0451284`, 2026-08-20) targets this pin; the smoke harness commits (`f3edc33`,
+`dcd655b`, `b17b7de`) run against it. `seif_fight.md` S37 is filed against this pin (2026-08-23).
+
+#### What changed later — Transition C: 2.1.0-m1 → 3.0.0-m1
+**Skipped-then-absorbed**, two published versions plus one prose-only entry, all folded into
+four 2026-09-04 commits:
+- **2.2.0-m1** (2026-08-19, adr-049) — **no** (the deleted path was `draft`, never implemented,
+  never served): `POST /checkout/sessions` deleted, `commerce` tag narrowed to voucher
+  redemption only, `payment_initiation_failed` removed from `error-codes.md`.
+- 2.2.0-m1 2nd entry, same day (adr-057) — **no**: `x-consumers` added to ten operations.
+- 2.2.0-m1 prose fix, same day — **no**, no version bump: two `error-codes.md` Notes cells
+  updated for the purchase-silent app.
+- **2.3.0-m1** (2026-08-29, adr-091) — **BEHAVIOURAL**: the catalog stops being
+  entitlement-gated; `listSubjects`/`getSubjectTree`/`createQuiz` re-stamped `1.2.0-m1` →
+  `2.3.0-m1`.
+- **3.0.0-m1** (2026-09-03, adr-102) — **yes**: `QuizSummary` loses `totalPoints` and `level`.
+  **This is the pin.**
+
+**The previously communicated contract behaviour was later superseded, requiring client rework**
+on three fronts at once: the whole purchase surface (2.2.0-m1), the catalog gate direction
+reversed a second time (2.3.0-m1), and the result screen's points/level display (3.0.0-m1).
+
+**The changelog itself records that two published statements could not both hold:** the
+2026-08-29 entry states the catalog-gating contradiction "has been carried since `1.2.0-m1`…
+Both statements were published; they could not both hold" — the 1.2.0-m1 entry said the catalog
+was entitlement-gated *and* that an unentitled student had a 50-question weekly allowance, while
+Gate B filtered that student's catalog to `[]`, leaving nothing for the allowance to draw from.
+Neither operation had actually shipped with Gate B, so this corrected a published intention, not
+an already-live behaviour.
+
+#### Rework required — 3db4f04, b7d0dfb, 5c4b855, ce7da9a, 7e7129c (2026-09-04) + the Phase 2 audit + Phase 3B
+Excluding `.ai/audits/current/test-results.md` (generated, excluded throughout this ladder):
+- `3db4f04` — contract only, 4 files +177/−92, 861 passed.
+- `b7d0dfb` — `QuizSummary` model: 15 files +108/−145, 862 passed. Deletes 2 model fields + the
+  freezed/`.g.dart` output + the result-screen line + 2 ARB keys × 2 locales + 3 generated l10n
+  files; adds 1 forward-compat test proving a 2.x body still parses.
+- `5c4b855` — purchase surface removed: 12 files +66/−187, 862 passed. Upgrade button + benefits
+  card (net −43 in `limit_sheet.dart`), 2 routes + the `TODO(deep-link)` (net −12; dead 44 days
+  since `5e4a512`), the Profile row (net −9; 29 days since `6edf922`), 6 ARB keys × 2 locales
+  (net −87 across the two ARB files and the generated l10n); swaps one "row renders disabled" test for one asserting
+  absence.
+- `ce7da9a` — limit-sheet copy: 6 files +24/−15, 862 passed (D-007).
+- `7e7129c` — records: 7 files +534/−19 (docs only).
+- Phase 2 audit (`docs/CONTRACT_3_0_0_IMPLEMENTATION_IMPACT.md`, untracked, 1095 lines) found
+  the instruction set (six skill files + `F:\level\CLAUDE.md`) still taught the deleted purchase
+  surface as of 2026-09-04 (FINDING-01) — corrected in Phase 3B workstream W2, alongside four
+  day-briefs stamped, K-3 retired, S6 re-anchored (Part B, below), and this ladder.
+
+#### Evidence
+Commits above (reportC §1–2). Quotes: day7 brief — "parses all ten required fields";
+`openapi.yaml:1652-1681` now requires eight. `zna.md` (`7e7129c`) records the same outgoing set:
+model drops two fields; Upgrade/benefits/routes/Profile row/Paymob references gone. **Confirmed
+by staging** (host/commit `78c6e5d`, built 2026-09-03T15:38:17Z): `GET /catalog/subjects`
+deployed, answers `200 []` for the test account; `PATCH /me` 405, `GET /me/entitlements` 404 —
+unchanged between `0b53cdc` and `78c6e5d` (the 404s were also seen at `fbab748` by curl on
+2026-08-21; the 405 was first recorded at `0b53cdc`). **Not yet observed on the wire:** the 3.0.0-m1
+`finish` body. **Unverifiable from outside the private backend repo:** whether `78c6e5d` carries
+adr-102 at all (`contract/SOURCE.md` self-declares this unverifiable).
+
+#### Engineering impact
+| Dimension | Score | Basis |
+|---|---|---|
+| API/schema | 5 | 3.0.0-m1 Breaking: yes — two required fields removed from a stable response; 2.2.0-m1 path `POST /checkout/sessions` removed + `payment_initiation_failed` removed; 2.3.0-m1 BEHAVIOURAL re-stamp on 3 ops; `x-consumers` ×10 |
+| Model changes | 3 | `QuizSummary` restructured + regenerated; forward-compat test added |
+| UI changes | 5 | result screen "Level N · P points" removed (D-006); limit-sheet Upgrade `FilledButton` + benefits card removed; Profile "Subscription" row removed; `/subscription` + `/subscription/return` routes removed; sheet bodies rewritten in EN + AR (D-007) |
+| Business-logic | 2 | standing now readable only from `GET /me` — the post-finish invalidate already existed; no "empty ⇒ unsubscribed" heuristic ever existed to remove; `getSubjectTree` 403 causes narrowed (FINDING-16, pre-existing) |
+| Test changes | 3 | 6 distinct test files touched (4 in `b7d0dfb`, 2 in `5c4b855`, 1 in `ce7da9a`, one shared); one generated test removed, two added; 861 → 862; assertions rewritten to assert absence |
+| Mock/fixture | 3 | mock `finish` stops emitting 2 keys; quiz fixtures −8 lines; the idempotency test now reads `/me` |
+| Documentation | 5 | `7e7129c` 7 files +534/−19 incl. `zna.md` (139 lines) and the smoke doc (141 lines); Phase 2 audit doc 1095 lines (untracked); Phase 3B: 6 skill files + `F:\level\CLAUDE.md` corrected, 4 day-briefs stamped, K-3 retired, smoke/RISKS school-cohort corrections, this ladder |
+| Deleted/reworked implementation | 5 | a whole product surface: routes present since the scaffold `5e4a512` (2026-07-22, **44 days**), the Upgrade button since `7dff9e5` (2026-08-04, **31 days**), the Profile row since `6edf922` (2026-08-06, **29 days**); the result-screen element since `7dff9e5`; 8 ARB keys × 2 locales; **−187 deletions (net −121)** in `5c4b855` |
+| Verification blockage | 5 | the 3.0.0-m1 `finish` body has never been observed on the wire; whether staging `78c6e5d` carries adr-102 is unverifiable from outside the private backend repo; `PATCH /me` 405 and `GET /me/entitlements` 404 unchanged between `0b53cdc` and `78c6e5d` (the 404s also at `fbab748`; the 405 first recorded at `0b53cdc`); the quiz loop is gated on seed data for the school-track test account |
+| **TOTAL** | **36** | **Band: CRITICAL** |
+
+**Lead's qualitative reading: CRITICAL for verification and instruction-set consequences** (the
+auto-loaded skills and `F:\level\CLAUDE.md` still taught the deleted surface until 2026-09-05 —
+Phase 2 FINDING-01); **HIGH for code volume alone** (four commits: +375/−439 excluding the generated validation
+record, net −64; net −149 excluding the contract-only `3db4f04`).
+
+#### Rework summary
+A whole product surface deleted across ≥2 features (quiz result screen, limit sheet, profile,
+router, l10n) plus the instruction layer that taught it; one model restructured and regenerated;
+−187 deletions (net −121) in the single largest deletion commit (`5c4b855`); zero of it observable on the
+wire because the route it would exercise (`POST /quizzes/{quizId}/finish`) has never returned a
+body under this pin.
+
+#### What should have happened
+2.2.0-m1 was published 2026-08-19 with an explicit instruction: "Flutter partner — what to do:
+nothing… If a purchase, pricing or paywall screen exists in the mobile design, it is dead." At
+that date the Upgrade button had existed 15 days and the router placeholders 28 days; **the
+surface stayed live 16 more days** until `5c4b855`. 2.3.0-m1 (2026-08-29) reversed 1.2.0-m1's
+Gate B, and the changelog itself flags the contradiction it resolves. 3.0.0-m1 (2026-09-03) was
+adopted the next day (2026-09-04) — fast by this project's own history — but the ten-field
+`QuizSummary` it corrected had been rendered on the result screen since `7dff9e5`, **30 days**
+earlier. The instruction set (skills + `F:\level\CLAUDE.md`) was the slowest-moving layer of
+all: it was still teaching the deleted purchase surface when the Phase 2 audit found it on
+2026-09-04 (FINDING-01), and was corrected the next day — a machine-readable contract change does not automatically
+propagate to prose that a human (or an agent loading it fresh) reads instead of building
+against.
+
+---
+
+### LEVEL 4 / CURRENT — Contract 3.0.0-m1 (pin 184d6ec) — absorbs 2.2.0-m1, 2.3.0-m1
+
+#### Contract (Version · Pin · Source · Date/commit)
+3.0.0-m1, published 2026-09-03 (adr-102). **Current** pin: `184d6ec` (full SHA
+`184d6ec80cbde708acfe605d00eb8a5c756de797`), vendored 2026-09-04, mirrored into the app at
+`3db4f04`. `contract/SOURCE.md`: mirror message "Mirror contract from
+level-up-backend@4a8e7cfe63696bbfc2125b158e7ffdbcd149ed27"; the four vendored files are
+byte-identical at `184d6ec` and at the earlier commit that actually introduced 3.0.0-m1
+(`36a37d1`, 2026-09-03T07:05Z) — `184d6ec` (2026-09-03T09:39Z) changed only the admin-SPA files
+this app does not vendor.
+
+#### What was communicated
+**Confirmed by contract.** `QuizSummary` retains `quizId`, `score`, `totalQuestions`,
+`answeredCount`, `pointsAwarded`, `questions` (required, `openapi.yaml:1681`); `leveledUp`/
+`newBadge` are retained as frozen events. The student's current level/points live only on
+`GET /me` (`points.school`, `points.university`, `points.total`, `level`, `badges` — unchanged
+since the first contract). `StudentProfile.level`: "1–12, thresholds every 500 points; static,
+not configurable" (`:1514`). The catalog is browse-only (Gate B removed, adr-091); release-gating
+(Gate A) stays university-only (`:795-799`) and school subjects are never release-gated and carry
+`termId: null` (`:810`). The app is purchase-silent (adr-049 §3): no in-app checkout of any kind
+exists or is coming back. `PATCH /me` accepts exactly five fields (`:663-683`).
+
+#### What the client implemented
+**Confirmed by client implementation.** The four rework commits under Transition C, above
+(`3db4f04`, `b7d0dfb`, `5c4b855`, `ce7da9a`), plus the records commit `7e7129c`, plus Phase 3B
+(this workstream and its siblings W2/W3): the instruction set corrected, four day-briefs
+stamped, K-3 retired, this ladder written.
+
+#### What changed later
+**Not applicable — this is the current pin.** Nothing has superseded 3.0.0-m1 yet, so there is
+no Transition D to score. What follows instead is this pin's own confirmation/open-question
+ledger (per A.0's evidence categories), carried over from Phase 2 §9:
+
+| Claim | Category |
+|---|---|
+| School subjects are never release-gated; a school account's `[]` reflects unseeded (education system, stage) cohort data, not an unreleased term | **Confirmed by contract** (`openapi.yaml:795-799`, `:810`) + **Confirmed by staging** (`78c6e5d`, 2026-09-04 — `Track.school`, `200 []`) |
+| The catalog is not entitlement-gated; only quiz creation and question delivery are | **Confirmed by contract** (adr-091, `contract-changelog.md` 2026-08-29) |
+| The client parses both the 2.x and 3.x `finish` shapes without a runtime branch | **Confirmed by client implementation** (`b7d0dfb`'s forward-compat test) |
+| The 3.0.0-m1 `finish` body's actual wire shape | **Not yet observed on the wire** — the quiz loop is gated on empty seed data for the test account |
+| Whether staging `78c6e5d` carries adr-102 at all | **Unverifiable from outside the private backend repo** (`contract/SOURCE.md`) |
+| When a point is credited — at `submitAnswer` or at `finish` | **Open question** — contract prose reads "immediately" (`:1036-1039`); adr-102 D2 says the award "is already reflected… in `GET /me`" at finish; the mock does the opposite (FINDING-12). The strong reading (award at answer time) is treated here as an **Unverified assumption**, not a **Confirmed fact**, until observed. Filed as **S39** in Part B. |
+| `createQuiz`'s three 403 codes have no stated discriminator | **Open question** — filed as **S40** |
+| `getSubjectTree`'s 403 has two causes, one code | **Open question**, pre-existing (dates to 1.2.0-m1) — filed as **S41** |
+| Where "flashcards are university-only" lives now that its only machine-readable home (`/checkout/sessions`'s description) was deleted | **Open question** — S6, re-anchored in Part B |
+
+#### Rework required
+**Not applicable in the "cost of a past transition" sense — nothing has forced rework against
+this pin yet.** What is instead owed, as **Backend dependency**: `PATCH /me` and
+`GET /me/entitlements` deployed on staging (S37, two routes); seed data for the school-track
+cohort of `+2010000000001`, or a separate university test account (S37 ask 2, corrected wording
+in Part B); the account-deletion endpoint (S38); checklist steps 5 (a short-lived token for the
+401→refresh→retry pipeline) and 9 (forced 500/429), both from `api-data.md` §4. **Deliberately
+not done in this wave**, per `WAVE_STATUS.md` 2026-09-04: the silent auto-retry fix on seven
+registration `FutureProvider`s and two more providers; the W3-1 `ref`-after-`await` fix (R-2,
+OPEN — MEDIUM); Day 9 quiz review; the account-deletion screen; voucher redemption
+(`x-consumers: [web]`, must not be built).
+
+**Source-prose corrections (Dart comments and log strings only — done 2026-09-05, after the
+documentation pass):** `tool/smoke/real_api_smoke_test.dart`'s empty-catalog log line no longer
+says `v2.1: pre-term accounts` (it now names the unseeded cohort and adr-073) and its
+`getExplanation` comment names the one 403 the contract documents there
+(`openapi.yaml:1126-1128`); Phase 2 items 17–23 are corrected (`mock_backend.dart` header →
+pin `184d6ec`; `session_scope.dart` catalogue note → adr-091; `quiz_bloc.dart` → the `/me`
+invalidate lives in `quiz_screen.dart`; `quiz_repository.dart` replay note → `pointsDelta: 0`;
+`level_card.dart` S3 `TODO(contract)` retired; the `saveChanges` ARB description no longer
+cites the deleted `upgradeCta`), plus `profile_screen.dart`'s row table, `quiz_fixtures.dart`'s
+pin and the two registration models' version labels. Item 24 (the "lesson" noun in
+`subscriptionRequiredBody`) is user-facing copy and stays with DESIGN_ISSUES #51. The 17 stale
+`openapi.yaml:NNN` anchors (Phase 2 FINDING-11) were not re-anchored; the two registration
+models now cite the schema name instead of a line.
+
+#### Evidence
+`WAVE_STATUS.md` "Contract v3.0.0-m1 adopted — 2026-09-04" table (commit-by-commit
+`validate.ps1` counts); `RISKS.md` R-8 (narrowed, not closed, 2026-09-04);
+`docs/CONTRACT_3_0_0_IMPLEMENTATION_IMPACT.md` §9 (Backend-Blocked Verification, reproduced in
+A.7 below).
+
+#### Engineering impact
+**Not scored — there is no transition to score at the current pin.** Transition C, above, is the
+score for reaching LEVEL 4 from LEVEL 3.
+
+#### Rework summary
+**Not applicable.** See Transition C's rework summary, above.
+
+#### What should have happened
+The clearest lesson at this pin is about propagation speed, not about the contract: the schema
+change (3.0.0-m1) was adopted in the client code within one day of publication, but the
+*product-direction* change it was downstream of (adr-049, 2026-08-19 — the app is
+purchase-silent) took 16 more days to reach the UI (`5c4b855`, 2026-09-04), and the instruction
+layer was still teaching the old direction on 2026-09-04, when the Phase 2 audit caught it
+(corrected 2026-09-05). A schema change fails loud (the compiler flags it); a product-direction or BEHAVIOURAL
+change fails silent (adr-038's own point) and the only defence is reading the changelog on a
+cadence, not waiting for a build to break.
+
+---
+
+### A.6 Impact summary table
+
+| Transition | Levels | API | Model | UI | Logic | Tests | Mock | Docs | Deleted | Verif. | **Total** | Band | Lead's qualitative reading |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A | 1.0.0-m1 → 1.1.0-m1 | 4 | 4 | 3 | 3 | 4 | 3 | 4 | 4 | 2 | **31** | CRITICAL (at threshold) | HIGH — largest single-day reconciliation, mitigated by no live user |
+| B | 1.1.0-m1 → 2.1.0-m1 | 4 | 3 | 0 | 2 | 3 | 0 | 1 | 2 | 3 | **18** | MEDIUM | MEDIUM — un-observable behavioural change, un-done follow-ups |
+| C | 2.1.0-m1 → 3.0.0-m1 | 5 | 3 | 5 | 2 | 3 | 3 | 5 | 5 | 5 | **36** | CRITICAL | CRITICAL for verification/instructions; HIGH for code volume alone |
+
+**Process lessons (objective, no blame), across all three transitions:**
+1. **Every transition's most expensive item was a change the compiler could not flag.**
+   Transition A's crash class needed no server to exist to be dangerous; Transition B's
+   BEHAVIOURAL gate produced a zero-byte codegen diff by design (adr-038); Transition C's
+   product-direction change (adr-049) preceded its schema change (3.0.0-m1) by 16 days with
+   nothing in the build to mark the gap. **A pinned-contract diff review on a cadence, not only
+   at build-break time, is the one intervention that would have caught all three.**
+2. **The vendored pin lagged the published changelog in two of three transitions** (A: the new
+   pin was vendored 4 days after publication and reconciled 6 days after it, with Day 6 and
+   Day 7 committed on the old pin in between; B: 11 days between the 2026-08-11 publication of
+   1.2.0-m1/1.2.1-m1 and their adoption on 2026-08-22). This is a client-side habit, not a contract
+   defect — `contract-changelog.md` is dated and public; re-diffing it against
+   `contract/SOURCE.md` before each day's feature is cheap.
+3. **Shipped work invalidated by a later contract move was, every time, work built ahead of or
+   beside an unstable surface** — `schoolName`, built four days after the pin was vendored and four
+   days before the contract removed it (Transition A);
+   the purchase surface, sourced from the pre-contract product briefs rather than the contract
+   itself (LEVEL 0, unwound at Transition C). Building against `draft` paths or out-of-repo
+   product briefs is a deliberate, sometimes necessary bet against a moving target — the record
+   here is what that bet cost each time it did not land, not an argument against ever taking it.
+4. **Documentation and the instruction layer are the slowest-moving artifacts, not the
+   fastest.** Transitions A and C both score docs 4–5 (dense reconciliation sets); Transition C
+   additionally shows a machine-readable schema change (1 day to adopt) outrun by a prose-only
+   instruction correction (still wrong 1 day after this phase's own audit found it —
+   FINDING-01). Where a rule can be a test, Wave 4's own finding stands: prose rules decay,
+   mechanised rules hold (`docs/ENFORCEMENT.md`) — the same logic applies to contract-tracking
+   prose, not only to code style.
+
+---
+
+### A.7 Blocked verification ledger
+
+| Level / area | What is blocked | Category | Source |
+|---|---|---|---|
+| L1–L2 | Every "it works" claim before 2026-08-23 was validated only against `lib/dev/mock_backend.dart` — `baseUrl` was `staging.TBD.example` | **Not yet observed on the wire** (resolved partially at L3) | S1, reportC §4 |
+| L3 | 12 of 21 stable ops decoded against staging `0b53cdc` (2026-08-23); `PATCH /me` 405, `GET /me/entitlements` 404, `GET /catalog/subjects` 404 — also seen by direct curl 2026-08-21 (`fbab748`), so not a one-build regression | **Confirmed by staging** (partial) | S37, reportC §4 |
+| L4 | 13 of 21 decoded against `78c6e5d` (2026-09-04) — `GET /catalog/subjects` now `200 []`; `PATCH /me` 405 and `GET /me/entitlements` 404 unchanged since `0b53cdc` (the 404s also seen at `fbab748`); the quiz loop (6 operations) unreachable behind the empty catalog | **Confirmed by staging** (partial) | S37 update, `RISKS.md` R-8 |
+| L4 | The 3.0.0-m1 `finish` body | **Not yet observed on the wire** — gated on seed data, not on the client | Phase 2 §9A |
+| L4 | Whether staging `78c6e5d` (built *after* the mirror commit) actually carries adr-102 | **Unverifiable from outside the private backend repo** | `contract/SOURCE.md` |
+| L4 | When a point is credited — `submitAnswer` or `finish` | **Open question**, blocked on either Seif's answer or seeded data | S39, Phase 2 §9C.1 |
+| L4 | Account deletion — no endpoint exists to verify against | **Backend dependency** | S38 |
+| L4 | Checklist steps 5 (short-lived token → 401→refresh→retry) and 9 (forced 500/429) | **Backend dependency** — needs Seif's cooperation to stage | S37 ask 3, `api-data.md` §4 |
+
+---
+
+### Part B — the question register (S1–S44)
+
+**Filed-at level index** (from `git show <commit>:docs/seif_fight.md`). S1–S19 were all filed in
+`7dff9e5` (Day 7, 2026-08-04) — the questions arose from Days 4–7 built on pin `23f0535` (L1),
+and that same commit vendored L2 (`ee2ed8f`) · S20–S21 filed at L2 on Day 7c (`b1b6416`,
+2026-08-05); S24–S36 filed at L2 on Day 8 (S5/S6 upgraded then) · S37 filed at L3 (2026-08-23)
+· S38 filed at L4 (2026-09-04) · S39–S41 filed at L4 on 2026-09-05 (Phase 3B, from the Phase 2
+audit §9C) · **S42–S44 filed 2026-09-12** with `docs/day10_mistakes_brief.md`, against **upstream `2dca3c5` (3.13.0-m1)** — ahead of the pin, so **no new LEVEL is allocated in Part A yet**; the re-vendor that would create it is that brief's STEP 0 gate. S22/S23 were never allocated — see the note preserved below the summary table.
 
 ## Severity
 🔴 Blocks a real user flow · 🟠 Shipped on an assumption that may be wrong · 🟡 Confirm / tidy
@@ -30,7 +615,7 @@
 | S11 | Favourites: reading state is stable+required, writing it is draft | 🟡 | Open, built around (Day 7) | `quiz_question.dart:50` |
 | S12 | Quiz points in the design are ~20× what the contract can award | 🔴 | Open, built around (Day 7) | `answer_result.dart:36` |
 | S13 | Result screen shows a "Pass" verdict; no pass threshold exists | 🟠 | Open, built around (Day 7) | `quiz_summary.dart:97` |
-| S14 | "Review Questions" needs `GET /quizzes/{quizId}`, which is draft | 🟠 | Open, built around (Day 7) | `quiz_result_screen.dart:130` |
+| S14 | Review from HISTORY needs `GET /quizzes/{quizId}`, which is draft | 🟠 | NARROWED — review-from-result shipped Day 8-9, no endpoint | `quiz_review_screen.dart` (doc comment) |
 | S15 | Setup draws a question-pool progress bar with no data source | 🟠 | Open, built around (Day 7) | `quiz_setup_screen.dart:24` |
 | S16 | Limit sheet says "Daily"; the contract limit is weekly | 🟡 | Open, built around (Day 7) | `limit_sheet.dart:16` |
 | S17 | AI explanation is drawn as TWO sections; the endpoint returns ONE string | 🟠 | Open, built around (Day 7) | `ai_explanation_panel.dart:9` |
@@ -51,8 +636,14 @@
 | S34 | **`parentPhone` is WRITE-ONLY** — required at registration, absent from `GET /me` | 🔴 | Open (Day 8) | — (row not built) |
 | S35 | `GET /me` returns raw wire codes with no display names | 🟠 | Open (Day 8) | `edit_profile_screen.dart` |
 | S36 | A `Friends` screen exists, with no endpoint and no entry point | 🟡 | Open (Day 8) | `friends_screen.dart` |
-| S37 | **Staging does not serve two stable routes** — `PATCH /me` 405, `/me/entitlements` 404 (`/catalog/subjects` deployed since 2026-09-03) | 🔴 | Open, narrowed (2026-09-04) | `tool/smoke/real_api_smoke_test.dart` |
-| S38 | **Account deletion has no endpoint** — required by Google Play and Apple 5.1.1(v); never filed until now | 🔴 | Open (2026-09-04) | `docs/STORE_READINESS.md` §6 |
+| S37 | **Staging does not serve two stable routes** — `PATCH /me` 405, `/me/entitlements` 404 (`/catalog/subjects` answers `200 []` on `78c6e5d`, built 2026-09-03, observed 2026-09-04) | 🔴 | Open, narrowed (2026-09-04) | `tool/smoke/real_api_smoke_test.dart` |
+| S38 | **Account deletion has no endpoint** — required by Google Play and Apple 5.1.1(v); never filed until now | 🔴 | **Narrowed** (2026-09-12) — ask (1) answered upstream; the screen is still unbuilt | `docs/STORE_READINESS.md` §6 |
+| S39 | When is a point credited — at `submitAnswer` or at `finish`? | 🟠 | Open (2026-09-05, from the Phase 2 audit §9C) | `mock_backend.dart:_finishQuiz` |
+| S40 | `createQuiz`'s three 403 codes have no stated rule for which applies when | 🟠 | Open (2026-09-05, from the Phase 2 audit §9C) | `quiz_repository.dart` / `limit_sheet.dart` |
+| S41 | `getSubjectTree`'s 403 has two causes and one code, no discriminator | 🟡 | Open (2026-09-05, from the Phase 2 audit §9C) | `catalog_states.dart:51` |
+| S42 | `getMyMistakes` — are `termId`/`termNumber` always present-and-nullable, or genuinely optional? | 🟠 | Open (2026-09-12, Day 10 brief) | not yet built |
+| S43 | A leaf badged "8 mistakes" replays a 10/30/50-question *ever wrong* quiz — no guidance on what to show | 🟠 | Open (2026-09-12, Day 10 brief) | not yet built |
+| S44 | Neither Mistakes operation can be exercised: the only test account's catalog is empty, so it can never have a wrong answer | 🔴 | Open (2026-09-12, Day 10 brief) | `tool/smoke/real_api_smoke_test.dart` |
 
 > **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
 > the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
@@ -215,6 +806,16 @@ renderer drops in later without touching the screen, the Bloc or the tests. No s
 5. Confirm **university-only** is intended, and move that rule somewhere a client can read it
    rather than leaving it in a checkout endpoint's description.
 
+**Update 2026-09-05 — citations re-anchored (Superseded lines).** `openapi.yaml:1002` and
+`:1027` were deleted with `POST /checkout/sessions` at 2.2.0-m1 (adr-049); `:1342` is now
+`:1532`. At 3.0.0-m1 the word `flashcard` appears once in openapi.yaml (the `EntitlementType`
+enum, `:1532`), and the university-only rule survives only in `contract/error-codes.md:15`'s
+Notes column ("University-only") — prose the changelog says "is never machine-read". Ask 5
+therefore stands and is sharper: the constraint has no machine-readable home at all now. The
+sentence "(And /checkout/sessions is itself draft, so in M1 they cannot even complete the
+purchase that leads nowhere.)" is **Historical** — there is no in-app purchase of any kind
+(adr-049 §3). Phase 2 FINDING-08.
+
 ## S7. 🟠 Quiz timer: designed, not specified
 
 **Where:** quiz-taking frames show a countdown. `Quiz` / `QuizQuestion` carry no duration.
@@ -299,17 +900,30 @@ academic threshold and show it to a student.
 **Ask:** is there a pass mark? Is it global, per-subject, or per-track? If it exists it belongs in
 `QuizSummary` (or a static rule we can hard-code with a contract note). Deferred until answered.
 
-## S14. 🟠 "Review Questions" is blocked by a draft endpoint
+## S14. 🟠 Review from HISTORY is blocked by a draft endpoint
 
-**Where:** result frames draw a **Review Questions** CTA. Reviewing needs
-`GET /quizzes/{quizId}` — the only endpoint that returns correct answers for a finished quiz
-(`openapi.yaml:822`) — and it is `draft`.
+**Narrowed 2026-09-08.** The original framing — *"Review Questions is blocked"* — was too wide, and
+it cost this feature a release. It is corrected here rather than deleted, because the reasoning is
+the useful part.
 
-**What we built (Day 7):** the button renders **disabled** with a "coming soon" affordance, so the
-screen matches the frame and there is zero rework on promotion.
+**Where:** result frames draw a **Review Questions** CTA; the review screen itself is `162:2377`.
 
-**Ask:** promoting `GET /quizzes/{quizId}` unblocks review **and** quiz resume (S2) in one move.
-It is the single highest-value promotion for the quiz feature.
+**What was wrong with the original:** reviewing was read as needing `GET /quizzes/{quizId}`, the only
+endpoint returning correct answers for a finished quiz (`openapi.yaml:1010`), which is `draft`. True
+for review from history — **not** true for the frame's actual entry point. At the moment
+`POST /quizzes/{quizId}/finish` returns, the app already holds, in `QuizSession`, every field the
+draft `QuizReview.questions[]` schema would return: the questions, the chosen option, the correct
+option, correctness, and explanation availability. Field for field. The only obstacle was
+self-inflicted — `QuizCompleted` dropped the session on the way to the result screen.
+
+**What we built (Day 8-9):** `/quiz/:quizId/result/review`, fed entirely from that retained session.
+**Zero endpoints consumed** — coverage is unchanged by this screen. The CTA is live. The payload is
+in memory only and is never cached, so review dies with the process, exactly as S2 requires.
+
+**What is still blocked, and the ask is unchanged:** promoting `GET /quizzes/{quizId}` is what
+unblocks (1) reviewing any quiz but the one just finished, (2) reviewing after a process restart, and
+(3) quiz resume (S2). Still the single highest-value promotion for the quiz feature — the Day 8-9
+screen is a stopgap over a session that survives one app lifetime, not a replacement for it.
 
 ## S15. 🟠 Setup draws a question-pool progress bar with no data source
 
@@ -734,7 +1348,7 @@ door and a contract, and the privacy toggles in S27 are already written as thoug
 
 ---
 
-## S37. 🔴 Staging does not serve three routes the contract marks `stable`
+## S37. 🔴 Staging does not serve two routes the contract marks `stable` (three when filed 2026-08-23; narrowed 2026-09-04)
 
 **Where:** staging backend commit `0b53cdcad20cc0029fea0f18ef2e62a980b48aca` (`/health/version`,
 built 2026-08-23T10:53:37Z). Observed by `tool/smoke/real_api_smoke_test.dart` on 2026-08-23
@@ -756,17 +1370,22 @@ walk, `GET /me`, refresh with rotation, logout — decodes cleanly.
 the 405-as-`internal_error` a routing fallback we should expect elsewhere? (2) Once they are
 up, we need a staging account with a seeded term so `POST /quizzes` has questions to draw —
 the v2.1 empty-catalog state is contract-legal and the harness already handles it, but it
-cannot prove the quiz loop. (3) Still owed from `api-data.md` §4: a ~60 s access token for
+cannot prove the quiz loop. (**Superseded 2026-09-05:** "seeded term" is university-shaped
+wording; see the 2026-09-04 update below.) (3) Still owed from `api-data.md` §4: a ~60 s access token for
 checklist step 5 (the 401 → refresh → retry pipeline) and a forced `500` + `429` for step 9.
 
 **Update 2026-09-04 — narrowed to two.** Against backend `78c6e5dc7c0a287046ea5428fa72c3cdebf3c9c1`
 (built 2026-09-03T15:38:17Z): `GET /catalog/subjects` answers `401 authentication_required`
-unauthenticated and **`200 []`** for the test account — **deployed**, and the empty list is the
-contract-legal pre-term state. `PATCH /me` still answers **405** `internal_error` and
-`GET /me/entitlements` still **404** `not_found`, unchanged across three builds (`fbab748`, `0b53cdc`,
-`78c6e5d`). Evidence: `.ai/audits/current/smoke-staging-2026-09-04.md`. Asks (1) and (3) stand for the
-two remaining routes. Ask (2) — a seeded, released term for `+2010000000001` so `POST /quizzes` has
-questions to draw — is now the only thing between us and proving the quiz loop, and it would also be
+unauthenticated and **`200 []`** for the test account — **deployed**, and the empty list is
+contract-legal; the test account is **school-track** (`track: Track.school` in the harness
+output), and school subjects are never release-gated (`openapi.yaml:795-799`, adr-073) — so
+`[]` here means no subjects are seeded under the account's (education system, stage) cohort
+(`:775-780`), not an unreleased term. `PATCH /me` still answers **405** `internal_error` and
+`GET /me/entitlements` still **404** `not_found`, unchanged between the `0b53cdc` and `78c6e5d`
+builds (the 404s were also seen at `fbab748` by curl; the 405 was first recorded at `0b53cdc`). Evidence: `.ai/audits/current/smoke-staging-2026-09-04.md`. Asks (1) and (3) stand for the
+two remaining routes. Ask (2) — seed subjects for the school cohort (education system, stage) of
+`+2010000000001`, or register a university test account, for which "seed a released term" would
+be the right ask — is now the only thing between us and proving the quiz loop, and it would also be
 the first observation of the 3.0.0-m1 `QuizSummary` on the wire (whether `78c6e5d` includes adr-102
 cannot be checked from outside the private backend repo; the client accepts both shapes meanwhile).
 
@@ -789,6 +1408,185 @@ it can return (`authentication_required` and `session_superseded` at least). Unt
 only ship a `TODO(contract)` shell that says deletion is not available in-app yet, which does not satisfy
 either policy.
 
+> ⚠ **Narrowed 2026-09-12 (Day 10 brief) — ask (1) is answered, upstream.** `POST /me/deletion-request` (`requestAccountDeletion`) and `DELETE /me/deletion-request` (`cancelAccountDeletion`) are both **`x-stability: stable`** at upstream `2dca3c5` (3.13.0-m1); they entered the contract at `3.3.0-m1` (adr-114) as draft and have since flipped. The semantics are a **30-day grace window**, and during it every authenticated endpoint is refused `403 account_pending_deletion` **except an exact four** (`GET /me`, `POST /me/deletion-request`, `DELETE /me/deletion-request`, `POST /auth/logout`) — not a `/me` prefix. `StudentProfile.pendingDeletion` is **present only while a request is pending, absent otherwise, never `null`**, so presence is the flag, and it carries `effectiveAt`.
+>
+> **This is not resolved.** The contract is no longer the blocker — build effort is. Nothing in `lib/` calls either operation, there is no cancel screen, and the Mistakes flow's mandated `403` destination therefore does not exist (`DESIGN_ISSUES.md` #62). Asks (2) minor-data semantics and (3) the full code list still need re-reading against the new pin. **This entry stays Open until the re-vendor lands and the screen is built.**
+>
+> ⚠ **Re-vendor landed 2026-09-12** — `contract/` is now at `2dca3c5` (3.13.0-m1), so both
+> operations are `stable` *in this repo*, not only upstream. **Half of the remaining blocker
+> is therefore gone and the entry is still Open**, because the screen is not built and asks
+> (2) and (3) are still unanswered.
+>
+> Day 10 (Mistakes) touched this deliberately and minimally: its screens do **not** handle
+> `403 account_pending_deletion` — that belongs in the global error interceptor, one place
+> for every endpoint, which is the contract's own framing. What they do guarantee is that
+> the code is **not swallowed and not mistaken for a scope refusal**: it falls through to the
+> generic error with a retry, and a test asserts exactly that. A `TODO(contract)` in
+> `mistakes_overview_screen.dart` points back here.
+
+---
+
+## S39. 🟠 When is a point credited — at `submitAnswer` or at `finish`?
+
+> **Filed 2026-09-05, from the Phase 2 contract-impact audit §9C.1.**
+
+**Where:** `openapi.yaml`'s `submitAnswer` summary reads "returns correctness + points delta
+immediately"; its description reads "Points are awarded server-side only (+1 per correct — dual
+pool per track, adr-003)" (`:1036-1039`). adr-102 D2 (`contract-changelog.md`, 2026-09-03 entry)
+reads "the awarded point is already reflected in `pointsAwarded` at finish and in `GET /me`."
+
+**What:** the strong reading of both quotes together is that a point is credited at
+`submitAnswer` time, not at `finish`. **Not yet observed on the wire** — the quiz loop is
+unreachable against staging (empty seed data for the test account). `lib/dev/mock_backend.dart`'s
+`_finishQuiz` moves the running total only at finish — the opposite reading (Phase 2
+FINDING-12) — so the one thing in this repo that could exercise the question encodes the answer
+the contract text argues against.
+
+**Consequence:** `GET /me`'s freshness after an abandoned quiz is unclear either way (Phase 2
+FINDING-02) — if points post at answer time, a student who abandons mid-quiz should already see
+them on `GET /me`; the app's only refresh of that call is on `QuizCompleted`, so an abandoned
+quiz's points (if already awarded) would not show until the next natural refetch.
+
+**Ask:** confirm the award timing in writing. We will not correct the mock until this is
+answered — the mock's current behaviour is itself the reason FINDING-02 stayed invisible during
+development, and guessing wrong a second time would recreate the same blind spot deliberately.
+
+**Code marker:** `lib/dev/mock_backend.dart` (`_finishQuiz`).
+
+## S40. 🟠 `createQuiz`'s three 403 codes have no stated rule for which one fires
+
+> **Filed 2026-09-05, from the Phase 2 contract-impact audit §9C.2.**
+
+**Where:** `createQuiz`'s `403` response lists three codes: `weekly_question_limit_reached`,
+`subscription_required`, `insufficient_scope`.
+
+**What:** after adr-091 (2.3.0-m1 — the catalog is no longer entitlement-gated; entitlement
+moved to quiz creation), an unsubscribed student can build against the free weekly allowance.
+Nothing in the contract states the rule for when that student gets `subscription_required`
+instead of simply exhausting the free allowance and getting `weekly_question_limit_reached`. The
+client already handles all three codes, so nothing is broken today — but the distinction is not
+derivable from the document, only guessed at per call site.
+
+**Ask:** state the rule that decides between the three codes.
+
+**Code marker:** `lib/features/quiz/repository/quiz_repository.dart` / `lib/features/quiz/widgets/limit_sheet.dart`.
+
+## S41. 🟡 `getSubjectTree`'s 403 has two causes and one code, with no discriminator
+
+> **Filed 2026-09-05, from the Phase 2 contract-impact audit §9C.3. Pre-existing — the
+> un-release cause dates from 1.2.0-m1 (2026-08-11); this is not a 3.0.0-m1 regression.**
+
+**Where:** `openapi.yaml:843-849` — a cached `subjectId` "can still return `403
+insufficient_scope`… without any schema change: the subject fell outside the caller's enrolment
+scope, or the admin un-released its term for the cohort (adr-037 §3)."
+
+**What:** two causes, one code, no discriminator — and they are not equivalent to a student.
+Falling outside enrolment scope is **permanent** (the subject is not part of this student's
+course); an un-released term is **reversible** (it may open later).
+`lib/features/catalog/widgets/catalog_states.dart:51-65` currently suppresses the retry button
+and renders "isn't part of your course" for both — correct for the first cause, wrong for the
+second (Phase 2 FINDING-16).
+
+**Ask:** either a discriminator on the 403 body, or confirmation that one copy string must cover
+both causes (in which case the copy, not the code, needs to stop implying permanence).
+
+**Code marker:** `lib/features/catalog/widgets/catalog_states.dart:51`.
+
+---
+
+## S42. 🟠 `getMyMistakes` — are `termId`/`termNumber` present-and-nullable, or optional?
+
+> **Filed 2026-09-12 with `docs/day10_mistakes_brief.md`. Cited against UPSTREAM `2dca3c5`
+> (3.13.0-m1) — this surface does not exist at our pin `184d6ec`.**
+
+**Where:** `openapi.yaml:908-921` (upstream). The overview item declares four properties plus
+`mistakeCount`, but `required` is **`[id, name, mistakeCount]`** (`:921`) — `termId` and
+`termNumber` are **not in it**. Two lines earlier the `200` description says *"School subjects
+carry `termId: null`"* (`:903`), which reads as though the key is always sent.
+
+**What:** the two readings produce different clients and the difference is not cosmetic.
+
+| Reading | Dart | Behaviour on a school payload |
+| --- | --- | --- |
+| Always present, nullable | `String? termId` from a key that is always there | `{"termId": null}` |
+| Genuinely optional | key may be absent entirely | `{}` — and `json['termId']` is also `null` |
+
+`json_serializable` happens to decode both to `null`, so **the app will not crash either way** and
+this does not block the build. It matters for (a) whether a missing key is contract drift worth
+throwing on, and (b) whether a university payload can legitimately omit them during the summer gap
+rather than sending `null` — `TermId`'s own description (`:2079-2082`) says null is normal
+there too.
+
+**Ask:** confirm which. If the keys are always sent, adding them to `required` costs nothing and
+removes the ambiguity permanently. If they are genuinely optional, say so in the description so the
+`termId: null` sentence stops implying otherwise.
+
+**Code marker:** none yet — not built.
+
+---
+
+## S43. 🟠 A leaf badged "8 mistakes" replays a quiz that is neither 8 questions nor those 8
+
+> **Filed 2026-09-12 with `docs/day10_mistakes_brief.md`. Forward-looking — it bites at the
+> replay step, which is deliberately out of Day 10's scope.**
+
+**Where:** the interaction of `getMyMistakesForSubject` (upstream `:942`) with `POST /quizzes`
+`mode: retakeWrong` as changed by **`3.11.0-m1`** (2026-09-10, adr-136/adr-135).
+
+**What:** `3.11.0-m1` made `{mode: retakeWrong, lessonId|lectureId, length}` legal and the
+changelog names it *"the terminal `replay` step of the Mistakes flow: tapping 'Cell Structure —
+8 mistakes' now builds a quiz from that lesson's wrong answers."* But the two pools are
+**deliberately different sets** (adr-133):
+
+- the badge counts **currently wrong** — it decays the moment a question is answered right;
+- the retake pool is **ever wrong** — it does not decay.
+
+So the student taps a row promising **8** and is served a quiz of **10, 30 or 50** (`length` is a
+closed enum — there is no "just these 8" option) drawn from a **superset** that includes
+questions they have since answered correctly. The contract is emphatic that this is intended and
+that the client must not reconcile the numbers — which is right, but it leaves the **product**
+question open.
+
+**Ask:** with no way to scope a retake to *currently* wrong and no way to request "as many as I got
+wrong", what should the student be told? Either (a) a way to narrow the retake to the decayed set,
+(b) a `length` that can track the pool, or (c) an explicit ruling that the badge and the quiz are
+allowed to disagree and copy should stop implying a relationship. **We will not invent (c)
+silently.**
+
+**Code marker:** none yet — the replay is out of Day 10's scope; `quiz_mode.dart:34`
+(`offeredQuizModes`) is the one-line gate that will open it.
+
+---
+
+## S44. 🔴 Neither Mistakes operation can be exercised against staging — by construction
+
+> **Filed 2026-09-12 with `docs/day10_mistakes_brief.md`. Extends S37 rather than repeating it.**
+
+**Where:** `tool/smoke/real_api_smoke_test.dart` and the staging record
+`.ai/audits/current/smoke-staging-2026-09-04.md`.
+
+**What:** a `mistakeCount` exists only where a student has a **graded wrong answer**. Producing one
+requires the full chain: a seeded catalog → `POST /quizzes` → `POST /quizzes/{id}/answers`
+→ a wrong answer. The only staging test account, **`+2010000000001`**, is **school-track** and
+its catalog answers `200 []` — school subjects are never release-gated (adr-073), so that is
+not an unreleased term, it means **no subjects are seeded for its (education system, stage)
+cohort** (S37). No catalog → no quiz → no answer → no mistake.
+
+So on today's staging both operations will answer `200 []` and `403`/`200`-empty **forever**, and
+every one of them is a contract-legal response. **A green smoke run would prove nothing**, and
+reporting one as evidence the flow works would be exactly the SOURCE-reported-as-DEVICE error
+`WAVE_STATUS.md`'s ladder exists to prevent.
+
+**Ask:** the same ask as S37, and this entry exists to record that a second feature now depends on
+it — either **seed that cohort**, or **register a university test account** on a released
+term. Ideally seed one account far enough to have answered a question wrongly, so the decay rule
+itself can be observed rather than assumed.
+
+**Impact if unanswered:** Day 10 can reach **BUILD** verification and no further. Its DEVICE and
+live-staging rows stay empty, and must be reported empty rather than inferred from the mock.
+
+**Code marker:** `tool/smoke/real_api_smoke_test.dart`; see also `docs/RISKS.md` R-8.
+
 ---
 
 ## How to use this file
@@ -799,3 +1597,6 @@ either policy.
   reasoning is worth more than the tidiness) and delete the `TODO(contract)` marker in code.
 - Anything here that turns into a contract change needs a new pinned commit in
   `contract/openapi.yaml` and a note in `contract-changelog.md` before we build against it.
+- A new contract pin gets a new LEVEL in Part A (the template in A.0), with the transition scored
+  on the anchors there. New S-entries get a level tag added to the "Filed-at level index" above
+  Part B's summary table.

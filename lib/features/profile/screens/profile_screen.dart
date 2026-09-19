@@ -165,7 +165,8 @@ class _Loaded extends ConsumerWidget {
 /// | Settings | live → the real screen |
 /// | Refer a Friend · Customer Support | live → a disabled shell |
 /// | Privacy & policy · Terms & Conditions | live → a `TODO(content)` screen |
-/// | Favorite questions · your progress · Subscription | still disabled |
+/// | Favorite questions · your progress | still disabled |
+/// | Subscription | removed — absent, not disabled (adr-049 §3, D-007) |
 ///
 /// Every disabled row keeps its stable `Key` and its one `TODO(contract)`
 /// naming the `seif_fight.md` entry — and so does every row that now

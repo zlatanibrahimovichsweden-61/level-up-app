@@ -594,7 +594,7 @@ void main() {
     blocTest<QuizBloc, QuizState>(
       'nothing is accepted after the quiz is completed',
       build: build,
-      seed: () => QuizCompleted(quizSummary(), 'Cell Structure'),
+      seed: () => QuizCompleted(quizSummary(), 'Cell Structure', quizSession()),
       act: (bloc) => bloc
         ..add(const OptionSelected('q1-opt0'))
         ..add(const AnswerSubmitted())

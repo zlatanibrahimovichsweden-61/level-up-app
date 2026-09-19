@@ -8,6 +8,7 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
@@ -127,7 +128,10 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                         // stop. It mirrors under RTL and carries the same
                         // back-button semantics label. Abandons registration
                         // → /login.
-                        CircleBackButton(onPressed: () => context.go('/login')),
+                        CircleBackButton(
+                          onPressed: () => context.go('/login'),
+                          variant: BackChipVariant.registration,
+                        ),
                         const Spacer(),
                         LanguagePill(
                           label: l10n.switchLanguage,
@@ -184,11 +188,13 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       keyboardType: TextInputType.text,
                     ),
                     const SizedBox(height: 28),
-                    FilledButton(
-                      onPressed: _continue,
-                      child: Text(
-                        l10n.continueLabel,
-                        style: AppType.buttonLarge,
+                    PrimaryCta(
+                      child: FilledButton(
+                        onPressed: _continue,
+                        child: Text(
+                          l10n.continueLabel,
+                          style: AppType.buttonLarge,
+                        ),
                       ),
                     ),
                   ],
@@ -217,14 +223,8 @@ class _ReadOnlyPhone extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
-    return Container(
-      height: 60,
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(color: ext.fieldBorder, width: 1.17),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    // `FieldShell` rather than a private copy of its decoration (edit2 #26).
+    return FieldShell(
       child: Row(
         children: [
           // Phone numbers read left-to-right regardless of UI locale.
@@ -258,14 +258,8 @@ class _DialCodePhoneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
-    return Container(
-      height: 60,
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(color: ext.fieldBorder, width: 1.17),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    // `FieldShell` rather than a private copy of its decoration (edit2 #26).
+    return FieldShell(
       child: Row(
         children: [
           const Text('🇪🇬', style: AppType.h2),

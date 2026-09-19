@@ -440,8 +440,40 @@
     }
   },
   "reviewQuestions": "Review Questions",
-  "reviewQuestionsComingSoon": "Reviewing your answers is coming soon.",
   "backToLearn": "Back to Learn",
+
+  "quizReviewTitle": "Quiz Review",
+  "@quizReviewTitle": {
+    "description": "Header of /quiz/:quizId/result/review — Figma 162:2411. Distinct from reviewQuestions, which is the CTA that opens it."
+  },
+  "quizReviewFilterAll": "All ({count})",
+  "@quizReviewFilterAll": {
+    "description": "Selected-by-default filter chip. The count is the number of questions delivered in the quiz. Only this chip carries a count — Correct and Wrong are bare labels (Figma 162:2780). Plain substitution, not a plural: the project has no ICU plural anywhere.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "10"
+      }
+    }
+  },
+  "quizReviewQuestionLabel": "QUESTION {number}",
+  "@quizReviewQuestionLabel": {
+    "description": "Small label above each review row — Figma 162:2577. Uppercase in English is baked into the value rather than applied with toUpperCase(), which has no meaning in Arabic. `number` is the question's position in the whole quiz, so filtering never renumbers the rows.",
+    "placeholders": {
+      "number": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "quizReviewEmpty": "No questions to show here.",
+  "@quizReviewEmpty": {
+    "description": "The review screen's only reachable non-content state: the chosen filter selects no rows (e.g. Correct on a quiz answered entirely wrong). Nothing is fetched on this screen, so it has no loading, error or offline state."
+  },
+  "quizReviewAiAvailable": "AI explanation available",
+  "@quizReviewAiAvailable": {
+    "description": "Screen-reader label for the AI glyph on wrong review rows (Figma tdesign:ai-education). The glyph is a non-interactive indicator this day — no destination frame exists for a tap."
+  },
 
   "freeUsageReachedTitle": "Free Usage Reached",
   "weeklyLimitBody": "You've used all your questions for this week.",
@@ -511,7 +543,7 @@
   },
   "saveChanges": "Save Changes",
   "@saveChanges": {
-    "description": "Figma 180:4082 reads \"Save Change\". Corrected to the grammatical plural, the same call made for upgradeCta — the frame's copy is a mock, not a term of art."
+    "description": "Figma 180:4082 reads \"Save Change\". Corrected to the grammatical plural — the frame's copy is a mock, not a term of art (the same call was made for the Upgrade CTA before adr-049 removed it)."
   },
   "fieldLockedHint": "Set when you registered — this can't be changed.",
   "@fieldLockedHint": {
@@ -579,5 +611,53 @@
   "legalNotPublished": "This document hasn't been published yet.",
   "@legalNotPublished": {
     "description": "Privacy & policy and Terms & Conditions need no endpoint — they need TEXT, and none has been supplied (seif_fight.md S30). Deliberately says the document is missing rather than inventing legal copy."
+  },
+
+  "leaderboardTitle": "Leaderboard",
+  "@leaderboardTitle": {
+    "description": "The board screen's own heading (Figma 134:3512). Deliberately NOT the same key as navLeaderboard: the design uses different words for the nav label and the screen title, and the Arabic frame (549:18878) makes that explicit — the tab reads المتصدرون while the heading reads لوحة الصدارة. Reusing one key collapsed the two and shipped the wrong Arabic heading."
+  },
+  "leaderboardPoints": "{points} pts",
+  "@leaderboardPoints": {
+    "description": "A student's score on a board row and under the podium. The frame's podium subtitle reads 'level 7,3000Pts', but GET /leaderboard carries no level — only points — so only points are shown.",
+    "placeholders": {
+      "points": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+  "leaderboardYou": "You",
+  "@leaderboardYou": {
+    "description": "Labels the caller's own board row, which the server marks with isMe. The frame writes 'You' rather than repeating the student's own name back at them."
+  },
+  "leaderboardScopeSystem": "System",
+  "@leaderboardScopeSystem": {
+    "description": "School-track board scope: the student's own education system and country."
+  },
+  "leaderboardScopeGovernorate": "Governorate",
+  "@leaderboardScopeGovernorate": {
+    "description": "School-track board scope, Egypt-only sub-scope. Hidden for students registered outside Egypt, where the server would answer 400."
+  },
+  "leaderboardScopeCohort": "Cohort",
+  "@leaderboardScopeCohort": {
+    "description": "University-track board scope — الدفعة: university + faculty + year."
+  },
+  "leaderboardScopeGlobal": "Global",
+  "@leaderboardScopeGlobal": {
+    "description": "University-track board scope: all university students."
+  },
+  "leaderboardEmpty": "This board doesn't have anyone on it yet.",
+  "@leaderboardEmpty": {
+    "description": "Empty state. Only shown once the server says hasMore is false — a page with no rows while hasMore is true is a short page, not an empty board."
+  },
+  "leaderboardEndOfBoard": "That's the end of the board.",
+  "@leaderboardEndOfBoard": {
+    "description": "Footer once hasMore is false. Deliberately neutral: hasMore:false means either the end of the board or the 200-row display bound, and the client cannot tell which."
+  },
+  "leaderboardShare": "Share",
+  "@leaderboardShare": {
+    "description": "The header's share affordance. Rendered disabled: no sharing surface exists in the contract, and a board carries other students' names and scores."
+  },
+  "accountPendingDeletion": "Your account is scheduled for deletion. Cancel the request to use Level Up again.",
+  "@accountPendingDeletion": {
+    "description": "403 account_pending_deletion (adr-114). Returned by every authenticated endpoint except four during the 30-day grace window. The contract says do not log out and do not retry — route to the cancel screen, which does not exist yet."
   }
 }

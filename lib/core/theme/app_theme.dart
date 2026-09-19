@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_elevation.dart';
 import 'app_typography.dart';
 
 /// The two ThemeData objects. ONE widget renders BOTH — MaterialApp picks
@@ -18,18 +19,21 @@ class AppTheme {
     brightness: Brightness.light,
     primary: Brand.greenPrimary,
     ext: AppColors.light,
+    elevation: AppElevation.light,
   );
 
   static ThemeData get dark => _build(
     brightness: Brightness.dark,
     primary: Brand.purplePrimary,
     ext: AppColors.dark,
+    elevation: AppElevation.dark,
   );
 
   static ThemeData _build({
     required Brightness brightness,
     required Color primary,
     required AppColors ext,
+    required AppElevation elevation,
   }) {
     final scheme =
         ColorScheme.fromSeed(
@@ -55,7 +59,11 @@ class AppTheme {
       // for each slot from the colour scheme as before.
       textTheme: AppType.textTheme,
       scaffoldBackgroundColor: ext.background,
-      extensions: [ext], // <-- custom tokens travel with the theme
+      // Custom tokens travel with the theme. `elevation` is the second
+      // extension for the same reason `ext` is the first: a shadow, a Glass
+      // setting or a back-light is a design value, and design values belong to
+      // the theme rather than to whichever widget happened to need one first.
+      extensions: [ext, elevation],
       appBarTheme: AppBarTheme(
         backgroundColor: ext.background,
         foregroundColor: ext.textPrimary,
@@ -96,7 +104,10 @@ class AppTheme {
       // later inherits the right surface instead of re-introducing the drift.
       // Values are `ProfileConfirmDialog`'s, which came from Figma `180:4445`.
       dialogTheme: DialogThemeData(
-        backgroundColor: ext.cardFill,
+        // The Figma dialog panel is OPAQUE — `#FCFBF9` light, `#232428` dark,
+        // i.e. the page fill. It used to be `cardFill`, which is a 20% wash in
+        // dark and rendered every framework dialog see-through (edit2 #27).
+        backgroundColor: ext.background,
         // M3 composites a primary-tinted overlay over `backgroundColor` in
         // proportion to elevation. That tint is the pale green; killing it is
         // the actual fix, not the background colour alone.
@@ -124,7 +135,7 @@ class AppTheme {
       // student should not be able to tell which framework widget they are
       // looking at.
       datePickerTheme: DatePickerThemeData(
-        backgroundColor: ext.cardFill,
+        backgroundColor: ext.background,
         surfaceTintColor: Colors.transparent,
         // The header inherits `backgroundColor` (M3 leaves
         // `headerBackgroundColor` transparent), so one value covers both halves.

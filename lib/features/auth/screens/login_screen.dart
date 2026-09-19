@@ -9,6 +9,8 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
+import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -197,18 +199,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: (isSubmitting || offline) ? null : _submit,
-                      child: isSubmitting
-                          ? SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: cs.onPrimary,
-                              ),
-                            )
-                          : Text(l10n.sendOtp, style: AppType.buttonLarge),
+                    PrimaryCta(
+                      enabled: !(isSubmitting || offline),
+                      child: FilledButton(
+                        onPressed: (isSubmitting || offline) ? null : _submit,
+                        child: isSubmitting
+                            ? SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: cs.onPrimary,
+                                ),
+                              )
+                            : Text(l10n.sendOtp, style: AppType.buttonLarge),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -219,23 +224,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: (isSubmitting || offline) ? null : _submit,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(60),
-                        backgroundColor: ext.fieldFill,
-                        side: BorderSide(
-                          color: ext.secondaryButtonBorder,
-                          width: 0.5,
+                    PrimaryCta(
+                      tone: CtaTone.outline,
+                      enabled: !(isSubmitting || offline),
+                      child: OutlinedButton(
+                        onPressed: (isSubmitting || offline) ? null : _submit,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(60),
+                          backgroundColor: ext.fieldFill,
+                          side: BorderSide(
+                            color: ext.secondaryButtonBorder,
+                            width: 0.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Text(
-                        l10n.createNewAccount,
-                        style: AppType.buttonLarge.copyWith(
-                          color: ext.textPrimary,
+                        child: Text(
+                          l10n.createNewAccount,
+                          style: AppType.buttonLarge.copyWith(
+                            color: ext.textPrimary,
+                          ),
                         ),
                       ),
                     ),
@@ -277,14 +286,10 @@ class _PhoneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
-    return Container(
-      height: 60,
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(color: ext.fieldBorder, width: 1.17),
-        borderRadius: BorderRadius.circular(20),
-      ),
+    // `FieldShell`, not a private copy of its decoration: this container used
+    // to repeat the fill, the 1.17 border and the radius by hand, so the dark
+    // canvas's Glass and 0.03 hairline would have missed it (edit2 #26).
+    return FieldShell(
       child: Row(
         children: [
           // Flag placeholder (Figma EG flag not yet exported to assets).

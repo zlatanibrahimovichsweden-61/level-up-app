@@ -1124,17 +1124,41 @@ abstract class AppLocalizations {
   /// **'Review Questions'**
   String get reviewQuestions;
 
-  /// No description provided for @reviewQuestionsComingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'Reviewing your answers is coming soon.'**
-  String get reviewQuestionsComingSoon;
-
   /// No description provided for @backToLearn.
   ///
   /// In en, this message translates to:
   /// **'Back to Learn'**
   String get backToLearn;
+
+  /// Header of /quiz/:quizId/result/review — Figma 162:2411. Distinct from reviewQuestions, which is the CTA that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz Review'**
+  String get quizReviewTitle;
+
+  /// Selected-by-default filter chip. The count is the number of questions delivered in the quiz. Only this chip carries a count — Correct and Wrong are bare labels (Figma 162:2780). Plain substitution, not a plural: the project has no ICU plural anywhere.
+  ///
+  /// In en, this message translates to:
+  /// **'All ({count})'**
+  String quizReviewFilterAll(int count);
+
+  /// Small label above each review row — Figma 162:2577. Uppercase in English is baked into the value rather than applied with toUpperCase(), which has no meaning in Arabic. `number` is the question's position in the whole quiz, so filtering never renumbers the rows.
+  ///
+  /// In en, this message translates to:
+  /// **'QUESTION {number}'**
+  String quizReviewQuestionLabel(int number);
+
+  /// The review screen's only reachable non-content state: the chosen filter selects no rows (e.g. Correct on a quiz answered entirely wrong). Nothing is fetched on this screen, so it has no loading, error or offline state.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions to show here.'**
+  String get quizReviewEmpty;
+
+  /// Screen-reader label for the AI glyph on wrong review rows (Figma tdesign:ai-education). The glyph is a non-interactive indicator this day — no destination frame exists for a tap.
+  ///
+  /// In en, this message translates to:
+  /// **'AI explanation available'**
+  String get quizReviewAiAvailable;
 
   /// No description provided for @freeUsageReachedTitle.
   ///
@@ -1346,7 +1370,7 @@ abstract class AppLocalizations {
   /// **'Leave this empty to remove your email.'**
   String get emailClearHelp;
 
-  /// Figma 180:4082 reads "Save Change". Corrected to the grammatical plural, the same call made for upgradeCta — the frame's copy is a mock, not a term of art.
+  /// Figma 180:4082 reads "Save Change". Corrected to the grammatical plural — the frame's copy is a mock, not a term of art (the same call was made for the Upgrade CTA before adr-049 removed it).
   ///
   /// In en, this message translates to:
   /// **'Save Changes'**
@@ -1561,6 +1585,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This document hasn\'t been published yet.'**
   String get legalNotPublished;
+
+  /// The board screen's own heading (Figma 134:3512). Deliberately NOT the same key as navLeaderboard: the design uses different words for the nav label and the screen title, and the Arabic frame (549:18878) makes that explicit — the tab reads المتصدرون while the heading reads لوحة الصدارة. Reusing one key collapsed the two and shipped the wrong Arabic heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboardTitle;
+
+  /// A student's score on a board row and under the podium. The frame's podium subtitle reads 'level 7,3000Pts', but GET /leaderboard carries no level — only points — so only points are shown.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts'**
+  String leaderboardPoints(int points);
+
+  /// Labels the caller's own board row, which the server marks with isMe. The frame writes 'You' rather than repeating the student's own name back at them.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get leaderboardYou;
+
+  /// School-track board scope: the student's own education system and country.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get leaderboardScopeSystem;
+
+  /// School-track board scope, Egypt-only sub-scope. Hidden for students registered outside Egypt, where the server would answer 400.
+  ///
+  /// In en, this message translates to:
+  /// **'Governorate'**
+  String get leaderboardScopeGovernorate;
+
+  /// University-track board scope — الدفعة: university + faculty + year.
+  ///
+  /// In en, this message translates to:
+  /// **'Cohort'**
+  String get leaderboardScopeCohort;
+
+  /// University-track board scope: all university students.
+  ///
+  /// In en, this message translates to:
+  /// **'Global'**
+  String get leaderboardScopeGlobal;
+
+  /// Empty state. Only shown once the server says hasMore is false — a page with no rows while hasMore is true is a short page, not an empty board.
+  ///
+  /// In en, this message translates to:
+  /// **'This board doesn\'t have anyone on it yet.'**
+  String get leaderboardEmpty;
+
+  /// Footer once hasMore is false. Deliberately neutral: hasMore:false means either the end of the board or the 200-row display bound, and the client cannot tell which.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s the end of the board.'**
+  String get leaderboardEndOfBoard;
+
+  /// The header's share affordance. Rendered disabled: no sharing surface exists in the contract, and a board carries other students' names and scores.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get leaderboardShare;
+
+  /// 403 account_pending_deletion (adr-114). Returned by every authenticated endpoint except four during the 30-day grace window. The contract says do not log out and do not retry — route to the cancel screen, which does not exist yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is scheduled for deletion. Cancel the request to use Level Up again.'**
+  String get accountPendingDeletion;
 }
 
 class _AppLocalizationsDelegate

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/app_modal.dart';
 import '../../../l10n/app_localizations.dart';
 // CROSS-FEATURE IMPORT, and deliberate: `avatarsProvider` is
 // `GET /reference/avatars`, a single reference list that registration and Edit
@@ -43,7 +45,10 @@ class _SheetCard extends StatelessWidget {
       top: false,
       child: Container(
         decoration: BoxDecoration(
-          color: ext.cardFill,
+          // OPAQUE, like the dialog: `Frame 1000003004` / `Frame 427319513`
+          // are `#FCFBF9` / `#232428`. `cardFill` is 20% in dark and made the
+          // panel see-through.
+          color: ext.background,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
         ),
         padding: const EdgeInsetsDirectional.fromSTEB(21, 30, 21, 24),
@@ -100,8 +105,11 @@ class AvatarActionSheet extends StatelessWidget {
   const AvatarActionSheet({super.key});
 
   static Future<AvatarAction?> show(BuildContext context) {
-    return showModalBottomSheet<AvatarAction>(
+    return showAppModalSheet<AvatarAction>(
       context: context,
+      scrim: Theme.of(
+        context,
+      ).extension<AppElevation>()!.avatarActionSheetScrim,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const AvatarActionSheet(),
@@ -237,8 +245,13 @@ class ChooseAvatarSheet extends ConsumerWidget {
   final String? selectedId;
 
   static Future<Avatar?> show(BuildContext context, {String? selectedId}) {
-    return showModalBottomSheet<Avatar>(
+    // Its own sigma (13.4) rather than the action sheet's (14.7): two frames,
+    // two readings, not one value reused.
+    return showAppModalSheet<Avatar>(
       context: context,
+      scrim: Theme.of(
+        context,
+      ).extension<AppElevation>()!.chooseAvatarSheetScrim,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ChooseAvatarSheet(selectedId: selectedId),

@@ -51,6 +51,7 @@ class QuizHarness {
     required this.quiz,
     required this.profile,
     required this.protection,
+    required this.storage,
   });
 
   final ProviderContainer container;
@@ -60,6 +61,11 @@ class QuizHarness {
   /// Exposed so a test can assert that finishing a quiz invalidates `/me`.
   final MockProfileRepository profile;
   final RecordingScreenProtection protection;
+
+  /// Exposed so a test can assert that a screen wrote NOTHING — the quiz
+  /// feature caches nothing at all (no Hive, no tokens touched), and the
+  /// review screen listing correct answers is the one that must stay that way.
+  final MockSecureStorage storage;
 }
 
 /// Boots the real app, signed in, with a mocked quiz repository.
@@ -115,5 +121,6 @@ Future<QuizHarness> pumpQuizApp(
     quiz: repository,
     profile: profile,
     protection: protection,
+    storage: storage,
   );
 }

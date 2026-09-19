@@ -128,6 +128,12 @@ designer should know the frame is one control short.
 | Privacy & policy | no endpoint needed — **but nobody has supplied the text** |
 | Terms & Conditions | same |
 
+> **Superseded 2026-09-04 (adr-049 §3, contract 2.2.0-m1; `DECISIONS.md` D-007).** The Subscription
+> row is **removed**, not merely built disabled (`5c4b855`) — the app is purchase-silent: no
+> paywall, no price, no upgrade link, no checkout hand-off of any kind; purchases happen on the
+> website only. `POST /checkout/sessions` was deleted from the contract at 2.2.0-m1, and our
+> **S8** (the Paymob return deep link question) is withdrawn.
+
 The last two aren't your problem technically, but they're a milestone-1 blocker and nobody owns
 them yet.
 

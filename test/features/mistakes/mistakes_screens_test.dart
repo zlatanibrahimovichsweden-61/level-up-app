@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/circle_back_button.dart';
 import 'package:level_up_app/features/catalog/screens/subjects_screen.dart';
 import 'package:level_up_app/features/catalog/widgets/quiz_type_tabs.dart';
 import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
@@ -79,7 +80,7 @@ void main() {
       );
       await openMistakes(tester);
 
-      await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+      await tester.tap(find.byType(CircleBackButton));
       await tester.pumpAndSettle();
 
       expect(find.byType(SubjectsScreen), findsOneWidget);

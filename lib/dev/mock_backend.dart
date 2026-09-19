@@ -1,9 +1,10 @@
 /// Throwaway on-device preview harness — NOT production code.
 ///
-/// A hand-rolled Dio interceptor that answers the stable `/auth/*` and
-/// `/reference/*` endpoints with contract-faithful canned JSON, so the whole
-/// login → OTP → registration walk can be driven on a real device with no
-/// server and no network at all (`AppConfig.baseUrl` is still TBD).
+/// A hand-rolled Dio interceptor that answers the stable surface — `/auth/*`,
+/// `/reference/*`, `/me`, `/me/entitlements`, `/catalog/*` and the quiz loop —
+/// with contract-faithful canned JSON, so the login → OTP → registration →
+/// Home → quiz walk can be driven on a real device with no server and no
+/// network at all.
 ///
 /// Deliberately hand-rolled rather than `http_mock_adapter`: adding a
 /// dev_dependency would mean editing `pubspec.yaml`, and this harness is meant
@@ -13,13 +14,14 @@
 /// `lib/core` knows this file exists; injection happens through a single
 /// `dioProvider` override in that entrypoint's `ProviderScope`.
 ///
-/// Shapes are taken from `contract/openapi.yaml` (pinned `ee2ed8f`,
-/// v1.1.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
+/// Shapes are taken from `contract/openapi.yaml` (pinned `184d6ec`,
+/// v3.0.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
 /// REAL freezed models — if a model changes and the mock stops parsing, that is
 /// the harness doing its job.
 ///
 /// The harness is deliberately STRICT where the server is strict, not merely
-/// permissive: it rejects `schoolName` and both-cities the way v1.1 does. A
+/// permissive: it rejects `schoolName` and both-cities the way the contract has
+/// since v1.1.0-m1 (adr-028). A
 /// mock that echoed whatever it was handed would let a device walkthrough
 /// confirm the OLD contract.
 library;

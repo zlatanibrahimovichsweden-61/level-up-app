@@ -4,15 +4,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// Points per level, CLIENT-SIDE and provisional.
+/// Points per level, from the contract.
 ///
-/// TODO(contract): confirm level thresholds with Seif — `GET /me` returns
-/// `level` and `points` but NOT the threshold for the next level, so the app
-/// cannot draw a progress bar from the server's own numbers. The contract's
-/// prose says "1–12, thresholds every 500 points"; the Figma frame shows
-/// "2,450 / 5,000", which contradicts it (5,000 is the post-level-12 BADGE
-/// cadence, not a level threshold). 500 follows the contract, not the mock.
-/// See docs/DESIGN_ISSUES.md #13.
+/// `StudentProfile.level` is documented as "1–12, thresholds every 500 points;
+/// static, not configurable" (`contract/openapi.yaml`, `StudentProfile.level`;
+/// `docs/seif_fight.md` S3, resolved 2026-09-04 — the threshold had been in the
+/// contract's prose all along). The Figma frame's "2,450 / 5,000" is the
+/// post-level-12 BADGE cadence, not a level threshold — see
+/// docs/DESIGN_ISSUES.md #13. 500 follows the contract, not the mock.
 ///
 /// This constant drives the BAR ONLY. `level`, `points` and `badges` themselves
 /// are rendered exactly as the server returned them and are never recomputed —

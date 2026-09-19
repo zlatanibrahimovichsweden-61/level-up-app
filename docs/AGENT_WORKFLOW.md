@@ -276,7 +276,8 @@ product:
 - **API contract ambiguity** — never invent shapes; raise a change request
 - **destructive migration** — storage, schema, irreversible refactors
 - **security/privacy trade-offs**
-- **business/revenue decisions** — e.g. the `/subscription` entry point
+- **business/revenue decisions** — e.g. the `/subscription` entry point (that example is resolved:
+  the contract decided it — adr-049 §3; RISKS.md R-6 CLOSED 2026-09-04)
 - **user-visible behaviour with no authoritative specification**
 
 ### Never invent

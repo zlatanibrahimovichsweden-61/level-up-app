@@ -507,7 +507,8 @@ void main() {
     if (subjects.isEmpty) {
       report(
         'empty',
-        'contract-legal (v2.1: pre-term accounts) — quiz loop skipped',
+        'contract-legal — no subjects seeded for the account cohort '
+            '(school subjects are never release-gated, adr-073) — quiz loop skipped',
       );
       await refreshAndLogout();
       return;
@@ -581,8 +582,10 @@ void main() {
         final exp = await quizRepo.getExplanation(q.id);
         report('decode', 'OK — ${exp.runtimeType}');
       } on AppException catch (e) {
-        // A 403 without base_subscription is contract-expected. What must
-        // NOT happen is an untyped error — that would fail the test.
+        // A 403 `insufficient_scope` (question not yet answered by the caller —
+        // the only 403 the contract documents on `getExplanation`) is
+        // contract-expected. What must NOT happen is an untyped error — that
+        // would fail the test.
         report('explanation', 'typed ${e.runtimeType}(code=${e.code}) — OK');
       }
       say('\n--- POST /quizzes/{id}/finish ---');

@@ -6,6 +6,15 @@
 **Validation:** ✅ **OVERALL PASS** — 792 tests / 0 failures, analyzer 0 issues,
 formatter clean. Run 2026-08-12. See `test-results.md`.
 
+> **Dated note (2026-09-05) — this package is a 2026-08-11 snapshot.** Several of its findings
+> were later **superseded by contract 3.0.0-m1** (pin `184d6ec`, adopted 2026-09-04), not fixed
+> in place: the `/subscription` dead-end (H-1 / F-3-01 / K-3) and the Paymob return deep link
+> (F-6-08) were **removed outright** with the whole purchase surface — the app is purchase-silent
+> (adr-049 §3, `docs/DECISIONS.md` D-007, `5c4b855`); `TBD.example` (F-7-10) is now prod-only —
+> staging is a real host (`67bdcc1`); `POST /checkout/sessions` (F-7-12) no longer exists in the
+> contract. The 792 count is the count at `e3651e6`; `docs/WAVE_STATUS.md` carries the current
+> state and `docs/seif_fight.md` Part A the contract history. Nothing below was rewritten.
+
 ---
 
 ## Project Health

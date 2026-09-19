@@ -12,10 +12,10 @@ part 'school_registration.g.dart';
 /// `SchoolRegistration`. Contract keys are already camelCase, so NO `@JsonKey`
 /// name bridge is needed and none must be added.
 ///
-/// Required (contract v2.1.0-m1 `required: [...]`, `:1406`): `track,
-/// registrationToken, device, name, dateOfBirth, countryCode, stage,
-/// educationSystem, parentPhone`, PLUS the `anyOf` at `:1407-1409` — at least
-/// one of `cityId` / `cityName`.
+/// Required (`SchoolRegistration.required` at contract v3.0.0-m1, unchanged
+/// since v2.0.0-m1 added `device`): `track, registrationToken, device, name,
+/// dateOfBirth, countryCode, stage, educationSystem, parentPhone`, PLUS the
+/// schema's `anyOf` — at least one of `cityId` / `cityName`.
 /// Optional: `governorateId, cityId, cityName, schoolId, email, avatarId`.
 ///
 /// `device` (`:1393`) became REQUIRED in contract 2.0.0-m1. It is the same

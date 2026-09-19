@@ -205,6 +205,173 @@ void main() {
     );
   });
 
+  // The elevation pass (edit1.md section 8.1) added 48 surface tokens in one
+  // change. Pinned here for the reason the Mistakes group above is pinned: the
+  // dark values are MEASURED, and the failure mode that has actually happened
+  // on this project is a later tidy-up carrying a light value across.
+  group('elevation-pass surfaces', () {
+    final light = AppColors.light;
+    final dark = AppColors.dark;
+
+    test('the dark canvas washes at 20%, it does not paint an opaque card', () {
+      // Fourteen of them are the same story: a neutral at 20% alpha under a
+      // Glass effect. If one of these ever goes opaque, its Glass stops
+      // reading.
+      for (final entry in <String, Color>{
+        'backChipSurfaceFill': dark.backChipSurfaceFill,
+        'registrationBackChipFill': dark.registrationBackChipFill,
+        'languagePillFill': dark.languagePillFill,
+        'homeBellFill': dark.homeBellFill,
+        'dailyTasksFill': dark.dailyTasksFill,
+        'topStudentFill': dark.topStudentFill,
+        'subjectSearchFill': dark.subjectSearchFill,
+        'aiPanelOuterFill': dark.aiPanelOuterFill,
+        'resultCardFill': dark.resultCardFill,
+        'leaderboardRowFill': dark.leaderboardRowFill,
+        'profileHeaderFill': dark.profileHeaderFill,
+        'settingsSectionFill': dark.settingsSectionFill,
+        'avatarBadgeFill': dark.avatarBadgeFill,
+        'trackCardFill': dark.trackCardFill,
+      }.entries) {
+        expect(
+          entry.value.a,
+          closeTo(0.2, 0.005),
+          reason: '${entry.key} should be a 20% wash',
+        );
+      }
+    });
+
+    test('the three dark surfaces that are deliberately OPAQUE', () {
+      // Read from their own frames, not inferred from the rule above.
+      expect(dark.subjectCardFill, const Color(0xFF27282C)); // 337:5732
+      expect(dark.treeRowFill, const Color(0xFF27282C)); // 337:5926
+      expect(dark.profileStatFill, const Color(0xFF27282C)); // 661:8579
+    });
+
+    test('light values are the frames, not a reuse of an old token', () {
+      // Three of these caught an existing token being wrong:
+      expect(
+        light.subjectCardFill,
+        const Color(0xFFFFFFFF),
+        reason: '135:618 is pure white, not the cream catalogCardFill',
+      );
+      expect(
+        light.topStudentFill,
+        const Color(0xFFFFFFFF),
+        reason: '59:2090 is pure white',
+      );
+      expect(
+        light.treeRowBorder,
+        const Color(0xFF4B675E),
+        reason: 'the row border was fieldBorder #D1D1D1 — the frame says green',
+      );
+      expect(
+        light.settingsSectionBorder,
+        Brand.purplePrimary,
+        reason: 'it read profileRowBorder #7070A0; 176:1840 says #AE87E7',
+      );
+      expect(light.quizPrevButtonFill, const Color.fromRGBO(56, 79, 71, 0.6));
+      expect(light.resultStarDiscFill, const Color(0xFFF8EFFC));
+      expect(light.subjectSearchTopBorder, const Color(0xFFF3F4F6)); // 135:610
+      expect(light.otpDigitFill, const Color(0xFFFDFDFD));
+      expect(light.continueLearningFillSchool, const Color(0xFFF3E5FF));
+      expect(light.continueLearningFillUniversity, const Color(0xFFDBB0FF));
+    });
+
+    test('the five light-only borders are null in dark, not a fallback', () {
+      // Null means "the dark frame draws no stroke" — a reading. A later edit
+      // must not fill one in.
+      expect(dark.dailyTasksBorder, isNull); // 337:5357
+      expect(dark.subjectSearchTopBorder, isNull); // 337:5724
+      expect(dark.aiPanelOuterBorder, isNull); // 337:9270
+      expect(dark.profileMenuRowBorder, isNull); // 337:7479
+      expect(dark.settingsSectionBorder, isNull); // 337:8195
+
+      for (final c in [
+        light.dailyTasksBorder,
+        light.subjectSearchTopBorder,
+        light.aiPanelOuterBorder,
+        light.profileMenuRowBorder,
+        light.settingsSectionBorder,
+      ]) {
+        expect(c, isNotNull);
+      }
+    });
+
+    test('otpCardGlow is dark-only, and is the OTP card shadow colour', () {
+      expect(light.otpCardGlow, isNull); // no glow in 308:5114
+      expect(dark.otpCardGlow, const Color.fromRGBO(174, 135, 231, 0.25));
+    });
+
+    test('the tokens that must NOT flip with the canvas', () {
+      // Semantic or medal-order values, the same rule as successBadge above.
+      expect(light.mistakesPillAccent, dark.mistakesPillAccent);
+      expect(light.otpDigitBorder, dark.otpDigitBorder);
+      expect(light.topStudentTopBorder, dark.topStudentTopBorder);
+      expect(light.pillTrackSelectedFill, dark.pillTrackSelectedFill);
+      expect(light.backlight, dark.backlight);
+      expect(
+        light.continueLearningFillUniversity,
+        dark.continueLearningFillUniversity,
+      );
+      expect(
+        light.backlight,
+        Brand.purplePrimary,
+        reason: 'all sixteen B1..B16 ellipses are #AE87E7',
+      );
+    });
+
+    test('every new token is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(light.copyWith(backlight: probe).backlight, probe);
+      expect(light.copyWith(otpCardGlow: probe).otpCardGlow, probe);
+      expect(light.copyWith(subjectCardFill: probe).subjectCardFill, probe);
+      // …and leaves its neighbours alone.
+      final one = light.copyWith(subjectCardFill: probe);
+      expect(one.treeRowFill, light.treeRowFill);
+      expect(one.backlight, light.backlight);
+
+      // Anything that differs between palettes must MOVE at t = 0.5 — the
+      // check that catches a token added to the constructor and forgotten in
+      // lerp, which does not fail to compile, it just stops animating.
+      final mid = light.lerp(dark, 0.5);
+      for (final pair in <String, List<Color?>>{
+        'backChipSurfaceFill': [
+          mid.backChipSurfaceFill,
+          light.backChipSurfaceFill,
+        ],
+        'dailyTasksFill': [mid.dailyTasksFill, light.dailyTasksFill],
+        'subjectCardFill': [mid.subjectCardFill, light.subjectCardFill],
+        'treeRowBorder': [mid.treeRowBorder, light.treeRowBorder],
+        'pillTrackFill': [mid.pillTrackFill, light.pillTrackFill],
+        'aiPanelCardFill': [mid.aiPanelCardFill, light.aiPanelCardFill],
+        'quizPrevButtonFill': [
+          mid.quizPrevButtonFill,
+          light.quizPrevButtonFill,
+        ],
+        'scopeSelectedFill': [mid.scopeSelectedFill, light.scopeSelectedFill],
+        'profileStatFill': [mid.profileStatFill, light.profileStatFill],
+        'otpTimerFill': [mid.otpTimerFill, light.otpTimerFill],
+        'trackCardFill': [mid.trackCardFill, light.trackCardFill],
+        'otpCardGlow': [mid.otpCardGlow, light.otpCardGlow],
+      }.entries) {
+        expect(
+          pair.value.first,
+          isNot(pair.value.last),
+          reason: '${pair.key} did not move — check its lerp line',
+        );
+      }
+
+      // And the endpoints stay exact.
+      expect(light.lerp(dark, 1).backlight, dark.backlight);
+      expect(
+        light.lerp(dark, 0).settingsSectionBorder,
+        light.settingsSectionBorder,
+      );
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.

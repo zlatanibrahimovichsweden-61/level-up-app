@@ -16,13 +16,18 @@ Interpretation: `docs/WAVE_STATUS.md` §"Live staging", `docs/RISKS.md` R-8, `do
 
 | Verdict | Count | Operations |
 | --- | --- | --- |
-| **Decoded** | 13 | the 7 `/reference/*` reads (countries, governorates, cities incl. the deliberate EG-without-governorate 400 → typed `ValidationException[governorateId]`, education-systems, avatars, schools, universities), `POST /auth/otp/request`, `POST /auth/otp/verify` → `AuthenticatedResult`, `GET /me` → `StudentProfile` (track: school), **`GET /catalog/subjects` → `200` with `[]`** (NEW since 08-23 — the route is deployed; an empty list is a contract-legal state for an account with no released subjects), `POST /auth/refresh` (rotation), `POST /auth/logout` |
+| **Decoded** | 13 | the 7 `/reference/*` reads (countries, governorates, cities incl. the deliberate EG-without-governorate 400 → typed `ValidationException[governorateId]`, education-systems, avatars, schools, universities), `POST /auth/otp/request`, `POST /auth/otp/verify` → `AuthenticatedResult`, `GET /me` → `StudentProfile` (track: school), **`GET /catalog/subjects` → `200` with `[]`** (NEW since 08-23 — the route is deployed; the test account is `Track.school` — for a school account the catalog is scoped only by (education system, stage), release-gating is university-only and does not apply (adr-073), so `[]` here means no subjects are seeded under this account's stage/education-system cohort — not an unreleased term or "no released subjects"), `POST /auth/refresh` (rotation), `POST /auth/logout` |
 | **Typed server state** | 2 | `PATCH /me` → **405** `internal_error` (unchanged since 08-23); `GET /me/entitlements` → **404** `not_found` (unchanged) — `seif_fight.md` S37 |
 | **Not reachable** | 6 | `POST /auth/register` (number already registered; arm skipped), `GET /catalog/subjects/{id}/tree`, `POST /quizzes`, `POST /quizzes/{id}/answers`, `POST /quizzes/{id}/finish`, `GET /questions/{id}/explanation` — the quiz loop is gated on a non-empty catalog for the test account |
 
-Change from 2026-08-23: 12 → 13 decoded, 3 → 2 typed server states, 6 → 6 unreachable. What
-would prove adr-102 on staging — a `finish` body without `totalPoints`/`level` — is still
-unobserved. Nothing of the F-7-01 class leaked.
+Change from 2026-08-23: 12 → 13 decoded, 3 → 2 typed server states, 6 → 6 unreachable — the delta
+is `GET /catalog/subjects` moving from a route-level 404 to a decoded `200 []`. That is progress
+on deployment, not on data: the test account is school-track, so the empty result reflects no
+subjects seeded for its (education system, stage) cohort, not an unreleased term (release-gating
+is university-only, adr-073) — seeding that cohort (or registering a separate university test
+account) is what would unblock the quiz loop, not "seeding a term" for this account. What would
+prove adr-102 on staging — a `finish` body without `totalPoints`/`level` — is still unobserved.
+Nothing of the F-7-01 class leaked.
 
 Unauthenticated route probes the same morning (`curl`, status + `code` only), for the record:
 `GET /catalog/subjects` 401 `authentication_required` · `GET /me` 401 · `POST /quizzes` 401 ·
@@ -139,3 +144,11 @@ BASE URL = https://level-up-backend-staging.up.railway.app/api/v1
 00:03 +11: All tests passed!
 
 ```
+
+> Note (2026-09-05): the harness's own log line `empty: contract-legal (v2.1: pre-term accounts)`
+> above is stale prose baked into `tool/smoke/real_api_smoke_test.dart` (it names a superseded
+> contract version and university-only "pre-term" vocabulary for a school-track account). The
+> output block is reproduced verbatim by rule and was not edited. The Dart string was corrected in
+> the harness source later on 2026-09-05 (comment/log-string sweep; no behaviour change), so the
+> next run will print the cohort wording instead. The interpretation that stands is the one in the
+> verdict table.

@@ -260,3 +260,76 @@ int hardcodedFontSizeCount(List<Source> sources) {
   final ar = keys(arArb);
   return (missingInAr: en.difference(ar), extraInAr: ar.difference(en));
 }
+
+// ---------------------------------------------------------------------------
+// RULE (ratchet): elevation effects come from the theme, not from call sites.
+// ---------------------------------------------------------------------------
+
+/// Paths where raw shadow/blur/backdrop code is legitimate.
+///
+/// `lib/core/theme/` holds the tokens; `lib/core/widgets/elevation/` holds the
+/// only code allowed to turn one into paint. Exactly the same exemption shape
+/// as the colour and typography rules, for the same reason: a design system
+/// needs one place where the primitive is allowed to exist.
+bool _elevationExempt(String path) {
+  final p = path.replaceAll(r'\', '/');
+  return p.contains('lib/core/theme/') ||
+      p.contains('lib/core/widgets/elevation/');
+}
+
+/// `path:line` for every raw elevation effect outside those two folders.
+///
+/// **Why this rule exists.** A shadow decided at a call site is the same defect
+/// class the palette guard was built for, and it went uncaught for as long.
+/// Five `BoxShadow`s shipped with `blurRadius` set to Figma's *blur* number —
+/// two different units — and with a colour that only read on one canvas
+/// (docs/DESIGN_ISSUES.md #47). None of that is visible in review; all of it is
+/// visible to this function.
+///
+/// What counts:
+/// * `BoxShadow(` — the Flutter shadow, whose `blurRadius` is not Figma's blur;
+/// * `elevation:` with anything but a literal `0` — including the ternary
+///   `elevation: selected ? 0 : 2`, which a "non-zero literal" check would miss;
+/// * `shadowColor:` — a colour decided next to a shadow is still a colour
+///   decided at a call site;
+/// * `MaskFilter.blur`, `ImageFilter.blur`, `BackdropFilter`, `PhysicalModel(`
+///   — the blur and backdrop primitives the Glass work introduced. Left
+///   unguarded, the second implementation of Glass arrives the first time
+///   somebody needs one and cannot find `ElevatedSurface`.
+///
+/// A ratchet rather than a ban, because eleven sites exist today and migrating
+/// them belongs to the edits that own those components.
+List<String> rawElevationEffects(List<Source> sources) {
+  final out = <String>[];
+  final banned = <RegExp>[
+    RegExp(r'BoxShadow\('),
+    RegExp(r'shadowColor:'),
+    RegExp(r'MaskFilter\.blur'),
+    RegExp(r'ImageFilter\.blur'),
+    RegExp('BackdropFilter'),
+    RegExp(r'PhysicalModel\('),
+  ];
+  // Captures up to the first `,` or `)` so a ternary is read whole.
+  final elevation = RegExp(r'elevation:\s*([^,)]*)');
+
+  for (final s in sources) {
+    if (_elevationExempt(s.path)) continue;
+    final lines = stripComments(s.text).split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      var hit = banned.any((p) => p.hasMatch(line));
+      if (!hit) {
+        final m = elevation.firstMatch(line);
+        if (m != null) {
+          final value = m.group(1)!.trim();
+          // `elevation: 0` is how a widget says "flat", which is the state this
+          // rule wants. Flagging it would push people to remove the line and
+          // inherit Material's default instead — the opposite of the intent.
+          hit = value != '0' && value != '0.0';
+        }
+      }
+      if (hit) out.add('${s.path}:${i + 1}');
+    }
+  }
+  return out;
+}

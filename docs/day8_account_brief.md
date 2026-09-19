@@ -12,6 +12,17 @@
 > **Day 8 consumes the last unbuilt stable endpoint.** After it, endpoint coverage is **21/21
 > stable (100%)** and **22/36 total**. Every one of the remaining 14 is `x-stability: draft`.
 
+> ⚠ **Superseded pin; one product-surface removal since (stamped 2026-09-05).** Written against
+> pin `ee2ed8f` (v1.1.0-m1), 2026-08-06/07. Current pin is `184d6ec` (`3.0.0-m1`) — see
+> `contract/SOURCE.md`. Everything this brief actually built (Profile hub, Edit Profile/`PATCH
+> /me`, Settings, disabled shells) is still live and correct; the `PATCH /me` citation has
+> drifted from `:614-624` to `:663-683` but names the same five fields. **One structural change**:
+> `POST /checkout/sessions` was deleted outright (not merely left `draft`), and the Profile
+> "Subscription" row this brief built as *disabled* was later **removed entirely** by `5c4b855`
+> (adr-049 §3, `docs/DECISIONS.md` D-007) — the app is purchase-silent everywhere now, not merely
+> silent-pending-a-draft-endpoint. Do not use this brief to re-add a Subscription row. See
+> `docs/WAVE_STATUS.md` and D-007.
+
 ---
 
 # Why this day is strange, and read this before anything else
@@ -114,7 +125,8 @@ The frame renders, top to bottom: avatar · **Full Name** · **E-Mail** · **Pho
 **Parent's Number** (`+02`) · **City** (`Cairo`) · **School Name** (`Modern school`) — and on the
 other variants **Education System** (`Amarican`) and **Grade**.
 
-`PATCH /me` accepts exactly five things (`openapi.yaml:614-624`):
+`PATCH /me` accepts exactly five things (`openapi.yaml:614-624`, now `openapi.yaml:663-683`, same
+five fields):
 
 ```
 name · email · avatarId · leaderboardVisible · scoreHidden
@@ -208,6 +220,12 @@ than in the implementation:
    list, styled differently (black / red outline, lavender icon disc, no chevron) and opening
    dialogs rather than navigating. Found in Step 1. No contract impact — recorded so the count
    stops being wrong.
+
+> ⚠ **Superseded (2026-09-05, contract 3.0.0-m1):** `POST /checkout/sessions` is no longer merely
+> `draft` — it was deleted outright at 2.2.0-m1 (adr-049 §3). The Subscription row this table and
+> Step 1 built as *disabled* was later **removed entirely** by `5c4b855`
+> (`docs/DECISIONS.md` D-007) — there is no Subscription row in Profile any more. Do not use this
+> table to re-add one.
 
 **S24 and S25 have no code marker anywhere**, because Solved Questions and Rank are *omitted*
 (conflicts 2 and 3), not disabled. There is nothing in `lib/` to grep for. Step 3 writes them from
@@ -370,6 +388,10 @@ the canvas; every disabled control is present and non-interactive by `Key`.
 - **Notifications screen** (conflict 10).
 - **`your progress`** and **`Favorite questions`** as working screens — rows are disabled in Step 1.
 - **Subscription / Paymob** — routes to the existing placeholder and stops.
+
+  > ⚠ **Superseded (2026-09-05, contract 3.0.0-m1):** there is no placeholder to route to — the
+  > entire purchase surface (`/subscription` route, Upgrade CTA, Profile Subscription row) was
+  > removed outright (adr-049 §3, `5c4b855`, `docs/DECISIONS.md` D-007).
 - **`PUT /me/avatar`**, **`PUT /me/fcm-token`** — draft.
 - **Account recovery** — four draft endpoints, no design in this cluster.
 - **The `/track-select` orphan route** — still out of scope.

@@ -117,21 +117,17 @@ class QuizResultScreen extends StatelessWidget {
                 _RewardsCard(summary: summary),
                 const SizedBox(height: 24),
 
-                Tooltip(
-                  message: l10n.reviewQuestionsComingSoon,
-                  child: FilledButton(
-                    // Rendered so the screen matches the frame, disabled
-                    // because the endpoint behind it is draft. Zero rework when
-                    // it is promoted — this becomes an onPressed.
-                    onPressed: null,
-                    child: Text(l10n.reviewQuestions),
+                FilledButton(
+                  // Live since Day 8-9. Reviewing the quiz JUST FINISHED needs
+                  // no endpoint — the questions and their grades are already in
+                  // hand, carried here on `args.review`. Reviewing from HISTORY
+                  // still needs `GET /quizzes/{quizId}`, which is draft;
+                  // seif_fight S14 was narrowed, not closed.
+                  onPressed: () => context.push(
+                    '/quiz/${summary.quizId}/result/review',
+                    extra: args.review,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.reviewQuestionsComingSoon,
-                  textAlign: TextAlign.center,
-                  style: AppType.captionRegular.copyWith(color: ext.mutedText),
+                  child: Text(l10n.reviewQuestions),
                 ),
                 const SizedBox(height: 8),
                 TextButton(

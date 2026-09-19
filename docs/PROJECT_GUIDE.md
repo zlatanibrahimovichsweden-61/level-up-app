@@ -88,11 +88,14 @@ lib/
 ```
 
 Features: auth · registration · home · catalog · quiz · profile · settings ·
-subscription · track · onboarding · shell · account_shells.
+subscription (four `.gitkeep` scaffold dirs, never populated since `5e4a512`; the purchase routes
+were removed in `5c4b855`/D-007 — the app is purchase-silent, adr-049 §3) ·
+track · onboarding · shell · account_shells.
 
 **Entrypoints.** `main_dev` · `main_staging` · `main_prod` · `main_mock`,
 selected via `lib/core/config/app_config.dart`.
-⚠ Base URLs are `TBD.example` placeholders — blocked on the backend partner.
+⚠ Only the prod base URL is still a `TBD.example` placeholder (`app_config.dart:54`). Dev and
+staging use the real staging host since `67bdcc1` (`app_config.dart:43`).
 
 **Scale.** 178 files / ~36k LOC in `lib`; 66 files / ~15k LOC in `test`
 (run `flutter test` for the current count); 22 of 36 contract paths consumed — **all 21 stable

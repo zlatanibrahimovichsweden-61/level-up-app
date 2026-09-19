@@ -5,7 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/elevation/glass_surface.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -16,11 +20,15 @@ import '../../../l10n/app_localizations.dart';
 /// [ConsumerWidget] for exactly one reason — the language pill needs
 /// `localeProvider` — and for no other.
 ///
-/// **Only the SHEET exists in light.** `459:43873` is a detached 402×360 frame:
-/// the sheet alone, no canvas and no illustration. The full 402×878 composition
-/// exists only in dark, and the illustration is one flat artwork with no
-/// light/dark variant — so light is the same illustration under the light sheet.
-/// Same dark-first pattern already documented for Home and Learn.
+/// **Both canvases carry the whole composition.** Corrected 2026-09-18 by
+/// reading the file on the signed-in desktop app: light `81:92` is a full
+/// 402x878 frame whose three children are the sheet `459:43873` (402x413 at
+/// y 529 - NOT a detached 402x360 frame), `image 79 [Vectorized]` and
+/// `Status_Bars`. Dark `337:15146` is the same plus `Rectangle 6429`. The
+/// illustration is one flat artwork with no light/dark variant.
+///
+/// What the canvases really do differ on is the backing behind the sheet - see
+/// `AppColors.onboardingIllustrationMask` and `_Sheet` below.
 ///
 /// There is no "onboarding seen" flag and none is needed: `authRedirect` sends an
 /// authenticated student straight to `/home`, so this screen is only ever reached
@@ -135,76 +143,120 @@ class _Sheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     const radius = BorderRadius.vertical(top: Radius.circular(25));
 
-    return Container(
-      // The opaque strip (Figma `337:19256`). NOT decoration: `sheetFill` is only
-      // 20% opaque, so without something solid behind it the illustration bleeds
-      // straight through the sheet. Figma does this with an oversized 622×138
-      // rect at (-140,540); painting the background colour behind the sheet is
-      // the same result without replicating those numbers.
-      decoration: BoxDecoration(
-        color: ext.background,
-        borderRadius: radius,
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, -1.5),
-            blurRadius: 9.2,
-            // The frame's 0.15 depth, on the canvas's own shadow colour. The
-            // alpha is this component's; the colour is the palette's — it used
-            // to be raw black, which is invisible on the dark canvas.
-            color: ext.elevationShadow.withValues(alpha: 0.15),
+    final mask = ext.onboardingIllustrationMask;
+
+    // The fill is only 20% opaque, so whatever sits behind the sheet shows
+    // through its frost. Figma controls how much of the illustration that is
+    // with one opaque rect, and the two canvases answer differently:
+    //
+    //   dark  `337:15146` - `Rectangle 6429` (`337:19256`), 622x138 at
+    //                       (-140, 540), `#232428` at 100%, stacked ABOVE the
+    //                       illustration and BELOW the sheet. The sheet's top
+    //                       is y 529, so the strip starts 11pt down and runs
+    //                       138pt: only that top 11pt of artwork is frosted.
+    //   light `81:92`     - no such node at all. Its illustration (419x682 at
+    //                       (-19, -39)) ends at y 643 against the same y 529
+    //                       sheet top, so 114pt of artwork is frosted through.
+    //
+    // Both read from the Properties panel on 2026-09-18 (DESIGN_ISSUES #75).
+    // The strip is therefore painted only on the canvas that draws one: a light
+    // strip would be an invention, not a translation.
+    //
+    // It is a positioned sibling inside this Stack rather than a wrapper,
+    // because `top` then measures from the sheet's OWN top edge - which is
+    // content-sized and unknowable from the screen's Stack. Sitting below the
+    // sheet also means the backdrop frosts the strip's top edge exactly as
+    // Figma's Glass frosts the rect's.
+    return Stack(
+      // The sheet's outer shadow paints ABOVE its top edge, and a Stack
+      // clips as soon as a positioned child overflows. The strip cannot
+      // overflow today (149 < the sheet's ~349dp of content, and it is
+      // left/right 0), and the shadow is measurably still there in the dpr-3
+      // render - but the day someone changes the strip's geometry the clip
+      // would appear and silently eat a measured value. Say no.
+      clipBehavior: Clip.none,
+      children: [
+        if (mask != null)
+          Positioned(
+            top: 11,
+            height: 138,
+            left: 0,
+            right: 0,
+            child: ColoredBox(color: mask),
           ),
-        ],
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: ext.sheetFill, borderRadius: radius),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            // The frame's text block is w331 and the button block w362 inside
-            // 402 — 35.5 and 20. Both collapse to 20, which is the horizontal
-            // padding every other screen in the app already uses; the text
-            // wraps inside the same 20.
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.onboardingTitle,
-                  textAlign: TextAlign.center,
-                  style: AppType.displayLarge.copyWith(color: ext.textPrimary),
-                ),
-                const SizedBox(height: 10),
-                const _AccentedTagline(),
-                const SizedBox(height: 10),
-                Text(
-                  // The `\n` is the design's own deliberate line break.
-                  l10n.onboardingSubtitle,
-                  textAlign: TextAlign.center,
-                  style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
-                ),
-                const SizedBox(height: 20),
-                // The theme already supplies primary fill, cream label, h60,
-                // r20 — this is the same FilledButton as every other screen.
-                //
-                // The dark frame stacks a second, 4px-blurred copy of this
-                // button behind it (`337:19258`): a Figma-only glow layer, not
-                // a second control. Not rendered.
-                FilledButton(
-                  onPressed: onGetStarted,
-                  child: Text(l10n.getStarted, style: AppType.buttonLarge),
-                ),
-                const SizedBox(height: 20),
-                _LogInButton(onPressed: onLogIn),
-              ],
+        ElevatedSurface(
+          shape: const RoundedRectangleBorder(borderRadius: radius),
+          color: ext.sheetFill,
+          // (0, -1.5) blur 9.2 black 15% — the file's one 15% shadow, and the
+          // same value on BOTH canvases (`459:43873` light, `337:15643` dark).
+          // Knocked out behind the 20% fill (edit1.md R4), which the old
+          // `BoxShadow` under an opaque Container could not do.
+          shadows: elevation.onboardingSheetShadows,
+          // Glass G1 in both canvases — the only Glass present in the light
+          // frames.
+          glass: elevation.onboardingSheetGlass,
+          // The app's ONE real `BackdropFilter` (edit2.md §13). Without it
+          // the frost has nothing to blur and the sheet is a flat 20% wash;
+          // with it, the illustration above the strip blurs into the sheet,
+          // which is what G1 (frost 80 -> sigma 40) is there to do. Do not
+          // use `GlassBackdrop.content` on any other surface.
+          backdrop: GlassBackdrop.content,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              // The frame's text block is w331 and the button block w362 inside
+              // 402 — 35.5 and 20. Both collapse to 20, which is the horizontal
+              // padding every other screen in the app already uses; the text
+              // wraps inside the same 20.
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.onboardingTitle,
+                    textAlign: TextAlign.center,
+                    style: AppType.displayLarge.copyWith(
+                      color: ext.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const _AccentedTagline(),
+                  const SizedBox(height: 10),
+                  Text(
+                    // The `\n` is the design's own deliberate line break.
+                    l10n.onboardingSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
+                  ),
+                  const SizedBox(height: 20),
+                  // The theme already supplies primary fill, cream label, h60,
+                  // r20 — this is the same FilledButton as every other screen.
+                  //
+                  // The dark frame stacks a second, 4px-blurred copy of this
+                  // button behind it (`337:19258`): a Figma-only glow layer, not
+                  // a second control. `PrimaryCta` is what renders it, along with
+                  // the (0.5, 0.5) blur-4 black drop shadow both canvases carry.
+                  PrimaryCta(
+                    child: FilledButton(
+                      onPressed: onGetStarted,
+                      child: Text(l10n.getStarted, style: AppType.buttonLarge),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _LogInButton(onPressed: onLogIn),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -267,17 +319,22 @@ class _LogInButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(60),
-        backgroundColor: ext.fieldFill,
-        side: BorderSide(color: ext.secondaryButtonBorder, width: 0.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: Text(
-        l10n.logIn,
-        style: AppType.buttonLarge.copyWith(color: ext.textPrimary),
+    return PrimaryCta(
+      tone: CtaTone.outline,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(60),
+          backgroundColor: ext.fieldFill,
+          side: BorderSide(color: ext.secondaryButtonBorder, width: 0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        child: Text(
+          l10n.logIn,
+          style: AppType.buttonLarge.copyWith(color: ext.textPrimary),
+        ),
       ),
     );
   }

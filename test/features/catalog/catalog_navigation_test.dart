@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/core/widgets/circle_back_button.dart';
 import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/catalog/screens/chapters_screen.dart';
 import 'package:level_up_app/features/catalog/screens/lessons_screen.dart';
@@ -84,13 +85,15 @@ void main() {
     await pumpCatalogApp(tester, catalog: catalog);
     await walkToLessons(tester);
 
-    // Back to Chapters, then to Units, via the header's own chevron (the
-    // screens have no AppBar, so `pageBack` has nothing to press).
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    // Back to Chapters, then to Units, via the header's own chip (the screens
+    // have no AppBar, so `pageBack` has nothing to press). Found by TYPE: the
+    // chip is the shared `CircleBackButton` with the design's SVG chevron, not
+    // the Material `arrow_back_ios_new` the header used to draw.
+    await tester.tap(find.byType(CircleBackButton));
     await tester.pumpAndSettle();
     expect(find.byType(ChaptersScreen), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.tap(find.byType(CircleBackButton));
     await tester.pumpAndSettle();
     expect(find.byType(UnitsView), findsOneWidget);
 

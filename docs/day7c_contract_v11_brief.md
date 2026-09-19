@@ -16,6 +16,16 @@
 >
 > No new endpoint is consumed. Endpoint coverage stays **21/36**.
 
+> ⚠ **Superseded pin, content still valid (stamped 2026-09-05).** Written against contract pin
+> `ee2ed8f` (v1.1.0-m1), 2026-08-05. The contract has since moved to `184d6ec` (`3.0.0-m1`)
+> through `61905ce` (v2.1.0-m1) — see `contract/SOURCE.md`. **Unlike Day 7/8/9, none of this
+> brief's registration/profile decisions were reversed**: the city union, optional `schoolId`,
+> deleted `schoolName`, and the `ProfileCity` sealed union (`docs/DECISIONS.md` D-004) are all
+> still exactly how the current contract and shipped code work. Only the `openapi.yaml:NNN` line
+> citations throughout have drifted (the file has grown by 163 lines since this brief's pin, 1563 → 1726) —
+> treat every citation here as a pointer to re-`grep`, not a trustworthy line number. See
+> `docs/WAVE_STATUS.md`.
+
 ---
 
 # Why this day exists

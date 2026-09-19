@@ -5,11 +5,31 @@
 > **pinned `61905ce` (v2.1.0-m1)** — see `contract/SOURCE.md`.
 > Prereq: contract/model reconciliation committed, `dev` clean, app launching on the Pixel 8.
 >
-> **This day consumes ZERO endpoints.** Coverage before and after is **21/21 stable · 0/16 draft**.
+> **This day consumes ZERO endpoints.** Coverage before and after is **21/21 stable · 0/16 draft**
+> (now 0/15 draft — the count moved when `POST /checkout/sessions` was deleted at 2.2.0-m1,
+> unrelated to this brief's own work; see banner below).
 > If that number moves, something went wrong.
 >
 > **Two steps**, preceded by a **gate**. Do not start Step 1 until the gate passes.
 > Do not start Step 2 until told.
+
+> ⚠ **Superseded pin; NEXT BRIEF UP (stamped 2026-09-05); branch is `merged`, not `dev`.** Written
+> 2026-08-20 against pin `61905ce` (v2.1.0-m1). Current pin is `184d6ec` (`3.0.0-m1`) — see
+> `contract/SOURCE.md`. All work described here is now on branch `merged`, not `dev`. **This
+> brief is confirmed still unbuilt** (`QuizResultArgs` at `quiz_screen.dart:406` still holds only
+> `{summary, scopeName}`; `quiz_result_screen.dart:120` still has the disabled Tooltip exactly as
+> described), so whoever picks it up next must correct: **(1)** the coverage gate should read
+> **0/15 draft**, not 0/16 — the draft count moved when `POST /checkout/sessions` was deleted
+> (adr-049), unrelated to this brief's own work; don't treat the mismatch as a sign something
+> broke. **(2)** `QuizReview` is now at `openapi.yaml:1693`, not `:1675` (same schema, unchanged).
+> **(3)** `QuizResultArgs` is now at `quiz_screen.dart:406`, not `:405`. **(4)** the "Four stale
+> claims inside those skills" section is itself missing a fifth: `level-up-domain`/
+> `seif-api-contract` skills still described a Paymob checkout hand-off and a Fawry `pending`
+> state (both removed by adr-049 §3) until they were corrected on 2026-09-05 — do not build
+> toward either. **(5)** "app launching on the Pixel 8" is an unverified device prereq — confirm
+> before relying on it. Nothing about the review screen's own design is contradicted by later
+> contract changes — `QuizSummary.totalPoints`/`level` were never used by this screen. See
+> `docs/WAVE_STATUS.md`.
 
 ---
 
@@ -40,8 +60,8 @@ QuizBloc → QuizSession     → chosen{qId → optionId}  what the student pick
 
 `QuizSession` (`lib/features/quiz/bloc/quiz_state.dart:25`) carries all four. Nothing is fetched,
 nothing is invented, nothing is cached. The only reason the button is dead today is that
-`QuizResultArgs` (`quiz_screen.dart:405`) carries `{summary, scopeName}` and drops the session on
-the floor when the Bloc is disposed.
+`QuizResultArgs` (`quiz_screen.dart:405`, now `:406`) carries `{summary, scopeName}` and drops the
+session on the floor when the Bloc is disposed.
 
 So Day 9 is small: **stop throwing the session away, and render it.**
 
@@ -74,7 +94,7 @@ already in the session:
 
 ### Why this does not contradict S14, and why S14's ask still stands
 
-`QuizReview` (`contract/openapi.yaml:1675`), behind the draft `GET /quizzes/{quizId}`, requires
+`QuizReview` (`contract/openapi.yaml:1675`, now `:1693`), behind the draft `GET /quizzes/{quizId}`, requires
 `correctOptionId` on every question and makes `selectedOptionId` nullable — the server's designed
 review **does** reveal correct answers, including for unanswered questions.
 
@@ -396,3 +416,12 @@ At test time: `flutter-add-widget-test`, `dart-run-static-analysis`, `dart-add-u
 4. `build-screen` Step 4 and `screen-states` Step 4 reference `04_Screens/`,
    `00_Project/Decisions_Log.md` and `01_Flutter_Specs/`. Those live in the **vault** at
    `F:\level\level_up\level_up\`, not in this repo.
+
+> ⚠ **Superseded (2026-09-05):** this list was missing a fifth, found in the Phase 3B audit.
+
+5. `level-up-domain` and `seif-api-contract` also described a Paymob web-checkout hand-off and a
+   Fawry `pending` subscription state. **Both are gone.** adr-049 §3 removed the app's entire
+   purchase surface, and the contract itself says *"There is no `pending` state"*
+   (`openapi.yaml:754`). Do not build toward either. These skills were corrected on 2026-09-05
+   (Phase 3B) — a reader loading them after that date will not see the stale claim, but this
+   brief's own list was not amended until now.

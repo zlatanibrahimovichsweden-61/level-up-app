@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/app_modal.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// The free-plan limit sheet · Figma `199:2335` (school) ·
@@ -37,8 +39,16 @@ class LimitSheet extends StatelessWidget {
   /// Shows the sheet for [error]. Dismissible — the student must be able to
   /// get back to what they were doing, and there is nothing else to do here.
   static Future<void> show(BuildContext context, ApiException error) {
-    return showModalBottomSheet<void>(
+    // `Rectangle 6427` in the light Limitation frame: 50% #313131 over a page
+    // blurred at sigma 5.75.
+    //
+    // **The dark scrim is BLOCKED, not absent.** No dark Limitation frame
+    // exists in the file, so `limitSheetScrim` is null on that canvas and the
+    // sheet keeps the framework's default barrier there — a gap recorded in
+    // docs/DESIGN_ISSUES.md, not a design decision.
+    return showAppModalSheet<void>(
       context: context,
+      scrim: Theme.of(context).extension<AppElevation>()!.limitSheetScrim,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (_) => LimitSheet(code: error.code),

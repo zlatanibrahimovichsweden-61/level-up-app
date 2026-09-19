@@ -22,8 +22,10 @@ import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/quiz/models/quiz.dart';
+import '../../features/quiz/models/quiz_review_args.dart';
 import '../../features/quiz/models/quiz_setup_args.dart';
 import '../../features/quiz/screens/quiz_result_screen.dart';
+import '../../features/quiz/screens/quiz_review_screen.dart';
 import '../../features/quiz/screens/quiz_screen.dart';
 import '../../features/quiz/screens/quiz_setup_screen.dart';
 import '../../features/registration/models/registration_args.dart';
@@ -301,6 +303,25 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'result',
             builder: (_, state) =>
                 QuizResultScreen(args: state.extra! as QuizResultArgs),
+            routes: [
+              // Nested under the result for the same reason the result is
+              // nested under the quiz: review belongs to the quiz just
+              // finished and is reachable from nowhere else. Reviewing from
+              // history needs `GET /quizzes/{quizId}`, which is draft —
+              // seif_fight S14.
+              //
+              // Unlike its two ancestors this does NOT force-unwrap `extra`.
+              // The review payload is in-memory only, so a cold deep-link or a
+              // process restart lands here with nothing to rebuild from; it
+              // says so rather than throwing a cast error.
+              GoRoute(
+                path: 'review',
+                builder: (_, state) => switch (state.extra) {
+                  final QuizReviewArgs args => QuizReviewScreen(args: args),
+                  _ => const _QuizUnavailableScreen(),
+                },
+              ),
+            ],
           ),
         ],
       ),
@@ -357,7 +378,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// A cold deep-link to `/quiz/:quizId` with no `Quiz` in `extra`.
+/// A cold deep-link to `/quiz/:quizId` (no `Quiz` in `extra`) or to
+/// `/quiz/:quizId/result/review` (no `QuizReviewArgs`).
 ///
 /// Unrecoverable by design, not by omission: quiz state is in memory only
 /// (questions are never cached — the contract frames the bank as the product),

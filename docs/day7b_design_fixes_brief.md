@@ -9,6 +9,9 @@
 > No endpoint is added; endpoint coverage is unchanged at 21/36.
 >
 > Findings are recorded as `DESIGN_ISSUES.md` **#36–#43**. Every section below closes its entries.
+>
+> Note (2026-09-05): the pin/branch header above is stale — see `contract/SOURCE.md`; current
+> branch is `merged`. The content of this brief is otherwise unaffected by later contract changes.
 
 ---
 

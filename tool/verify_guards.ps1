@@ -165,7 +165,15 @@ $fileProbes = @(
 
     @{ Name = 'fontSize ratchet'
        Body = "var s = TextStyle(fontSize: 99);"
-       Test = 'hardcoded fontSize does not increase' }
+       Test = 'hardcoded fontSize does not increase' },
+
+    # The elevation ratchet's twin. A BoxShadow is the exact construct the
+    # 2026-09-16 audit found eleven of, each carrying Figma's blur number in
+    # Flutter's blurRadius field - two different units - under a colour that
+    # only read on one canvas.
+    @{ Name = 'Elevation effects ratchet'
+       Body = "var s = BoxShadow(blurRadius: 1);"
+       Test = 'raw elevation effects do not increase' }
 )
 
 $i = 1
@@ -197,7 +205,20 @@ $editProbes = @(
        Bak  = 'AndroidManifest.guardprobe.bak'
        From = '<uses-permission android:name="android.permission.INTERNET"/>'
        To   = ''
-       Label = 'release INTERNET permission (Tier-0 C-1)' }
+       Label = 'release INTERNET permission (Tier-0 C-1)' },
+
+    # Reintroduce the 2026-09-05 defect, in its SUBTLER form. The doc used to
+    # say `flutter build apk --release` with no target; this probe drops the
+    # `--release` too, because release is Flutter's default build mode. A guard
+    # that only looked for `--release` would stay green here - which is exactly
+    # the hole Fable found in the first version of this guard.
+    @{ Name = 'Release build entrypoint'
+       Test = 'every runnable release-build command targets lib/main_prod.dart'
+       Path = 'docs/RELEASE_SIGNING.md'
+       Bak  = 'RELEASE_SIGNING.guardprobe.bak'
+       From = 'flutter build apk --release -t lib/main_prod.dart'
+       To   = 'flutter build apk'
+       Label = 'release build names the prod entrypoint' }
 )
 
 foreach ($p in $editProbes) {

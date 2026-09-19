@@ -64,6 +64,13 @@ void main() {
     });
   });
 
+  // FROZEN per edit1.md #34 (owner ruling, 2026-09-17). This group describes
+  // code that still ships: the token keeps its cream dark value until the last
+  // call site moves to `AppElevation`, because flipping it early would darken
+  // the 20%-alpha cards that still paint an unclipped shadow under their own
+  // fill. The edit that removes the LAST reference deletes both the field and
+  // this group. Do not "correct" it here — see the doc comment on
+  // `AppColors.elevationShadow` and DESIGN_ISSUES #47/#72.
   group('elevationShadow', () {
     test('is a different colour on each canvas — that is the entire point', () {
       // If these are ever equalised, one of the two canvases has lost its
@@ -99,6 +106,11 @@ void main() {
     });
   });
 
+  // FROZEN per edit1.md #34 — replaced by edit5 when `ProfileStatCard` moves
+  // onto `ElevatedSurface` and takes `AppElevation.profileStatShadows`, whose
+  // dark value is the measured black (Figma `661:8579`) rather than the cream
+  // this asserts. Until then the card really does paint cream, and a test that
+  // says otherwise would be describing code that does not exist.
   group('a card on each canvas', () {
     // The end of the wire. `ProfileStatCard` is the smallest of the five
     // components using the token and they all use the identical expression, so

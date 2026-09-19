@@ -16,7 +16,7 @@ The shared sealed `ScreenState<T>` lives ONCE in `core/models/screen_state.dart`
 - **Error** → localized message + retry button. Retry re-triggers the same failed request on user tap — never silent auto-retry. Never four booleans (`isLoading`, `hasError`…) — they permit impossible combinations.
 - **Offline** → its own view/banner driven by `OfflineException` / connectivity, not a generic error.
 
-Special case that is NOT a fifth state: Fawry subscription `pending` is a domain value (`SubscriptionStatus.Pending`) with its own "Payment processing" UI — never rendered as loading, never as active.
+There is no subscription-pending special case to handle: entitlement state is binary — active or not (`openapi.yaml:754`) — and the mobile app shows no purchase or payment-status UI of any kind (adr-049 §3, purchase-silent).
 
 ## The language pass
 

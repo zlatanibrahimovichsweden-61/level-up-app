@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../profile/notifier/me_notifier.dart';
 import '../bloc/quiz_bloc.dart';
 import '../models/quiz.dart';
+import '../models/quiz_review_args.dart';
 import '../models/quiz_summary.dart';
 import '../repository/quiz_repository.dart';
 import '../widgets/ai_explanation_panel.dart';
@@ -211,7 +212,7 @@ class _QuizView extends ConsumerWidget {
 
   void _onStateChanged(BuildContext context, WidgetRef ref, QuizState state) {
     switch (state) {
-      case QuizCompleted(:final summary, :final scopeName):
+      case QuizCompleted(:final summary, :final scopeName, :final session):
         // The one Riverpod touch in the session: Home reads `/me`, and the
         // student's points and level just changed server-side. Invalidating is
         // correct rather than patching a local value — the server is
@@ -221,7 +222,16 @@ class _QuizView extends ConsumerWidget {
         // Back to land on.
         context.pushReplacement(
           '/quiz/${summary.quizId}/result',
-          extra: QuizResultArgs(summary: summary, scopeName: scopeName),
+          extra: QuizResultArgs(
+            summary: summary,
+            scopeName: scopeName,
+            // Narrowed here, at the last point the session is in hand. The
+            // result screen never sees the session itself.
+            review: QuizReviewArgs(
+              questions: session.quiz.questions,
+              grades: session.grades,
+            ),
+          ),
         );
 
       // A mid-quiz 403 on `POST /answers` is the same paywall as on setup.
@@ -404,8 +414,18 @@ class _RetryRow extends StatelessWidget {
 /// the result screen would otherwise have nothing to title itself with.
 @immutable
 class QuizResultArgs {
-  const QuizResultArgs({required this.summary, required this.scopeName});
+  const QuizResultArgs({
+    required this.summary,
+    required this.scopeName,
+    required this.review,
+  });
 
   final QuizSummary summary;
   final String scopeName;
+
+  /// Handed straight on to `/quiz/:quizId/result/review` when the student taps
+  /// Review Questions. Required, not nullable: the result screen is reachable
+  /// only from a finished session, and a finished session always has one — so a
+  /// null here would mean a bug, not a legitimate state the CTA must hide for.
+  final QuizReviewArgs review;
 }

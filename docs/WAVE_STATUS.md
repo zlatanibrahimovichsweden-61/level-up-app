@@ -1,6 +1,8 @@
 # Wave Status — the single source of project truth
 
-**Last updated:** 2026-09-12 (Day 10 Mistakes shipped — contract re-vendored to 3.13.0-m1, models/repository/notifiers, overview + both tree shapes, entry point live; previous: 2026-09-04 — contract v3.0.0-m1 adopted; purchase surface removed; staging re-probed)
+**Last updated:** 2026-09-12 (Day 10 Mistakes SHIPPED — re-vendor to 3.13.0-m1, models/repository/notifiers, overview + tree screens, entry point live; `validate.ps1` 943 passed / 0 failed / 1 skipped; previous: 2026-09-12 — Day 10 brief written, flow blocked on the re-vendor; 2026-09-10 — leaderboard gated behind its placeholder, D-008; earlier:
+2026-09-08 — Day 8-9, quiz review shipped, zero endpoints; 2026-09-05 — documentation
+reconciliation to contract v3.0.0-m1, Phase 3B)
 **Branch:** `merged` — `dev` + `main` joined on 2026-08-22 (`99b5cba`); both are kept
 untouched as history and all work continues on `merged`.
 **Unpushed:** the 2026-08-23 commits (style-fitting pass, OTP glyph landing, F-7-01,
@@ -52,6 +54,9 @@ repository's history and it is why the ladder exists.
 | **3D** | **Typography** | ✅ COMPLETE (2026-08-21) | `6e2df3d`, `da794de`, `7a16307` | BUILD VERIFIED (validate.ps1 2026-08-22, 856 passed); per-commit analyze + guards in a worktree | not yet reviewed |
 | **3E** | Cache / storage | ✅ COMPLETE | `ac87455` | BUILD VERIFIED | **VERIFIED** |
 | **4** | Documentation + audit protocol | ✅ COMPLETE (2026-08-22) | the docs commit that carries this file | documentation only | — |
+| **Docs 09-05** | Documentation reconciliation to contract 3.0.0-m1 (Phase 3B) | ✅ COMPLETE (2026-09-05) | uncommitted — see the dated section below | documentation only; `validate.ps1` 862 passed / 0 failed | review-only pass — see the dated section below |
+| **Day 8-9** | Quiz Review screen (`162:2377`) — session-scoped, **zero endpoints** | ✅ COMPLETE (2026-09-08) | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 911 passed / 0 failed | not yet reviewed |
+| **Leaderboard** | Board built (13 files, 25 tests) — **held behind its placeholder**, D-008 | ⚠️ **BUILT, NOT REACHABLE** (2026-09-08 built · 2026-09-10 gated) | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 909 passed / 0 failed (1 skipped) | not yet reviewed |
 | **Day 10** | Mistakes / "My Fault" — overview + both tree shapes, `docs/day10_mistakes_brief.md` | ✅ **COMPLETE (2026-09-12)** — the gate passed: `contract/` re-vendored to `2dca3c5` (3.13.0-m1), so both operations now exist at our own pin. Read-only; the replay quiz is deliberately NOT built | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 943 passed / 0 failed (1 skipped) | not yet reviewed |
 | **Final** | Whole-project Fable review | ⏳ NOT STARTED | — | — | — |
 
@@ -132,6 +137,186 @@ whether the Cairo/Inter mix was intentional (#68); a capture pass over the dark 
 
 ---
 
+## Leaderboard gated behind its placeholder, 2026-09-10
+
+**What this corrects.** A complete leaderboard entered the tree on 2026-09-08 — 13 files under
+`lib/features/leaderboard/`, 25 tests — and was wired live on the shell's second branch. This file
+never recorded it, and its 25 tests were folded silently into the 911 the Day 8-9 section
+attributes to quiz review. Both gaps are closed here.
+
+**Why it was gated.** It is built against a path that is **draft at our pin**. `openapi.yaml:1221`
+marks `GET /leaderboard` `x-stability: draft` and `:1263` marks `/leaderboard/me` the same at
+`184d6ec`. No ruling authorising the build existed in `DECISIONS.md` or `seif_fight.md`.
+
+⚠️ **Corrected the same day, and it matters.** A comment in `tab_placeholder.dart` had asserted
+the two operations "reached `x-stability: stable`", and this section originally called that a
+false claim. **It was not.** Upstream is at `f860408` — 13 commits and ten minor versions past our
+pin (`3.0.0-m1` → `3.10.0-m1`) — and both operations became `stable` in **`3.5.0-m1` on
+2026-09-05**, five days before the gate. The board also quotes contract text that does not exist
+at our pin (*"Do not add a synthetic self-rank row to the board"*; `limit` *validated, not
+clamped*, a `3.7.0-m1` clarification), so it was built against **`3.7.0-m1` or later**. The
+engineer was reading the live contract; **the vendored copy is the stale artefact.** The gate
+still stands — the app builds against the *pinned* contract — but it is a holding action pending
+re-vendoring, not a verdict on the board. Full account: `DECISIONS.md` D-008, Correction of
+2026-09-10.
+
+**What changed** (owner ruling, 2026-09-10 — full reasoning in `DECISIONS.md` D-008):
+`LeaderboardPlaceholderScreen` restored in `tab_placeholder.dart` with an accurate doc comment;
+`app_router.dart:150` serves it again; `main_shell_test.dart` back to asserting two coming-soon
+placeholders; `leaderboard_screen_test.dart` mounts the screen directly instead of tapping the nav
+tab, keeping 13 of its 14 tests live. **Nothing under `lib/features/leaderboard/` was deleted** —
+the board is finished code waiting on a server, not work in doubt.
+
+**Endpoint coverage: 21/21 stable · 0/15 draft** — the leaderboard would have made it 1/15, and no
+longer does.
+
+**One test is skipped, not deleted.** `back goes to the Home tab, not off the shell` asserts on
+`MainShell`, which the board no longer sits inside. It carries its reason in source and un-skips in
+the same commit that restores the route.
+
+**Verification level: BUILD.** `validate.ps1` 2026-09-10 — format PASS, analyze PASS (0 issues),
+**909 passed / 0 failed**, 1 skipped, OVERALL PASS. Not DEVICE, not CI. The board has never met a
+real server: `GET /leaderboard` was unreachable in both staging probes, and being draft it is not
+in the 21.
+
+**The count moved 911 → 909, and both tests are accounted for.** One: `main_shell_test.dart` had
+split its placeholder test in two (`Message is the last coming-soon placeholder` +
+`the Leaderboard tab is the real board`); reverting restores the single
+`the two unbuilt tabs are coming-soon placeholders`, so `testWidgets` goes 6 → 5. Two: the skipped
+shell-branch test leaves the passed column. Nothing else was lost — the board's other 24 tests all
+still run.
+
+---
+
+## Day 8-9 — Quiz Review shipped, 2026-09-08
+
+The screen at `162:2377`, reachable from the result screen's **Review Questions** CTA, which had
+shipped disabled since Day 7.
+
+**The correction that unblocked it.** `seif_fight.md` S14 said review was blocked on
+`GET /quizzes/{quizId}` (`x-stability: draft`). That was true of review from HISTORY and was read as
+true of the frame's actual entry point, which it is not: when `POST /quizzes/{quizId}/finish`
+returns, `QuizSession` already holds every field the draft `QuizReview.questions[]` schema would
+return — the questions, the chosen option, the correct option, correctness, explanation
+availability. The only obstacle was that `QuizCompleted` dropped the session. S14 is now **narrowed,
+not closed**: history, cold-restart review and quiz resume (S2) still need the promotion.
+
+| Commit | Concern | validate.ps1 |
+| --- | --- | --- |
+| Step 1 | the screen, its route, its palette tokens, the retained session | PREDICTED 890 → 904 (+14 review-screen tests) · **ACTUAL 904 / 0** |
+| Step 2 | the CTA goes live; `reviewQuestionsComingSoon` retired; records corrected | PREDICTED 904 → 905 (+2 CTA tests, −1 obsolete disabled-CTA test) · **ACTUAL 905 / 0** |
+| Review fixes | contrast, text scale, tap targets, `explanationAvailable`, semantics | PREDICTED 905 → 911 (+6) · **ACTUAL 911 / 0** |
+
+**Endpoint coverage is UNCHANGED: 21/21 stable · 0/15 draft.** Recounted from the pinned contract
+(`184d6ec`) rather than copied — 36 operations carry `x-stability`, 21 stable and 15 draft, none
+without. Two other documents disagree and are wrong: the Day 9 brief says `0/16` (it predates the
+2.2.0-m1 deletion of `POST /checkout/sessions`), and `PROGRESS.md:257` claims 14 remaining draft
+paths.
+
+**Verification level: BUILD.** `validate.ps1`, this machine, this session — not DEVICE, not CI. In
+particular **the RTL and dark-mode passes are BUILD-verified only**: they are asserted by widget test
+(`quiz_review_screen_test.dart` renders Arabic, dark, and both together), which is stronger than
+reading the source and weaker than looking at a phone. The Day 8-9 brief's definition of done asks
+for DEVICE verification of both, and memory records dark mode as **dead on device on 2026-08-04**,
+never re-confirmed. That gap is open.
+
+**Owner rulings taken, 2026-09-08** (the brief's §3 stop-and-ask, answered in writing before Step 1):
+the review frame's wrong-row colours are treated as drift and the shipped tokens reused
+(DESIGN_ISSUES #52); dark rows stay **opaque**, following the correctness-signal rule at
+`app_colors.dart:236` rather than the frame's 20% alpha (#53); the frame's four text styles map to
+the nearest existing `AppType` entries rather than extending the scale (#57). The ratchet stayed at
+**0** — no inline `fontSize`, no inline `fontWeight`.
+
+**What the §3.2 ruling turned out to cost, and the fix.** Keeping the dark rows opaque is right, but
+it has a consequence neither the brief nor the ruling anticipated: `quizCorrectFill` is opaque
+`#BFFFC3` in BOTH canvases, so a row foreground that follows the theme puts cream on mint — measured
+**1.11:1**, invisible. The first cut of this screen did exactly that. Fixed by making the foreground
+follow the FILL rather than the canvas: the correct row takes a fixed `#384F47`
+(`quizReviewRowContent`, now identical in both palettes), while the wrong and skipped rows take
+`textPrimary`, because `quizWrongFill` is 30% alpha and `quizOptionFill` does follow the canvas
+(6.94:1 dark). The selected filter chip had the same class of fault — `onPrimary` cream on the dark
+chip's purple, 2.74:1 — and gained its own token (5.48:1). Both are asserted by test.
+
+**A pre-existing instance of the same fault, NOT fixed here.** `question_option_tile.dart:119-120`
+paints the quiz page's option label with `textPrimary` on `quizCorrectFill`. In dark that is the
+identical **1.11:1** cream-on-mint. It is shipped UI outside this day's scope and is left alone
+deliberately rather than changed without a ruling — recorded here so it is not rediscovered as new.
+
+**Also found and corrected during review:** the AI glyph ignored `AnswerResult.explanationAvailable`
+and promised an explanation on every wrong row; `_ReviewRow`'s fixed 73px height overflowed from text
+scale 1.35 (Android's largest standard setting is 1.30) and the filter chip clipped its own label
+from 1.15, silently, because cross-axis overflow is not reported; the chips were a 32dp tap target
+against a 48dp floor; and the row announced itself to screen readers as an image.
+
+**Deliberately not done in this wave** (listed so nobody infers they were): review from history and
+after a cold restart (needs the S14 promotion); the AI glyph as a tap target (no destination frame —
+DESIGN_ISSUES #56); a skipped-row design (#55); the Mistakes / "My Fault" flow; favouriting from
+review (all three endpoints draft); a golden test for the screen.
+
+---
+
+## Documentation reconciliation — 2026-09-05 (Phase 3B, documentation only)
+
+**Scope.** No application code, test, model, route, ARB, `contract/` file or `zna.md` changed
+(`zna.md` was explicitly excluded from this phase). Every change is a `.md`/`.json` record or
+instruction file. The contract pin is unchanged at `184d6ec` (3.0.0-m1).
+
+**What changed.**
+- `docs/seif_fight.md` restructured in place. **Part A** is the contract-change ladder —
+  LEVEL 0 (the 2026-06 product briefs, provenance only, no score), LEVEL 1 (1.0.0-m1, `23f0535`),
+  LEVEL 2 (1.1.0-m1, `ee2ed8f`), LEVEL 3 (2.1.0-m1, `61905ce`), LEVEL 4 / CURRENT (3.0.0-m1,
+  `184d6ec`); each transition is scored on nine anchored 0–5 dimensions (A: 31, B: 18, C: 36)
+  with the lead's qualitative reading shown beside the band, every count taken from `git show
+  --stat` or a commit body, no hours or days anywhere. **Part B** is the S-register as it was,
+  with S6 re-anchored (its `openapi.yaml:1002`/`:1027` citations were deleted with
+  `/checkout/sessions`), S37's ask corrected to the school cohort, and S39–S41 filed from the
+  Phase 2 audit §9C.
+- The auto-loaded instruction set now matches the contract: five `.claude/skills/*/SKILL.md`,
+  `river/evals/evals.json`, this repo's `CLAUDE.md` §1.2 and the out-of-repo `F:\level\CLAUDE.md`
+  — there is no `pending` entitlement state (`openapi.yaml:754`) and the app is purchase-silent
+  (adr-049 §3). Phase 2 FINDING-01 closed.
+- Dated records stamped, not rewritten: the Day 7 / 7b / 7c / 8 / 9 briefs carry superseded-pin
+  banners and inline callouts (the ten-field `QuizSummary` block stays verbatim as evidence);
+  K-3 retired in `known-issues.md`; forward pointers in `api-data.md`, `wave3-implementation.md`,
+  `final-summary.md` and `PROGRESS.md`. The 2026-07-28 reports and the rest of the 2026-08-11
+  audit package are untouched history.
+- School-vs-university correction. The smoke account `+2010000000001` is **school-track**;
+  school subjects are never release-gated (adr-073, `openapi.yaml:795-799`), so its empty catalog
+  means no subjects are seeded for its (education system, stage) cohort — not an unreleased term.
+  Corrected in `smoke-staging-2026-09-04.md` (prose only — the verbatim harness block is
+  untouched and footnoted), `RISKS.md` R-8 and `seif_fight.md` S37. The right ask is to seed that
+  cohort, or to register a university test account.
+- Current-state guides: `PROJECT_GUIDE.md` (`TBD.example` is prod-only; `subscription` is an
+  empty scaffold), `AGENT_WORKFLOW.md`, `RELEASE_SIGNING.md`, `ASSET_MANIFEST.md`,
+  `for_seif_account_surface.md`, and the untracked `STORE_READINESS.md` and
+  `CONTRACT_3_0_0_IMPLEMENTATION_IMPACT.md` (status note only).
+
+**Deliberately not changed:** `zna.md` (excluded — its "seed a released term" ask is still
+university-shaped; deferred); the `F:\level\*.md` product briefs (outside the repo — they still
+describe a Paymob hand-off and a Fawry `pending` state; flagged in `seif_fight.md` LEVEL 0);
+`tool/smoke/real_api_smoke_test.dart`'s `v2.1: pre-term accounts` log string and the stale
+in-code comments the Phase 2 audit lists as items 17–24 (Dart — out of scope, recorded in
+`seif_fight.md` LEVEL 4); the untracked `skills/` mirror.
+
+**Verification level: BUILD** — `validate.ps1` 2026-09-05T02:27Z: format PASS, analyze PASS,
+**862 passed / 0 failed**, OVERALL PASS — unchanged from 2026-09-04, as expected for a change that
+touches no Dart. Not DEVICE, not CI. Nothing here changes what the app does; the 3.0.0-m1 `finish`
+body remains **not yet observed on the wire**.
+
+**Method.** One lead agent; five read-only investigation agents (documentation inventory, contract
+history, client rework evidence, day briefs and fix queue, staging records); three writers on
+disjoint file sets; a lead integration and correction pass (the ladder's Day 4/5 timing,
+`schoolName` timing and an S21 misattribution were corrected before review); then a review-only
+Fable pass — **PASS WITH WARNINGS**: scope clean, staging facts and every sampled contract
+citation verified; its findings were arithmetic and citation slips in the ladder (day counts,
+two commit stats, "net" vs "deletions", one figure git did not support — `net ≈ −300` — and the
+`PATCH /me` 405 wrongly attributed to build `fbab748`) plus two current-state sentences in this
+repo's `CLAUDE.md`. All were applied by the lead after the review; Transition B's Tests score
+moved 2 → 3 (total 17 → 18, still MEDIUM). Optional follow-up left open: per-file supersession
+stamps inside the 2026-08-11 audit package (only `final-summary.md` carries one).
+
+---
+
 ## Contract v3.0.0-m1 adopted — 2026-09-04
 
 **Pin.** `contract/` re-vendored from `seifhamdii-collab/level-up-contract` at `184d6ec`
@@ -167,9 +352,9 @@ contract — removed, not built.
 
 **Deliberately not done in this wave** (listed so nobody infers they were): the silent
 auto-retry on the seven registration `FutureProvider`s, `deviceInfoProvider` and
-`schoolSearchProvider` (they need `retry:` returning null); the W3-1 fix itself; Day 9 quiz
-review; the account-deletion screen (S38 — no endpoint); voucher redemption (`x-consumers:
-[web]`, must not be built).
+`schoolSearchProvider` (they need `retry:` returning null); the W3-1 fix itself; ~~Day 9 quiz
+review~~ (**shipped 2026-09-08 — see the Day 8-9 section above**); the account-deletion screen
+(S38 — no endpoint); voucher redemption (`x-consumers: [web]`, must not be built).
 
 ---
 

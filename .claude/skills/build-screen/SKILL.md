@@ -29,7 +29,7 @@ Lay out, in a short plan the user approves before any code:
 
 Order that works: models (freezed, `@JsonKey` snake_case bridge) → repository (throws typed `AppException`) → notifier/bloc → screen widget → wire route. Run `flutter analyze` between increments; zero errors before moving on.
 
-Layering rule: widgets render state and dispatch intent; notifier/bloc orchestrates; repository is the only place that touches Dio/Hive; the server decides — never compute points/levels/entitlements client-side, display what the API returns (Fawry `pending` included).
+Layering rule: widgets render state and dispatch intent; notifier/bloc orchestrates; repository is the only place that touches Dio/Hive; the server decides — never compute points/levels/entitlements client-side, display what the API returns. There is no entitlement `pending` state (`openapi.yaml:754`), and the app never builds a purchase/paywall surface (adr-049 §3).
 
 Constraints that are always in force (they close off plausible-but-wrong paths):
 

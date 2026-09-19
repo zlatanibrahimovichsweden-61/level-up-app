@@ -8,6 +8,7 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -72,7 +73,10 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                   children: [
                     Row(
                       children: [
-                        CircleBackButton(onPressed: () => context.pop()),
+                        CircleBackButton(
+                          onPressed: () => context.pop(),
+                          variant: BackChipVariant.registration,
+                        ),
                         const Spacer(),
                         LanguagePill(
                           label: l10n.switchLanguage,
@@ -109,12 +113,15 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                           setState(() => _selected = RegTrack.university),
                     ),
                     const SizedBox(height: 32),
-                    FilledButton(
-                      // Disabled until a track is selected.
-                      onPressed: _selected == null ? null : _continue,
-                      child: Text(
-                        l10n.continueLabel,
-                        style: AppType.buttonLarge,
+                    PrimaryCta(
+                      enabled: _selected != null,
+                      child: FilledButton(
+                        // Disabled until a track is selected.
+                        onPressed: _selected == null ? null : _continue,
+                        child: Text(
+                          l10n.continueLabel,
+                          style: AppType.buttonLarge,
+                        ),
                       ),
                     ),
                   ],

@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level Up Frontend Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ---------- tokens: the app's own two canvases ---------- */
+:root{
+  --ground:#FCFBF9; --ink:#232428; --ink-2:#4A4C52; --muted:#6B6F73; --line:#E3E0D8; --subtle:#F2F0EA;
+  --card:#FDFDFD; --primary:#384F47; --primary-ink:#FCFBF9; --accent:#AE87E7; --accent-soft:#D8B0FF; --accent-tint:#EFE6FA;
+  --ok:#22C55E; --ok-tint:#E6F8EC; --warn:#FFCA28; --warn-tint:#FFF6DA; --high:#FF8228; --high-tint:#FFEBDD;
+  --bad:#EF4444; --bad-tint:#FDE4E4; --info:#4F7FD9; --info-tint:#E4ECFB; --future:#8A8F98; --future-tint:#ECEDF0;
+  --shadow:0 1px 2px rgba(35,36,40,.06),0 6px 18px rgba(35,36,40,.06);
+  --font-display:"Tajawal","Segoe UI",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-mono:"IBM Plex Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+  --sidebar:252px; --content:1120px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#232428; --ink:#FCFBF9; --ink-2:#D9D9DE; --muted:#A5A7AE; --line:#3B3C43; --subtle:#2C2D32;
+    --card:#2A2B30; --primary:#AE87E7; --primary-ink:#232428; --accent:#8FB8A8; --accent-soft:#5E4A80; --accent-tint:#3A3148;
+    --ok:#3DD16F; --ok-tint:#1F3A2A; --warn:#FFD24D; --warn-tint:#3F3620; --high:#FF9A4D; --high-tint:#3F2D1F;
+    --bad:#F26A6A; --bad-tint:#3F2323; --info:#7BA3F0; --info-tint:#22304A; --future:#9AA0A8; --future-tint:#2F3136;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#232428; --ink:#FCFBF9; --ink-2:#D9D9DE; --muted:#A5A7AE; --line:#3B3C43; --subtle:#2C2D32;
+  --card:#2A2B30; --primary:#AE87E7; --primary-ink:#232428; --accent:#8FB8A8; --accent-soft:#5E4A80; --accent-tint:#3A3148;
+  --ok:#3DD16F; --ok-tint:#1F3A2A; --warn:#FFD24D; --warn-tint:#3F3620; --high:#FF9A4D; --high-tint:#3F2D1F;
+  --bad:#F26A6A; --bad-tint:#3F2323; --info:#7BA3F0; --info-tint:#22304A; --future:#9AA0A8; --future-tint:#2F3136;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.35);
+}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--ground);color:var(--ink);font:15px/1.55 var(--font-body);-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
+a:hover,a:focus-visible{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:2.35rem;font-weight:800}
+h2{font-size:1.65rem;font-weight:700}
+h3{font-size:1.2rem;font-weight:700}
+h4{font-size:1rem;font-weight:700}
+p{margin:0 0 .85rem;max-width:72ch}
+ul,ol{margin:0 0 .85rem;padding-inline-start:1.25rem}
+li{margin:.2rem 0}
+li p{margin:0}
+code,pre,kbd{font-family:var(--font-mono);font-size:.86em}
+code{background:var(--subtle);padding:.05em .35em;border-radius:4px;border:1px solid var(--line)}
+pre{background:var(--subtle);border:1px solid var(--line);border-radius:8px;padding:.9rem 1rem;overflow-x:auto;line-height:1.4;margin:0 0 1rem;color:var(--ink);font-size:.8rem}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:0 0 1rem}
+th,td{padding:.55rem .7rem;text-align:start;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-weight:600;background:var(--subtle);color:var(--ink-2);font-size:.8rem;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.mono,th.mono{font-family:var(--font-mono);font-size:.8rem}
+hr{border:0;border-top:1px solid var(--line);margin:1.5rem 0}
+.small{font-size:.85rem;color:var(--muted)}
+.eyebrow{font-family:var(--font-body);font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;margin-bottom:.4rem}
+.lede{font-size:1.05rem;color:var(--ink-2);max-width:68ch}
+
+/* ---------- layout ---------- */
+.shell{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;border-inline-end:1px solid var(--line);background:var(--card);padding:1.2rem 1rem;display:flex;flex-direction:column;gap:1rem}
+.brand{display:flex;flex-direction:column;gap:.15rem}
+.brand .name{font-family:var(--font-display);font-weight:800;font-size:1.25rem;color:var(--primary)}
+.brand .sub{font-size:.75rem;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:.1rem}
+.nav a{display:flex;align-items:center;gap:.55rem;padding:.42rem .6rem;border-radius:8px;color:var(--ink-2);font-size:.88rem;border-inline-start:3px solid transparent}
+.nav a .n{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);min-width:1.6em}
+.nav a:hover{background:var(--subtle);text-decoration:none}
+.nav a.active{background:var(--accent-tint);color:var(--ink);border-inline-start-color:var(--primary);font-weight:600}
+.side .tools{margin-top:auto;display:flex;flex-direction:column;gap:.5rem;font-size:.8rem;color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:.82rem;cursor:pointer}
+.btn:hover{background:var(--subtle)}
+main{padding:2rem clamp(1rem,4vw,3rem) 4rem;max-width:calc(var(--content) + 6rem)}
+section{scroll-margin-top:1rem;margin:0 0 3.2rem;padding-top:.5rem}
+section > h2{margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+.sec-head{display:flex;align-items:baseline;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem;border-bottom:2px solid var(--line);padding-bottom:.5rem}
+.sec-head h2{border:0;margin:0;padding:0}
+.sec-head .n{font-family:var(--font-mono);color:var(--muted);font-size:.9rem}
+
+/* ---------- header / verdict strip ---------- */
+.hero{display:grid;gap:1.2rem;margin-bottom:2.2rem}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;font-size:.82rem;color:var(--muted);font-family:var(--font-mono)}
+.verdict{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;border:1px solid var(--line);border-inline-start:6px solid var(--warn);border-radius:12px;background:var(--card);padding:1rem 1.2rem;box-shadow:var(--shadow)}
+.verdict .big{font-family:var(--font-display);font-size:1.45rem;font-weight:800;line-height:1.1}
+.verdict .big span{display:block;font-size:.8rem;font-family:var(--font-body);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem}
+.verdict p{margin:0;color:var(--ink-2)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.8rem .9rem}
+.kpi .v{font-family:var(--font-display);font-size:1.5rem;font-weight:800;line-height:1;color:var(--primary);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:.78rem;color:var(--muted);margin-top:.35rem}
+.kpi .s{font-size:.72rem;color:var(--ink-2);margin-top:.15rem}
+
+/* ---------- badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:.3rem;padding:.12rem .5rem;border-radius:999px;font-size:.72rem;font-weight:600;letter-spacing:.03em;white-space:nowrap;border:1px solid transparent;vertical-align:middle}
+.b-ok{background:var(--ok-tint);color:var(--ink);border-color:var(--ok)}
+.b-warn{background:var(--warn-tint);color:var(--ink);border-color:var(--warn)}
+.b-high{background:var(--high-tint);color:var(--ink);border-color:var(--high)}
+.b-bad{background:var(--bad-tint);color:var(--ink);border-color:var(--bad)}
+.b-info{background:var(--info-tint);color:var(--ink);border-color:var(--info)}
+.b-future{background:var(--future-tint);color:var(--ink);border-color:var(--future)}
+.b-accent{background:var(--accent-tint);color:var(--ink);border-color:var(--accent)}
+.b-plain{background:var(--subtle);color:var(--ink-2);border-color:var(--line)}
+.dot{width:.55em;height:.55em;border-radius:50%;display:inline-block;background:currentColor}
+.p-crit{color:var(--bad)} .p-high{color:var(--high)} .p-med{color:var(--warn)} .p-low{color:var(--ok)} .p-fut{color:var(--future)}
+
+/* ---------- cards & grids ---------- */
+.grid{display:grid;gap:.9rem}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem}
+.card h3,.card h4{margin-bottom:.5rem}
+.card.lift{box-shadow:var(--shadow)}
+.callout{border-inline-start:4px solid var(--accent);background:var(--accent-tint);border-radius:0 10px 10px 0;padding:.8rem 1rem;margin:0 0 1rem}
+.callout.bad{border-color:var(--bad);background:var(--bad-tint)}
+.callout.warn{border-color:var(--warn);background:var(--warn-tint)}
+.callout.ok{border-color:var(--ok);background:var(--ok-tint)}
+.callout p:last-child{margin:0}
+
+/* ---------- details ---------- */
+details{border:1px solid var(--line);border-radius:10px;background:var(--card);margin:0 0 .6rem}
+details > summary{cursor:pointer;padding:.7rem .95rem;font-weight:600;list-style:none;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+details > summary::-webkit-details-marker{display:none}
+details > summary::before{content:"";width:.5em;height:.5em;border-inline-end:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none}
+details[open] > summary::before{transform:rotate(45deg)}
+details > .body{padding:.2rem .95rem 1rem;border-top:1px solid var(--line)}
+details.chapter > summary{font-family:var(--font-display);font-size:1.05rem}
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:.25rem .9rem;margin:.5rem 0 0;font-size:.88rem}
+dl.kv dt{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:.15em}
+dl.kv dd{margin:0}
+
+/* ---------- timeline ---------- */
+.timeline{display:grid;gap:0;position:relative;margin:0 0 1rem}
+.tl{display:grid;grid-template-columns:110px 18px 1fr;gap:.6rem;align-items:start;padding:.45rem 0}
+.tl .d{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);padding-top:.15rem;text-align:end}
+.tl .m{position:relative;height:100%}
+.tl .m::before{content:"";position:absolute;inset-inline-start:7px;top:0;bottom:-.9rem;width:2px;background:var(--line)}
+.tl:last-child .m::before{display:none}
+.tl .m::after{content:"";position:absolute;inset-inline-start:2px;top:.35rem;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid var(--ground)}
+.tl.inf .m::after{background:var(--warn)}
+.tl.unk .m::after{background:var(--future)}
+.tl .t{font-size:.9rem}
+.tl .t b{font-weight:600}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:.4rem 0 1rem}
+.legend span::before{content:"";display:inline-block;width:.7em;height:.7em;border-radius:50%;margin-inline-end:.35em;vertical-align:-.05em}
+.legend .c::before{background:var(--primary)} .legend .i::before{background:var(--warn)} .legend .u::before{background:var(--future)}
+
+/* ---------- flow diagram (boxes) ---------- */
+.flow{display:flex;flex-direction:column;align-items:stretch;gap:0;max-width:640px;margin:0 auto 1rem}
+.flow .box{border:1.5px solid var(--line);border-radius:10px;background:var(--card);padding:.6rem .9rem;text-align:center;font-size:.9rem}
+.flow .box b{display:block;font-family:var(--font-display);font-size:1rem}
+.flow .box .st{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.flow .arrow{text-align:center;color:var(--muted);line-height:1.2;font-size:1.1rem}
+.st-complete{border-color:var(--ok)!important;background:var(--ok-tint)!important}
+.st-partial{border-color:var(--warn)!important;background:var(--warn-tint)!important}
+.st-remaining{border-color:var(--future)!important;background:var(--future-tint)!important}
+.st-blocked{border-color:var(--bad)!important;background:var(--bad-tint)!important}
+.st-complete .st{color:var(--ok)} .st-partial .st{color:var(--high)} .st-remaining .st{color:var(--future)} .st-blocked .st{color:var(--bad)}
+.blocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.7rem;margin:0 0 .6rem}
+.blocks .box{border:1.5px solid var(--line);border-radius:10px;background:var(--card);padding:.6rem .8rem;font-size:.85rem}
+.blocks .box b{display:block;font-family:var(--font-display);font-size:.98rem}
+.blocks .box .st{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.blocks .box .dep{font-size:.75rem;color:var(--muted);margin-top:.3rem}
+.tier{margin:0 0 1rem}
+.tier .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;margin:.4rem 0}
+.arch{display:grid;gap:.45rem;max-width:760px;margin:0 auto 1rem}
+.arch .layer{border:1.5px solid var(--line);border-radius:10px;background:var(--card);padding:.55rem .9rem;display:grid;grid-template-columns:150px 1fr;gap:.6rem;align-items:center;font-size:.86rem}
+.arch .layer .name{font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--primary)}
+.arch .layer.fe{grid-template-columns:150px 1fr;background:var(--subtle)}
+.arch .down{text-align:center;color:var(--muted);line-height:1}
+
+/* ---------- progress bars & health ---------- */
+.bars{display:grid;gap:.55rem}
+.bar{display:grid;grid-template-columns:190px 1fr 92px;gap:.7rem;align-items:center;font-size:.88rem}
+.bar .track{height:10px;border-radius:999px;background:var(--subtle);border:1px solid var(--line);overflow:hidden;position:relative}
+.bar .fill{height:100%;border-radius:999px;background:var(--primary)}
+.bar .fill.ok{background:var(--ok)} .bar .fill.warn{background:var(--warn)} .bar .fill.high{background:var(--high)} .bar .fill.bad{background:var(--bad)}
+.bar .val{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);text-align:end}
+.scale{position:relative;margin:2.4rem 0 .6rem}
+.scale .track{height:16px;border-radius:999px;background:linear-gradient(90deg,var(--bad),var(--high) 22%,var(--warn) 45%,var(--ok) 70%,var(--info) 100%);opacity:.85;border:1px solid var(--line)}
+.scale .ticks{display:grid;grid-template-columns:repeat(6,1fr);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.35rem}
+.scale .ticks span{text-align:center}
+.scale .marker{position:absolute;top:-1.9rem;transform:translateX(-50%);text-align:center;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.scale .marker::after{content:"";display:block;margin:.15rem auto 0;width:0;height:0;border-inline-start:8px solid transparent;border-inline-end:8px solid transparent;border-top:12px solid var(--ink)}
+.healthbox{border:2px solid var(--warn);border-radius:14px;padding:1.2rem 1.4rem;background:var(--card);box-shadow:var(--shadow)}
+.healthbox .v{font-family:var(--font-display);font-size:1.7rem;font-weight:800;line-height:1.1;margin-bottom:.4rem}
+
+/* ---------- steps ---------- */
+.steps{counter-reset:s;display:grid;gap:.6rem;max-width:760px}
+.step{display:grid;grid-template-columns:2.2rem 1fr;gap:.7rem;align-items:start;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:.7rem .9rem}
+.step::before{counter-increment:s;content:counter(s);font-family:var(--font-display);font-weight:800;font-size:1.3rem;color:var(--primary);line-height:1}
+.step b{display:block;margin-bottom:.15rem}
+.step .why{font-size:.85rem;color:var(--ink-2)}
+
+/* ---------- print & narrow ---------- */
+@media (max-width:980px){
+  .shell{grid-template-columns:1fr}
+  .side{position:static;height:auto;border-inline-end:0;border-bottom:1px solid var(--line)}
+  .nav{flex-direction:row;flex-wrap:wrap}
+  .nav a{padding:.3rem .55rem;border:1px solid var(--line);border-inline-start-width:1px}
+  .side .tools{margin-top:0}
+  .bar{grid-template-columns:130px 1fr 70px}
+  .verdict{grid-template-columns:1fr}
+}
+@media print{
+  .side{display:none} .shell{display:block} main{max-width:none;padding:0}
+  details{break-inside:avoid} details > .body{display:block!important}
+  details:not([open]) > .body{display:block}
+  .kpi,.card{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+  <div class="brand">
+    <div class="name">Level Up</div>
+    <div class="sub">Flutter frontend audit · 2026-09-08 · read-only</div>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a href="#summary"><span class="n">1</span>Executive summary</a>
+    <a href="#done"><span class="n">2</span>What we have done</a>
+    <a href="#architecture"><span class="n">3</span>Architecture</a>
+    <a href="#features"><span class="n">4</span>Feature inventory</a>
+    <a href="#useless"><span class="n">5</span>Potentially useless files</a>
+    <a href="#problems"><span class="n">6</span>Problems found</a>
+    <a href="#remaining"><span class="n">7</span>Remaining work</a>
+    <a href="#blocks"><span class="n">8</span>Remaining-work diagram</a>
+    <a href="#health"><span class="n">9</span>Project health</a>
+    <a href="#next"><span class="n">10</span>Recommended sequence</a>
+    <a href="#method"><span class="n">A</span>Method &amp; evidence</a>
+  </nav>
+  <div class="tools">
+    <button class="btn" id="themeBtn" type="button" aria-label="Toggle colour theme">◐ Theme: <span id="themeLbl">system</span></button>
+    <button class="btn" id="expandBtn" type="button">Expand all sections</button>
+    <button class="btn" id="collapseBtn" type="button">Collapse all sections</button>
+    <div>Companion: <code>flutter_frontend_workflow.md</code></div>
+  </div>
+</aside>
+
+<main>
+<header class="hero">
+  <div>
+    <div class="eyebrow">Read-only project audit · development status report</div>
+    <h1>Level Up — Flutter Frontend Audit</h1>
+    <p class="lede">What has been built, where the project stands on 2026-09-08, what is good, what is bad, and what remains. Every claim below is sourced from the working tree, the git history, the vendored API contract or the project's own records; verification levels follow the project's ladder (SOURCE → BUILD → ARTEFACT → DEVICE → CI).</p>
+  </div>
+  <div class="meta">
+    <span>branch: merged @ 7e7129c (dirty)</span><span>contract: 184d6ec · 3.0.0-m1</span><span>Flutter 3.44.7 · Dart 3.12.2</span><span>88 commits · 1 author · 2026-07-19 → 2026-09-08</span>
+  </div>
+  <div class="verdict">
+    <div class="big"><span>Overall verdict</span>🟡 Fair — functional but incomplete</div>
+    <p>A genuinely well-engineered codebase (Good to Very Good on architecture, code quality, tests and documentation) that is <b>not release-ready</b>, and whose vendored API contract is <b>nine versions behind upstream</b> (pinned 3.0.0-m1; upstream 3.9.2-m1 as of 2026-09-08). The in-flight leaderboard was built against that newer contract — where the endpoint <i>is</i> stable — but the pin was never moved, so the repository contradicts itself. Most remaining blockers are external — backend routes, seed data, a production URL, legal copy, a signing key — but two real client defects and several silent-failure paths are also open.</p>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v">890 / 0</div><div class="l">tests passed / failed</div><div class="s">validate.ps1 · 2026-09-08 · BUILD level, dirty tree</div></div>
+    <div class="kpi"><div class="v">21 / 21</div><div class="l">stable endpoints with client code (vendored pin)</div><div class="s">13 verified live · upstream now has 25 stable, pin is 9 versions behind</div></div>
+    <div class="kpi"><div class="v">38.8k</div><div class="l">lines in lib/ (190 files)</div><div class="s">22.2k hand-written · 16.6k generated</div></div>
+    <div class="kpi"><div class="v">14 / 21</div><div class="l">routed screens complete</div><div class="s">3 partial · 4 shells/placeholders</div></div>
+    <div class="kpi"><div class="v">2</div><div class="l">confirmed client defects open</div><div class="s">+ 4 found by this audit, unfiled</div></div>
+    <div class="kpi"><div class="v">NOT READY</div><div class="l">store submission</div><div class="s">8 blockers, 5 external</div></div>
+  </div>
+</header>
+
+<!-- ===================================================== 1 ===================================================== -->
+<section id="summary">
+  <div class="sec-head"><span class="n">1</span><h2>Executive summary</h2></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>What the project is</h3>
+      <p>A single Flutter app (Android + iOS target, iOS never built) for Egyptian students, forked at registration into School and University tracks. Phone-OTP login, a four-step registration wizard, a Home dashboard, a subject catalog (Learn), a multiple-choice quiz engine with server-awarded points, a profile/settings cluster, and — uncommitted — a leaderboard. The app is <b>purchase-silent</b> by contract (no paywall, price or checkout; purchases happen on the website) and many users are minors, which drives the storage, logging and backup rules.</p>
+    </div>
+    <div class="card">
+      <h3>Architecture in one breath</h3>
+      <p>Feature-first Flutter. <b>Riverpod 3</b> is both state and DI (no get_it); <b>Bloc</b> is confined to the quiz session by a guard test. <b>GoRouter</b> with a pure redirect function and a five-tab <code>StatefulShellRoute</code>. <b>Dio</b> with two interceptors (single-flight token refresh; typed <code>AppException</code> mapping). freezed/json_serializable models with committed codegen. A <code>ThemeExtension</code> palette and a designer-transcribed type scale, both held at zero exceptions by tests. Arabic-first localization with ARB parity enforced.</p>
+    </div>
+    <div class="card">
+      <h3>Major functionality that exists</h3>
+      <ul>
+        <li>Onboarding → phone login → OTP with the new/existing fork → registration (both tracks, contract v1.1 city/school escapes) → Home</li>
+        <li>Learn: subjects → school unit/chapter/lesson tree or university lectures with quiz-type tabs</li>
+        <li>Quiz: create → answer loop with AI explanation polling → finish → result, with weekly-limit sheets and screenshot protection</li>
+        <li>Profile hub, Edit Profile (<code>PATCH /me</code>, email tri-state), Settings (language, theme, rank privacy), four disabled account shells</li>
+        <li>Session hygiene: device-bound tokens in secure storage, forced logout on eviction, full session-scope invalidation on sign-out</li>
+        <li>Uncommitted: a complete-looking leaderboard tab (podium, scopes, infinite scroll) — built on a <b>draft</b> endpoint</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Maturity and the biggest concerns</h3>
+      <ul>
+        <li><b>Maturity:</b> seven weeks of dense, disciplined work; 890 green tests incl. 17 mechanised rules; every stable endpoint has client code. BUILD-verified, largely not DEVICE-verified (last physical walkthrough 2026-08-04, emulator run 2026-09-05).</li>
+        <li><b>Contract drift:</b> the vendored contract is pinned at <code>184d6ec</code> (3.0.0-m1, 09-03) while the partner's repository has moved 12 commits to 3.9.2-m1 (09-08). In that newer contract both leaderboard operations are <b>stable</b> (3.5.0-m1, 09-05), account deletion is stable (3.8.0-m1, 09-07), and — flagged in red by the partner — <code>GET /questions/{id}/explanation</code> is published stable but <b>has no backend route</b>. The leaderboard was built against the newer contract; the pin, <code>contract/</code> and every record still describe the old one.</li>
+        <li><b>Silent failure paths:</b> 10 fail-able providers lack <code>retry:</code>, so on a device a failed reference/avatar load may never show its error state; <code>GET /me/entitlements</code> never fires because nothing reads the provider.</li>
+        <li><b>Live API gap:</b> staging answers 405 for <code>PATCH /me</code>, 404 for entitlements, and has no seed data for the test cohort — the quiz loop and the 3.0.0-m1 finish body have never been observed on the wire.</li>
+        <li><b>Release readiness:</b> prod URL is a placeholder, no signing key, no account deletion, placeholder legal copy, template store identity, iOS never built.</li>
+        <li><b>Documentation weight:</b> ~1.6 MB of Markdown across <code>docs/</code> and <code>.ai/</code> for 22k lines of hand-written Dart; several layers are stale or duplicated.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== 2 ===================================================== -->
+<section id="done">
+  <div class="sec-head"><span class="n">2</span><h2>What we have done</h2></div>
+  <p>Reconstructed from <code>git log</code> (88 commits, all Conventional Commits, one author), the twelve dated day-briefs, <code>docs/WAVE_STATUS.md</code>, <code>docs/PROGRESS.md</code>, <code>contract/SOURCE.md</code>, the audit package and file timestamps. The development sequence was: <b>foundation → auth → registration → home/shell → catalog → onboarding &amp; signing → quiz → design-fidelity pass → contract reconciliation → account cluster → ten-agent audit → enforcement waves → branch unification &amp; typography → live staging → contract 3.0.0 &amp; purchase removal → store audit → leaderboard (in flight)</b>.</p>
+  <div class="legend"><span class="c">Confirmed (commit / file evidence)</span><span class="i">Inferred (strongly suggested)</span><span class="u">Unknown</span></div>
+
+  <div class="timeline">
+    <div class="tl"><div class="d">2026-07-19</div><div class="m"></div><div class="t"><b>Contract v1 drafted</b> by the backend partner (33 paths, 22 stable). Project starts the same day (CLAUDE.md, contract-changelog).</div></div>
+    <div class="tl"><div class="d">07-22 → 07-23</div><div class="m"></div><div class="t"><b>Day 0 foundation, Day 1 login/OTP, Day 1b session &amp; refresh.</b> Feature-first layout, sealed <code>ScreenState</code>/<code>StateWidget</code>, Dio + interceptors, secure storage, two palettes, router, AR/EN, flavors, bundled fonts. Auth epic merged to <code>main</code> (<code>f4514c4</code>). Day 2 registration spine + 7 pickers (<code>08a0b61</code>, 77 tests).</div></div>
+    <div class="tl"><div class="d">07-26</div><div class="m"></div><div class="t"><b>Day 3 registration complete</b> — both track forms + <code>POST /auth/register</code> (<code>57fab32</code>) → <code>main</code>.</div></div>
+    <div class="tl"><div class="d">07-28 → 07-30</div><div class="m"></div><div class="t"><b>Day 4 Home + nav shell</b> (<code>8d5fc9f</code>), BUG-001 fix (provider write in <code>initState</code>, <code>b8ee9f3</code>); <b>Day 5 Learn tab</b> (<code>9fa2a61</code>); <b>Day 6 university parity</b> (<code>c2ddc30</code>); onboarding + brand assets; Android release signing (fail-closed); backup disabled, Keychain pinned.</div></div>
+    <div class="tl"><div class="d">08-03 → 08-04</div><div class="m"></div><div class="t"><b>Day 7b design-fidelity pass</b> (real nav glyphs, notched bar, language pill, track cards, 18 goldens) and <b>Day 7 quiz engine</b> (<code>7dff9e5</code>: QuizBloc, 4 endpoints, screen protector, mock harness). Days 4–6 merged to <code>main</code> (<code>cfe6a4c</code> — still <code>main</code>'s tip). Physical-device walkthrough on a Pixel 8 (75 screenshots, 3 bugs).</div></div>
+    <div class="tl"><div class="d">08-05</div><div class="m"></div><div class="t"><b>Day 7c contract v1.1 reconciliation</b> (adr-028): city union, skippable school, 429/404 mapping, strict mock. Seven commits.</div></div>
+    <div class="tl"><div class="d">08-06 → 08-07</div><div class="m"></div><div class="t"><b>Day 8 account cluster</b>: Profile hub, Edit Profile (<code>PATCH /me</code> — the last stable endpoint), Settings, four disabled shells; theme/locale persistence; status-bar and shadow token fixes (<code>e3651e6</code>).</div></div>
+    <div class="tl"><div class="d">08-11 → 08-12</div><div class="m"></div><div class="t"><b>Wave 0 — ten-agent audit</b> (report-only, 116 raw findings → 2 CRITICAL, 9 HIGH) + independent Fable review; tree reformatted to tall style (141 files, blame-ignored).</div></div>
+    <div class="tl"><div class="d">08-14 → 08-15</div><div class="m"></div><div class="t"><b>Wave 1</b>: release <code>INTERNET</code> permission (C-1, ARTEFACT-verified with aapt2), session-scope invalidation (C-2). <b>Wave 2</b>: CI workflow, git hooks, <code>validate.*</code>, seven mechanised guards and a guard-proof harness.</div></div>
+    <div class="tl"><div class="d">08-17 → 08-18</div><div class="m"></div><div class="t"><b>Waves 2.1 / 3A / 3B / 3E</b>: autoDispose disposal guards, localized fallbacks, Hive removed, l10n ratchet lowered. Contract re-pinned to 2.1.0-m1 (<code>61905ce</code>).</div></div>
+    <div class="tl"><div class="d">08-22 → 08-23</div><div class="m"></div><div class="t"><b>Branch unification</b> (<code>dev</code> + <code>main</code> → <code>merged</code>, <code>99b5cba</code>); contract 2.1.0-m1 adopted (required <code>device</code> on register); real staging host; <b>Wave 3D typography</b> from the designer's handoff (ratchet 153 → 0); Wave 4 docs; style-fitting pass; F-7-01 typed parse boundary; smoke harness first live run — <b>12/21 stable ops decoded</b>.</div></div>
+    <div class="tl"><div class="d">09-04</div><div class="m"></div><div class="t"><b>Contract 3.0.0-m1 adopted</b> (<code>3db4f04</code>): <code>QuizSummary</code> loses <code>totalPoints</code>/<code>level</code>; the whole purchase surface removed (<code>5c4b855</code>); limit-sheet copy; staging re-probed — <b>13/21</b>. HEAD <code>7e7129c</code>, pushed to <code>origin/merged</code>.</div></div>
+    <div class="tl"><div class="d">09-05</div><div class="m"></div><div class="t"><b>Documentation reconciliation</b> (28 files, uncommitted); <b>store-readiness audit</b> — release APK and first AAB built, run on an emulator, verdict NOT READY; release-command defect found (flagless build shipped staging) and fixed with a new guard (uncommitted).</div></div>
+    <div class="tl"><div class="d">09-04 → 09-08</div><div class="m"></div><div class="t"><b>Upstream contract moves 3.0.0 → 3.9.2-m1</b> in 12 mirror commits (verified by fetching <code>seifhamdii-collab/level-up-contract</code>): leaderboard privacy/cursor/top-200 rules (3.1–3.4), <b>leaderboard stable</b> (3.5.0, 09-05), account deletion enters (3.3.0) and goes <b>stable</b> (3.8.0, 09-07), <code>/leaderboard/me</code> 404 <code>not_ranked</code> (3.9.0), explanation route declared <b>unrouted</b> (3.9.2, 09-08). <b>None of it is vendored</b> — <code>contract/SOURCE.md</code> still pins <code>184d6ec</code>.</div></div>
+    <div class="tl inf"><div class="d">09-05 → 09-08</div><div class="m"></div><div class="t"><b>Leaderboard feature built against upstream 3.7.0-m1</b> — 10 untracked lib files, 3 test files, 6 palette tokens, 9 ARB keys; its comments cite 3.7.0-m1, adr-111/114 and the top-200 bound, all of which exist upstream. Inferred from directory timestamps and the 2026-09-08 validation run (890 tests, +28 since 09-05). No commit, no brief, no WAVE_STATUS entry, no re-vendoring.</div></div>
+    <div class="tl inf"><div class="d">throughout</div><div class="m"></div><div class="t"><b>Working model:</b> one human owner directing AI agents — briefs written in chat, implementation in Claude Code, adversarial review by "Fable", ten-agent audits. Inferred from the single git author, the CLAUDE.md files, <code>docs/AGENT_WORKFLOW.md</code> and the audit package.</div></div>
+    <div class="tl unk"><div class="d">unknown</div><div class="m"></div><div class="t">Whether the GitHub Actions runs triggered by the pushes to <code>merged</code> are green (no run has been inspected; this audit had no GitHub Actions access). Whether staging build <code>78c6e5d</code> serves the 3.0.0-m1 finish shape. Whether the iOS target compiles.</div></div>
+  </div>
+
+  <div class="callout">
+    <p><b>What is in the working tree but not in history.</b> 49 modified tracked files and 6 untracked paths mix three unrelated pieces of work — the 09-05 documentation reconciliation, the release-entrypoint guard, and the leaderboard feature. <code>docs/WAVE_STATUS.md</code> still says the 08-23 and 09-04 commits are unpushed; <code>origin/merged</code> equals HEAD, so that note is stale. Local <code>dev</code> carries six commits never pushed to <code>origin/dev</code>, all already contained in <code>merged</code>.</p>
+  </div>
+</section>
+
+<!-- ===================================================== 3 ===================================================== -->
+<section id="architecture">
+  <div class="sec-head"><span class="n">3</span><h2>Project architecture</h2></div>
+
+  <div class="arch" aria-label="Layered architecture diagram">
+    <div class="layer"><div class="name">Entrypoints</div><div><code>main.dart</code> → <code>main_dev</code> · <code>main_staging</code> · <code>main_prod</code> · <code>main_mock</code> (overrides <code>dioProvider</code> with a canned backend). The <code>-t</code> flag is the <i>only</i> flavor mechanism — no Gradle flavors, no iOS schemes.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Bootstrap / Root</div><div><code>bootstrap()</code>: <code>AppConfig.init</code> → <code>PreferencesStore.load()</code> before <code>runApp</code> → <code>ProviderScope</code> → <code>LevelUpApp</code> (<code>MaterialApp.router</code>, two themes, AR default, one status-bar style).</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Routing</div><div>One <code>GoRouter</code>; pure <code>authRedirect(AuthStatus, location)</code>; pre-auth <code>/ /login /otp /register/**</code>; <code>StatefulShellRoute</code> ×5 (home · leaderboard · learn/** · message · account); full-screen routes outside the shell (quiz, profile/edit, settings, shells, legal).</div></div>
+    <div class="down">▼</div>
+    <div class="layer fe"><div class="name">Presentation</div><div>12 feature folders, each <code>{models, notifier, repository, screens, widgets}</code>; shared <code>core/widgets</code> (<code>StateWidget</code>, <code>OfflineBanner</code>, <code>CircleBackButton</code>, <code>LanguagePill</code>, <code>TitledChrome</code>, form fields); a hand-painted notched nav bar.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">State</div><div>Riverpod: 5 <code>Notifier</code> · 10 <code>AsyncNotifier</code> · 8 <code>FutureProvider</code> · 1 <code>StreamProvider</code> · ~12 DI <code>Provider</code>s. Bloc: <code>QuizBloc</code> only (guard-enforced). <code>AuthController</code> is the single auth truth; <code>invalidateSessionScope()</code> is the session inventory. <code>AsyncValue</code> → sealed <code>ScreenState</code> → <code>StateWidget</code>.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Data</div><div>Six repositories (+ leaderboard, untracked) — the only code that touches Dio; freezed/json_serializable models, camelCase wire, committed codegen; hand-written serializers where freezed's envelope is wrong (city union, email tri-state, auth result); <code>CursorPage&lt;T&gt;</code> pagination.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Network</div><div><code>dioProvider</code> [AuthInterceptor: Bearer, 401 → single-flight refresh on a bare client → retry once → forceLogout] [ErrorInterceptor: DioException → sealed <code>AppException</code>]; <code>isOnlineProvider</code> from connectivity_plus.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Storage</div><div><code>SecureStorage</code> (tokens + device_id; iOS <code>first_unlock_this_device</code>, no iCloud sync) · <code>PreferencesStore</code> (theme, locale) · memory only for everything else — <b>no offline cache</b>.</div></div>
+    <div class="down">▼</div>
+    <div class="layer"><div class="name">Backend</div><div>Vendored OpenAPI 3.0.0-m1 (21 stable · 15 draft). Staging on Railway (13/21 stable verified); prod <code>TBD.example</code>; SignalR hubs not drafted.</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Folder structure (actual)</h3>
+<pre>lib/
+  core/      config · models · network/interceptors · providers
+             · router · session · storage · theme · widgets      (23 files, 3,171 lines)
+  features/  auth 2,990 · registration 7,488 · catalog 4,201 · quiz 5,451
+             · profile 6,369 · home 720 · settings 652 · shell 429
+             · account_shells 300 · onboarding 284 · leaderboard* 1,577
+             · subscription (4 empty dirs) · track (4 empty dirs)
+  dev/       mock_backend.dart (1,629 lines, dev harness only)
+  l10n/      app_en.arb · app_ar.arb (251 keys) + generated
+test/        core · dev · features (44 tests + 9 harnesses) · goldens · guards
+contract/    openapi.yaml · error-codes.md · contract-changelog.md · realtime.md · SOURCE.md
+tool/        validate.ps1/.sh · verify_guards.ps1 · verify_release_manifest.ps1
+             · verify_session_regression.ps1 · smoke/real_api_smoke_test.dart</pre>
+    </div>
+    <div class="card">
+      <h3>Dependencies that matter</h3>
+      <div class="tablewrap"><table>
+        <tr><th>Package</th><th>Role</th></tr>
+        <tr><td class="mono">flutter_riverpod ^3.3.2</td><td>state + DI; <code>retry:</code> must be set to null on fail-able providers</td></tr>
+        <tr><td class="mono">flutter_bloc ^9.1.1 · bloc_test</td><td>quiz session only</td></tr>
+        <tr><td class="mono">go_router ^17.3.0</td><td>routing, shell, redirect</td></tr>
+        <tr><td class="mono">dio ^5.10.0</td><td>HTTP + interceptors</td></tr>
+        <tr><td class="mono">freezed · json_serializable · build_runner</td><td>models; codegen committed</td></tr>
+        <tr><td class="mono">flutter_secure_storage ^10.3.1 · shared_preferences</td><td>tokens / preferences</td></tr>
+        <tr><td class="mono">connectivity_plus · device_info_plus · screen_protector · url_launcher</td><td>offline state, device binding, FLAG_SECURE, legal links</td></tr>
+        <tr><td class="mono">pinput · flutter_svg · country_flags · cached_network_image · intl</td><td>UI</td></tr>
+        <tr><td class="mono">mocktail · flutter_lints</td><td>tests, lints (stock ruleset only)</td></tr>
+      </table></div>
+      <p class="small">Zero analytics, ads or crash SDKs — a deliberate privacy posture that also means the first release flies blind.</p>
+    </div>
+    <div class="card">
+      <h3>Shared components and the design system</h3>
+      <ul>
+        <li><b>Colour:</b> <code>AppColors</code> ThemeExtension, ~60 tokens per palette, each annotated with its Figma node; palette guard holds zero exceptions across 38k lines.</li>
+        <li><b>Type:</b> <code>AppType</code> — 18 designer styles on <code>28→24→20→18→16→14→12→10 (+11 nav)</code>, bridged to Material's <code>TextTheme</code>; typography guard at zero.</li>
+        <li><b>Surfaces:</b> one dialog system (<code>dialogTheme</code>/<code>datePickerTheme</code> pinned to <code>cardFill</code>, no surface tint).</li>
+        <li><b>Screen states:</b> sealed <code>ScreenState</code> + <code>StateWidget</code>, used by catalog, profile, edit-profile, settings, leaderboard — <i>not</i> by Home.</li>
+        <li><b>Chrome:</b> <code>CircleBackButton</code>, <code>TitledChrome</code>, <code>LanguagePill</code>, <code>OfflineBanner</code> — one copy each, after Day 7b removed duplicates.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Architectural observations (from the code, not the docs)</h3>
+      <ul>
+        <li><code>lib/core/</code> imports <code>lib/features/auth/</code> (Dio needs <code>AuthController</code>) — an acknowledged, annotated provider cycle.</li>
+        <li><code>Track</code>, the glossary's first term, lives in <code>profile/models/</code> and is imported by six features; <code>CursorPage</code> lives in <code>registration/models/</code> and is reused by the leaderboard. Two accidental shared kernels.</li>
+        <li><code>settings/</code> is a profile screen in its own folder; <code>shell/</code> and <code>account_shells/</code> use "shell" in two unrelated senses.</li>
+        <li>Two features are empty scaffolding (<code>subscription</code>, <code>track</code>: eight <code>.gitkeep</code> directories) and one route (<code>/track-select</code>) is unreachable.</li>
+        <li><code>units_screen.dart</code> and <code>lectures_screen.dart</code> contain views, not screens; neither is routed, which reads as dead code until you follow the import.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================== 4 ===================================================== -->
+<section id="features">
+  <div class="sec-head"><span class="n">4</span><h2>Project features</h2></div>
+  <p>Status is judged against what the contract and design currently make buildable. <b>COMPLETE</b> = shippable as designed and tested; <b>PARTIAL</b> = usable but with documented holes; <b>BLOCKED</b> = cannot be finished from this repository; <b>NOT STARTED</b> = no code.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Feature</th><th>Status</th><th>UI</th><th>State</th><th>API</th><th>Tests</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Onboarding</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓ Figma-fitted, light/dark, AR/EN</td><td>none (locale pill)</td><td>—</td><td>13</td><td>Both buttons go to <code>/login</code> by design (phone-first auth).</td></tr>
+      <tr><td>Login (phone → OTP request)</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓</td><td><code>LoginNotifier</code> (AsyncNotifier)</td><td><code>POST /auth/otp/request</code></td><td>8</td><td>Legal links are <code>.example</code> placeholders.</td></tr>
+      <tr><td>OTP verify + new/existing fork</td><td><span class="badge b-warn">PARTIAL</span></td><td>✓ 6-box Pinput, countdown pill, success view</td><td><code>OtpNotifier</code> (autoDispose family)</td><td><code>POST /auth/otp/verify</code></td><td>8</td><td>Open defect W3-1 (<code>ref</code> after <code>await</code>); Resend action untested.</td></tr>
+      <tr><td>Session: refresh, eviction, forced logout, session scope</td><td><span class="badge b-ok">COMPLETE</span></td><td>one-time logout message</td><td><code>AuthController</code> + <code>AuthInterceptor</code></td><td><code>/auth/refresh</code> · <code>/auth/logout</code></td><td>20</td><td>Single-flight, loop-safe; live-verified on staging.</td></tr>
+      <tr><td>Registration wizard (identity, track, school, university)</td><td><span class="badge b-warn">PARTIAL</span></td><td>✓ 4 screens, pickers, escapes</td><td>Controller + submit notifier + 7 FutureProviders + school search</td><td><code>POST /auth/register</code> · 7× <code>/reference/*</code></td><td>203</td><td>No <code>retry:</code> on 9 providers → error views may be unreachable on device; submit error not reset across tracks; DOB/governorate not in Figma.</td></tr>
+      <tr><td>Home</td><td><span class="badge b-warn">PARTIAL</span></td><td>header + level card real; 4 stub sections, inert bell, placeholder banner</td><td><code>meProvider</code></td><td><code>GET /me</code></td><td>19</td><td>Bypasses <code>StateWidget</code>; no navigation out; level bar uses a client constant (500/level, contract-confirmed).</td></tr>
+      <tr><td>Learn / catalog (subjects, tree, units, chapters, lessons, lectures)</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓ skeletons, search, tabs</td><td><code>subjectsProvider</code> · <code>subjectTreeProvider</code> family</td><td><code>GET /catalog/subjects</code> · <code>/{id}/tree</code></td><td>~140</td><td><code>termNumber</code> parsed and never rendered (year-long courses show as identical cards). Live: staging returns <code>[]</code> for the test cohort.</td></tr>
+      <tr><td>Quiz setup → take → result</td><td><span class="badge b-warn">PARTIAL</span></td><td>✓ 3 screens, limit sheets, explanation panel</td><td><code>QuizSetupNotifier</code> + <code>QuizBloc</code></td><td><code>POST /quizzes</code> · <code>/answers</code> · <code>/finish</code> · <code>GET explanation</code></td><td>127</td><td>Core loop complete; explanation can strand on "generating"; early finish/skip unreachable; Review disabled (endpoint draft); no celebration for <code>leveledUp</code>/<code>newBadge</code>; never observed live.</td></tr>
+      <tr><td>Quiz review (Day 9 brief)</td><td><span class="badge b-future">NOT STARTED</span></td><td>—</td><td>—</td><td>none needed (session-scoped)</td><td>—</td><td>Brief written 08-20, confirmed unbuilt 09-05.</td></tr>
+      <tr><td>Profile hub</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓ 9 rows, stats, dialogs</td><td><code>meProvider</code></td><td><code>GET /me</code></td><td>30</td><td>2 rows disabled (no endpoint); Go-to-Uni confirm disabled; Subscription row removed per adr-049.</td></tr>
+      <tr><td>Edit Profile</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓ name/email/avatar; read-only block</td><td><code>editProfileProvider</code> (autoDispose)</td><td><code>PATCH /me</code> · <code>GET /reference/avatars</code></td><td>39</td><td><b>Staging answers 405</b> and the mock has no handler — no runnable environment for save.</td></tr>
+      <tr><td>Settings</td><td><span class="badge b-warn">PARTIAL</span></td><td>✓</td><td>locale/theme controllers · <code>editProfileProvider</code></td><td><code>PATCH /me</code> (rank privacy)</td><td>28</td><td>Notification preferences: 4 dead toggles (nothing stores them); "system" theme circle omitted.</td></tr>
+      <tr><td>Account shells (Refer, Support, Legal ×2, Friends)</td><td><span class="badge b-bad">BLOCKED</span></td><td>disabled shells</td><td>—</td><td>none exist</td><td>14</td><td>Legal copy "not published"; Friends has no entry point; store reviewers will see dead ends.</td></tr>
+      <tr><td>Leaderboard (untracked)</td><td><span class="badge b-warn">PARTIAL</span></td><td>✓ podium, scopes, rows, states, AR/EN</td><td><code>leaderboardProvider</code> (autoDispose family, retry set)</td><td><code>GET /leaderboard</code> — draft in the <i>vendored</i> 3.0.0-m1, <b>stable upstream since 3.5.0-m1</b></td><td>25</td><td>Built against un-vendored 3.7.0-m1; shapes and rules match upstream 3.9.2 for the list endpoint. Not in session scope; no mock handler; no repo test; Podium ignores <code>isMe</code>.</td></tr>
+      <tr><td>Message tab</td><td><span class="badge b-bad">BLOCKED</span></td><td>"Coming soon"</td><td>—</td><td>no endpoint at all</td><td>1</td><td>Fully designed support/inbox product with nothing behind it (S33).</td></tr>
+      <tr><td>Entitlement refresh on resume</td><td><span class="badge b-warn">PARTIAL</span></td><td>—</td><td><code>entitlementsProvider</code> exists, <b>read by no widget</b></td><td><code>GET /me/entitlements</code> (404 on staging)</td><td>8</td><td>The contract's resume-refetch never runs.</td></tr>
+      <tr><td>Theme + locale persistence, offline handling, localization</td><td><span class="badge b-ok">COMPLETE</span></td><td>✓</td><td>3 root Notifiers · <code>isOnlineProvider</code></td><td>—</td><td>~40</td><td>251 ARB keys in parity; 0 Arabic goldens.</td></tr>
+      <tr><td>Account deletion</td><td><span class="badge b-future">NOT STARTED</span></td><td>—</td><td>—</td><td><code>POST</code>/<code>DELETE /me/deletion-request</code> — <b>stable upstream since 3.8.0-m1</b> (not vendored); <code>GET /me</code> gains optional <code>pendingDeletion</code>; global 403 <code>account_pending_deletion</code></td><td>—</td><td>Store submission blocker on both platforms. Now buildable end to end once the contract is re-vendored (S38 is answered upstream).</td></tr>
+      <tr><td>Favorites · quiz history · recovery ladder · custom avatar · FCM token · modules</td><td><span class="badge b-future">NOT STARTED</span></td><td>—</td><td>—</td><td>14 draft operations</td><td>—</td><td>Correctly untouched.</td></tr>
+      <tr><td>Flashcards · streaks · chat · referral · progress · track switch · notifications</td><td><span class="badge b-bad">BLOCKED</span></td><td>designed</td><td>—</td><td>no contract shape</td><td>—</td><td>seif_fight S5, S6, S9, S28, S31, S32; DESIGN_ISSUES #18, #20.</td></tr>
+      <tr><td>Release &amp; store readiness (signing, identity, iOS, privacy manifest, reviewer access)</td><td><span class="badge b-bad">BLOCKED</span> <span class="badge b-warn">PARTIAL</span></td><td>—</td><td>—</td><td>prod URL missing</td><td>guard tests</td><td><code>STORE_READINESS_AUDIT_2026-09-05.md</code>: NOT READY, 8 blockers.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Tally of routed screens: 21 route builders → 14 complete, 3 partial (Home, Settings, OTP), 4 shells/placeholders (Message, Refer, Support, Legal/Friends). Test counts are declaration counts per feature directory.</p>
+</section>
+
+<!-- ===================================================== 5 ===================================================== -->
+<section id="useless">
+  <div class="sec-head"><span class="n">5</span><h2>Potentially useless files</h2></div>
+  <p>Analysis only — <b>nothing was deleted, moved or renamed</b>. Method: import-graph scan of every Dart file in <code>lib/</code>, <code>test/</code>, <code>tool/</code> (zero orphan Dart files found), asset-reference scan (all 24 assets referenced), ARB-key usage scan (1 unused key), <code>git ls-files</code> versus the ignore rules, a byte diff of the two skill trees, symbol greps for the dead-code candidates, and a read of each candidate's own comments. "Deletion risk" is the chance that removing the file breaks a build, a test or a documented workflow.</p>
+  <p class="small">Recommendation key: <span class="badge b-ok">KEEP</span> <span class="badge b-warn">VERIFY</span> <span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span></p>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> <code>skills/</code> (26 files, untracked) <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Path</dt><dd><code>skills/**</code> + <code>skills/RESTORE.md</code></dd>
+    <dt>Reason</dt><dd>A "byte-identical mirror" of <code>.claude/skills/</code> made on 2026-08-20 because the tool directory was thought disposable. <code>.claude/skills/</code> is git-tracked and was corrected on 2026-09-05; the mirror was not.</dd>
+    <dt>Evidence</dt><dd><code>diff -rq skills .claude/skills</code>: 6 files differ (<code>build-screen</code>, <code>level-up-domain</code>, <code>river</code> + evals, <code>screen-states</code>, <code>seif-api-contract</code>). The mirror still carries the Paymob checkout and "pending" entitlement instructions the contract deleted — the exact FINDING-01 the 09-05 pass fixed.</dd>
+    <dt>References searched</dt><dd>Nothing in <code>lib/</code>, <code>test/</code>, <code>tool/</code>, CI or CLAUDE.md reads <code>skills/</code>; only <code>docs/WAVE_STATUS.md</code> mentions it as "the untracked skills/ mirror".</dd>
+    <dt>Deletion risk</dt><dd>None for the build. Risk of <i>keeping</i> it: an agent that loads the stale copy rebuilds the forbidden purchase surface.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> Empty feature scaffolds <code>lib/features/subscription/</code> · <code>lib/features/track/</code> <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Path</dt><dd>8 directories containing only <code>.gitkeep</code></dd>
+    <dt>Reason</dt><dd>Never populated since the Day 0 commit; <code>subscription</code> is now product-forbidden (purchase-silent), <code>track</code> never received a design or an endpoint.</dd>
+    <dt>Evidence</dt><dd>LOC scan: 0 Dart files; <code>docs/PROJECT_GUIDE.md</code> §3 already calls them "four .gitkeep scaffold dirs, never populated".</dd>
+    <dt>References searched</dt><dd>No imports (there is nothing to import). The router's <code>/track-select</code> placeholder is the only echo.</dd>
+    <dt>Deletion risk</dt><dd>None.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> 16 <code>.gitkeep</code> files in populated directories <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Path</dt><dd><code>lib/features/{auth,catalog,home,profile,quiz}/{models,notifier,repository,screens}/.gitkeep</code></dd>
+    <dt>Reason</dt><dd>Placeholder files whose only purpose (keeping an empty directory in git) ended when the directories were populated — e.g. <code>quiz/models/.gitkeep</code> sits beside 20 files.</dd>
+    <dt>Evidence</dt><dd>Directory scan in this audit.</dd>
+    <dt>Deletion risk</dt><dd>None.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> Dead route <code>/track-select</code> + <code>_Placeholder</code> in <code>app_router.dart</code> <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Path</dt><dd><code>lib/core/router/app_router.dart:129-132</code>, <code>:355-366</code></dd>
+    <dt>Reason</dt><dd>No navigation targets the route; the class's own comment says only this route still uses it after <code>/subscription*</code> left.</dd>
+    <dt>References searched</dt><dd><code>grep -rn "track-select" lib test</code> → only the router definition.</dd>
+    <dt>Deletion risk</dt><dd>Low (one test group may count routes — check <code>app_router_test.dart</code>).</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> <code>test/widget_test.dart</code> <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Reason</dt><dd>Placeholder: <code>test('scaffold boots', () { expect(1 + 1, 2); })</code>. Tests nothing; inflates the count by one.</dd>
+    <dt>Evidence</dt><dd>File content. It is referenced by a CI comment and by <code>workflow_test.dart</code>'s rationale (CI once skipped it), which is history, not a dependency.</dd>
+    <dt>Deletion risk</dt><dd>None (or replace with a real cold-start smoke test).</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-bad">SAFE CANDIDATE FOR REMOVAL</span> Unused ARB key <code>correctAnswerRevealed</code> <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Path</dt><dd><code>lib/l10n/app_en.arb</code>, <code>app_ar.arb</code> (+ generated getters)</dd>
+    <dt>Reason</dt><dd>The only key of 251 with no <code>l10n.correctAnswerRevealed</code> reference in <code>lib/</code>; the contract-impact audit also lists it as orphaned.</dd>
+    <dt>Deletion risk</dt><dd>None; regenerate l10n after removal (CI checks drift).</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> Dead code: <code>schoolsProvider</code> + <code>SchoolsQuery</code> · <code>AppConfig.isDev</code> · <code>LeaderboardResults.me</code> <span class="badge b-plain">confidence MEDIUM–HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Paths</dt><dd><code>registration/notifier/reference_providers.dart:23-64</code> · <code>core/config/app_config.dart:18,33</code> · <code>leaderboard/notifier/leaderboard_notifier.dart</code> (untracked)</dd>
+    <dt>Reason</dt><dd><code>schoolsProvider</code> has no consumer (the picker uses <code>schoolSearchProvider</code>); <code>isDev</code> is computed and never read; <code>me</code> is set by the notifier and read only by its test.</dd>
+    <dt>References searched</dt><dd><code>grep -rn schoolsProvider lib</code> → definition only; <code>grep -rn "\.isDev" lib</code> → none; <code>LeaderboardResults.me</code> → test only.</dd>
+    <dt>Deletion risk</dt><dd>Low. <code>isDev</code> is the natural hook for the missing environment banner (STORE_READINESS §12) — consider using it rather than deleting it.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> <code>zna.md</code> at the repository root (tracked) <span class="badge b-plain">confidence MEDIUM</span></summary><div class="body"><dl class="kv">
+    <dt>Reason</dt><dd>"Two messages to send, 2026-09-04" — transient correspondence drafts committed at the root. WAVE_STATUS notes its "seed a released term" ask is already stale.</dd>
+    <dt>Recommendation</dt><dd>Move under <code>docs/</code> or delete once sent.</dd>
+    <dt>Deletion risk</dt><dd>None for the build; it is referenced by name from <code>docs/WAVE_STATUS.md</code> and the contract-impact audit.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> Redundant documentation layers <span class="badge b-plain">confidence MEDIUM</span></summary><div class="body"><dl class="kv">
+    <dt>Paths</dt><dd><code>docs/PROGRESS.md</code> (22 KB, self-declared "historical log, not current state", last grounded 2026-07-23) · <code>docs/LEVEL_UP_AUDIT_2026-07-28.md</code> (38 KB) · <code>docs/STATUS_REPORT_2026-07-28.md</code> (19 KB) · <code>.ai/audits/current/</code> (30 files, 832 KB, a 2026-08-11 snapshot still named "current")</dd>
+    <dt>Reason</dt><dd>Each has been superseded by <code>docs/WAVE_STATUS.md</code> / <code>RISKS.md</code> / the 09-05 store audit. <code>docs/AUDIT_PROTOCOL.md</code> §Archiving says a closed pass moves <code>current/</code> to <code>archive/YYYY-MM-DD/</code>; four waves have closed since. <code>_AGENT_CONTEXT.md</code> still carries sandbox paths from a Cowork session.</dd>
+    <dt>Deletion risk</dt><dd>Low if archived rather than deleted — the project deliberately keeps superseded findings as record. The cost of keeping them in place is reader confusion (three "current state" documents exist).</dd>
+    <dt>Recommendation</dt><dd>Archive per the project's own protocol; do not delete.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> <code>assets/fonts/Cairo-*.ttf</code> (3 files, 284 KB) <span class="badge b-plain">confidence MEDIUM</span></summary><div class="body"><dl class="kv">
+    <dt>Reason</dt><dd><code>fontFamilyFallback: ['Tajawal', 'Cairo']</code> — Tajawal covers Arabic, so Cairo is reached only for glyphs missing from both Inter and Tajawal. <code>Cairo-SemiBold.ttf</code> in particular can never be selected (K-10). Likely 284 KB of APK weight for no visible glyph.</dd>
+    <dt>Evidence</dt><dd><code>app_theme.dart:50</code>; K-10 in <code>known-issues.md</code>; no Dart references Cairo by family.</dd>
+    <dt>Deletion risk</dt><dd>Medium — needs a glyph-coverage check (Cairo may cover Arabic presentation forms or symbols Tajawal lacks) and a design decision on the Arabic w600 face.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> <code>tool/verify_session_regression.ps1</code> <span class="badge b-plain">confidence MEDIUM</span></summary><div class="body"><dl class="kv">
+    <dt>Reason</dt><dd>A one-off Wave-1 proof script (reproduces the C-2 leak against the old code). Referenced only by <code>.ai/audits/current/remediation-tier0.md</code>; the behaviour it proved is now a permanent test (<code>session_isolation_test.dart</code>).</dd>
+    <dt>Deletion risk</dt><dd>Low; keep if the audit package is archived with it.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> Stale backup branches <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Refs</dt><dd><code>backup/pre-split</code> (tip 2026-07-29, ancestor of HEAD) · <code>backup/pre-day7-reorder</code> (tip 08-04, ancestor of HEAD) · <code>backup/2026-08-22-dirty-tree</code> (tip <code>e4006e7</code>, <b>not</b> an ancestor of HEAD)</dd>
+    <dt>Reason</dt><dd>The first two are fully contained in <code>merged</code> (K-34 already says delete them). The third holds a dirty-tree snapshot that may contain work never split into commits — inspect before deleting.</dd>
+    <dt>Deletion risk</dt><dd>None for the first two; unknown for the third.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-warn">VERIFY</span> Template boilerplate: <code>README.md</code>, <code>pubspec.yaml</code> description, <code>android:label</code> <span class="badge b-plain">confidence HIGH</span></summary><div class="body"><dl class="kv">
+    <dt>Reason</dt><dd><code>README.md</code> is the stock "A new Flutter project" text; <code>pubspec.yaml</code> description likewise; the Android label is <code>level_up_app</code> and the launcher icons are Flutter's defaults (artefact-confirmed 09-05).</dd>
+    <dt>Recommendation</dt><dd>Replace, not delete — a store blocker (B-6).</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-ok">KEEP</span> Local-only artefacts (gitignored) — safe to clean, not repository concerns</summary><div class="body"><dl class="kv">
+    <dt><code>build/</code></dt><dd>4.3 GB of build output incl. the 09-05 release APK/AAB. <code>flutter clean</code> reclaims it; the store audit cites paths inside it, so re-buildable evidence only.</dd>
+    <dt><code>docs/device_pass/</code></dt><dd>75 PNGs + <code>ui_dump.xml</code>, 12 MB, from the 2026-08-04 Pixel 8 walkthrough. Gitignored on purpose; findings were transcribed. Safe to delete locally.</dd>
+    <dt><code>lib/l10n/.dart_tool/native_assets.yaml</code></dt><dd>A stray tool artefact (2026-07-26) inside <code>lib/l10n/</code>; ignored by the <code>.dart_tool/</code> rule. Harmless; safe to delete.</dd>
+    <dt><code>.idea/</code>, <code>*.iml</code>, <code>.flutter-plugins-dependencies</code>, <code>android/local.properties</code></dt><dd>IDE and tool state, all ignored.</dd>
+  </dl></div></details>
+
+  <details><summary><span class="badge b-ok">KEEP</span> Deliberate, documented, but easy to mistake for dead</summary><div class="body"><dl class="kv">
+    <dt><code>lib/dev/mock_backend.dart</code> + <code>lib/main_mock.dart</code></dt><dd>The device walkthrough harness; tree-shaken out of production (string-scan proven 09-05). Keep — but scrub the real-looking phone number and hardcoded OTPs, and add a guard against a release build of <code>main_mock.dart</code>.</dd>
+    <dt><code>SecureStorage.clear()</code></dt><dd>Zero call sites; reserved for account deletion (S38).</dd>
+    <dt><code>lib/features/account_shells/screens/friends_screen.dart</code> + <code>/friends</code></dt><dd>No entry point by design (the Profile frame draws no Friends row); routed so it is testable.</dd>
+    <dt><code>lib/features/catalog/screens/units_screen.dart</code>, <code>lectures_screen.dart</code></dt><dd>Not routed, but they define <code>UnitsView</code>/<code>LecturesView</code> used by <code>SubjectTreeScreen</code>. Misnamed, not dead — rename to <code>*_view.dart</code>.</dd>
+    <dt><code>contract/realtime.md</code></dt><dd>No hub is drafted; vendored artefact, leave alone.</dd>
+    <dt><code>docs/day*_brief.md</code> ×12, <code>docs/for_seif_account_surface.md</code></dt><dd>Dated records with superseded-pin banners; the project's memory.</dd>
+    <dt>The 18 golden PNGs</dt><dd>Windows-only baselines; the CI goldens job is advisory for exactly that reason.</dd>
+  </dl></div></details>
+</section>
+
+<!-- ===================================================== 6 ===================================================== -->
+<section id="problems">
+  <div class="sec-head"><span class="n">6</span><h2>Problems found</h2></div>
+  <p>Severity reflects impact × likelihood of going unnoticed. <b>CONFIRMED</b> = read in the source or recorded at BUILD/ARTEFACT level; <b>INFERRED</b> = strongly indicated by the code but not executed. Items already in the project's own registers are cross-referenced (K-n = <code>known-issues.md</code>, R-n = <code>RISKS.md</code>, S-n = <code>seif_fight.md</code>, F-n = the 09-04 contract-impact audit).</p>
+
+  <h3>A. Project / development problems</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>#</th><th>Sev.</th><th>Problem</th><th>Evidence</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>A1</td><td><span class="badge b-bad">CRITICAL</span></td><td><b>The contract pin is stale and the leaderboard was built past it.</b> <code>contract/</code> is pinned at <code>184d6ec</code> (3.0.0-m1) where both leaderboard paths are <code>draft</code>; upstream <code>main</code> (<code>5b6e797</code>, 3.9.2-m1) promoted them to stable on 09-05 and the leaderboard code cites that newer contract (3.7.0-m1, adr-111/114, top-200, <code>account_pending_deletion</code>). The feature is therefore <i>not</i> a draft-endpoint violation, but the repository now contradicts itself: <code>SOURCE.md</code>, <code>contract/openapi.yaml</code>, WAVE_STATUS, PROGRESS and the mock all describe a contract nine versions old, and the project's re-vendoring rule ("re-copy and bump the commit") was not followed.</td><td class="mono">contract/SOURCE.md · openapi.yaml:1221 (vendored) vs upstream :1325 · git log 184d6ec..origin/main (12 commits)</td><td><span class="badge b-info">CONFIRMED</span> new (upstream fetched 2026-09-08)</td></tr>
+      <tr><td>A2</td><td><span class="badge b-high">HIGH</span></td><td><b>Uncommitted working tree mixes three unrelated changes</b> (docs reconciliation, release guard, leaderboard) across 55 paths. WAVE_STATUS's "unpushed" note is stale (origin/merged == HEAD).</td><td class="mono">git status · git rev-parse origin/merged</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A3</td><td><span class="badge b-high">HIGH</span></td><td><b><code>retry:</code> missing on 10 fail-able providers</b> (7 reference pickers, <code>avatarsProvider</code>, <code>schoolSearchProvider</code>, <code>registrationSubmitProvider</code>, <code>deviceInfoProvider</code>, <code>editProfileProvider</code>). Riverpod 3 auto-retries with backoff, so the widget stays on its spinner and the tested error/offline/429 views may never render on a device.</td><td class="mono">reference_providers.dart:32-79 · me_notifier.dart:33-41 (the rule, followed elsewhere)</td><td><span class="badge b-info">CONFIRMED</span> known, deferred (WAVE_STATUS 09-04)</td></tr>
+      <tr><td>A4</td><td><span class="badge b-high">HIGH</span></td><td><b>W3-1: <code>OtpNotifier.verify</code> uses <code>ref</code> after <code>await</code></b> before its disposal check; Riverpod 3.3.2 throws <code>UnmountedRefException</code>. Popping the OTP screen mid-verify throws and can leave a student authenticated-but-unrouted.</td><td class="mono">otp_notifier.dart:109-123 · R-2</td><td><span class="badge b-info">CONFIRMED</span> open since 08-17</td></tr>
+      <tr><td>A5</td><td><span class="badge b-high">HIGH</span></td><td><b>Explanation panel can strand on "generating" forever.</b> Moving to another question stops polling but leaves the state <code>ExplanationPending</code>; returning hits the early return, so the spinner never resolves and cannot be retried.</td><td class="mono">quiz_bloc.dart:160, :169, :189</td><td><span class="badge b-info">CONFIRMED</span> new (by reading; untested)</td></tr>
+      <tr><td>A6</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Early finish / skip is unreachable from the UI</b> — Finish appears only after the last question is graded and Next requires a grade. <code>QuizSummary.skipped</code> and the third result bucket are dead in production; leaving via X abandons without a result.</td><td class="mono">quiz_screen.dart:317-336</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A7</td><td><span class="badge b-warn">MEDIUM</span></td><td><b><code>GET /me/entitlements</code> never fires:</b> <code>entitlementsProvider</code> is read by no widget, so its resume-refresh listener never registers and the contract's "refetch on resume" is unmet.</td><td class="mono">me_notifier.dart:58-78 · only other ref: session_scope.dart:60</td><td><span class="badge b-info">CONFIRMED</span> F-6</td></tr>
+      <tr><td>A8</td><td><span class="badge b-warn">MEDIUM</span></td><td><b><code>termNumber</code> parsed, never rendered.</b> The contract says a year-long university course is two subjects with the same name to be grouped by term; the grid shows two identical cards.</td><td class="mono">subject.dart:67-68 · subjects_screen.dart:162-180 · openapi.yaml:815-817</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A9</td><td><span class="badge b-warn">MEDIUM</span></td><td><b><code>registrationSubmitProvider</code> is never reset</b> on expiry or track change — a failed submit's banner and field errors reappear on the other track's form until a field is edited.</td><td class="mono">registration_submit_notifier.dart:125-128 · registration_expired_view.dart:44</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A10</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Home bypasses the shared state machinery</b> — its own <code>me.when</code>, <code>_Failure</code>, <code>_Block</code>; four parallel "icon + line + retry" widgets and three skeleton blocks exist across features.</td><td class="mono">home_screen.dart:52-59, 158-218 · state_widget.dart:6-7</td><td><span class="badge b-info">CONFIRMED</span> K-31</td></tr>
+      <tr><td>A11</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Unguarded <code>state.extra!</code></b> on <code>/otp</code>, <code>/quiz/setup</code>, <code>/quiz/:id/result</code>; only <code>/quiz/:quizId</code> handles a cold link gracefully.</td><td class="mono">app_router.dart:104, :231, :251 vs :239-242</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A12</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Leaderboard hygiene:</b> not invalidated in <code>invalidateSessionScope</code> (other minors' names survive logout for a frame; escapes the guard because it is autoDispose); no mock handler; no repository test; <code>Podium</code> ignores <code>isMe</code>; <code>refresh()</code> re-runs <code>build()</code>.</td><td class="mono">session_scope.dart · mock_backend.dart · podium.dart</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A13</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Parent phone is Egypt-locked</b> — <code>Phone.tryParse</code> defaults to <code>+20</code> and the identity screen never overrides it, while the school track accepts AE/SA/OM students.</td><td class="mono">phone.dart:30 · signup_identity_screen.dart:74</td><td><span class="badge b-warn">INFERRED</span> impact (code path confirmed)</td></tr>
+      <tr><td>A14</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Latent privacy leaks:</b> freezed <code>toString()</code> on <code>TokenPair</code>/<code>StudentProfile</code> prints tokens and a minor's PII (harmless while nothing logs); the image disk cache survives logout on shared devices.</td><td class="mono">token_pair.freezed.dart · no emptyCache() in lib/</td><td><span class="badge b-info">CONFIRMED</span> K-14, STORE §6</td></tr>
+      <tr><td>A15</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Test blind spots:</b> zero Arabic goldens, zero text-scale tests, no cold start with a persisted token, no dispose-mid-await behavioural test, no integration tests, OTP Resend never pressed, leaderboard repository untested.</td><td class="mono">test/goldens/*.png (EN only) · grep textScale test/ → 0</td><td><span class="badge b-info">CONFIRMED</span> K-24–K-26, R-5</td></tr>
+      <tr><td>A16</td><td><span class="badge b-ok">LOW</span></td><td><b>Duplication:</b> <code>_asAppException</code> ×6 repositories; the reference repository's 7 identical catch blocks; identity screen re-implements <code>FieldShell</code> and the phone field; two copies of <code>_namedRefRows</code>/<code>_handleSubmitOutcome</code>; two <code>noRetry</code> functions.</td><td class="mono">reference_repository.dart · signup_identity_screen.dart:213-300</td><td><span class="badge b-info">CONFIRMED</span> F-1-07, K-32</td></tr>
+      <tr><td>A17</td><td><span class="badge b-ok">LOW</span></td><td><b>Structure:</b> <code>core/</code>↔<code>features/auth</code> cycle; <code>Track</code> and <code>CursorPage</code> in feature folders; misnamed <code>units_screen</code>/<code>lectures_screen</code>; mixed <code>go</code>/<code>push</code> in the catalog; dead <code>/track-select</code>, <code>schoolsProvider</code>, <code>isDev</code>, empty scaffolds.</td><td class="mono">core_providers.dart:36-38 · student_profile.dart:29</td><td><span class="badge b-info">CONFIRMED</span> K-29, K-30</td></tr>
+      <tr><td>A18</td><td><span class="badge b-ok">LOW</span></td><td><b>Registration expiry is passive</b> (no ticker); the form swaps to the expired view under the student's fingers on the next rebuild.</td><td class="mono">registration_draft.dart:68 · 4 screen guards</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>A19</td><td><span class="badge b-ok">LOW</span></td><td><b>Documentation weight and staleness:</b> ~1.6 MB of Markdown; three "current state" layers; the skills mirror diverged; audit package never archived; stale guard-rule comments still cite a quiz timer that was never built.</td><td class="mono">du docs .ai · rules.dart:75</td><td><span class="badge b-info">CONFIRMED</span> partly K-35, K-36</td></tr>
+      <tr><td>A20</td><td><span class="badge b-ok">LOW</span></td><td><b>Process gaps:</b> git hooks not enabled on this clone; CI never inspected; stock <code>flutter_lints</code> only (no <code>riverpod_lint</code>/<code>custom_lint</code>).</td><td class="mono">git config core.hooksPath → unset · R-3</td><td><span class="badge b-info">CONFIRMED</span> R-3, K-21</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>B. Problems for the Flutter frontend developer (dependencies and contracts)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>#</th><th>Sev.</th><th>Problem</th><th>Evidence</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>B1</td><td><span class="badge b-bad">CRITICAL</span></td><td><b>No production backend.</b> The contract's <code>servers:</code> block lists staging only; the prod flavor fails closed to <code>TBD.example</code> and that string is in the shipped binary.</td><td class="mono">app_config.dart:54 · STORE_AUDIT B-1</td><td><span class="badge b-info">CONFIRMED</span> ARTEFACT</td></tr>
+      <tr><td>B2</td><td><span class="badge b-high">HIGH</span></td><td><b>Staging does not serve two stable routes:</b> <code>PATCH /me</code> → 405 <code>internal_error</code>, <code>GET /me/entitlements</code> → 404, unchanged across three backend builds. Edit Profile and Rank settings have no runnable environment anywhere (the mock lacks <code>PATCH /me</code> too).</td><td class="mono">smoke-staging-2026-09-04.md · S37 · F-13</td><td><span class="badge b-info">CONFIRMED</span> live</td></tr>
+      <tr><td>B3</td><td><span class="badge b-high">HIGH</span></td><td><b>No seed data for the test cohort</b> (<code>+2010000000001</code>, school track): catalog answers <code>[]</code>, so the tree, the whole quiz loop and the explanation endpoint — 6 operations — have never been exercised live, and the 3.0.0-m1 finish body is unobserved.</td><td class="mono">smoke-staging-2026-09-04.md · R-8</td><td><span class="badge b-info">CONFIRMED</span> live</td></tr>
+      <tr><td>B4</td><td><span class="badge b-high">HIGH</span></td><td><b>Contract churn:</b> 1.0 → 1.1 → 2.0 → 2.1 → 2.2 → 2.3 → 3.0 in seven weeks, two breaking, one behavioural; three client rework passes (Day 7c, 08-22, 09-04). The project scores each transition in <code>seif_fight.md</code> Part A (A: 31, B: 18, C: 36 on nine dimensions).</td><td class="mono">contract-changelog.md · seif_fight.md Part A</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B5</td><td><span class="badge b-high">HIGH</span></td><td><b>Store-mandated capabilities have no endpoint:</b> account deletion (Play + Apple 5.1.1(v)), a reviewer account with a static OTP. Both block submission and both are backend work.</td><td class="mono">S38 · STORE_AUDIT B-3, B-5</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B6</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>13 draft operations still gate whole features</b> (upstream 3.9.2-m1: 38 operations, 25 stable): favorites ×3, quiz history/review, recovery ×4, avatar upload, FCM token, modules, code redemption (web-only). The vendored copy still shows 15 because the two leaderboard promotions were never pulled in.</td><td class="mono">x-stability scan of vendored vs upstream openapi.yaml</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B13</td><td><span class="badge b-high">HIGH</span></td><td><b>Two operations are published stable but have no backend route.</b> Upstream 3.9.2-m1 (09-08) states in red that <code>GET /questions/{id}/explanation</code> has never had a route (<code>explanationAvailable</code> stays hard <code>false</code>; ADR-123, no date) and names <code>GET /me/entitlements</code> as the other unrouted stable operation. The quiz's AI-explanation panel, its polling logic and 8 of its Bloc tests model a surface that cannot succeed; the smoke harness expects it.</td><td class="mono">upstream contract-changelog.md 2026-09-08 entry · quiz_bloc.dart:186-287</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>B14</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Nine upstream versions carry client obligations the app has not absorbed:</b> a global 403 <code>account_pending_deletion</code> on every authenticated endpoint except four (route to a cancel screen, no logout, no retry — 3.3.0); optional <code>StudentProfile.pendingDeletion</code>; the deletion confirm/cancel screens and their copy; <code>/leaderboard/me</code>'s 403 <code>score_hidden_leaderboard_unavailable</code> and 404 <code>not_ranked</code> if it is ever called. Only the leaderboard list rules were implemented.</td><td class="mono">upstream changelog 3.3.0 · 3.8.0 · 3.9.0 · auth_interceptor.dart (401 only)</td><td><span class="badge b-info">CONFIRMED</span> new</td></tr>
+      <tr><td>B7</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Designed surfaces with no contract at all:</b> notifications, messages/support, referral, progress, track switch, flashcards, streaks/chat. Nine screens in Figma are unbuildable and the shells that stand in for them are reviewer rejection bait.</td><td class="mono">S5, S6, S9, S28, S31–S33 · for_seif_account_surface.md</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B8</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Design ↔ contract mismatches (51 logged):</b> frames draw data the API cannot supply — unit/chapter progress %, solved-question counts, rank tiers, quiz pool bars, pass thresholds, a daily (not weekly) limit, a quiz timer, level celebrations. Each became a client decision that the designer still owes a ruling on.</td><td class="mono">DESIGN_ISSUES.md #13, #16, #29–#32, #43, #44, #50, #51</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B9</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Client-side transformation the server could avoid:</b> raw codes where names are shown (S35), <code>termNumber</code> grouping and term labels, level-threshold maths from a prose sentence, error copy reverse-engineered per feature (S10), <code>parentPhone</code> write-only (S34).</td><td class="mono">seif_fight.md S10, S34, S35</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B10</td><td><span class="badge b-warn">MEDIUM</span></td><td><b>Contract ambiguities still open:</b> when a point is credited (S39 — gates the <code>/me</code> freshness fix), which of three 403 codes wins on create (S40), the tree's one-code/two-cause 403 (S41), the city <code>anyOf</code> vs prose (S21).</td><td class="mono">seif_fight.md S21, S39–S41</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B11</td><td><span class="badge b-ok">LOW</span></td><td><b>Tooling access:</b> the Figma connector is a view-only seat on the partner's account (measurements from screenshots, ±2 dp); the GitHub connector authenticates as the partner and cannot see the private app repo.</td><td class="mono">DESIGN_ISSUES #49 · memory notes</td><td><span class="badge b-info">CONFIRMED</span></td></tr>
+      <tr><td>B12</td><td><span class="badge b-ok">LOW</span></td><td><b>Pagination and caching are simple where they exist</b> (cursor pages, no ETags, no offline cache) — not a defect today, but every list is a full refetch on every cold open of a non-autoDispose provider's lifetime.</td><td class="mono">CursorPage · no cache layer</td><td><span class="badge b-warn">INFERRED</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Totals: 20 project problems (19 confirmed, 1 with inferred impact) · 14 dependency problems (13 confirmed, 1 inferred). Of the 34, 11 are new to this audit (A1, A2, A5, A6, A8, A9, A11, A12, A18, B13, B14).</p>
+</section>
+
+<!-- ===================================================== 7 ===================================================== -->
+<section id="remaining">
+  <div class="sec-head"><span class="n">7</span><h2>Remaining work</h2></div>
+  <p>Chapters are derived from the project's actual state, not a template. Priority: <span class="p-crit">🔴 Critical</span> · <span class="p-high">🟠 High</span> · <span class="p-med">🟡 Medium</span> · <span class="p-low">🟢 Low</span> · <span class="p-fut">⚪ Future</span>. Every item carries status, dependencies, why it remains, and evidence.</p>
+<pre>LEVEL UP — REMAINING WORK
+│
+├── 1  Stabilise the working tree              (Critical · nothing external)
+├── 2  Contract &amp; backend dependencies          (Critical · blocked on Seif)
+├── 3  Known client defects                      (High · engineering)
+├── 4  Feature completion                        (High/Medium · mixed)
+├── 5  Design &amp; UX debt                          (Medium · blocked on designer for 5 items)
+├── 6  Testing &amp; verification                    (High · engineering + a device)
+├── 7  Release &amp; store readiness                 (Critical · external assets + engineering)
+├── 8  Architecture hygiene                      (Low · engineering)
+├── 9  Documentation hygiene                     (Low · engineering)
+└── F  Future work                               (⚪ · contract-gated)</pre>
+
+  <details class="chapter" open><summary>Chapter 1 — Stabilise the working tree <span class="badge b-bad">🔴 Critical</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>1.1 Re-vendor the contract from upstream <code>5b6e797</code> (3.9.2-m1): copy the four files, bump <code>contract/SOURCE.md</code>, diff 184d6ec..5b6e797 by hand (two BEHAVIOURAL entries, one breaking-in-meaning "unrouted" note), then commit it <i>before</i> the leaderboard</td><td>NOT STARTED</td><td class="p-crit">🔴</td><td>—</td><td>The leaderboard was built against 3.7.0-m1 while the repo still pins 3.0.0-m1; every record and guard reasons from the stale copy</td><td class="mono">contract/SOURCE.md · git log 184d6ec..origin/main</td></tr>
+      <tr><td>1.2 Commit the 09-05 documentation reconciliation and the release-entrypoint guard as separate commits</td><td>NOT STARTED</td><td class="p-crit">🔴</td><td>—</td><td>Three concerns are interleaved in one dirty tree; the guard is +129 lines inside a test that the leaderboard tests also touch</td><td class="mono">git status (49 M, 6 ??)</td></tr>
+      <tr><td>1.3 After 1.1, re-anchor the leaderboard's contract citations to the vendored line numbers and re-check it against 3.8–3.9.2 (nothing on the list endpoint moved after 3.7.0; <code>/leaderboard/me</code> did, and is not called)</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>1.1</td><td>Comments cite versions the repository does not yet contain</td><td class="mono">leaderboard_notifier.dart:34 · main_shell_test.dart:122</td></tr>
+      <tr><td>1.4 Re-sync or delete the <code>skills/</code> mirror; update WAVE_STATUS (push state, leaderboard)</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>1.2</td><td>Mirror carries the deleted purchase instructions; WAVE_STATUS says commits are unpushed that are pushed</td><td class="mono">diff -rq skills .claude/skills → 6 differ</td></tr>
+      <tr><td>1.5 Add the leaderboard to <code>invalidateSessionScope</code> (or the exemption list with a reason); add a <code>/leaderboard</code> mock handler; add a repository test</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>1.1</td><td>Other minors' data survives sign-out for a frame; the device harness cannot show the tab</td><td class="mono">session_scope.dart · mock_backend.dart</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter" open><summary>Chapter 2 — Contract &amp; backend dependencies <span class="badge b-bad">🔴 Critical · external</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>2.1 Production base URL announced in the contract's <code>servers:</code> block</td><td>BLOCKED</td><td class="p-crit">🔴</td><td>Seif</td><td>Prod flavor fails closed to a reserved TLD</td><td class="mono">app_config.dart:46-55</td></tr>
+      <tr><td>2.2 Deploy <code>PATCH /me</code> and <code>GET /me/entitlements</code> on staging</td><td>BLOCKED</td><td class="p-crit">🔴</td><td>Seif</td><td>Two stable routes answer 405/404 across three builds</td><td class="mono">S37 · smoke 09-04</td></tr>
+      <tr><td>2.3 Seed subjects for the test cohort (or register a university test account with a released term)</td><td>BLOCKED</td><td class="p-crit">🔴</td><td>Seif</td><td>Quiz loop + explanation + tree unverified live; 3.0.0-m1 finish body unobserved</td><td class="mono">R-8</td></tr>
+      <tr><td>2.4 Account deletion — <b>delivered upstream</b>: <code>POST</code>/<code>DELETE /me/deletion-request</code> stable since 3.8.0-m1 (09-07), 30-day grace, global 403, optional <code>pendingDeletion</code> on <code>/me</code>. Remaining external piece: the public web deletion URL Play requires</td><td>DELIVERED (un-vendored)</td><td class="p-high">🟠</td><td>1.1 · legal (web URL)</td><td>S38 is answered; the app has not pulled the contract, so nothing is built yet (→ 4.2)</td><td class="mono">upstream changelog 3.3.0 / 3.8.0</td></tr>
+      <tr><td>2.5 Reviewer account: fixed phone + static OTP on prod, with seeded content</td><td>BLOCKED</td><td class="p-crit">🔴</td><td>Seif</td><td>Reviewers cannot pass the login screen</td><td class="mono">STORE_AUDIT B-5</td></tr>
+      <tr><td>2.6 Answers to S39 (award timing), S40 (403 precedence), S41 (tree 403), S21 (city anyOf); confirm staging carries adr-102</td><td>OPEN</td><td class="p-high">🟠</td><td>Seif</td><td>S39 gates the <code>/me</code> freshness fix; the rest shape error copy</td><td class="mono">seif_fight.md · zna.md</td></tr>
+      <tr><td>2.7 Leaderboard promotion — <b>delivered upstream</b> (3.5.0-m1, 09-05, verified on staging at backend SHA <code>6744c43</code>). Ask instead: a date for the AI-explanation route (ADR-123, "no date set") and for <code>GET /me/entitlements</code>, both published stable but unrouted</td><td>DELIVERED / OPEN</td><td class="p-high">🟠</td><td>Seif</td><td>The explanation panel and the entitlements resume-refetch model surfaces that cannot succeed today</td><td class="mono">upstream changelog 2026-09-08 (3.9.2-m1)</td></tr>
+      <tr><td>2.8 Short-lived-token and forced 500/429 test hooks on staging (checklist steps 5 and 9)</td><td>OPEN</td><td class="p-med">🟡</td><td>Seif</td><td>The 401 → refresh → retry pipeline has never run against a real server</td><td class="mono">R-8</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 3 — Known client defects <span class="badge b-high">🟠 High</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>3.1 W3-1: capture <code>deviceInfo</code>, repository, storage and controller before the first <code>await</code> in <code>OtpNotifier.verify</code>; add a dispose-mid-verify test</td><td>OPEN</td><td class="p-high">🟠</td><td>—</td><td>Deliberately left out of the 09-04 contract wave; direction settled 09-04</td><td class="mono">R-2 · otp_notifier.dart:109-123</td></tr>
+      <tr><td>3.2 Add <code>retry:</code> returning null to the 10 providers that lack it; add a guard so the omission cannot recur</td><td>OPEN</td><td class="p-high">🟠</td><td>—</td><td>Known and deferred; silent auto-retry hides every reference-picker failure on a device</td><td class="mono">reference_providers.dart · WAVE_STATUS 09-04</td></tr>
+      <tr><td>3.3 Explanation polling: reset <code>ExplanationPending</code> → <code>Idle</code> when polling stops, or resume polling on return</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>—</td><td>Found by this audit; no test exercises poll cancellation across questions</td><td class="mono">quiz_bloc.dart:160-189</td></tr>
+      <tr><td>3.4 Early finish / skip: either expose Finish before the last question (Bloc already supports it) or record that skipping is not a product feature and drop the dead bucket</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>product decision</td><td>UI and Bloc disagree; <code>skipped</code> is unreachable</td><td class="mono">quiz_screen.dart:317-336</td></tr>
+      <tr><td>3.5 Render <code>termNumber</code> (group year-long subjects, localized term label)</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>design for the label</td><td>Contract instruction not implemented</td><td class="mono">openapi.yaml:815-817</td></tr>
+      <tr><td>3.6 Reset <code>registrationSubmitProvider</code> on expiry, track change and success</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>—</td><td>Stale error state across tracks</td><td class="mono">registration_submit_notifier.dart</td></tr>
+      <tr><td>3.7 Guard <code>extra!</code> on <code>/otp</code>, <code>/quiz/setup</code>, <code>/quiz/:id/result</code> like <code>/quiz/:quizId</code></td><td>NOT STARTED</td><td class="p-med">🟡</td><td>—</td><td>Crash on any cold/mistyped link</td><td class="mono">app_router.dart:104, :231, :251</td></tr>
+      <tr><td>3.8 Wire <code>entitlementsProvider</code> to a consumer (or delete it and correct the docs) — owner decision F-6/step 7</td><td>OPEN</td><td class="p-med">🟡</td><td>2.2, 2.6</td><td>Resume refetch never runs; staging 404s anyway</td><td class="mono">me_notifier.dart:74</td></tr>
+      <tr><td>3.9 Parent phone: pass the student's country dial code to <code>Phone.tryParse</code> on the identity screen</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>product: is parent phone always Egyptian?</td><td>Non-EG school students get a mangled parent number</td><td class="mono">phone.dart:30</td></tr>
+      <tr><td>3.10 Override <code>toString</code> on <code>TokenPair</code>/<code>StudentProfile</code>; clear the image cache on sign-out</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>—</td><td>Latent until a crash reporter or a shared device</td><td class="mono">K-14 · STORE §6</td></tr>
+      <tr><td>3.11 <code>/me</code> freshness: refetch on app resume; invalidate on leaving a quiz that submitted an answer; non-destructive refresh failure on Home/Profile/Settings</td><td>OPEN</td><td class="p-med">🟡</td><td>2.6 (S39)</td><td>Points are awarded per answer but <code>/me</code> is refreshed only on finish</td><td class="mono">F-2, F-3 · Phase 3 plan steps 4–6</td></tr>
+      <tr><td>3.12 Registration expiry ticker; Podium <code>isMe</code>; zero-question quiz guard; <code>AnswerFailed</code> exit; avatar sheet empty-vs-error; <code>&lt;u&gt;</code> tags in question text</td><td>NOT STARTED</td><td class="p-low">🟢</td><td>—</td><td>Small, found by reading</td><td class="mono">see Problems A6, A12, A18</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 4 — Feature completion <span class="badge b-high">🟠 High / 🟡 Medium</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>4.1 Day 9 quiz review — keep the session past finish and render it from <code>QuizResultArgs</code> (no endpoint needed)</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>1.2</td><td>Brief written 08-20; confirmed unbuilt 09-05; "Review Questions" ships disabled</td><td class="mono">day9_quiz_review_brief.md · quiz_result_screen.dart:120</td></tr>
+      <tr><td>4.2 Account deletion end to end: request screen with the owed copy (subscription forfeited, phone blocked 30 days, new account starts from zero) → <code>POST /me/deletion-request</code> → purge tokens and go to login on the 202; cancel screen from <code>GET /me.pendingDeletion</code> → <code>DELETE</code>; a global 403 <code>account_pending_deletion</code> branch beside <code>session_superseded</code>; local wipe (<code>SecureStorage.clear()</code>, prefs, image cache, session reset)</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>1.1 (re-vendor); design for the two screens</td><td>Fully specified upstream since 3.8.0-m1; still a store blocker until built</td><td class="mono">upstream changelog 3.3.0 · STORE_READINESS §6</td></tr>
+      <tr><td>4.3 Leaderboard finish: pull-to-refresh, self-highlight in the podium, remove <code>LeaderboardResults.me</code> or build the self-rank strip, measure the dark frame, export crown/share glyphs</td><td>PARTIAL</td><td class="p-med">🟡</td><td>1.1, 2.7, designer</td><td>Feature is coherent but unfinished at the edges</td><td class="mono">leaderboard_screen.dart:138 · podium.dart:126</td></tr>
+      <tr><td>4.4 Home sections (Daily Tasks, Continue Learning, Top Student, Learning Tools, banner carousel, bell)</td><td>BLOCKED</td><td class="p-med">🟡</td><td>endpoints that do not exist; banner art</td><td>Four of five Home sections are stubs</td><td class="mono">home_screen.dart:86-107 · S9</td></tr>
+      <tr><td>4.5 Level-up / new-badge celebration; result-screen level meter (#50)</td><td>BLOCKED</td><td class="p-med">🟡</td><td>designer</td><td>Contract announces both on every finish; no frame exists</td><td class="mono">D-002, D-006 · DESIGN_ISSUES #32, #50</td></tr>
+      <tr><td>4.6 Settings notification preferences; Message tab; Refer/Support/Friends</td><td>BLOCKED</td><td class="p-low">🟢</td><td>endpoints (S28, S33, S5, S36)</td><td>Designed, nothing to call</td><td class="mono">for_seif_account_surface.md</td></tr>
+      <tr><td>4.7 Environment banner on <code>isDev</code>; mock-entrypoint release guard; scrub the mock's phone number</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>—</td><td>Staging and prod are indistinguishable on screen</td><td class="mono">STORE_READINESS §9, §12</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 5 — Design &amp; UX debt <span class="badge b-warn">🟡 Medium</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>5.1 Text-scale policy (clamp <code>textScaler</code> at 1.3 or fix the three overflow sites)</td><td>OPEN</td><td class="p-high">🟠</td><td>product decision (accessibility trade-off)</td><td>One overflow on every quiz question at 1.25×</td><td class="mono">K-8, K-9, K-11 · RESPONSIVE.md Rule 4</td></tr>
+      <tr><td>5.2 Dark hint colour (K-5), inactive nav-label contrast 2.03:1 (K-6), Arabic w600 face (K-10)</td><td>OPEN</td><td class="p-med">🟡</td><td>designer</td><td>Design decisions the project refuses to invent</td><td class="mono">known-issues.md Tier 1</td></tr>
+      <tr><td>5.3 Designer rulings on 12 open DESIGN_ISSUES (#2, #3, #13, #16, #29, #31, #43, #44, #50, #51 …), incl. the limit-sheet frames that still draw an upgrade CTA</td><td>BLOCKED</td><td class="p-med">🟡</td><td>designer</td><td>Client built the contract's way and logged each gap</td><td class="mono">DESIGN_ISSUES.md</td></tr>
+      <tr><td>5.4 Provisional copy pending approval: limit-sheet bodies, school-skip wording, legal placeholders</td><td>OPEN</td><td class="p-med">🟡</td><td>designer / legal</td><td>Engineering copy shipping as design</td><td class="mono">D-005, D-007</td></tr>
+      <tr><td>5.5 Missing assets: level medallions (12 rasters), banner art, back glyph, crown, share, edit glyph, EG flag</td><td>BLOCKED</td><td class="p-low">🟢</td><td>designer export</td><td>Five <code>TODO(design-asset)</code> sites</td><td class="mono">grep TODO(design-asset) lib</td></tr>
+      <tr><td>5.6 Apply <code>docs/RESPONSIVE.md</code> (proposed, not applied); portrait lock or landscape test</td><td>NOT STARTED</td><td class="p-low">🟢</td><td>5.1</td><td>No breakpoints, no tablet pass</td><td class="mono">RESPONSIVE.md</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 6 — Testing &amp; verification <span class="badge b-high">🟠 High</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>6.1 Install the current tree on a physical device and complete login → quiz → logout (R-4)</td><td>OPEN</td><td class="p-crit">🔴</td><td>a device; 2.3 for the quiz</td><td>Both shipped bugs in this project's history were device-only classes; last physical pass 08-04</td><td class="mono">RISKS R-4 · STORE_AUDIT B-8</td></tr>
+      <tr><td>6.2 Inspect the GitHub Actions runs for the pushes to <code>merged</code> (R-3); flip the goldens job from advisory once green</td><td>OPEN</td><td class="p-high">🟠</td><td>GitHub access</td><td>CI has never been observed; runs should exist</td><td class="mono">origin/merged == HEAD · ci.yml</td></tr>
+      <tr><td>6.3 Arabic goldens (0 today); text-scale renders at 1.3×/2.0×</td><td>NOT STARTED</td><td class="p-high">🟠</td><td>—</td><td>Baseline locale has no pixel coverage</td><td class="mono">K-26 · test/goldens</td></tr>
+      <tr><td>6.4 Behavioural tests: cold start with a persisted token; dispose-mid-await race; OTP Resend; leaderboard repository + scroll append; <code>_QuizUnavailableScreen</code>; explanation poll cancellation</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>—</td><td>Named blind spots</td><td class="mono">K-24, K-25, R-5</td></tr>
+      <tr><td>6.5 Three integration tests (persisted session, sign-up to shell, quiz with real FLAG_SECURE)</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>device/emulator in CI</td><td>Platform channels no widget test can reach</td><td class="mono">K-25</td></tr>
+      <tr><td>6.6 Re-run the smoke harness once 2.2/2.3 land; observe the 3.0.0-m1 finish body</td><td>BLOCKED</td><td class="p-high">🟠</td><td>Chapter 2</td><td>8 of 21 stable ops still unverified live</td><td class="mono">tool/smoke/real_api_smoke_test.dart</td></tr>
+      <tr><td>6.7 Enable the git hooks on the clone; consider <code>riverpod_lint</code>/<code>custom_lint</code> (K-21)</td><td>NOT STARTED</td><td class="p-low">🟢</td><td>—</td><td>Opt-in never taken</td><td class="mono">git config core.hooksPath → unset</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 7 — Release &amp; store readiness <span class="badge b-bad">🔴 Critical</span></summary><div class="body">
+    <div class="tablewrap"><table><thead><tr><th>Section</th><th>Status</th><th>Priority</th><th>Depends on</th><th>Why it remains</th><th>Evidence</th></tr></thead><tbody>
+      <tr><td>7.1 Provision a release keystore + <code>android/key.properties</code> in the release environment; enrol Play App Signing</td><td>NOT STARTED</td><td class="p-crit">🔴</td><td>owner</td><td>Release artefacts are unsigned (fail-closed, verified)</td><td class="mono">STORE_AUDIT B-2</td></tr>
+      <tr><td>7.2 Store identity: app name, launcher icons, <code>android:label</code>, pubspec description, listing assets EN+AR</td><td>NOT STARTED</td><td class="p-crit">🔴</td><td>designer / owner</td><td>Flutter template identity in the built artefact</td><td class="mono">STORE_AUDIT B-6</td></tr>
+      <tr><td>7.3 Live privacy policy, terms, cookie policy (or drop the link), support URL; un-gate <code>/legal/*</code> routes; replace <code>.example</code> URLs</td><td>BLOCKED</td><td class="p-crit">🔴</td><td>legal</td><td>Both stores require a live policy URL</td><td class="mono">login_screen.dart:41-44 · STORE_AUDIT B-4</td></tr>
+      <tr><td>7.4 iOS: first build on Xcode 26, commit the Podfile, add <code>PrivacyInfo.xcprivacy</code>, set <code>ITSAppUsesNonExemptEncryption=false</code></td><td>NOT STARTED</td><td class="p-high">🟠</td><td>a Mac</td><td>iOS has never been built; compilation is UNKNOWN</td><td class="mono">STORE_AUDIT B-7</td></tr>
+      <tr><td>7.5 AAB in CI; artefact upload; R8/obfuscation and crash-reporting decisions (both change privacy declarations)</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>owner decisions §14</td><td>CI compiles an unsigned APK only</td><td class="mono">ci.yml:387 · STORE §9</td></tr>
+      <tr><td>7.6 Data Safety form / App Privacy label; age-rating and audience declarations; territories; publish-account type</td><td>NOT STARTED</td><td class="p-med">🟡</td><td>owner + backend retention answers</td><td>Inventory ready (STORE §5); decisions open</td><td class="mono">STORE §14</td></tr>
+      <tr><td>7.7 Hide or finish the shells before submission (reviewer dead ends)</td><td>OPEN</td><td class="p-high">🟠</td><td>product decision §14.7</td><td>Apple 2.1 / Play broken-functionality risk</td><td class="mono">STORE §8</td></tr>
+    </tbody></table></div>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 8 — Architecture hygiene <span class="badge b-ok">🟢 Low</span></summary><div class="body">
+    <ul>
+      <li>8.1 Move <code>Track</code> and <code>CursorPage</code> to <code>lib/core/models/</code>; break the <code>core</code>↔<code>auth</code> provider cycle (K-29, K-30). <b>NOT STARTED</b> · 🟢 · depends on nothing · evidence: <code>student_profile.dart:29</code>, <code>core_providers.dart:36-38</code>.</li>
+      <li>8.2 Route Home through <code>StateWidget</code>; collapse the four message widgets and three skeleton blocks into <code>core/widgets</code> (K-31). <b>NOT STARTED</b> · 🟢.</li>
+      <li>8.3 One shared <code>kNoRetry</code>; one <code>asAppException</code> helper; one catch block in the reference repository; de-duplicate the identity screen's primitives (K-32). <b>NOT STARTED</b> · 🟢.</li>
+      <li>8.4 Rename <code>units_screen.dart</code>/<code>lectures_screen.dart</code> to <code>*_view.dart</code>; pick one of <code>go</code>/<code>push</code> for drill-down. <b>NOT STARTED</b> · 🟢.</li>
+      <li>8.5 Delete the dead route, provider, field, ARB key and the empty scaffolds (§5). <b>NOT STARTED</b> · 🟢.</li>
+      <li>8.6 Read <code>ProblemDetails.traceId</code> and add a 5xx arm (K-15). <b>NOT STARTED</b> · 🟢.</li>
+    </ul>
+  </div></details>
+
+  <details class="chapter"><summary>Chapter 9 — Documentation hygiene <span class="badge b-ok">🟢 Low</span></summary><div class="body">
+    <ul>
+      <li>9.1 Archive <code>.ai/audits/current/</code> per <code>AUDIT_PROTOCOL.md</code>; retire <code>PROGRESS.md</code> and the two 07-28 reports to an archive folder. <b>NOT STARTED</b> · 🟢.</li>
+      <li>9.2 Fix stale prose: guard comments citing a quiz timer (K-36), <code>Architecture_and_Folders.md</code> (K-35, out of repo), 17 stale <code>openapi.yaml:NNN</code> citations in <code>lib/</code> (F-11), the smoke harness's "v2.1 pre-term" string. <b>OPEN</b> · 🟢.</li>
+      <li>9.3 Replace the template README and pubspec description; move or delete <code>zna.md</code>. <b>NOT STARTED</b> · 🟢.</li>
+      <li>9.4 A leaderboard brief/record (there is none) and a WAVE_STATUS entry for whatever Chapter 1 decides. <b>NOT STARTED</b> · 🟡.</li>
+    </ul>
+  </div></details>
+
+  <details class="chapter"><summary>Future work <span class="badge b-future">⚪ contract-gated</span></summary><div class="body">
+    <ul>
+      <li>Quiz history and full review (<code>GET /quizzes</code>, <code>/{id}</code>) and quiz resume (S2) — draft.</li>
+      <li>Favorites (3 draft ops) and the "Favorite questions" row; "Your progress" (no endpoint).</li>
+      <li>Recovery ladder (4 draft ops, open product questions adr-054).</li>
+      <li>Custom avatar upload (draft + moderation); push notifications (<code>PUT /me/fcm-token</code> draft — will add Firebase and change both privacy declarations).</li>
+      <li>Leaderboard live updates (SignalR hub "not drafted"); streaks, chat, friends (hubs not drafted).</li>
+      <li>Flashcards (fully designed, no contract shape, S6); referral programme (S5); track switch (S31); modules overlay (draft).</li>
+      <li>Offline caching, if ever wanted — chosen on its merits then (Hive was removed unused).</li>
+    </ul>
+  </div></details>
+</section>
+
+<!-- ===================================================== 8 ===================================================== -->
+<section id="blocks">
+  <div class="sec-head"><span class="n">8</span><h2>Remaining-work block diagram</h2></div>
+  <p class="small">Arrows show dependency (what must exist before the next block can be finished). Colour = status.</p>
+  <div class="legend"><span style="color:var(--ok)">■ Complete</span> <span style="color:var(--warn)">■ Partial</span> <span style="color:var(--future)">■ Remaining</span> <span style="color:var(--bad)">■ Blocked (external)</span></div>
+
+  <div class="flow">
+    <div class="box st-complete"><div class="st">Complete</div><b>Core foundation</b>bootstrap · config · storage · theme · l10n · router · interceptors · guards</div>
+    <div class="arrow">▼</div>
+    <div class="box st-complete"><div class="st">Complete</div><b>Authentication &amp; session</b>login · OTP fork · refresh · eviction · session scope (W3-1 open)</div>
+    <div class="arrow">▼</div>
+    <div class="box st-partial"><div class="st">Partial</div><b>Registration</b>4 screens, 7 pickers · retry: gaps · submit reset · parent-phone dial code</div>
+    <div class="arrow">▼</div>
+  </div>
+  <div class="tier"><div class="lbl">Signed-in surfaces</div>
+    <div class="blocks">
+      <div class="box st-partial"><div class="st">Partial</div><b>Home</b>header + level card real; 4 stub sections<div class="dep">blocked on endpoints that do not exist</div></div>
+      <div class="box st-complete"><div class="st">Complete</div><b>Learn / catalog</b>termNumber grouping missing<div class="dep">live: needs seed data (2.3)</div></div>
+      <div class="box st-partial"><div class="st">Partial</div><b>Quiz loop</b>explanation strand · no skip · review disabled<div class="dep">live: needs seed data (2.3) · S39</div></div>
+      <div class="box st-complete"><div class="st">Complete</div><b>Profile · Edit · Settings</b>PATCH /me 405 on staging<div class="dep">needs 2.2</div></div>
+      <div class="box st-partial"><div class="st">Partial</div><b>Leaderboard (untracked)</b>built on upstream 3.7.0-m1; vendored pin still says draft<div class="dep">needs the contract re-vendored (1.1) + hygiene (1.5)</div></div>
+      <div class="box st-blocked"><div class="st">Blocked</div><b>Message · Support · Refer · Friends · Legal</b>shells<div class="dep">endpoints + legal copy</div></div>
+    </div>
+  </div>
+  <div class="flow"><div class="arrow">▼</div></div>
+  <div class="tier"><div class="lbl">Cross-cutting</div>
+    <div class="blocks">
+      <div class="box st-remaining"><div class="st">Remaining</div><b>Client defects (Ch. 3)</b>W3-1 · retry: ×10 · explanation · extra! guards · entitlements<div class="dep">no external dependency except 3.8/3.11 (S39)</div></div>
+      <div class="box st-remaining"><div class="st">Remaining</div><b>Day 9 quiz review (4.1)</b>session-scoped, no endpoint<div class="dep">—</div></div>
+      <div class="box st-partial"><div class="st">Partial</div><b>Live API integration</b>13/21 verified · 8 unobserved<div class="dep">2.1 – 2.3, 2.8</div></div>
+      <div class="box st-partial"><div class="st">Partial</div><b>Testing &amp; verification</b>890 green · 0 AR goldens · no device pass since 08-04<div class="dep">a device · GitHub access · 2.3</div></div>
+      <div class="box st-blocked"><div class="st">Blocked</div><b>Design rulings</b>12 open issues · 3 token decisions · text-scale policy<div class="dep">designer · product</div></div>
+    </div>
+  </div>
+  <div class="flow"><div class="arrow">▼</div></div>
+  <div class="tier"><div class="lbl">Ship</div>
+    <div class="blocks">
+      <div class="box st-blocked"><div class="st">Blocked</div><b>Production backend</b>URL · PATCH /me · entitlements route · explanation route · reviewer account<div class="dep">Seif (deletion endpoints already delivered)</div></div>
+      <div class="box st-remaining"><div class="st">Remaining</div><b>Release engineering</b>keystore · AAB in CI · identity · env banner · R8/crash decisions<div class="dep">owner decisions</div></div>
+      <div class="box st-blocked"><div class="st">Blocked</div><b>Legal &amp; store assets</b>privacy policy · terms · support URL · screenshots · age declarations<div class="dep">legal · designer</div></div>
+      <div class="box st-remaining"><div class="st">Remaining</div><b>iOS</b>never built · Podfile · PrivacyInfo · Xcode 26<div class="dep">a Mac</div></div>
+    </div>
+  </div>
+  <div class="flow"><div class="arrow">▼</div><div class="box st-remaining"><div class="st">Remaining</div><b>Store submission</b>NOT READY — 8 blockers (STORE_READINESS_AUDIT_2026-09-05)</div></div>
+</section>
+
+<!-- ===================================================== 9 ===================================================== -->
+<section id="health">
+  <div class="sec-head"><span class="n">9</span><h2>Project health</h2></div>
+
+  <div class="card lift" style="margin-bottom:1.2rem">
+    <h3>Per-area assessment</h3>
+    <p class="small">Scale: Poor · Needs Work · Fair · Good · Very Good · Excellent (0–100). Scores are judgements grounded in the evidence cited throughout this report, not measurements.</p>
+    <div class="bars">
+      <div class="bar"><span>Architecture</span><div class="track"><div class="fill ok" style="width:74%"></div></div><span class="val">74 · Good</span></div>
+      <div class="bar"><span>Code quality</span><div class="track"><div class="fill ok" style="width:82%"></div></div><span class="val">82 · Very Good</span></div>
+      <div class="bar"><span>Feature completion</span><div class="track"><div class="fill warn" style="width:52%"></div></div><span class="val">52 · Fair</span></div>
+      <div class="bar"><span>UI &amp; design fidelity</span><div class="track"><div class="fill warn" style="width:60%"></div></div><span class="val">60 · Fair+</span></div>
+      <div class="bar"><span>API integration</span><div class="track"><div class="fill warn" style="width:50%"></div></div><span class="val">50 · Fair</span></div>
+      <div class="bar"><span>State management</span><div class="track"><div class="fill ok" style="width:72%"></div></div><span class="val">72 · Good</span></div>
+      <div class="bar"><span>Testing</span><div class="track"><div class="fill ok" style="width:70%"></div></div><span class="val">70 · Good</span></div>
+      <div class="bar"><span>Documentation</span><div class="track"><div class="fill ok" style="width:78%"></div></div><span class="val">78 · Very Good−</span></div>
+      <div class="bar"><span>Security &amp; privacy</span><div class="track"><div class="fill ok" style="width:72%"></div></div><span class="val">72 · Good</span></div>
+      <div class="bar"><span>Maintainability</span><div class="track"><div class="fill ok" style="width:70%"></div></div><span class="val">70 · Good</span></div>
+      <div class="bar"><span>Production readiness</span><div class="track"><div class="fill bad" style="width:22%"></div></div><span class="val">22 · Needs Work</span></div>
+    </div>
+  </div>
+
+  <div class="scale" aria-label="Overall health scale">
+    <div class="marker" style="left:58%">Current state</div>
+    <div class="track"></div>
+    <div class="ticks"><span>Poor</span><span>Needs work</span><span>Fair</span><span>Good</span><span>Very good</span><span>Excellent</span></div>
+  </div>
+
+  <div class="healthbox">
+    <div class="eyebrow">Overall verdict</div>
+    <div class="v">🟡 Fair / Functional but Incomplete</div>
+    <p><b>Why not higher.</b> The app cannot ship: the production backend does not exist in the contract, the release artefact is unsigned, both stores' mandatory account-deletion and privacy-policy requirements are unmet, iOS has never compiled, and no physical device has run the current tree. Only 13 of 21 stable operations have ever decoded a real response; the quiz loop — the product — is unverified on the wire. Home is four stubs around a header. The vendored contract is nine versions behind the partner's, the in-flight feature was built past that pin without moving it, the AI-explanation surface models a route that does not exist, and ten providers can fail silently on a device. Feature completion and API integration sit at Fair; production readiness is Needs Work.</p>
+    <p><b>Why not lower.</b> Everything that <i>is</i> built is built carefully: a clean layered architecture with typed error boundaries, a sealed screen-state model, single-flight token refresh proven under concurrency, session hygiene for shared devices, zero hardcoded colours or sizes across 38k lines, Arabic-first localization with enforced parity, 890 green tests including 17 mechanised rules that are themselves tested and proven to fail, committed codegen with CI drift checks, an unusually honest decision/risk/design-gap record, and every stable endpoint already wired. The two CRITICALs of the August audit (release networking, cross-student data leak) were fixed and proven at ARTEFACT level. Nothing found here is a rewrite; the defects are local.</p>
+    <p><b>Net.</b> As an engineering codebase this is Good to Very Good. As a project — a product that has to reach a store — it is functional but incomplete, with most of the distance to "Good" owned by the backend partner, the designer and legal rather than by the Flutter code. The marker sits at the upper edge of Fair for that reason.</p>
+  </div>
+</section>
+
+<!-- ===================================================== 10 ===================================================== -->
+<section id="next">
+  <div class="sec-head"><span class="n">10</span><h2>Recommended next development sequence</h2></div>
+  <p>Ordered by dependency, then by what each step unblocks. Steps 1–3 need nobody outside the repository; steps 4–6 start the external clocks that dominate the schedule.</p>
+  <div class="steps">
+    <div class="step"><div><b>Re-vendor the contract, then clean the working tree (Chapter 1)</b><div class="why">Copy upstream <code>5b6e797</code> (3.9.2-m1) into <code>contract/</code>, bump <code>SOURCE.md</code>, read the 12 changelog entries; commit that first. Then commit the docs reconciliation and the release guard separately, and the leaderboard last, with its citations re-anchored; re-sync or delete <code>skills/</code>; update WAVE_STATUS. One day, low risk, and the repository stops contradicting itself.</div></div></div>
+    <div class="step"><div><b>Fix the client defects that need no one else (Chapter 3.1–3.3, 3.6, 3.7, 3.10)</b><div class="why">W3-1, the ten missing <code>retry:</code>s (plus a guard), the explanation strand, submit-state reset, <code>extra!</code> guards, <code>toString</code> overrides and the image-cache wipe. Each is small, each has a test to write, and together they remove every silent-failure path this audit found.</div></div></div>
+    <div class="step"><div><b>Send the backend asks in one message (Chapter 2)</b><div class="why">Prod URL, <code>PATCH /me</code> + entitlements route on staging, seed data, a date for the explanation route, reviewer account, S39–S41. Drop the two asks upstream already delivered (leaderboard promotion, deletion endpoint) and rewrite <code>zna.md</code> accordingly. Everything from step 5 onward waits on these, so they must go out first.</div></div></div>
+    <div class="step"><div><b>Verify on hardware and read CI (Chapter 6.1, 6.2)</b><div class="why">Install the current tree on a physical device with the mock, then with staging; open the GitHub Actions runs that already exist. This converts a month of SOURCE/BUILD claims into DEVICE/CI evidence and is the project's own stated top risk.</div></div></div>
+    <div class="step"><div><b>Complete what the contract already allows (Chapter 4.1, 4.2, 3.5, 3.8)</b><div class="why">Day 9 session-scoped review, the account-deletion shell and local wipe, <code>termNumber</code> grouping, the entitlements decision. These raise feature completion without waiting on anyone.</div></div></div>
+    <div class="step"><div><b>Testing depth (Chapter 6.3–6.5)</b><div class="why">Arabic goldens, text-scale renders, cold-start and dispose-race tests, the leaderboard repository test, then the three integration tests. Do this after step 5 so the new screens are covered on the first pass.</div></div></div>
+    <div class="step"><div><b>Design rulings and UX debt (Chapter 5)</b><div class="why">Text-scale policy, the three token decisions, the twelve open design issues and the provisional copy. Batch them into one designer session; they cost little engineering once decided.</div></div></div>
+    <div class="step"><div><b>Hardening and hygiene (Chapters 8, 9)</b><div class="why">Core models relocation, StateWidget consolidation, de-duplication, dead-code removal, doc archiving. Low priority but cheap, and best done before the release branch is cut.</div></div></div>
+    <div class="step"><div><b>Release engineering (Chapter 7.1, 7.2, 7.4, 7.5)</b><div class="why">Keystore and Play App Signing, store identity, first iOS build with the privacy manifest, AAB in CI, R8 and crash-reporting decisions. Start the iOS build early — its outcome is unknown.</div></div></div>
+    <div class="step"><div><b>Production readiness gate (Chapter 7.3, 7.6, 7.7 + Chapter 2 delivered)</b><div class="why">Live legal URLs wired in, shells hidden or finished, privacy declarations filed, reviewer account documented, smoke harness green end to end against the production host, a full device pass on the release build. Then submit.</div></div></div>
+  </div>
+</section>
+
+<!-- ===================================================== A ===================================================== -->
+<section id="method">
+  <div class="sec-head"><span class="n">A</span><h2>Method &amp; evidence</h2></div>
+  <div class="grid g2">
+    <div class="card">
+      <h3>What was examined</h3>
+      <ul>
+        <li>541 working-tree files (499 git-tracked + 42 untracked), of which 267 Dart files were traced by import graph; the core spine (entrypoints, bootstrap, config, providers, router, session, storage, network, theme, shared widgets, auth) was read line by line.</li>
+        <li>Six parallel read-only tracing passes covered registration, home + catalog, quiz, profile + settings + shells, the untracked leaderboard, and the test suite and guards; their file:line evidence is reproduced above.</li>
+        <li><code>git log</code> (88 commits), branch and remote state, the three backup branches, the working-tree diff.</li>
+        <li>The vendored contract (36 operations with <code>x-stability</code>), changelog, error registry; the 2026-08-23 and 09-04 staging smoke records.</li>
+        <li>Every current-state document (WAVE_STATUS, RISKS, PROJECT_GUIDE, DECISIONS, KNOWN_BUGS, ENFORCEMENT, STORE_READINESS + the 09-05 audit, the 09-04 contract-impact audit), the fix queue, the 2026-08-11 audit package and Fable verdicts, and the headers of the twelve day-briefs.</li>
+        <li>Scripted scans: orphan Dart files (0), unreferenced assets (0), unused ARB keys (1), <code>.gitkeep</code> in populated directories (16), test declarations (859), TODO markers (55), state-management idioms, per-feature LOC, generated-vs-hand-written LOC.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What was deliberately not done</h3>
+      <ul>
+        <li>No file was edited, formatted, moved or deleted; no dependency installed or upgraded; no git state changed. The two deliverables are the only new files.</li>
+        <li><code>tool/validate.ps1</code> was <b>not</b> run (it reformats the tree). The BUILD-level result cited is the recorded run of 2026-09-08T14:46Z on this same dirty tree.</li>
+        <li>No device, emulator, release build or GitHub Actions run was executed or inspected — so every DEVICE/CI claim above is the project's own record, carried at its recorded level.</li>
+        <li>The Figma file was not opened (view-only seat on the partner's account). Design claims come from the code's own annotations and <code>docs/DESIGN_ISSUES.md</code>.</li>
+      </ul>
+      <h3 style="margin-top:1rem">Could not be verified</h3>
+      <ul>
+        <li>Whether staging build <code>78c6e5d</code> carries adr-102.</li>
+        <li>CI outcomes; iOS compilability; behaviour of the current tree on hardware.</li>
+      </ul>
+      <h3 style="margin-top:1rem">Verified after the first pass (2026-09-08)</h3>
+      <ul>
+        <li>The upstream contract repository was fetched read-only into its existing local clone (<code>F:\level\level_up\level_up\level-up-contract</code>, remote-tracking refs only; that clone's working tree and the app's <code>contract/</code> were not touched). Upstream <code>main</code> = <code>5b6e797</code>, 3.9.2-m1, 12 commits past the vendored pin; both leaderboard operations and both deletion operations are stable there. The leaderboard client's list-endpoint behaviour matches 3.9.2-m1.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="small">Generated 2026-09-08 by a read-only audit session. Companion: <code>flutter_frontend_workflow.md</code> (how the app works, startup to final interaction).</p>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var btn=document.getElementById('themeBtn'),lbl=document.getElementById('themeLbl');
+  var order=['system','light','dark'];
+  function apply(v){ if(v==='system'){root.removeAttribute('data-theme');}else{root.setAttribute('data-theme',v);} lbl.textContent=v; try{localStorage.setItem('lu-audit-theme',v);}catch(e){} }
+  var saved='system'; try{saved=localStorage.getItem('lu-audit-theme')||'system';}catch(e){}
+  if(order.indexOf(saved)<0) saved='system';
+  apply(saved);
+  btn.addEventListener('click',function(){ var i=order.indexOf(lbl.textContent); apply(order[(i+1)%order.length]); });
+
+  var all=document.querySelectorAll('details');
+  document.getElementById('expandBtn').addEventListener('click',function(){ all.forEach(function(d){d.open=true;}); });
+  document.getElementById('collapseBtn').addEventListener('click',function(){ all.forEach(function(d){d.open=false;}); });
+
+  var links=document.querySelectorAll('.nav a'); var map={};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ links.forEach(function(a){a.classList.remove('active');}); var a=map[e.target.id]; if(a) a.classList.add('active'); } });
+    },{rootMargin:'-20% 0px -70% 0px',threshold:0});
+    document.querySelectorAll('main section').forEach(function(s){ io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>

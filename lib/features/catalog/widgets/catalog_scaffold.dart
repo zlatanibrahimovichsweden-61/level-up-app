@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/circle_back_button.dart';
 
 /// Shared chrome for the four browse screens (Subjects → Units → Chapters →
 /// Lessons) · Figma header `404:7413`.
@@ -75,31 +76,15 @@ class CatalogHeader extends StatelessWidget {
             style: AppType.h2.copyWith(color: ext.textPrimary),
           ),
           if (canPop)
+            // The shared chip (Figma `90:208`), not a local copy: this header
+            // used to draw its own `cardFill` circle around a Material
+            // `arrow_back_ios_new`, which is the drift `CircleBackButton`'s
+            // docstring says it exists to stop. It now carries the same SVG
+            // chevron, the same 20%-alpha dark surface with Glass, and the same
+            // light drop shadow as every other back chip in the app.
             PositionedDirectional(
               start: 0,
-              child: Semantics(
-                button: true,
-                child: InkWell(
-                  onTap: () => context.pop(),
-                  customBorder: const CircleBorder(),
-                  child: Container(
-                    width: 35,
-                    height: 35,
-                    decoration: BoxDecoration(
-                      color: ext.cardFill,
-                      shape: BoxShape.circle,
-                    ),
-                    // TODO(design-asset): real back glyph (Figma
-                    // weui:arrow-filled) — blocked by export-disabled +
-                    // View-only seat. See docs/DESIGN_ISSUES.md #1.
-                    child: Icon(
-                      backChevron(context),
-                      size: 18,
-                      color: ext.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
+              child: CircleBackButton(onPressed: () => context.pop()),
             ),
           if (action != null) PositionedDirectional(end: 0, child: action!),
         ],

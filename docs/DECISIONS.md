@@ -416,3 +416,202 @@ this decision, and un-skipping it is part of un-gating, not a tidy-up.
 `3.7.0-m1` and `3.9.0-m1` handled explicitly and covered by tests. Then the route, the
 skipped test and the screen test's mount go back together, and the board gets a device pass
 before it is called done.
+
+---
+
+## Elevation — the design system's third layer
+
+### D-009 · Elevation becomes tokens and primitives; the dark canvas elevates with Glass, and its shadows are black
+**Feature:** Design system (elevation foundation) · **Date:** 2026-09-17 · **Status:** Accepted ·
+**Raised by:** the owner, after the 2026-09-16 Figma elevation audit and the 2026-09-17 Glass reading
+
+**Context.** Elevation was the last design dimension still decided at call sites. Colour has had a
+palette and a guard since Day 7b; typography got both on 2026-08-21. Shadows had neither, and the
+audit found what that costs:
+
+- **Eleven raw sites** across seven files — `BoxShadow`, `elevation:`, `shadowColor:`, a
+  `MaskFilter.blur` — each with its own numbers.
+- **The wrong unit, everywhere.** Figma's "Blur" is a CSS blur radius; Flutter's `blurRadius` is
+  not. `BoxShadow` converts it with σ = 0.57735·B + 0.5, so the file's commonest shadow, blur 1.3,
+  rendered at σ 1.25 against the correct 0.65 — nearly twice as soft, on every back chip and every
+  profile chip. Nothing in the pipeline could have reported that.
+- **A dark colour derived from a false premise.** `AppColors.elevationShadow` flipped to cream in
+  dark because "no dark frame exists for any of the five components" (DESIGN_ISSUES #47). Thirteen
+  dark frames do exist and every one of them is **black** at the light alpha.
+- **A whole mechanism that was invisible.** The dark canvas raises surfaces with Figma's **Glass**
+  effect plus a lavender back-light, and the view-only seat hides Glass in every surface Figma
+  offers — Design panel, Dev Mode, every export, Copy as SVG. A glass surface inspects as a plain
+  translucent rectangle, which is exactly how it was built (→ DESIGN_ISSUES #72).
+
+**Options.**
+
+1. **Fix the eleven sites in place.** Cheapest. Rejected: it leaves the twelfth to be written next
+   week, and it cannot express Glass or a back-light at all.
+2. **A `BoxShadow`-based token set.** Familiar, and works with `BoxDecoration`. Rejected on two
+   counts: the blur unit is wrong by construction, and `BoxShadow` cannot knock itself out from
+   under a translucent fill — which is most of this design's dark surfaces.
+3. **A `BackdropFilter` on every glass surface.** The literal reading of Glass. Rejected as the
+   default: one backdrop pass per surface, including per leaderboard row, to blur a flat page
+   colour — a blurred uniform colour is that colour. Kept for the one surface with real content
+   behind it.
+4. **A third-party glass package** (e.g. `liquid_glass_renderer`). Rejected: a new dependency, and
+   Impeller-only, on a build with no Impeller flags in either platform manifest.
+5. **Tokens + primitives, with a modelled tier-1 Glass.** Chosen.
+
+**Decision.**
+
+- **`AppElevation`**, a `ThemeExtension` beside `AppColors`, carries every measured shadow, inner
+  shadow, Glass setting, back-light, scrim and theme-dependent border width, per canvas, with the
+  Figma node cited on each. 84 tokens.
+- **`lib/core/widgets/elevation/`** is the only code allowed to paint a shadow, a blur or a
+  backdrop: `paintFigmaShadows`, `GlassSurface`'s rim and back-light painters, `ElevatedSurface`,
+  `SegmentedTrack`, `PrimaryCta`.
+- **The conversion happens once**, in `glass_mapping.dart`: Figma Blur `B` → σ = B/2, which is the
+  CSS definition and is **not** a tunable.
+- **Knockout is the default.** Every drop shadow in the file carries `showShadowBehindNode: false`,
+  so an outer shadow is clipped to *outside* the surface's own outline before it is drawn. This is
+  what makes a 20%-alpha card composite over the page rather than over its own shadow.
+- **Dark shadows are the measured black.** The cream derivation is withdrawn (DESIGN_ISSUES #47,
+  superseded).
+- **Glass is rendered as tier 1**: tint + a normal-based rim light + the back-light frosted with the
+  surface's own σ, with a real `BackdropFilter` only where there is content behind the surface.
+  `refraction`, `dispersion` and `depth` are stored but not drawn, because over a uniform backdrop
+  they have nothing to distort.
+- **Back-lights belong to the covering surface**, not to the page: below its tint, clipped to its
+  shape, blurred with its frost, scrolling with it. On canvas there is no hard ellipse edge
+  anywhere, which is the evidence for that reading.
+- **A ratchet guard** (`rawElevationEffects`, baseline **11**, frozen 2026-09-17) stops the twelfth
+  raw site, and each of edits 2–5 lowers it in the same change that removes one.
+
+**Consequences.**
+
+- **This change moves zero pixels, deliberately.** It adds tokens, primitives, a guard, tests and
+  docs; it changes no existing token value. `elevationShadow` and `navShadow` keep their current
+  values and are replaced component by component, because flipping `elevationShadow` to black on
+  its own would darken the 20%-alpha cards that still paint an unclipped shadow under their fill.
+  The token is deleted by whoever removes its last reference. (**edit2, 2026-09-18:** that has now
+  happened to `navShadow` and to `backChipFill` — both had exactly one consumer left and both are
+  deleted. `elevationShadow` still has nine, in edits 3–5, and is untouched.)
+- Every later component change gets its elevation for free and cannot invent one.
+- The cost is a large token surface (84 fields, with `copyWith`, `lerp` and equality over all of
+  them) and a rim light that walks a path in 2px steps per surface. Both are paid once.
+- **Calibration is outstanding.** The five tier-1 model constants ship at documented starting
+  values and have not been compared against Figma's render — desktop access was declined on
+  2026-09-17. They are marked PENDING in DESIGN_ISSUES #72 with the seven comparisons still owed,
+  and **nothing in the build reports them as calibrated.**
+- **Tier 2** — an Impeller `ImageFilter.shader` for real refraction and dispersion — is not built
+  and needs the owner's approval, because it adds a `flutter: shaders:` entry and a
+  rendering-engine-dependent path (`ImageFilter.shader` throws `UnsupportedError` without Impeller
+  in the pinned SDK 3.44.7).
+
+**Revisit when:** the calibration runs (C1–C7), or the designer supplies a dark RTL frame — the only
+thing that can settle whether back-light offsets really mirror — or the onboarding sheet's tier-1
+frost is judged insufficient on a device, which is the one place tier 2 could show a difference.
+
+### D-010 · The dark review answer rows take the approved Glass treatment; DESIGN_ISSUES #53 is closed
+**Feature:** Quiz review (elevation pass, edit4 item #48) · **Date:** 2026-09-17 · **Status:** Accepted ·
+**Raised by:** the designer/owner, unprompted, after the edit1 elevation foundation landed
+
+**Context.** The dark quiz-review frame (`337:6705`, rows `337:6731`) draws the answer rows as the
+semantic fills at **20% alpha** with a 0.5 semantic stroke and **G5** Glass. The build did the
+opposite — opaque fills in both themes — under an owner ruling of 2026-09-08 recorded as
+DESIGN_ISSUES #53, on the grounds that a correctness signal must not change with the canvas and that
+honouring the frame would leave the review screen and the quiz page disagreeing one tap apart. That
+left `edit4.md` item #48 marked **BLOCKED — USER DECISION REQUIRED**, with three options and a
+default of "no change".
+
+**Options** (as written in `edit4.md` §"#48"):
+
+1. **(a)** keep #53 — opaque, no Glass, no change. The standing default.
+2. **(b)** keep the opaque fills and add the G5 rim light only — a hybrid.
+3. **(c)** follow the dark frame: the frame's alpha + the 0.5 stroke + G5 Glass.
+
+**Decision — (c), with consistency ranked above the literal number.** In the designer's words: do
+not keep the old opaque treatment; use the approved Glass treatment; the current Figma Glass design
+is the source of truth; the previous 20% opacity discussion is not a reason to create a *different*
+treatment; **the corresponding Review answer rows must use the same Glass treatment consistently**,
+i.e. be equal in treatment rather than preserving an opaque-vs-Glass difference inherited from the
+old 20% value; and the exact 20% value is **not** a separate product requirement where it would
+conflict with that consistency. #53 is resolved/withdrawn for this issue and must not block
+implementation.
+
+**Consequences.**
+
+- **#53 is closed** and carries the ruling; **edit4 item #48 is unblocked** and implements (c)
+  through edit1's `ElevatedSurface` + the `AppElevation` Glass token — not a second glass
+  implementation, and not a hardcoded fill.
+- **A shipped test is now wrong on purpose.** `test/features/quiz/quiz_review_screen_test.dart`
+  asserts that the dark rows render the same opaque marks as light. The edit that implements this
+  rewrites that assertion; it does not delete it.
+- **The palette rule is unchanged.** *"A correctness signal must never flip colour with the canvas"*
+  governs **hue**; this ruling changes **treatment** (alpha + Glass), which is how the dark canvas
+  elevates every other surface in the design (D-009, DESIGN_ISSUES #72). A wrong answer stays red.
+- **One thing this ruling deliberately does not settle.** Option (c) as written noted that following
+  the dark frame "must also change the quiz page's graded tiles". The ruling is scoped to the
+  **Review answer rows** and gives no instruction about the quiz page. If the two screens visibly
+  disagree once this lands, that is a **new** question for the designer, raised with both renders
+  side by side — not a reason to hold the review rows. The related wrong-row hex/opacity divergence
+  between the two screens stays open as DESIGN_ISSUES #52.
+
+**Revisit when:** the quiz page's graded tiles are compared against the reviewed rows on a device and
+the pair is judged inconsistent, or the designer re-draws `337:6705`.
+### D-011 · The Glass rim ships at 70% of Figma's measured brightness, because tier 1 renders no depth
+
+**Date:** 2026-09-19
+**Raised by:** the owner, on the question `DESIGN_ISSUES` #72 escalated the same day
+
+**Context.** The 2026-09-19 re-calibration (#72) measured Figma's Glass rim end to end: it is a
+two-lobe directional highlight, lit on the side facing the light and carrying a second lobe at
+**0.65** on the side facing away, absent entirely across the two corners square to the light axis,
+**0.63 dp** wide, **linear** in `lightIntensity`, and **independent of `splay`**. Its alpha reaches
+**0.79** per unit intensity at the apex and **0.50 lit / 0.33 dim** on a straight edge.
+
+The shipped model had been taking `.abs()` of an un-negated dot product, so no surface had a lit
+side at all, and its falloff drew that 0.50 edge as **0.06**. Correcting the geometry is not in
+question — it was a provable fault.
+
+What the measurement cannot settle is the **strength**. Figma's rim sits inside a surface that the
+`depth` and `refraction` terms darken with a gradient; that is what makes Glass read *recessed*
+there. The tier-1 model deliberately renders neither (D-009) — a backdrop pass per surface,
+including per list row, for something that over a flat page has nothing to distort. So the build
+would be pairing Figma's rim with a flat interior, and the rim reads stronger than the design
+intends.
+
+**Options.**
+
+1. **(a)** Ship Figma's measured alpha. Faithful to the number, brighter than the design's look.
+2. **(b)** Build the `depth`/`refraction` shading so the measured alpha is right in context.
+3. **(c)** Keep every measured term and scale the strength down by one explicit constant.
+
+**Decision — (c).** In the owner's words: do not use Figma's literal rim intensity; keep all the
+calibrated geometry — direction, two-lobe behaviour, threshold, width, falloff — and reduce the
+intensity intentionally so the Flutter result *looks like* the design; put that reduction behind a
+single explicit constant; do **not** implement refraction now merely to justify the brighter rim;
+and do **not** record this as a measurement error or a deviation — it is intentional visual
+compensation. **A visual match is the goal, not matching Figma's alpha number literally.**
+
+`kGlassRimMaxAlpha` ships at **0.55** against a measured **0.79** — 70%. The fraction was chosen so
+the two most prominent Glass surfaces keep the brightness the app has already shipped and been
+reviewed at: the level card (`splay` 1.00) and the form field (0.97) rendered **0.354** per unit
+intensity at a straight edge under the old model and render **0.350** under this one. The small
+chrome, which the old model drew at 0.06 where Figma draws 0.50, comes up to **0.35** rather than
+all the way.
+
+**Consequences.**
+
+- **One dial.** `kGlassRimMaxAlpha` in `lib/core/theme/glass_mapping.dart` is the only number to
+  change if the rim should be stronger or weaker. `kGlassRimMeasuredMaxAlpha` sits beside it
+  carrying Figma's 0.79 so the measurement survives the ruling.
+- **The geometry stays pinned to Figma.**
+  `test/core/widgets/elevation/glass_rim_calibration_test.dart` asserts the sidedness, the 0.65
+  back lobe, the bare corners and the straight-edge *profile* against Figma's own numbers scaled by
+  the dial — so moving the dial does not invalidate the calibration, and quietly dimming the rim by
+  bending the geometry instead still fails. One assertion pins the 70% itself.
+- **`depth`/`refraction` is not scheduled by this.** It stays recorded in #72 and D-009 as a term
+  tier 1 does not render. If it is ever built, this ruling is the thing to revisit.
+- **Five dark goldens moved** — `elevation_level_card_dark`, `elevation_translucent_row_dark`,
+  `elevation_two_shadow_card_dark`, `language_pill_dark`, `track_screen_dark`. No light golden
+  changed: the light canvas has no Glass.
+
+**Revisit when:** the `depth`/`refraction` shading is built, or the rim is judged on a device
+against the dark frames and reads wrong at either end of the splay range.

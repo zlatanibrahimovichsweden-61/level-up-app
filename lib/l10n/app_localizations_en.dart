@@ -598,11 +598,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewQuestions => 'Review Questions';
 
   @override
-  String get reviewQuestionsComingSoon =>
-      'Reviewing your answers is coming soon.';
+  String get backToLearn => 'Back to Learn';
 
   @override
-  String get backToLearn => 'Back to Learn';
+  String get quizReviewTitle => 'Quiz Review';
+
+  @override
+  String quizReviewFilterAll(int count) {
+    return 'All ($count)';
+  }
+
+  @override
+  String quizReviewQuestionLabel(int number) {
+    return 'QUESTION $number';
+  }
+
+  @override
+  String get quizReviewEmpty => 'No questions to show here.';
+
+  @override
+  String get quizReviewAiAvailable => 'AI explanation available';
 
   @override
   String get freeUsageReachedTitle => 'Free Usage Reached';
@@ -830,4 +845,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalNotPublished => 'This document hasn\'t been published yet.';
+
+  @override
+  String get leaderboardTitle => 'Leaderboard';
+
+  @override
+  String leaderboardPoints(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString pts';
+  }
+
+  @override
+  String get leaderboardYou => 'You';
+
+  @override
+  String get leaderboardScopeSystem => 'System';
+
+  @override
+  String get leaderboardScopeGovernorate => 'Governorate';
+
+  @override
+  String get leaderboardScopeCohort => 'Cohort';
+
+  @override
+  String get leaderboardScopeGlobal => 'Global';
+
+  @override
+  String get leaderboardEmpty => 'This board doesn\'t have anyone on it yet.';
+
+  @override
+  String get leaderboardEndOfBoard => 'That\'s the end of the board.';
+
+  @override
+  String get leaderboardShare => 'Share';
+
+  @override
+  String get accountPendingDeletion =>
+      'Your account is scheduled for deletion. Cancel the request to use Level Up again.';
 }

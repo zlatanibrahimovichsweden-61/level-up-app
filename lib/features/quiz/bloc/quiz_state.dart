@@ -166,9 +166,17 @@ class FinishFailed extends QuizActive {
 ///
 /// [scopeName] rides along because `QuizSummary` does not carry one and the
 /// result screen is titled by scope.
+///
+/// [session] is retained rather than dropped so the finished quiz can be
+/// REVIEWED. At the moment `POST /finish` returns, this session already holds
+/// every field the draft `QuizReview.questions[]` schema would return — the
+/// questions, and a grade per committed question — so the review screen needs
+/// no endpoint. Dropping it here was the only thing that made the screen
+/// impossible. It stays in memory and is never cached; see [QuizReviewArgs].
 class QuizCompleted extends QuizState {
-  const QuizCompleted(this.summary, this.scopeName);
+  const QuizCompleted(this.summary, this.scopeName, this.session);
 
   final QuizSummary summary;
   final String scopeName;
+  final QuizSession session;
 }

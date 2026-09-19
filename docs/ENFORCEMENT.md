@@ -50,11 +50,14 @@ callers — so "it passed locally" means the same thing everywhere.
 | No provider mutation in `initState` | same file | a provider is written to during element mount without `addPostFrameCallback` |
 | User-facing copy is localized | same file | a new file introduces `Text('literal')`, or the total rises above the frozen baseline |
 | Typography comes from the theme (ratchet) | same file | the hardcoded `fontSize` count rises above its baseline |
+| Elevation comes from the theme (ratchet) | same file | a `BoxShadow`, a non-zero `elevation:`, a `shadowColor:`, a `MaskFilter.blur`/`ImageFilter.blur`/`BackdropFilter`/`PhysicalModel` appears outside `lib/core/theme/` or `lib/core/widgets/elevation/`, above the baseline |
 | Both ARB files carry the same keys | same file | a key exists in `app_en.arb` with no Arabic translation |
 | CI cannot silently skip tests | `test/guards/workflow_test.dart` | a path argument is passed to `flutter test` in CI |
 | Goldens are tagged, not path-selected | same file | a golden test file loses its `@Tags(['golden'])` |
 | The SDK pin has one source | same file | CI hardcodes a version instead of reading `.flutter-version` |
 | Release networking (Tier-0 C-1) | same file + CI | `src/main` stops declaring `INTERNET`, or CI stops inspecting the built APK |
+| Release builds name the prod entrypoint | same file | a runnable `flutter build apk\|appbundle\|ipa\|ios` in `docs/`, `tool/`, `.github/` or `.githooks/` omits `-t lib/main_prod.dart`. Release is Flutter's **default** mode, so a bare `flutter build apk` counts. Without it the build compiles `lib/main.dart` → `main_dev.dart` → the staging host |
+| …and that scan is not vacuous | same file | fewer than three release-build commands are found at all, which would mean the rule above is passing because it sees nothing |
 | Shell scripts are NUL-safe | same file | a bare `xargs` appears in **any** of `pre-commit`, `pre-push` or `tool/validate.sh` |
 | `validate.sh` builds a NUL list | same file | it stops using `git ls-files -z` / `xargs -0` |
 | Pre-push reuses the canonical script | same file | the hook grows its own copy of format/analyze/test |
@@ -103,13 +106,21 @@ as still present. YAML comments are stripped for the same reason.
 
 ## Ratchets
 
-Two rules cannot be enforced at zero without a refactor that was out of scope,
+Three rules cannot be enforced at zero without a refactor that was out of scope,
 so they are **ratchets**: the number may fall, never rise.
 
 | Ratchet | Baseline | Frozen |
 | --- | --- | --- |
 | Hardcoded `fontSize` | 153 | 2026-08-14 |
 | `Text('literal')` sites | 7 | 2026-08-14 |
+| Raw elevation effects | 11 | 2026-09-17 |
+
+The elevation baseline is measured, not estimated: `rawElevationEffects` was run
+against `lib/` on the day it was frozen and returned exactly those eleven
+`file:line` sites. Each of the elevation edits 2–5 lowers it in the same change
+that removes a site — edit2 −2, edit3 −2, edit4 −3, edit5 −4 — and at 0 it is
+replaced by a zero-enforcement test that names the offending file, the way
+`typography_discipline_test.dart` already pairs with the `fontSize` count.
 
 A ratchet turns "we should fix this one day" from an aspiration into a boundary.
 New screens cannot make it worse while the existing debt is paid down

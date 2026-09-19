@@ -187,6 +187,54 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  test('raw elevation effects do not increase (ratchet)', () {
+    // Elevation's version of the fontSize ratchet, and it exists for the same
+    // reason: a design value decided at a call site. Five `BoxShadow`s shipped
+    // with Figma's *blur* number in Flutter's `blurRadius` field - two
+    // different units, roughly 2x too soft - under a colour token that only
+    // read on one canvas (docs/DESIGN_ISSUES.md #47). Nothing caught any of it,
+    // because a shadow written inline compiles, analyses clean, and looks
+    // plausible on whichever canvas it was eyeballed against.
+    //
+    // The tokens now live in `lib/core/theme/app_elevation.dart` and the only
+    // code allowed to paint them lives in `lib/core/widgets/elevation/`. Those
+    // two folders are exempt; everything else is counted.
+    //
+    // Frozen 2026-09-17 at 11, measured with this detector, not estimated. The
+    // eleven were the nav bar's blur, the onboarding sheet, the Mistakes
+    // subject card (2), the AI panel, the review filter (2), the OTP timer, the
+    // avatar badge, the profile header and a profile stat card.
+    //
+    // **Each of edits 2-5 lowers this in the SAME change that removes a site**
+    // (RISKS.md R-7): edit2 -2, edit3 -2, edit4 -3, edit5 -4. When it reaches
+    // 0, replace this count with a zero-enforcement test that names the
+    // offending `file:line`, the way the typography pair already works -
+    // `typography_discipline_test.dart` locates, this one counts.
+    //
+    // 2026-09-18, edit2: 11 -> 9, measured with this detector after the change.
+    // The nav bar's `MaskFilter.blur` became `AppElevation.navBarShadows` under
+    // `paintFigmaShadows`, and the onboarding sheet's `BoxShadow` became
+    // `onboardingSheetShadows` under `ElevatedSurface`. The nine left are the
+    // OTP timer, the Mistakes subject card (2), the avatar badge, the profile
+    // header, a profile stat card, the review filter (2) and the AI panel -
+    // edits 3, 4 and 5.
+    const baseline = 9;
+
+    final sites = rawElevationEffects(sources);
+    expect(
+      sites.length,
+      lessThanOrEqualTo(baseline),
+      reason:
+          'Raw elevation effects rose to ${sites.length} (baseline '
+          '$baseline). Do not write a BoxShadow, an elevation, a MaskFilter '
+          'or a BackdropFilter at a call site: read the component\'s token '
+          'from `Theme.of(context).extension<AppElevation>()!` and hand it to '
+          '`ElevatedSurface`. If you legitimately removed a site, lower the '
+          'baseline here in the same change.\n${sites.join('\n')}',
+    );
+  });
+
+  // -------------------------------------------------------------------------
   test('both ARB files carry the same keys', () {
     // A key missing from app_ar.arb does not throw — gen-l10n falls back to
     // English silently. The failure mode is an Arabic screen with an English

@@ -32,7 +32,10 @@ Everything below is sourced from those files.
    - `docs/AGENT_WORKFLOW.md` — the canonical loop and the DO-NOT-GUESS protocol.
    - `contract/SOURCE.md` — which contract commit is pinned right now.
 3. Read a `docs/day*_brief.md` only when working on that feature. They are **dated records**,
-   not current state. Contract references in every brief before Day 7c are **stale**.
+   not current state. Contract references in every brief are **stale** — Days 00–7b cite
+   `23f0535`, Days 7c–8 cite `ee2ed8f`, Day 9 cites `61905ce`, and the pin has since moved to
+   `184d6ec` (3.0.0-m1). The Day 7, 7b, 7c, 8 and 9 briefs carry dated superseded-pin banners
+   (2026-09-05); the earlier briefs do not. `contract/SOURCE.md` is the truth.
 
 ### 1.3 The five rules that matter more than the rest
 
@@ -162,7 +165,12 @@ powershell -ExecutionPolicy Bypass -File tool\verify_guards.ps1
   `docs/seif_fight.md`.
 - **Do not edit anything under `contract/`.** It is vendored from Seif's repo.
 - **No colour outside `lib/core/theme/`.** Guard-enforced, zero exceptions across 36k lines.
-- **No new hardcoded `fontSize`.** The ratchet is 153 and Wave 3D is BLOCKED.
+- **No new hardcoded `fontSize`.** The ratchet is **0** — one inline `fontSize` outside
+  `lib/core/theme/` fails the suite in two places. The guard bans inline `fontWeight:` too, so
+  `.copyWith(fontWeight: …)` is not an escape hatch; switch to a differently-named `AppType` style.
+  (This line used to read "the ratchet is 153 and Wave 3D is BLOCKED". Both were true until
+  2026-08-21, when the designer supplied the scale and all 153 call sites were migrated; Wave 3D
+  closed 2026-08-21 and the ratchet reached 0 on 2026-08-22 — `WAVE_STATUS.md:193`, `:295`.)
 - **Bloc only in `lib/features/quiz/`.** Everything else is Riverpod. Guard-enforced.
 - **No provider mutation in `initState`** (BUG-001). Guard-enforced.
 - **All user-facing copy through `AppLocalizations`**, both ARB files, parity guard-enforced.

@@ -1,0 +1,19 @@
+{
+  "skill_name": "build-screen",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "profile-screen-full-loop",
+      "prompt": "build the profile screen for the level up flutter app. it shows the student's name, avatar, total points, level and badges, plus a logout button. here's the section from seif's contract: GET /api/v1/profile returns 200 { \"name\": string, \"avatar_url\": string|null, \"total_points\": int, \"level\": int, \"badges\": [ { \"id\": int, \"name\": string } ] }. the figma frame for profile isn't ready yet, just use a standard clean layout for now. write the actual dart files (model, repository, notifier, screen).",
+      "expected_output": "A plan first; freezed model with @JsonKey snake_case bridge and exact nullability; repository throwing typed AppExceptions; Riverpod AsyncNotifier (not Bloc); screen rendering all 4 states via StateWidget; localized strings via AppLocalizations with directional widgets; server-authoritative (no client-side point math); the missing Figma frame explicitly flagged as a gap; logout clears secure storage.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "eval_name": "leaderboard-no-contract",
+      "prompt": "next i want the governorate leaderboard screen for level up. i don't have seif's contract section for leaderboards yet but honestly the shape is obvious, it's just standard leaderboard stuff (rank, name, points). go ahead and build it end to end so we don't lose time",
+      "expected_output": "Refuses to invent the response shape: stops, states the contract section is missing, drafts a change request to Seif, and at most builds only contract-independent parts (route stub, UI skeleton clearly marked as not wired). Does NOT produce a made-up leaderboard model presented as final.",
+      "files": []
+    }
+  ]
+}

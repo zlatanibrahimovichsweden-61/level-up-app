@@ -1,14 +1,16 @@
-/// Shared quiz fixtures, shaped from `contract/openapi.yaml` (pinned 23f0535):
-/// `Quiz` (:1426), `QuizQuestion` (:1406), `AnswerResult` (:1438),
-/// `QuizSummary` (:1446). Not hand-invented — every key below appears in the
-/// schema, and every required key is present.
+/// Shared quiz fixtures, shaped from `contract/openapi.yaml` (pinned `184d6ec`,
+/// v3.0.0-m1): `Quiz`, `QuizQuestion`, `AnswerResult`, `QuizSummary` (eight
+/// required fields since adr-102 — no `totalPoints`/`level`). Not hand-invented
+/// — every key below appears in the schema, and every required key is present.
 ///
 /// Used by the model, repository, bloc and screen tests so they all agree on
 /// one payload.
 library;
 
+import 'package:level_up_app/features/quiz/bloc/quiz_state.dart';
 import 'package:level_up_app/features/quiz/models/answer_result.dart';
 import 'package:level_up_app/features/quiz/models/quiz.dart';
+import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/models/quiz_summary.dart';
 
 /// One question with four options. [imageUrl] is null unless asked for — most
@@ -132,3 +134,32 @@ QuizSummary quizSummary({
     newBadge: newBadge,
   ),
 );
+
+/// The review payload matching [quizSummary]'s default shape: 10 questions,
+/// q1–q8 committed, q1–q5 correct.
+///
+/// Deliberately the same numbers, so one fixture exercises all three row states
+/// at once — 5 correct · 3 wrong (q6–q8) · 2 skipped (q9–q10, absent from
+/// `grades` entirely). A question missing from the map is the skipped state;
+/// there is no "unanswered" sentinel.
+QuizReviewArgs quizReviewArgs({
+  int totalQuestions = 10,
+  int answeredCount = 8,
+  int score = 5,
+  bool explanationAvailable = true,
+}) => QuizReviewArgs(
+  questions: quiz(questionCount: totalQuestions).questions,
+  grades: <String, AnswerResult>{
+    for (var i = 1; i <= answeredCount; i++)
+      'q$i': answerResult(
+        correct: i <= score,
+        correctOptionId: 'q$i-opt0',
+        explanationAvailable: explanationAvailable,
+      ),
+  },
+);
+
+/// A session that has not been answered yet — enough to seed a terminal
+/// [QuizCompleted], which retains one so the quiz can be reviewed.
+QuizSession quizSession({int questionCount = 3}) =>
+    QuizSession.start(quiz(questionCount: questionCount));

@@ -301,6 +301,9 @@ is accepted.
 | Behavioural race test for 3A | Deferred — flaky by construction without a toolchain |
 | `ref.mounted` instead of the flag | Deferred — mechanical, once the API is confirmed |
 
+**Forward pointer (2026-09-05):** the `/subscription` entry point row above is decided — the
+contract removed the entry point outright rather than either option here being chosen
+(adr-049 §3, `5c4b855`, `docs/DECISIONS.md` D-007).
 
 ---
 

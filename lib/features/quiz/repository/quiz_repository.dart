@@ -75,8 +75,9 @@ class QuizRepository {
 
   /// `POST /quizzes/{quizId}/answers` → `200 AnswerResult`.
   ///
-  /// Idempotent on `(quizId, questionId)`: a retry returns the ORIGINAL grade
-  /// and never double-awards. That is a server guarantee the app relies on
+  /// Idempotent on `(quizId, questionId)`: a retry returns the ORIGINAL verdict
+  /// and `correctOptionId` with `pointsDelta: 0` (adr-102 D2) and never
+  /// double-awards. That is a server guarantee the app relies on
   /// rather than duplicating — there is no client-side "already sent" guard
   /// here, because the failure this method actually has to survive is a dropped
   /// RESPONSE to a request the server did process.

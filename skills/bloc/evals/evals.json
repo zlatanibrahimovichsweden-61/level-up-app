@@ -1,0 +1,19 @@
+{
+  "skill_name": "bloc",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "quiz-bloc-timer-race",
+      "prompt": "implement the quiz engine bloc for level up: a quiz is 10 MCQs, 30 seconds per question, answers go to POST /api/v1/quiz/{quiz_id}/answer which returns { \"correct\": bool, \"points_awarded\": int }, and the final result comes from GET /api/v1/quiz/{quiz_id}/result. the tricky part: users tap an answer right as the timer hits zero and we've had bugs where the tap wins sometimes and the timeout wins other times. write the events, states, bloc, and the key bloc_test cases.",
+      "expected_output": "Sealed QuizEvent/QuizState hierarchies; timer lives inside the bloc, cancelled on close; sequential event processing; explicit guards so AnswerSubmitted after QuizTimeExpired is deterministically ignored (and vice versa rule for in-flight submission stated); double-submit ignored; result displayed from server, no client-side score math; bloc_test cases covering timeout, race, double-submit, and repository error with user-tapped retry.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "eval_name": "bloc-scope-boundary",
+      "prompt": "i like how clean the quiz bloc came out. convert the level up profile and subscription screens to bloc too so the whole app is consistent, and while you're at it add a leaderboard bloc with a concurrent event transformer so updates come in fast",
+      "expected_output": "Pushes back: Bloc is quiz-only per the project's one-technique-per-concern rule; profile/subscription/leaderboard stay on Riverpod AsyncNotifier; explains why (no concurrent event sources there, Riverpod is the DI/state standard); flags that 'concurrent' transformers are dangerous for ordered flows; offers the Riverpod path instead of silently complying.",
+      "files": []
+    }
+  ]
+}

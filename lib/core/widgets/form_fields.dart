@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_elevation.dart';
 import '../theme/app_typography.dart';
+import 'elevation/elevated_surface.dart';
 
 /// The shared rounded form primitives from the Figma auth/registration frames
 /// (Login `82:819`, Sign Up_1 `337:15875`, School Registration `337:5269`,
@@ -34,6 +36,13 @@ class FieldLabel extends StatelessWidget {
 /// [hasError] switches the border to the error colour so a per-field validation
 /// message and its field are visually linked; [enabled] dims it for a control
 /// still waiting on its dependency (e.g. Faculty before a University is picked).
+///
+/// The two canvases differ by mechanism, not by degree (edit1.md R1). Light
+/// `Rectangle 9` is `#FDFDFD` under a 1.17338 `#D1D1D1` stroke. Dark
+/// `348:8659` is `#232428` at 20% under a **0.03** cream hairline and Glass
+/// G4 — a seam plus a rim light at 28°, not the solid cream border the build
+/// used to paint on both canvases. Both hairline widths come from
+/// [AppElevation.fieldBorderWidth], verbatim (edit1.md R2).
 class FieldShell extends StatelessWidget {
   const FieldShell({
     super.key,
@@ -52,43 +61,47 @@ class FieldShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    final container = Container(
+    final surface = ElevatedSurface(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       height: 60,
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 14),
-      alignment: AlignmentDirectional.centerStart,
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(
-          color: hasError ? cs.error : ext.fieldBorder,
-          width: hasError ? 1.5 : 1.17,
-        ),
-        borderRadius: BorderRadius.circular(20),
+      color: ext.fieldFill,
+      side: BorderSide(
+        color: hasError ? cs.error : ext.fieldBorder,
+        // The error state keeps its own 1.5: it is a state the design does not
+        // draw, and it has to stay visible on the dark canvas where the
+        // resting hairline is 0.03.
+        width: hasError ? 1.5 : elevation.fieldBorderWidth,
       ),
-      child: DefaultTextStyle.merge(
-        style: AppType.bodyLarge.copyWith(
-          color: enabled ? ext.textPrimary : ext.hint,
+      glass: elevation.fieldGlass,
+      onTap: enabled ? onTap : null,
+      // `Container`'s `alignment` used to do this. It matters: without it the
+      // child is laid out against TIGHT 60pt-tall constraints instead of
+      // sizing itself and being centred.
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: DefaultTextStyle.merge(
+          style: AppType.bodyLarge.copyWith(
+            color: enabled ? ext.textPrimary : ext.hint,
+          ),
+          child: child,
         ),
-        child: child,
       ),
     );
 
-    final opaque = enabled
-        ? container
-        : Opacity(opacity: 0.6, child: container);
+    final opaque = enabled ? surface : Opacity(opacity: 0.6, child: surface);
     if (onTap == null) return opaque;
 
     return Semantics(
       button: true,
       enabled: enabled,
       label: semanticLabel,
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(20),
-        child: opaque,
-      ),
+      child: opaque,
     );
   }
 }

@@ -188,8 +188,13 @@
   "rewardsEarned": "النقاط المكتسبة",
   "pointsAwarded": "+{points} نقطة",
   "reviewQuestions": "مراجعة الأسئلة",
-  "reviewQuestionsComingSoon": "مراجعة إجاباتك قريبًا.",
   "backToLearn": "العودة إلى التعلّم",
+
+  "quizReviewTitle": "مراجعة الاختبار",
+  "quizReviewFilterAll": "الكل ({count})",
+  "quizReviewQuestionLabel": "السؤال {number}",
+  "quizReviewEmpty": "لا توجد أسئلة لعرضها هنا.",
+  "quizReviewAiAvailable": "شرح بالذكاء الاصطناعي متاح",
 
   "freeUsageReachedTitle": "انتهت أسئلتك المجانية",
   "weeklyLimitBody": "استخدمت كل أسئلتك لهذا الأسبوع.",
@@ -267,5 +272,22 @@
   "shareInvite": "مشاركة الدعوة",
   "supportUnavailable": "الدعم غير متاح بعد.",
   "createTicket": "إنشاء تذكرة",
-  "legalNotPublished": "لم يتم نشر هذا المستند بعد."
+  "legalNotPublished": "لم يتم نشر هذا المستند بعد.",
+
+  "leaderboardTitle": "لوحة الصدارة",
+  "leaderboardPoints": "{points} نقطة",
+  "@leaderboardPoints": {
+    "placeholders": {
+      "points": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+  "leaderboardYou": "أنت",
+  "leaderboardScopeSystem": "نظامي",
+  "leaderboardScopeGovernorate": "المحافظة",
+  "leaderboardScopeCohort": "الدفعة",
+  "leaderboardScopeGlobal": "عام",
+  "leaderboardEmpty": "لا يوجد أحد في هذه القائمة بعد.",
+  "leaderboardEndOfBoard": "هذه نهاية القائمة.",
+  "leaderboardShare": "مشاركة",
+  "accountPendingDeletion": "حسابك مُجدوَل للحذف. ألغِ الطلب لاستخدام ليفل أب مرة أخرى."
 }

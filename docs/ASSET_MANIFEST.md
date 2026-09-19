@@ -23,7 +23,7 @@ should export these. Format guidance verified by probing the nodes._
 | Nav glyph — Learn | `icon/footer/course` in nav bar | **SVG** | `assets/icons/nav_learn.svg` | center/elevated tab |
 | Nav glyph — Message | `Footer/off` (4th) in nav bar | **SVG** | `assets/icons/nav_message.svg` | |
 | Nav glyph — Account | `Footer/off` (5th) in nav bar | **SVG** | `assets/icons/nav_account.svg` | |
-| Profile menu glyphs ×10 | inside `170:4933` — `lets-icons:setting-fill`, `stash:save-ribbon`, `game-icons:progression`, `ic:baseline-share` ×2, `fluent:payment-28-filled`, `ic:sharp-privacy-tip` ×2, `iconamoon:trend-up-bold`, `solar:logout-2-bold-duotone` | **SVG** (Iconify, true vector) | `assets/icons/profile/*.svg` | `profile_menu_row.dart` uses Material stand-ins (Day 8 step 1). All 35×35; the last two sit on a `#F4E6FF` disc drawn in Flutter, so export the glyph alone |
+| Profile menu glyphs ×10 | inside `170:4933` — `lets-icons:setting-fill`, `stash:save-ribbon`, `game-icons:progression`, `ic:baseline-share` ×2, `fluent:payment-28-filled` (**dead** — the Profile "Subscription" row was removed, D-007; the app is purchase-silent, adr-049 §3 — do not export or wire this glyph), `ic:sharp-privacy-tip` ×2, `iconamoon:trend-up-bold`, `solar:logout-2-bold-duotone` | **SVG** (Iconify, true vector) | `assets/icons/profile/*.svg` | `profile_menu_row.dart` uses Material stand-ins (Day 8 step 1). All 35×35; the last two sit on a `#F4E6FF` disc drawn in Flutter, so export the glyph alone |
 | Profile edit pencil | `170:4669` (`fluent:edit-16-filled`) | **SVG** | `assets/icons/profile/edit.svg` | `profile_header_card.dart` — currently `Icons.edit` |
 
 To export the nav glyphs, select each footer icon instance inside the nav-bar component

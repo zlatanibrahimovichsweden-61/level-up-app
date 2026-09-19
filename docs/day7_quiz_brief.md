@@ -6,6 +6,20 @@
 > **This is the biggest day so far and the first to use Bloc.** It is also the day real question
 > content appears on screen, so `screen_protector` finally gets wired.
 
+> ⚠ **SUPERSEDED / HISTORICAL RECORD (stamped 2026-09-05).** This brief was current 2026-07-30 →
+> 2026-08-03, against contract pin `23f0535`. The contract has been re-pinned three times since
+> (`ee2ed8f` → `61905ce` → `184d6ec`, now `3.0.0-m1`). Two changes since this brief directly
+> contradict instructions below and are marked inline: **(1)** adr-102 (`b7d0dfb`,
+> `docs/DECISIONS.md` D-006) removed `totalPoints` and `level` from `QuizSummary` — the ten-field
+> shape quoted in the Endpoints section and CONFLICT 1's "render `totalPoints` verbatim" no longer
+> apply; the result screen now shows `pointsAwarded` only, and level/points come from `GET /me`.
+> **(2)** adr-049 §3 (`5c4b855`, D-007) removed the app's entire purchase surface — there is no
+> `/subscription` route and no "Upgrade" CTA to route to; the limit sheet now offers only "Not
+> now". The ten-required-field `QuizSummary` text is **kept verbatim below as historical
+> evidence** — it is the record of the shape the quiz engine was originally built against. For
+> current state see `docs/WAVE_STATUS.md`, `docs/DECISIONS.md` D-006/D-007, and
+> `contract/SOURCE.md`.
+
 ## What Day 7 builds
 
 1. **Quiz setup** — length picker + `POST /quizzes`. Replaces `QuizSetupPlaceholderScreen`.
@@ -31,6 +45,10 @@
 - **Quiz history** (`GET /quizzes`) and **resume** (`GET /quizzes/{quizId}`) — both `draft`.
 - Subscription/Paymob purchase. The limit sheet's "Upgrade" CTA routes to the existing
   `/subscription` placeholder and stops there.
+
+  > ⚠ **Superseded (2026-09-04, contract 3.0.0-m1):** there is no `/subscription` placeholder and
+  > no "Upgrade" CTA — the entire purchase surface was removed outright, not merely left disabled
+  > (adr-049 §3, `5c4b855`, `docs/DECISIONS.md` D-007). The limit sheet now offers only "Not now".
 
 ## Skills (invoke from `.claude/skills/`, in this order)
 
@@ -109,6 +127,10 @@ The contract is unambiguous: `AnswerResult.pointsDelta` is *"0 or 1"* and `submi
 `totalPoints` verbatim from `finish`. On the **setup** screen, **omit the points preview entirely** —
 we cannot predict the award without inventing the rule. Logged as `seif_fight.md` **S12**.
 
+> ⚠ **Superseded (2026-09-04, contract 3.0.0-m1):** `QuizSummary.totalPoints` no longer exists —
+> adr-102 (`b7d0dfb`, `docs/DECISIONS.md` D-006) removed it along with `level`. The result screen
+> renders `pointsAwarded` only; total points and level are read from `GET /me`.
+
 ### 2. 🟠 The "Pass" verdict is deferred (owner decision)
 The result frame renders **"50% — Pass"**. There is no pass threshold anywhere in the contract.
 
@@ -128,7 +150,8 @@ with `correct: null` when unanswered. The contract's own description: *"Recap ro
 So the split is:
 - **Available now, on the stable `finish` call:** which questions were right, wrong, or skipped.
 - **Needs the draft `GET /quizzes/{quizId}`:** the question *text* and the *correct answer* — the
-  only endpoint that returns correct answers for a finished quiz (`openapi.yaml:822`).
+  only endpoint that returns correct answers for a finished quiz (`openapi.yaml:822`, now
+  `openapi.yaml:1007`; still draft).
 
 **Do:** still render the full "Review Questions" button **disabled** (it implies the text-level
 review we cannot serve). But **parse `questions[]` and use it** — it is required, so you must parse
@@ -229,6 +252,11 @@ double-awards. So a network retry is safe and must NOT be suppressed client-side
 `correctOptionId` is revealed only here, after the student commits.
 
 ### `POST /quizzes/{quizId}/finish` → `200 QuizSummary`
+
+**Historical — kept as evidence:** the block below is the ten-field `QuizSummary` this quiz engine
+was originally built against, pin `23f0535`. Current `required` is **eight** fields —
+`totalPoints` and `level` were removed by adr-102 (`b7d0dfb`, `docs/DECISIONS.md` D-006,
+`openapi.yaml:1681`). Kept verbatim, not corrected in place.
 ```
 200: QuizSummary { quizId, score, totalQuestions, answeredCount, pointsAwarded, totalPoints,
                    level, leveledUp, newBadge, questions[] }
@@ -311,6 +339,11 @@ question bank as the product. Add a confirm-on-exit dialog so progress is never 
 - Level progress bar — `level` and `totalPoints` are available but **the threshold is not**
   (`seif_fight.md` S3, `DESIGN_ISSUES.md` #13). Render the numbers, not a proportion, until the
   threshold lands.
+
+  > ⚠ **Superseded (2026-09-04, contract 3.0.0-m1):** `level` and `totalPoints` are no longer in
+  > `QuizSummary` (adr-102, `b7d0dfb`, `docs/DECISIONS.md` D-006) — this bullet no longer applies.
+  > The result screen renders no level progress bar; level/points are read from `GET /me`
+  > (D-006).
 - **`leveledUp`** and **`newBadge`** — **parse both, flag-only, no celebration UI this ticket**
   (DECISIONS D-002). Check whether the frames carry a level-up or new-badge state; if they do not,
   flag it — the contract goes to the trouble of telling us, so the design should say something.
@@ -324,6 +357,10 @@ Frame content: "FREE USAGE REACHED", a questions-used bar, a benefits list (unli
 questions · AI-powered explanations · priority support · remove all ads), and **Upgrade To Pro**.
 
 Ship **weekly** copy (CONFLICT 7). Upgrade → the existing `/subscription` placeholder. Dismissible.
+
+> ⚠ **Superseded (2026-09-04, contract 3.0.0-m1):** there is no `/subscription` placeholder to
+> route to — the entire purchase surface was removed outright (adr-049 §3, `5c4b855`,
+> `docs/DECISIONS.md` D-007). The limit sheet offers only "Not now".
 
 ---
 
@@ -448,6 +485,8 @@ Questions" + its coming-soon note, limit-sheet copy (**weekly**), and every erro
       (`grep -rn "points" lib/features/quiz` shows display only)
 - [ ] Results: no Pass/Fail word · no subject name · Review disabled · Skipped shown when non-zero
 - [ ] `QuizSummary` parses **all ten** required fields, including `newBadge` and `questions[]`
+      (**Historical — kept as evidence:** current `required` is eight fields — `openapi.yaml:1681`
+      — `totalPoints` and `level` were removed, adr-102, `docs/DECISIONS.md` D-006)
 - [ ] `leveledUp` and `newBadge` are parsed flag-only — **no celebration UI** (DECISIONS D-002)
 - [ ] `wrong = answeredCount − score`; `totalQuestions − score` is never used — asserted in a test
       with a partially-answered quiz

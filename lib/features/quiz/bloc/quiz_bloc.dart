@@ -39,8 +39,8 @@ const _kMaxExplanationPolls = 10;
 ///
 /// Setup (`POST /quizzes`) is NOT here — one request then navigate is a
 /// Riverpod command, not a state machine. Nor is invalidating `/me` after
-/// finish: that is the result screen's job, and keeping it out means this class
-/// has no Riverpod dependency at all.
+/// finish: `QuizScreen` does that on `QuizCompleted` (`quiz_screen.dart`), and
+/// keeping it out means this class has no Riverpod dependency at all.
 class QuizBloc extends Bloc<QuizEvent, QuizState> {
   QuizBloc({
     required QuizRepository repository,
@@ -312,7 +312,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     emit(QuizFinishing(session));
     try {
       final summary = await _repository.finishQuiz(session.quiz.id);
-      emit(QuizCompleted(summary, session.quiz.scopeName));
+      emit(QuizCompleted(summary, session.quiz.scopeName, session));
     } on AppException catch (error) {
       emit(FinishFailed(session, error));
     } on Object {

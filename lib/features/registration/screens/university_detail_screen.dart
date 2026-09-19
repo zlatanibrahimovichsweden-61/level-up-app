@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/reference_models.dart';
@@ -253,24 +254,27 @@ class _UniversityDetailScreenState
                       ),
                     const SizedBox(height: 28),
 
-                    FilledButton(
-                      onPressed: submitState.isLoading
-                          ? null
-                          : () => ref
-                                .read(registrationSubmitProvider.notifier)
-                                .submit(),
-                      child: submitState.isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
+                    PrimaryCta(
+                      enabled: !submitState.isLoading,
+                      child: FilledButton(
+                        onPressed: submitState.isLoading
+                            ? null
+                            : () => ref
+                                  .read(registrationSubmitProvider.notifier)
+                                  .submit(),
+                        child: submitState.isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                            : Text(
+                                l10n.startLearning,
+                                style: AppType.buttonLarge,
                               ),
-                            )
-                          : Text(
-                              l10n.startLearning,
-                              style: AppType.buttonLarge,
-                            ),
+                      ),
                     ),
                   ],
                 ),

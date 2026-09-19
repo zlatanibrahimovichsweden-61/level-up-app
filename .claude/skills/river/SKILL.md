@@ -42,7 +42,7 @@ Render through the shared `StateWidget<T>` in `core/widgets/` — never re-deriv
 - **DI via providers:** repositories take dependencies from other providers (`ref.watch(dioProvider)`); tests override providers, no service locators.
 - **`ref.watch` in `build`, `ref.read` in callbacks.** Watching in callbacks re-subscribes; reading in build misses updates.
 - **Scope rebuilds:** `ref.watch(provider.select((u) => u.totalPoints))` when a widget needs one field of a big object.
-- **Server is authoritative:** never compute or "correct" points/levels/entitlements in a notifier — display what the API returned. `SubscriptionStatus` is sealed (`Active / Pending / Inactive`); Fawry `Pending` gets its own "Payment processing" UI — it is not loading.
+- **Server is authoritative:** never compute or "correct" points/levels/entitlements in a notifier — display what the API returned. Entitlement state is `EntitlementState` (`GET /me/entitlements`, embedded in `GET /me`) — there is no `pending`/"Payment processing" state; an entitlement is active or it isn't (`openapi.yaml:754`).
 - **Simple derived/sync state** → plain `Provider` or `Notifier`, not an AsyncNotifier wrapping nothing.
 - **Naming:** glossary terms verbatim — `flashcardProvider`, `totalPoints`, `baseSubscription`. No synonyms.
 

@@ -144,6 +144,135 @@ void main() {
     });
   });
 
+  group('the release build command names the production entrypoint', () {
+    // There are no Gradle product flavors and no iOS schemes. The ONLY thing
+    // deciding which backend a release artefact talks to is the `-t` argument,
+    // and `lib/main.dart` forwards to `main_dev.dart` — so a flagless
+    // `flutter build apk --release` compiles the dev flavor, which resolves
+    // AppConfig.baseUrl to the live staging host.
+    //
+    // Verified at ARTEFACT level on 2026-09-05, not reasoned about: both APKs
+    // were built and unzipped, and `level-up-backend-staging.up.railway.app`
+    // is present in lib/*/libapp.so of the flagless build and absent from the
+    // `-t lib/main_prod.dart` one. docs/RELEASE_SIGNING.md carried the flagless
+    // command until that day, which is the whole argument for making this a
+    // test instead of a sentence.
+    // Scanned by tree, not by a hand-written file list. "We fixed the instance
+    // we noticed" is how the xargs defect below recurred, and the same trap
+    // applies here: a release command can be written into any doc or script.
+    const operationalTrees = <String>['docs', 'tool', '.github', '.githooks'];
+    const textExtensions = <String>['.md', '.ps1', '.sh', '.yml', '.yaml'];
+
+    /// `flutter build apk|appbundle|ipa|ios` — the store-artefact commands.
+    ///
+    /// NOT anchored on `--release`: release is Flutter's DEFAULT build mode, so
+    /// a bare `flutter build apk` is a release build too and must obey the same
+    /// rule. Only an explicit `--debug`/`--profile` opts out.
+    final buildCommand = RegExp(r'^flutter build (apk|appbundle|ipa|ios)\b');
+    final notRelease = RegExp(r'--(debug|profile)\b');
+
+    /// Accepts every spelling of the flag that actually works, so a legitimate
+    /// `--target=./lib/main_prod.dart` or a Windows `lib\main_prod.dart` is not
+    /// reported. A false positive would be the worse defect (ENFORCEMENT.md).
+    final prodTarget = RegExp(
+      '(?:-t|--target)[=\\s]+[\'"]?\\.?[\\\\/]?lib[\\\\/]main_prod\\.dart',
+    );
+
+    /// A line is a runnable command only if it *starts* one, once the shell,
+    /// PowerShell, YAML and Markdown prefixes are stripped, and once repeated
+    /// whitespace is collapsed (`flutter  build` is the same command).
+    ///
+    /// Prose that merely mentions a command mid-sentence — including the
+    /// warning in RELEASE_SIGNING.md that explains this very hazard, and the
+    /// table in the 2026-09-05 audit — is not a command and must not trip the
+    /// guard, or documenting the rule would violate it.
+    ///
+    /// Known limit: a command hidden inside a wrapper (`sh -c "..."`,
+    /// `cd x && flutter build`) or split across a line continuation is not
+    /// seen. Nothing in this repository writes one that way; if that changes,
+    /// widen this rather than trusting the prose.
+    String? asCommand(String line) {
+      var s = line.trim().replaceAll(RegExp(r'\s+'), ' ');
+      for (final prefix in const ['- run: ', 'run: ', '> ', '- ', '* ', '& ']) {
+        if (s.startsWith(prefix)) s = s.substring(prefix.length).trim();
+      }
+      if (s.startsWith(r'$ ')) s = s.substring(2).trim();
+      return buildCommand.hasMatch(s) ? s : null;
+    }
+
+    /// Every runnable store-artefact build command in the operational trees.
+    List<({String path, int line, String command})> releaseBuildCommands() {
+      final found = <({String path, int line, String command})>[];
+      for (final tree in operationalTrees) {
+        final dir = Directory(tree);
+        if (!dir.existsSync()) continue;
+        for (final entity in dir.listSync(recursive: true)) {
+          if (entity is! File) continue;
+          final path = entity.path.replaceAll(r'\', '/');
+          final hasKnownExtension = textExtensions.any(path.endsWith);
+          final isExtensionless = !path.split('/').last.contains('.');
+          if (!hasKnownExtension && !isExtensionless) continue;
+
+          late final List<String> lines;
+          try {
+            lines = entity.readAsLinesSync();
+          } on FileSystemException {
+            continue; // not text; nothing to read
+          }
+
+          for (var i = 0; i < lines.length; i++) {
+            final command = asCommand(lines[i]);
+            if (command == null) continue;
+            if (notRelease.hasMatch(command)) continue;
+            found.add((path: path, line: i + 1, command: command));
+          }
+        }
+      }
+      return found;
+    }
+
+    test('every runnable release-build command targets lib/main_prod.dart', () {
+      final offenders = [
+        for (final c in releaseBuildCommands())
+          if (!prodTarget.hasMatch(c.command))
+            '  ${c.path}:${c.line}  ${c.command}',
+      ];
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'A release build command does not name the production entrypoint:\n'
+            '${offenders.join('\n')}\n'
+            'Without `-t lib/main_prod.dart` the build compiles lib/main.dart, '
+            'which forwards to main_dev.dart — so the shipped artefact talks to '
+            'the staging backend. Add the flag. (Remember release is the '
+            'DEFAULT build mode: a bare `flutter build apk` is a release too.)',
+      );
+    });
+
+    test('the scan actually finds the release commands it is guarding', () {
+      // The positive companion. The test above only proves that nothing it
+      // FOUND was wrong, so on its own it stays green if the scan finds
+      // nothing at all — a renamed doc, a reworded code fence, a changed file
+      // extension. Same lesson as the xargs pair below: a negative rule needs
+      // a positive one or deletion satisfies it.
+      final found = releaseBuildCommands();
+
+      expect(
+        found.length,
+        greaterThanOrEqualTo(3),
+        reason:
+            'Only ${found.length} release-build command(s) found across '
+            '$operationalTrees. There should be at least three — the CI job, '
+            'tool/verify_release_manifest.ps1, and docs/RELEASE_SIGNING.md. '
+            'If the scan has stopped seeing them, the guard above is passing '
+            'vacuously and protects nothing.\n'
+            '${found.map((c) => '  ${c.path}:${c.line}').join('\n')}',
+      );
+    });
+  });
+
   group('canonical validation stays canonical', () {
     test('both validate scripts exist', () {
       expect(File('tool/validate.ps1').existsSync(), isTrue);

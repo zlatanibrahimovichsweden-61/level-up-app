@@ -601,10 +601,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reviewQuestions => 'مراجعة الأسئلة';
 
   @override
-  String get reviewQuestionsComingSoon => 'مراجعة إجاباتك قريبًا.';
+  String get backToLearn => 'العودة إلى التعلّم';
 
   @override
-  String get backToLearn => 'العودة إلى التعلّم';
+  String get quizReviewTitle => 'مراجعة الاختبار';
+
+  @override
+  String quizReviewFilterAll(int count) {
+    return 'الكل ($count)';
+  }
+
+  @override
+  String quizReviewQuestionLabel(int number) {
+    return 'السؤال $number';
+  }
+
+  @override
+  String get quizReviewEmpty => 'لا توجد أسئلة لعرضها هنا.';
+
+  @override
+  String get quizReviewAiAvailable => 'شرح بالذكاء الاصطناعي متاح';
 
   @override
   String get freeUsageReachedTitle => 'انتهت أسئلتك المجانية';
@@ -823,4 +839,44 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get legalNotPublished => 'لم يتم نشر هذا المستند بعد.';
+
+  @override
+  String get leaderboardTitle => 'لوحة الصدارة';
+
+  @override
+  String leaderboardPoints(int points) {
+    final intl.NumberFormat pointsNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String pointsString = pointsNumberFormat.format(points);
+
+    return '$pointsString نقطة';
+  }
+
+  @override
+  String get leaderboardYou => 'أنت';
+
+  @override
+  String get leaderboardScopeSystem => 'نظامي';
+
+  @override
+  String get leaderboardScopeGovernorate => 'المحافظة';
+
+  @override
+  String get leaderboardScopeCohort => 'الدفعة';
+
+  @override
+  String get leaderboardScopeGlobal => 'عام';
+
+  @override
+  String get leaderboardEmpty => 'لا يوجد أحد في هذه القائمة بعد.';
+
+  @override
+  String get leaderboardEndOfBoard => 'هذه نهاية القائمة.';
+
+  @override
+  String get leaderboardShare => 'مشاركة';
+
+  @override
+  String get accountPendingDeletion =>
+      'حسابك مُجدوَل للحذف. ألغِ الطلب لاستخدام ليفل أب مرة أخرى.';
 }

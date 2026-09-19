@@ -168,6 +168,83 @@ void initState() {
     });
   });
 
+  group('raw elevation effects', () {
+    test('flags a BoxShadow at a call site', () {
+      expect(
+        rawElevationEffects([src('BoxShadow(blurRadius: 1)')]),
+        isNotEmpty,
+      );
+    });
+
+    test('flags a non-zero elevation, including a ternary', () {
+      expect(
+        rawElevationEffects([src('elevation: selected ? 0 : 2,')]),
+        isNotEmpty,
+        reason:
+            'a "non-zero literal" check would read the 0 and pass; this is '
+            'the exact expression shipped in quiz_review_screen.dart',
+      );
+    });
+
+    test('flags shadowColor', () {
+      expect(
+        rawElevationEffects([src('shadowColor: ext.elevationShadow,')]),
+        isNotEmpty,
+      );
+    });
+
+    test('flags the blur and backdrop primitives', () {
+      for (final line in [
+        'MaskFilter.blur(BlurStyle.normal, 2)',
+        'ImageFilter.blur(sigmaX: 4, sigmaY: 4)',
+        'BackdropFilter(filter: f, child: c)',
+        'PhysicalModel(color: c, child: x)',
+      ]) {
+        expect(
+          rawElevationEffects([src(line)]),
+          isNotEmpty,
+          reason: 'not caught: $line',
+        );
+      }
+    });
+
+    test('does NOT flag elevation: 0 — flat is the state this rule wants', () {
+      expect(rawElevationEffects([src('elevation: 0,')]), isEmpty);
+      expect(rawElevationEffects([src('elevation: 0.0)')]), isEmpty);
+    });
+
+    test('a COMMENT describing a BoxShadow is not a violation', () {
+      expect(
+        rawElevationEffects([src('// never write BoxShadow( here')]),
+        isEmpty,
+        reason: 'prose must not trip a structural rule',
+      );
+    });
+
+    test('both design-system folders are exempt', () {
+      expect(
+        rawElevationEffects([
+          src('BoxShadow(', path: 'lib/core/theme/app_elevation.dart'),
+          src(
+            'MaskFilter.blur(BlurStyle.normal, 2)',
+            path: 'lib/core/widgets/elevation/glass_surface.dart',
+          ),
+        ]),
+        isEmpty,
+        reason:
+            'the tokens and the one painter that consumes them are where '
+            'this code is SUPPOSED to live',
+      );
+    });
+
+    test('reports path:line so a failure names the site', () {
+      final v = rawElevationEffects([
+        src('final a = 1;\nBoxShadow(', path: 'lib/a.dart'),
+      ]);
+      expect(v, ['lib/a.dart:2']);
+    });
+  });
+
   group('ARB key drift', () {
     test('detects a key missing from Arabic', () {
       final d = arbKeyDrift('{"a":"A","b":"B"}', '{"a":"أ"}');
