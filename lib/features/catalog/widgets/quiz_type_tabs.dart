@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/segmented_track.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../quiz/models/quiz_type.dart';
 
-/// The Lectures screen's quiz-type selector · Figma `180:5337`.
+/// The Lectures screen's quiz-type selector · Figma `Frame 1000003007`
+/// (light `180:5337`, dark `337:11059` / `349:15962`) — 362 x 44 at radius 32.
 ///
 /// **Driven entirely by `tree.quizTypes`.** A subject with no practical
 /// component does not list `practicalRevision`, and its tab must not appear —
@@ -19,6 +22,40 @@ import '../../quiz/models/quiz_type.dart';
 ///
 /// Selecting a tab is local UI state — it filters nothing and re-fetches
 /// nothing; it is carried into the `/quiz/setup` hand-off.
+///
+/// ---
+///
+/// **It is a segmented TRACK, not a row of chips** (owner decision, edit3.md
+/// #9). Figma draws one continuous r32 groove with equal segments inside it,
+/// not eight-pixel-spaced pills — and in dark both the groove and the selected
+/// segment carry an inner shadow, with **opposite** y-offsets, which is what
+/// makes the selection read as raised inside a sunken track.
+///
+/// The two land on opposite edges, and it is worth being exact because the
+/// sign is easy to read backwards: an inner shadow offset by −y casts along
+/// the **bottom** inside edge (Figma and CSS agree), so the track's (0, −3)
+/// darkens its bottom and the selected segment's (0, +4) darkens its top.
+/// Verified pixel-wise, not assumed — `test/goldens/quiz_type_tabs_dark.png`.
+/// edit3.md §12's checklist describes the track's as a "top inner shadow",
+/// which disagrees with §5's own measured value; the value was followed and
+/// the discrepancy is logged as docs/DESIGN_ISSUES.md #77.
+///
+/// Both are `AppElevation` tokens. The shared [SegmentedTrack] primitive draws
+/// all of it; Settings > Languages is the same Figma component and reuses the
+/// same `pillTrack*` tokens (edit5).
+///
+/// **The groove scrolls rather than shrinking a label** — owner ruling
+/// 2026-09-19, `docs/DECISIONS.md` D-012, prompted by this screen. Four quiz
+/// types in Arabic do not fit a 375 dp phone at full type size, and the first
+/// build resolved that by scaling the longest label down to ~10 dp and
+/// swallowing the student's text-scale setting with it. The primitive now keeps
+/// every label at full size and lets the track overflow; the geometry here is
+/// unchanged, and on the configurations that DO fit nothing moved at all.
+/// Details and the remaining designer questions: `docs/DESIGN_ISSUES.md` #81.
+///
+/// The class name and the `(types, selected, onSelected)` API are unchanged —
+/// tests find this by type, and the screen has no reason to know its shape
+/// moved.
 class QuizTypeTabs extends StatelessWidget {
   const QuizTypeTabs({
     super.key,
@@ -34,68 +71,44 @@ class QuizTypeTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 0),
-      child: Row(
-        children: [
-          for (final type in types) ...[
-            _Tab(
-              label: type.label(l10n),
-              selected: type == selected,
-              onTap: () => onSelected(type),
-            ),
-            if (type != types.last) const SizedBox(width: 8),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  const _Tab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
+    final elevation = Theme.of(context).extension<AppElevation>()!;
 
-    return Material(
-      color: selected ? cs.primary : ext.catalogCardFill,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            // Matches the row border, so tabs and rows read as one surface.
-            border: Border.all(color: ext.fieldBorder, width: 0.5),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsetsDirectional.symmetric(
-            horizontal: 16,
-            vertical: 9,
-          ),
-          child: Semantics(
-            selected: selected,
-            button: true,
-            child: Text(
-              label,
-              style: AppType.labelMedium.copyWith(
-                color: selected ? cs.onPrimary : ext.textSecondary,
-              ),
-            ),
-          ),
+    return Padding(
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+      child: SegmentedTrack<QuizType>(
+        segments: types,
+        selected: selected,
+        onChanged: onSelected,
+        labelOf: (type) => type.label(l10n),
+        height: 44,
+        style: SegmentedTrackStyle(
+          trackColor: ext.pillTrackFill,
+          trackRadius: 32,
+          trackInsetShadows: elevation.pillTrackInsetShadows,
+          // The idle segment is the track's own colour on both canvases — the
+          // frame draws no separate idle fill, so a segment only becomes
+          // visible when it is selected.
+          idleSegmentColor: ext.pillTrackFill,
+          selectedColor: ext.pillTrackSelectedFill,
+          // The frame's 51/72; anything at or above half the 44 height is the
+          // same stadium, and 22 is that half exactly.
+          selectedRadius: 22,
+          selectedInsetShadows: elevation.pillTrackSelectedInsetShadows,
+          labelStyle: AppType.labelMedium,
+          // Both READ off the Properties panel 2026-09-19, not inferred:
+          // idle `180:5339` / `337:11091`, selected `180:5341` / `337:11095`.
+          //
+          // The idle light value is the surprise — `#384F47`, a dark green,
+          // where the hand-rolled chips drew the grey `textSecondary`
+          // `#2C2C2C`. Measured contrast on the track: idle 7.48:1 light,
+          // 14.98:1 dark, both pass AA. The SELECTED label does not — Figma's
+          // own `#FCFBF9` on its own `#AE87E7` is **2.74:1**, below even the
+          // 3:1 large-text floor. That is the design's arithmetic, not a build
+          // choice, so it is recorded for the designer in
+          // docs/DESIGN_ISSUES.md #77 and drawn as measured.
+          idleLabelColor: ext.pillTrackLabel,
+          selectedLabelColor: ext.pillTrackSelectedLabel,
         ),
       ),
     );

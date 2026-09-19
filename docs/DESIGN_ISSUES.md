@@ -326,6 +326,23 @@ Student, and only on the university track. Not drawn as five tappable cards that
 **Fix we need:** confirm the section survives to M1, and which of the five are behind
 `baseSubscription` vs `flashcardSubscription`, so the crown reflects a real entitlement.
 
+**The tiles' surface, read 2026-09-17 and recorded here rather than built** (edit3.md #43). The
+owner's decision is that the section keeps the plain placeholder until an endpoint exists, so these
+values have nowhere to land — but they were measured, and re-measuring them later costs a Dev Mode
+session that this record makes unnecessary. `Frame 1000002992`–`96`, 110 × 85, radius 8:
+
+| Canvas | Fill | Border | Effects |
+| --- | --- | --- | --- |
+| Light | `#FCFBF9` | 0.1 `#4B675E` | drop (0.02, 0.02) blur 5.4 black 25% |
+| Dark | `#27282C` | — | drop (0.02, 0.02) blur 0.8 black 25% · **inset** (1, 1) blur 4 `rgba(255,255,255,0.25)` · **inset** (−2, −2) blur 4 black 25% |
+
+If these are ever built, the dark pair is a new token rather than a reuse of
+`pillTrackInsetShadows`: that one is a single black inset, and this is a black/white PAIR at a
+diagonal offset. It is **not** the file's only non-black inner shadow, as an earlier draft of this
+paragraph claimed — `scopeSelectedInsetShadows` already ships `rgba(255,255,255,0.6)`,
+`scopeTrackInsetShadows` ships `rgba(207,179,255,0.1)`, and `otpTimerInsetShadows` ships
+`rgba(198,198,198,0.25)`. What is unusual here is only the pairing, not the colour.
+
 **Also noted (Day 7):** the university frame's Continue Learning row reads **"12 lecture left"**
 where school reads "lesson". That noun lives inside the section's *content*, which is quiz-history
 data we deliberately do not invent — so it has nowhere to render today. Marked at the call site
@@ -882,6 +899,15 @@ under `lib/features/home/`.
 `home_banner.dart` is included although the brief's section D does not name it: it is on Home and
 was drawing `cs.primary`. The frame gives no value for that placeholder box, so it follows the
 surface's rule rather than a second invented one. It stays an acknowledged `TODO(design-asset)`.
+
+**Its drop shadow, read 2026-09-17 — recorded, not built** (edit3.md #4). The `banner` node
+(361 × 192.53, radius 19.25) carries `filter: drop-shadow(0.5px 0.5px 4px rgba(0,0,0,0.25))` in
+light AND dark, on both tracks — the same single black shadow on both canvases, like the subject
+card. It is **not applied**: the shadow belongs to the artwork, and the app renders a themed
+placeholder box instead (the artwork is export-blocked). Shadowing a placeholder would elevate a
+rectangle that is standing in for an image. When the real artwork lands: add a `bannerShadows`
+token carrying black 25% (0.5, 0.5) blur 4 in both canvases, and wrap the image — not the
+placeholder — in `ElevatedSurface(shape: r19.25)`.
 
 The **dark** palette needed no change — `#2E2D32`, `#7070A0`, `#B3B3B3` already matched `337:5303`.
 
@@ -1780,6 +1806,24 @@ be read rather than having the light values reused.
 >
 > **Still owed:** the dark frame's own shadow values, if they differ. Folded into #70.
 
+> ✅ **Built EXACTLY 2026-09-19 (edit3 #10), and the collapse above is withdrawn.** Both shadows
+> are now drawn, as two shadows, **black on both canvases**, through
+> `AppElevation.mistakesCardShadows` under `ElevatedSurface`.
+>
+> Three things changed the answer. The dark frame `404:7637` was read and carries **the same black
+> pair** — so there were never two sets of values to reconcile. The dark card is a **30% wash**,
+> not an opaque fill, so black under it is not "nothing": it composites with the page and is
+> visible, which is the premise #47 got wrong and #72 corrected. And `ElevatedSurface` knocks each
+> shadow out behind the shape (edit1.md R4), so the 30% fill composites over the PAGE rather than
+> over its own shadow — something a `Material` elevation could not do at any `shadowColor`.
+>
+> The half-pixel offset difference that justified collapsing them is now drawn as measured; at
+> 1.06 and 1.59 blur they do composite to one visible edge, but that is a rendering outcome, not
+> an approximation the code makes. Dark additionally carries Glass **G5**.
+>
+> This removed the last two `raw elevation effects` sites outside edits 4 and 5: the guard ratchet
+> went 9 → 7 in the same change (`test/guards/project_rules_test.dart`).
+
 ## 70. ❌ RULING WITHDRAWN — the dark frames draw DARK cards; the carry-over rested on a misread
 
 > 🔴 **Corrected 2026-09-12 (late) — the owner ruling recorded below is WITHDRAWN.** It is
@@ -2477,3 +2521,348 @@ it by reflex.
 exist these eight stay as they are.
 
 Related: #21/#22 (the outline CTA's dark fill/border), `docs/DECISIONS.md` D-009.
+
+
+---
+
+## 77. 🟠 The segmented track's selected label fails AA — at the design's own value
+
+**Where:** `Frame 1000003007` — the quiz-type tabs (light `180:5337`, dark `337:11059` /
+`349:15962`) and, from edit5, Settings → Languages.
+Code: `lib/features/catalog/widgets/quiz_type_tabs.dart`.
+
+**What:** edit3 §7.6 step 2 asks for the selected and idle label fills off the Properties panel, so
+they can become `pillTrackLabel` / `pillTrackSelectedLabel` tokens that both screens share.
+
+> ✅ **READ 2026-09-19** — Properties panel, signed-in Chrome session on the owner's own Figma
+> account. (The MCP connector still cannot do this: it is unauthenticated in the agent session and
+> authenticates as a view-only seat regardless. The browser route is what worked, as it did for
+> #72.) Nothing below is approximated from a screenshot.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `pillTrackLabel` (idle) | **`#384F47`** `180:5339` | **`#FCFBF9`** `337:11091` |
+| `pillTrackSelectedLabel` | **`#FCFBF9`** `180:5341` | **`#FCFBF9`** `337:11095` |
+
+Both are Inter 500 / 14 px, line height 100%, letter spacing 0, centre/middle — which matches
+`AppType.labelMedium` and confirms the style choice the build already made.
+
+**The idle light value is the finding.** It is `#384F47`, a dark GREEN. The hand-rolled chips drew
+the grey `textSecondary` `#2C2C2C` there, and the §7.6.2 fallback would have shipped that grey
+permanently. Both tokens are now built from the readings.
+
+**Measured contrast** at the read values (WCAG 2.1, on the track's own fill):
+
+| Pair | Light | Dark |
+| --- | --- | --- |
+| idle on `pillTrackFill` | **7.48:1** ✔ | **14.98:1** ✔ |
+| selected `#FCFBF9` on `#AE87E7` | **2.74:1** ✘ | **2.74:1** ✘ |
+
+**The selected label fails AA at 4.5:1 and also fails the 3:1 large-text floor**, on both canvases —
+and it does so at Figma's own numbers, so this is the design's arithmetic rather than a build
+choice. It is not a regression: `#FCFBF9` on `#AE87E7` is what the chips always drew and what every
+filled CTA in the app draws. What is new is that it is measured, and that the segmented track makes
+it permanent on a control that always has exactly one selected item.
+
+**Fix we need — designer:** a darker selected label, or a darker selected fill. `#2B2B2B` on
+`#AE87E7` would reach 6.0:1 and is a colour this design already uses on a lilac ground (the
+Continue Learning card, #79) — offered as a precedent, not chosen here. If near-white on `#AE87E7`
+is intended, say so and this is recorded as accepted.
+
+**Also for the designer — a contradiction inside our own spec, not inside Figma.** edit3.md §5
+records the dark TRACK's inner shadow as `inset (0, −3) blur 4 black 25%`, and §12's QA checklist
+describes the result as "a top inner shadow". A negative-Y inner shadow casts along the **bottom**
+inside edge, in Figma and in CSS alike, and that is what the build now draws (verified pixel-wise:
+`test/goldens/quiz_type_tabs_dark.png`, darkest pixels on the track's bottom row). The measured
+value was followed and the prose was not. Confirm which one matches the canvas.
+
+---
+
+## 78. 🟡 University Home's Ellipse 123 lights nothing — probably a leftover
+
+**Where:** `349:16788`, 133 × 21 at (33, 993) on university Home.
+
+**What:** it is a back-light ellipse — the same `#AE87E7` solid the eight other back-lights use —
+but the plugin overlap test finds **no glass surface above it**. A back-light is only ever visible
+as that ellipse seen through a covering surface's frost (edit1.md R6); with nothing over it, Figma
+renders nothing and a build that drew it would put a hard lavender blob on the page.
+
+Its school-track counterpart is B3 `348:6954`, which sits under the Top Student block and *is*
+covered. The university Top Student block has no back-light of its own.
+
+**Built as:** nothing. `AppElevation.topStudentBacklightSchool` is school-only by name, and
+`ComingSoonSection` resolves the university track to an empty list. Asserted in
+`test/features/home/coming_soon_section_test.dart` so it cannot be "fixed" by symmetry later.
+
+**Fix we need — designer:** is Ellipse 123 a leftover from a deleted surface, or is the university
+Top Student block missing the glass cover its school twin has? Either answer is a one-line change;
+guessing between them is not.
+
+---
+
+## 79. ✅ RESOLVED 2026-09-19 — "Coming soon" was invisible on Continue Learning at 1.00:1
+
+**Where:** Home's Continue Learning placeholder, school and university.
+Code: `lib/features/home/widgets/coming_soon_section.dart`.
+
+**What:** the owner's 2026-09-17 decision gives each placeholder its section's Figma surface while
+keeping the placeholder's own content — a `#B3B3B3` (`mutedText`) icon and caption. edit3 §7.2.4
+requires that pairing to be measured. It is far worse than the 4.5:1 threshold:
+
+| Surface | Light | Dark |
+| --- | --- | --- |
+| Daily Tasks | 2.03:1 | 7.40:1 ✔ |
+| Top Student | 2.10:1 | 7.34:1 ✔ |
+| **Continue Learning · school** | **1.74:1** | **1.00:1** |
+| **Continue Learning · university** | **1.16:1** | **1.16:1** |
+| plain box (`cardFill`) — the pre-existing baseline | 2.06:1 | 7.39:1 ✔ |
+
+**1.00:1 is not "low contrast", it is invisible.** `#B3B3B3` has a relative luminance of
+**0.45079** and the dark school fill `#C4A8E3` has **0.45287** — they agree to two decimal places,
+which puts the ratio at **1.0042**, i.e. 1.00:1 to the two decimals this table reports. The caption
+and its ground are the same brightness; only the hue differs, and hue alone is not contrast. The
+lilac fills are what did it — `#F3E5FF`, `#C4A8E3` and `#DBB0FF` are all light colours, and
+`mutedText` was chosen against the *page*, which is light in one canvas and dark in the other.
+
+> ✅ **FIXED 2026-09-19, with the design's own value.** §7.2.4's remedy is to read the matching
+> Figma card's text colours and add them as a token. That read succeeded over the browser route
+> (see #77): the Continue Learning card captions itself **`#2B2B2B`** — title and caption alike,
+> on **all four** frames, light school `308:4190`, dark school `337:5435` / `337:5436`, light
+> university `309:5633`. One value, both canvases, both tracks.
+>
+> Shipped as `AppColors.continueLearningContent`, used by that surface's placeholder only; the
+> other three surfaces keep `mutedText`.
+>
+> | Surface | was (`mutedText`) | now (`#2B2B2B`) |
+> | --- | --- | --- |
+> | Continue Learning · school light `#F3E5FF` | 1.74:1 | **11.77:1** ✔ |
+> | Continue Learning · school dark `#C4A8E3` | **1.00:1** | **6.78:1** ✔ |
+> | Continue Learning · university `#DBB0FF` | 1.16:1 | **7.87:1** ✔ |
+>
+> The card's type is Inter 700 / 16 (title) and Inter 400 / 12 at 130% (caption); the placeholder
+> keeps its own `captionRegular`, because the "Coming soon" line is not the frame's title.
+>
+> ✅ **DEVICE VERIFIED 2026-09-19**, Pixel 8, all four configurations walked with the mock backend:
+> school light `#F3E5FF`, school dark `#C4A8E3`, university light and dark `#DBB0FF`. The caption is
+> legible on every one. The dark school card is the one that matters — at `mutedText` it measured
+> 1.00:1, which on the device would have been a card with nothing written on it.
+
+**Still open, and NOT this entry's fix.** The light canvas was already failing before this wave —
+`mutedText` on the plain `cardFill` box measures **2.06:1**, and on Daily Tasks (2.03:1) and Top
+Student (2.10:1) it is no better. Those three are unchanged by this edit and were failing
+identically before it. They are a separate question:
+
+**Fix we need — designer:** is `mutedText` `#B3B3B3` the intended colour for secondary text on a
+near-white surface at all? At 2.0:1 it fails AA everywhere it is used in light, which is far wider
+than these placeholders.
+
+**Also measured, same wave, same class:** the Mistakes header pill's `#EF4444` label on its own
+frame-specified fill is **3.64:1** light / **3.61:1** dark — passes the 3:1 large-text floor, fails
+4.5:1. Both the label and the fill are Figma values, so this one is the design's own arithmetic, not
+a build choice. Recorded for the same designer pass.
+
+
+---
+
+## 80. 🟠 RETURNED TO EDIT 2 — nothing in the catalog header can have a 48 dp tap target
+
+> 📌 **OWNER RULING 2026-09-19.** Return this to the **Edit 2 / `CatalogHeader` owner**. Do not fix
+> it in Edit 3, because the root cause is the shared 35 dp header height, not anything the Mistakes
+> pill does. Recorded as `docs/DECISIONS.md` **D-013**. The finding below stands exactly as
+> measured; what changed is who holds it.
+
+**Where:** `CatalogHeader`, `lib/features/catalog/widgets/catalog_scaffold.dart:64` — a
+`SizedBox(height: 35)` around a `Stack`. Its occupants today are the back chip and the Subjects
+screen's "Mistakes" pill.
+
+**What:** a render box refuses a pointer outside its own SIZE — `RenderBox.hitTest` returns false
+before it ever reaches `hitTestChildren` — so a 48 dp child of a 35 dp box is tappable over 35 dp
+of itself and the remainder goes to whatever is behind it. A child of this header therefore has a
+maximum tap target of **35 dp**, whatever it asks for.
+
+⚠️ **This is a LAYOUT bound, not a clipping one.** An earlier draft of this entry blamed the
+`Stack`'s default `Clip.hardEdge` and offered `Clip.none` as a remedy. That is wrong twice over:
+`clipBehavior` governs painting only, and switching it changes nothing here. Verified with a
+throwaway probe — a `SizedBox(height: 35)` around a `Stack` holding a 48 dp `GestureDetector`
+rejects a tap 20 dp off centre under **both** `Clip.hardEdge` and `Clip.none`, and a
+`SizedBox(height: 48)` accepts it under both. Only the height matters.
+
+This was found while rebuilding the Mistakes pill (edit3 #7), whose guide asks for the usual
+">= 48 dp target under the drawn 35 dp pill". It turns out **the pill never had one**. The
+`OutlinedButton` it replaced carried Material's default `tapTargetSize: padded`, which draws a
+35 dp button inside a 48 dp hit box — and this header clipped that box away in exactly the same
+manner, silently, for as long as the button has existed. Wrapping the new pill in an explicit
+`SizedBox(height: 48)` was tried and behaves identically.
+
+**Measured**, not inferred (`test/features/catalog/subjects_screen_test.dart`, "is the frame's
+35 dp pill"): hit-testing the pill's centre +/- 15.5 dp lands on the pill's own ink box, and
++/- 24 dp — the edge of a nominal 48 dp target — does not. The test asserts exactly those three
+distances; it does not identify what an out-of-range tap lands on instead, and this entry no
+longer claims that it does.
+
+**Not fixed here, and now formally not edit3's to fix.** `catalog_scaffold.dart` is shared chrome
+that edit2 owns and edit3's file list does not include it; growing the header is a layout change to
+every catalog screen, not a tweak to one pill. The pill therefore ships at exact parity with the
+button it replaced — a 35 dp target — rather than carrying a 48 dp box that is silently clipped,
+which would read as compliance in review and be false at runtime.
+
+The owner confirmed that split on 2026-09-19 (D-013), so this is no longer a judgement edit3 made
+about its own boundary; it is an assignment.
+
+**Fix we need — whoever owns `CatalogHeader` next (edit2's surface):** give the header a 48 dp
+minimum height — `SizedBox(height: 35)` at `catalog_scaffold.dart` becomes at least 48, with the
+35 dp pill and the back chip centred inside it — and re-run the measurement above. That is the
+ONLY remedy; see the warning above about `Clip.none`. Both the back chip and the pill benefit, and
+neither can be fixed from its own file.
+
+**The guideline this misses:** WCAG 2.5.5 / the Material and HIG minimums all put a touch target at
+44-48 dp. 35 dp is below all three. This is a real accessibility defect on a live control, not a
+cosmetic one, and it is not new — it is newly *measured*.
+
+
+---
+
+## 81. ✅ DECIDED AND BUILT 2026-09-19 — the segmented tabs used to shrink Arabic below legibility and discard the text-scale setting
+
+> ✅ **OWNER RULING 2026-09-19, and it is built.** In the owner's words: **Arabic readability and
+> text scaling are more important than strict Figma segmented-track geometry.** Do not accept
+> `FittedBox(scaleDown)` shrinking Arabic labels to ~10 dp, and do not silently discard the text
+> scale. Keep the segmented track as the default design and adapt the implementation. Do not invent
+> a minimum font size, and do not change or abbreviate labels without recording it.
+>
+> Nothing was invented and no label was touched — see **What was built**. Full reasoning:
+> `docs/DECISIONS.md` **D-012**.
+
+**Where:** the Lectures quiz-type selector, `Frame 1000003007`.
+Code: `lib/features/catalog/widgets/quiz_type_tabs.dart` →
+`lib/core/widgets/elevation/segmented_track.dart`.
+
+**What it was:** edit3 #9 replaced a horizontally-SCROLLING row of content-sized chips with Figma's
+segmented track: one fixed-width groove, `Expanded` segments of equal width, and a
+`FittedBox(BoxFit.scaleDown)` on each label. The scroll used to absorb a long label. Equal segments
+cannot, so the label shrinks instead — and because the segment width is fixed, the shrink gives
+back exactly what the user's text-scale setting added.
+
+**Measured 2026-09-19, BEFORE the fix**, at a 375 dp phone width — painted glyph height against
+the laid-out box (`test/features/catalog/lectures_screen_test.dart`):
+
+| Case | Label | 1.0x painted / laid | 1.3x painted / laid |
+| --- | --- | --- | --- |
+| 3 types, en | all | 16.0 / 16.0 | 21.0 / 21.0 |
+| 4 types, en | "Practice" | **14.0** / 16.0 | **14.1** / 21.0 |
+| 4 types, en | "Midterm" | 15.9 / 16.0 | **16.1** / 21.0 |
+| 3 types, ar | منتصف الترم | **13.5** / 16.0 | **13.7** / 21.0 |
+| 4 types, ar | منتصف الترم | **10.2** / 16.0 | **10.2** / 21.0 |
+| 4 types, ar | عادي | 16.0 / 16.0 | 21.0 / 21.0 |
+
+Two distinct defects:
+
+1. **Legibility.** 10.2 dp is below the floor this project has already named: `subject_card.dart`
+   raised the frame's 8.56 dp caption to 10 because "8.5 dp is below any readable minimum on a real
+   phone". Arabic is the worst case because its labels are longest, which makes this an
+   Arabic-first defect on an Arabic-first product.
+2. **Accessibility.** At 4 types in Arabic, raising the system text size from 1.0x to 1.3x moves
+   منتصف الترم from 10.2 dp to 10.2 dp — **no change at all** — while عادي next to it grows 16 → 21.
+   A student who enlarges their text gets a row with a 21 dp label beside a 10 dp one. The setting
+   is silently discarded for the label that needed it most.
+
+Four quiz types is a real payload: the tabs are built from the server's `tree.quizTypes`, and the
+contract's enum has four values. The fixture ships three, which is why the first version of these
+tests could not see this.
+
+---
+
+### What was built
+
+**The track keeps the design's shape and gives up only its fixed WIDTH.** The `FittedBox` is gone
+from `_Segment`; every label lays out at `labelStyle` times the student's text scale, always. The
+segments are still equal, still 44 dp tall, still in one groove. When the labels genuinely do not
+fit, the groove runs past the edge and **scrolls** — which is what the chip row this replaced
+already did, on this same screen, so it is not a new behaviour in the product.
+
+Mechanically it is four widgets around the existing track:
+`LayoutBuilder` → `SingleChildScrollView(horizontal)` → `ConstrainedBox(minWidth: available)` →
+`IntrinsicWidth`. A `Row` of flex-1 children reports `n x widest child` as its intrinsic width,
+which is the same "Fill" rule the Figma frame uses, so nothing here measures a `TextPainter` by
+hand; and `minWidth` puts the groove back to the full width whenever that is larger, so **the
+common case lays out as it did before**.
+
+`test/goldens/quiz_type_tabs_dark.png` moved by **exactly one pixel** — `(368, 40)`, from
+`(34, 35, 39)` to `(33, 34, 39)`, i.e. one unit of blend on the groove's right edge. Diffed
+channel by channel, not eyeballed: the groove's width now arrives through `IntrinsicWidth` instead
+of straight off the parent's constraint, and that rounds one antialiased edge pixel. Nothing else
+in the frame differs.
+
+**No number was invented.** The one new value is `SegmentedTrackStyle.segmentPadding`, and it was
+**read from Figma on 2026-09-19**, not chosen: both segment frames — idle `180:5338` and selected
+`180:5340` — are auto-layout frames at `Fill (72.4px) x Fixed (44px)` with **`Padding 10`**. The
+parent groove `180:5337` is `Fixed 362 x 44`, radius 32, with no padding of its own. Only the
+horizontal component is modelled: the frame's height is fixed at 44 and its label is 17 tall, so
+Figma's vertical 10 drives nothing there either, and modelling it here would only eat the headroom
+a large text scale needs. The 44 dp height is unchanged; the label has room to roughly **3x**
+inside it, measured.
+
+**No label was changed.** Question 2 below stays open on purpose.
+
+**Measured after**, same harness, same 375 dp phone, all four quiz types:
+
+| Case | Label | 1.0x painted / laid | 1.3x painted / laid |
+| --- | --- | --- | --- |
+| 4 types, en | every label | 16.0 / 16.0 | 21.0 / 21.0 |
+| 4 types, ar | منتصف الترم | **16.0** / 16.0 | **21.0** / 21.0 |
+| 4 types, ar | عادي | 16.0 / 16.0 | 21.0 / 21.0 |
+
+Both defects are gone: painted equals laid everywhere, and 1.0x → 1.3x now moves **every** label by
+the same factor instead of moving the short ones and pinning the long one.
+
+### ✅ DEVICE VERIFIED 2026-09-19 — and the device is kinder than the tests
+
+Run on a physical **Pixel 8** (1080 x 2400 at density 420 = **411.4 dp** logical width), debug build
+of `lib/main_mock.dart`, university account (`111111`), Arabic and English, both canvases.
+
+**Widths measured off the device's own pixels**, not judged by eye: on the Arabic Lectures screen at
+the default text scale, with all four quiz types, the groove spans x = **73..1006 px** — 933 px =
+**355.4 dp**, entirely on screen — and the segment boundaries fall at ~296 / ~540 / ~783 px, four
+equal segments of ~233 px (88.8 dp).
+
+| Configuration | Result on a Pixel 8 |
+| --- | --- |
+| 4 types, ar, 1.0x | **Fits. No scrolling.** All four labels at full size, segments equal. |
+| 4 types, ar, 1.3x | Does **not** fit. The fourth label clips at the edge and the track scrolls; a swipe reveals it. **Every label grew**, the longest included. |
+| 4 types, en, 1.0x | Fits, light canvas, segments equal. |
+
+**So the test-font estimate overstated the problem, exactly as the caveat above predicted.** The
+test binding draws every glyph as a box of the font size — Figma reads "Normal" at **49 px** where
+the test lays it out at **72**, ~1.5x wider — which is why the tests scroll at 375 dp where the
+device does not. The tests prove the fallback *engages and behaves*; this is where it engages.
+
+Two more things the device settled, which no test could:
+
+- **The idle label really is a dark green on a phone.** `#384F47` reads as green against the
+  `#ECECEC` groove in light — visibly not the grey `textSecondary` the §7.6.2 fallback would have
+  shipped.
+- **The selected label's 2.74:1 is visible as low contrast** in the hand, not just on paper. That is
+  #77's problem, unchanged by this entry.
+
+### Still open — designer, and none of it blocks the build
+
+1. **Is scrolling the right fallback**, or should the track wrap to two lines at the cost of the
+   44 dp height? Scrolling was chosen because it needs no invented number and restores what this
+   screen already did.
+2. **Are the Arabic labels negotiable?** منتصف الترم is 11 characters where "Midterm" is 7. A
+   shorter Arabic term would keep the track tiling even at 1.3x. Deliberately **not** changed —
+   the ruling forbids touching copy without recording it, and this is the record of the question,
+   not of a change.
+3. Figma's own frame has almost no slack even in English: five tabs at 72.4 dp with 10 dp padding
+   leaves **52.4 dp** for a label, and "Normal" is **49**. The design was drawn at its limit.
+4. 🆕 **The overflow has no affordance** — noticed on the device, invisible in every test. When the
+   track does scroll, the dark groove `#232429` is within a shade of the dark page, so what a
+   student sees is a half-drawn word at the screen edge and nothing that says "swipe me". In light
+   the `#ECECEC` groove reads better. If scrolling stays the answer to 1, this needs a fade, an
+   arrow, or a partially-revealed next segment — none of which exists in the frame, so it is a
+   design question rather than something to invent.
+
+**Pinned by tests** in `lectures_screen_test.dart` and
+`test/core/widgets/elevation/segmented_track_test.dart`: painted == laid on every label, every
+label growing by the same factor under text scale, and the groove never narrower than the space it
+is given. A `FittedBox` coming back fails all three.

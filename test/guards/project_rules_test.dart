@@ -218,7 +218,15 @@ void main() {
     // OTP timer, the Mistakes subject card (2), the avatar badge, the profile
     // header, a profile stat card, the review filter (2) and the AI panel -
     // edits 3, 4 and 5.
-    const baseline = 9;
+    //
+    // 2026-09-19, edit3: 9 -> 7, measured with this detector after the change.
+    // `MistakesSubjectCard`'s `shadowColor:` + `elevation: 1.06` pair - the
+    // two Figma shadows collapsed into one `Material` approximation - became
+    // `AppElevation.mistakesCardShadows` under `ElevatedSurface`, which draws
+    // both of them and knocks each out behind the 30% fill. The seven left are
+    // the OTP timer, the avatar badge, the profile header, a profile stat
+    // card, the review filter (2) and the AI panel - edits 4 and 5.
+    const baseline = 7;
 
     final sites = rawElevationEffects(sources);
     expect(

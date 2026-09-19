@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Home header · Figma `59:1439` (light) / `337:5323` (dark) — avatar +
@@ -83,13 +85,18 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-/// The bell · Figma `59:1466`. Three parts, only one of which is the asset:
-/// a 36.5 ring, the `mingcute:notification-fill` glyph, and the unread dot.
+/// The bell · Figma `59:1466` (light) / `337:5330` (dark). Three parts, only
+/// one of which is the asset: a 36.5 ring, the `mingcute:notification-fill`
+/// glyph, and the unread dot.
 ///
 /// The ring and the dot are drawn in Flutter rather than baked into the SVG on
 /// purpose — the ring is decoration and the dot is STATE. Keeping the asset's
 /// own 37 viewBox as the layout box means the frame's dot centre (23.5, 11.5)
 /// drops in without rescaling.
+///
+/// The ring's fill is its own token, not the page background: the dark frame
+/// washes `#232428` at 20% over the page and lights the disc with Glass **G5**,
+/// which is a surface sitting on the background rather than a hole in it.
 class _BellChip extends StatelessWidget {
   const _BellChip({required this.hasUnread, required this.semanticLabel});
 
@@ -105,6 +112,7 @@ class _BellChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
+    final elevation = Theme.of(context).extension<AppElevation>()!;
 
     return SizedBox(
       width: _box,
@@ -112,14 +120,14 @@ class _BellChip extends StatelessWidget {
       child: Stack(
         alignment: AlignmentDirectional.center,
         children: [
-          Container(
+          ElevatedSurface(
             width: _ring,
             height: _ring,
-            decoration: BoxDecoration(
-              color: ext.background,
-              shape: BoxShape.circle,
-              border: Border.all(color: ext.bellRing, width: 0.5),
-            ),
+            shape: const CircleBorder(),
+            color: ext.homeBellFill,
+            side: BorderSide(color: ext.bellRing, width: 0.5),
+            glass: elevation.homeBellGlass,
+            child: const SizedBox.expand(),
           ),
           SvgPicture.asset(
             'assets/icons/notification.svg',

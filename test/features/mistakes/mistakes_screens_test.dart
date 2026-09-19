@@ -45,9 +45,14 @@ void main() {
   });
 
   /// Learn tab → the Mistakes header action.
+  ///
+  /// Found by its LABEL, not by its widget type. It was an `OutlinedButton`
+  /// until 2026-09-19, when edit3 rebuilt it as the frame's filled pill on an
+  /// `ElevatedSurface` (`Frame 427319504`); a type finder would break again the
+  /// next time its surface changes, and the label is what a student taps.
   Future<void> openMistakes(WidgetTester tester, {String locale = 'en'}) async {
     await openLearnTab(tester, locale: locale);
-    await tester.tap(find.byType(OutlinedButton));
+    await tester.tap(find.text(locale == 'ar' ? 'أخطائي' : 'Mistakes'));
     await tester.pumpAndSettle();
   }
 

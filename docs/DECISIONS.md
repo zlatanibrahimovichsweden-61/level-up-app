@@ -615,3 +615,143 @@ all the way.
 
 **Revisit when:** the `depth`/`refraction` shading is built, or the rim is judged on a device
 against the dark frames and reads wrong at either end of the splay range.
+
+---
+
+## Catalog — the Home / Learn / Mistakes elevation wave (edit3)
+
+### D-012 · The segmented track keeps its labels at full size and lets the groove scroll
+
+**Feature:** Catalog / Lectures (edit3.md #9) · **Date:** 2026-09-19 · **Status:** Accepted
+**Raised by:** the owner, on the question `DESIGN_ISSUES` #81 escalated the same day
+
+**Context.** edit3 #9 replaced a horizontally **scrolling** row of content-sized chips with Figma's
+segmented track: one fixed 362 x 44 groove, `Expanded` segments of equal width, and a
+`FittedBox(BoxFit.scaleDown)` on each label. The scroll used to absorb a long label; equal segments
+cannot, so the label shrank instead — and because the segment width was fixed, the shrink handed
+back exactly what the student's text-scale setting had added.
+
+Measured 2026-09-19 at a 375 dp phone with the four quiz types the contract's enum allows (the
+fixture ships three, which is why the first version of those tests could not see any of this): the
+Arabic منتصف الترم painted at **10.2 dp** inside a 16.0 dp layout box, and raising the system text
+size from 1.0x to 1.3x moved it from 10.2 to **10.2** while عادي beside it went 16 → 21.
+
+Two defects, not one. A **legibility** defect — 10.2 dp is below the floor this project had already
+named, when `subject_card.dart` raised the frame's 8.56 dp caption to 10 because "8.5 dp is below
+any readable minimum on a real phone" — and an **accessibility** defect, where the setting is
+discarded for precisely the label that needed it. Arabic is the worst case because its labels are
+longest, which makes it an Arabic-first defect on an Arabic-first product.
+
+**Options.**
+
+1. **(a)** Keep the shrink. Faithful to the groove's fixed width; illegible in Arabic at four tabs.
+2. **(b)** Shrink only down to a minimum font size. Needs a number nobody has supplied, and still
+   discards the text scale below it.
+3. **(c)** Wrap the label to two lines. Makes the 44 dp height variable — trading one Figma value
+   for another, and inventing the line metrics.
+4. **(d)** Shorten the Arabic labels. A copy change, and it only moves the threshold.
+5. **(e)** Keep the design, give up the fixed **width**: full-size labels, groove scrolls when they
+   do not fit.
+
+**Decision — (e).** In the owner's words: **Arabic readability and text scaling are more important
+than strict Figma segmented-track geometry.** Do not accept `FittedBox(scaleDown)` shrinking Arabic
+labels to ~10 dp, and do not silently discard the text-scale setting. Keep the segmented track as
+the default design and adapt the implementation. Do **not** invent a minimum font size, and do not
+change or abbreviate labels without documenting the decision.
+
+Scrolling was chosen over the other four because it is the only one that needs **no invented
+number** and is not new behaviour in the product: the chip row this control replaced scrolled, on
+this same screen, until this wave.
+
+**Consequences.**
+
+- **The `FittedBox` is gone.** Every label lays out at `labelStyle` times the student's text scale,
+  always. Segments stay equal, the groove stays 44 dp.
+- **The common case did not move.** `LayoutBuilder` → `SingleChildScrollView(horizontal)` →
+  `ConstrainedBox(minWidth: available)` → `IntrinsicWidth` puts the groove back to the full width
+  whenever the labels fit, so it lays out as before. **`quiz_type_tabs_dark.png` moved by exactly
+  one pixel** — `(368, 40)`, one unit of blend on the groove's right edge, because the width now
+  arrives through `IntrinsicWidth` rather than off the parent's constraint. Diffed channel by
+  channel; nothing else in the frame differs. A `Row` of flex-1 children reports
+  `n x widest child` as its intrinsic width — the same "Fill" rule the Figma frame uses — so nothing
+  measures a `TextPainter` by hand.
+- **One new value, and it was READ, not chosen.** `SegmentedTrackStyle.segmentPadding` defaults to
+  Figma's own `Padding 10`, off both segment frames — idle `180:5338`, selected `180:5340`, each
+  `Fill (72.4px) x Fixed (44px)` inside the `Fixed 362 x 44` groove `180:5337`. Horizontal only: the
+  frame's height is fixed and its label is 17 tall, so the vertical 10 drives nothing there either,
+  and modelling it here would only eat text-scale headroom. That headroom measures ~**3x**.
+- **No copy was touched.** Whether منتصف الترم should be shortened stays an open designer question
+  in #81, recorded rather than acted on.
+- **Where the fallback engages was settled on a device, and it is kinder than the tests.** On a
+  physical **Pixel 8** (411.4 dp wide) the four Arabic labels **fit at the default text scale** — the
+  groove measures 933 px / 355.4 dp off the device's own pixels, entirely on screen, four equal
+  segments. At **1.3x** they do not fit: the last label clips, the track scrolls, and **every** label
+  grows, the longest included. The tests scroll at 375 dp where the device does not, because the test
+  binding's font is ~1.5x wider than Inter (Figma reads "Normal" at 49 px; the test lays it out at
+  72). The tests prove the fallback engages and behaves; the device says when.
+- **One thing only the device showed:** when the track does scroll, the dark groove `#232429` sits
+  within a shade of the dark page, so the overflow reads as a clipped word rather than as something
+  swipeable. Recorded as #81's open question 4 — a fade or a peeking next segment is not in the
+  frame, so it is the designer's call, not an invention to make here.
+- **Guarded, not left as prose.** `segmented_track_test.dart` and `lectures_screen_test.dart` assert
+  painted == laid on every label, every label growing by the same factor under text scale, and the
+  groove never narrower than the space it is given. A `FittedBox` coming back fails all three. The
+  #81 ratchet that used to hold the 10.2 dp defect in place now asserts its absence.
+- **A second, unrelated defect was fixed in the same file, with the owner's go-ahead.**
+  `_Segment` wrapped its `GestureDetector` in `Semantics(..., excludeSemantics: true)`, which took
+  the tap **action** out with the subtree: the node announced itself a button, announced which
+  segment was selected, and offered no way to select another one. `onTap` is now declared on the
+  `Semantics` itself, keeping the exclusion so the label is not announced twice.
+
+**Revisit when:** the designer answers #81's remaining questions — wrap versus scroll, or shorter
+Arabic copy — or a device pass shows the groove scrolling on a configuration the design expects to
+tile.
+
+---
+
+### D-013 · `DESIGN_ISSUES` #80 (the 35 dp catalog header) returns to the edit2 owner, unfixed
+
+**Feature:** Catalog chrome (edit2's `CatalogHeader`) · **Date:** 2026-09-19 · **Status:** Accepted
+**Raised by:** the owner, on the question `DESIGN_ISSUES` #80 escalated the same day
+
+**Context.** `CatalogHeader` is a `SizedBox(height: 35)` around a `Stack`
+(`catalog_scaffold.dart:64`). A `RenderBox` refuses a pointer outside its own size —
+`RenderBox.hitTest` returns false before it ever reaches `hitTestChildren` — so a 48 dp child of a
+35 dp box is tappable over 35 dp and the remainder goes to whatever is behind it. Every occupant of
+that header is therefore capped at **35 dp** whatever it asks for: the back chip, and the Subjects
+screen's Mistakes pill.
+
+It surfaced while rebuilding that pill (edit3 #7), whose guide asks for the usual ">= 48 dp target
+under the drawn 35 dp pill". The pill **never had one**: the `OutlinedButton` it replaced carried
+Material's `tapTargetSize: padded`, which draws a 35 dp button inside a 48 dp hit box, and this
+header had been clipping that box away silently for as long as the button existed. Wrapping the new
+pill in an explicit `SizedBox(height: 48)` behaves identically. This is a **layout** bound, not a
+clipping one — `Clip.none` changes nothing, verified with a throwaway probe at both heights.
+
+**Options.**
+
+1. **(a)** Grow the header from edit3. A layout change to every catalog screen, in a file edit3's
+   scope does not include.
+2. **(b)** Give the pill a 48 dp box anyway.
+3. **(c)** Return the finding to whoever owns `CatalogHeader`.
+
+**Decision — (c).** The owner's instruction: return it to the **Edit 2 / `CatalogHeader` owner**;
+do not fix it in Edit 3, since the root cause is the shared 35 dp header height.
+
+**(b) was rejected on its merits, not just its scope:** a 48 dp box that the parent silently clips
+reads as compliance in review and is false at runtime. Shipping the pill at exact parity with the
+button it replaced is the honest state.
+
+**Consequences.**
+
+- The Mistakes pill ships with a **35 dp** tap target, unchanged from the button it replaced. That
+  is below WCAG 2.5.5 and below both the Material and HIG minimums. It is a real accessibility
+  defect on a live control, and it is **not new** — it is newly *measured*.
+- The back chip has the same cap, and neither control can be fixed from its own file.
+- `test/features/catalog/subjects_screen_test.dart` pins the measurement: the pill's centre +/-
+  15.5 dp lands on its ink box and +/- 24 dp does not. When edit2 grows the header, that test is
+  the thing to re-run, and it should start failing.
+- The remedy is one number: `SizedBox(height: 35)` at `catalog_scaffold.dart:64` becomes at least
+  48, with the 35 dp pill and the back chip centred inside it.
+
+**Revisit when:** edit2 next touches `catalog_scaffold.dart`.

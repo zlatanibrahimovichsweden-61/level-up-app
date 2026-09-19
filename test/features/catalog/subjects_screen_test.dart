@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/core/router/app_router.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/features/catalog/models/subject.dart';
 import 'package:level_up_app/features/catalog/screens/subjects_screen.dart';
 import 'package:level_up_app/features/catalog/widgets/subject_card.dart';
@@ -256,5 +258,104 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Coming soon'), findsNothing);
+  });
+
+  // -------------------------------------------------------------------------
+  /// edit3.md #7 — the header pill, and the tap target it cannot have.
+  ///
+  /// The pill is the frame's 35 dp and so is its target, because
+  /// `CatalogHeader` is a 35-tall box and a render box refuses a pointer
+  /// outside its own size. That is a finding, not a build choice
+  /// (DESIGN_ISSUES #80), and it is pinned here so that the day the header
+  /// grows, this test is what says so.
+  group('the Mistakes pill (edit3 #7)', () {
+    testWidgets('is the frame\'s 35 dp pill, tappable over exactly itself', (
+      tester,
+    ) async {
+      await pumpCatalogApp(tester, catalog: catalog);
+      await openLearnTab(tester);
+
+      final pill = tester.getRect(
+        find.ancestor(
+          of: find.text('Mistakes'),
+          matching: find.byType(ElevatedSurface),
+        ),
+      );
+      expect(pill.height, 35);
+
+      // The reachable band, measured by hit-testing rather than assumed.
+      //
+      // Membership of the PILL'S OWN ink box, not "some pointer listener":
+      // the nav shell and the header behind it carry listeners of their own,
+      // so the loose question answers `true` everywhere and proves nothing.
+      final ink = tester.renderObject(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Mistakes'),
+            matching: find.byType(ElevatedSurface),
+          ),
+          matching: find.byType(InkWell),
+        ),
+      );
+      bool reaches(double dy) => tester
+          .hitTestOnBinding(Offset(pill.center.dx, pill.center.dy + dy))
+          .path
+          .any((e) => identical(e.target, ink));
+
+      expect(reaches(0), isTrue);
+      expect(reaches(-15.5), isTrue);
+      expect(reaches(15.5), isTrue);
+      // 24 dp would be inside a 48 dp target. It is not reachable.
+      expect(reaches(-24), isFalse, reason: 'DESIGN_ISSUES #80');
+      expect(reaches(24), isFalse, reason: 'DESIGN_ISSUES #80');
+    });
+
+    testWidgets(
+      'announces as a BUTTON, in one node, like the one it replaced',
+      (tester) async {
+        // The `OutlinedButton` this replaced carried the button flag for free.
+        // `ElevatedSurface` adds no semantics and its `InkWell` exposes only a
+        // tap action, so losing the flag here would be a silent TalkBack
+        // regression that nothing else in this file would notice.
+        // Disposed inline rather than in a tear-down: the framework checks that
+        // no handle is live at the end of the test BODY, which is before
+        // tear-downs run.
+        final handle = tester.ensureSemantics();
+
+        await pumpCatalogApp(tester, catalog: catalog);
+        await openLearnTab(tester);
+
+        expect(
+          tester.getSemantics(find.text('Mistakes')),
+          matchesSemantics(
+            label: 'Mistakes',
+            isButton: true,
+            hasTapAction: true,
+            hasFocusAction: true,
+            hasEnabledState: false,
+            isFocusable: true,
+          ),
+        );
+
+        handle.dispose();
+      },
+    );
+
+    testWidgets('a tap pushes the overview exactly once', (tester) async {
+      final container = await pumpCatalogApp(tester, catalog: catalog);
+      await openLearnTab(tester);
+      expect(locationOf(container), '/learn');
+
+      await tester.tap(find.text('Mistakes'));
+      await tester.pumpAndSettle();
+      expect(locationOf(container), '/learn/mistakes');
+
+      // ONE push, not two. The location alone cannot tell them apart — two
+      // pushes of the same route read the same — so the stack DEPTH is what is
+      // asserted: after a single pop we must be back on Subjects.
+      container.read(routerProvider).pop();
+      await tester.pumpAndSettle();
+      expect(locationOf(container), '/learn');
+    });
   });
 }

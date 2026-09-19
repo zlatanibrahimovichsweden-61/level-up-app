@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../profile/models/student_profile.dart';
 
 /// Points per level, from the contract.
 ///
@@ -36,21 +39,45 @@ double levelProgressFraction({required int level, required int totalPoints}) {
 /// The points total at which [level] gives way to the next one.
 int nextLevelThreshold(int level) => level * kPointsPerLevel;
 
-/// Level card · Figma `337:5336`.
+/// Level card · Figma `308:4209` (light) / `337:5336` (dark school) /
+/// `349:16593` (dark university).
 ///
 /// Everything numeric here is SERVER-AUTHORITATIVE and display-only: `LEVEL n`,
 /// the points balance and the badge count come straight from `GET /me`. The one
 /// derived value is the progress bar's fill, from [kPointsPerLevel] above.
+///
+/// **Its elevation is the two canvases' two different mechanisms** (edit1.md
+/// R1). Light carries the frame's one 0.5/0.5/blur-4 black drop shadow; dark
+/// carries no shadow at all and elevates with Glass **G6** plus the lavender
+/// back-light ellipse behind the medal. Both arrive as `AppElevation` tokens,
+/// so this widget names neither a colour nor a blur.
 class LevelCard extends StatelessWidget {
-  const LevelCard({super.key, required this.level, required this.totalPoints});
+  const LevelCard({
+    super.key,
+    required this.level,
+    required this.totalPoints,
+    required this.track,
+  });
 
   final int level;
   final int totalPoints;
+
+  /// Which track's back-light sits behind the medal. The school and university
+  /// ellipses differ by two pixels of y-offset (`348:6951` vs `349:16784`) and
+  /// both are kept verbatim rather than normalised (edit1.md R2). Light has no
+  /// back-light on either track.
+  final Track track;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
+    final elevation = Theme.of(context).extension<AppElevation>()!;
+
+    final backlight = switch (track) {
+      Track.school => elevation.levelCardBacklightSchool,
+      Track.university => elevation.levelCardBacklightUniversity,
+    };
 
     final nextLevel = level >= kMaxLevel ? kMaxLevel : level + 1;
     final fraction = levelProgressFraction(
@@ -58,12 +85,16 @@ class LevelCard extends StatelessWidget {
       totalPoints: totalPoints,
     );
 
-    return Container(
+    return ElevatedSurface(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      // NOT changed to the frame's `#FCFBF9`: the light `#FDFDFD` is an older,
+      // separately tracked `TODO(design)` on the token itself, and moving it
+      // here would settle that question as a side effect of an elevation edit.
+      color: ext.cardFill,
+      shadows: elevation.levelCardShadows,
+      glass: elevation.levelCardGlass,
+      backlights: [?backlight],
       padding: const EdgeInsetsDirectional.fromSTEB(13, 9, 13, 16),
-      decoration: BoxDecoration(
-        color: ext.cardFill,
-        borderRadius: BorderRadius.circular(15),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

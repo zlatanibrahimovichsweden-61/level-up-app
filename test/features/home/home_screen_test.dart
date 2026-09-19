@@ -7,6 +7,7 @@ import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/home/screens/home_screen.dart';
+import 'package:level_up_app/features/home/widgets/coming_soon_section.dart';
 import 'package:level_up_app/features/home/widgets/level_card.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
@@ -239,6 +240,67 @@ void main() {
 
       expect(find.text('أدوات التعلّم'), findsOneWidget);
     });
+  });
+
+  /// edit3.md #1 / #3. The screen's job here is ROUTING a value, not styling:
+  /// it hands each placeholder the surface its Figma section has, and hands the
+  /// level card the track whose back-light it should draw. Both are values that
+  /// compile and render fine when wrong, so they are asserted rather than
+  /// trusted — the surfaces themselves are `coming_soon_section_test.dart`.
+  group('section surfaces and the level card track (edit3)', () {
+    List<ComingSoonSurface> surfaces(WidgetTester tester) => tester
+        .widgetList<ComingSoonSection>(find.byType(ComingSoonSection))
+        .map((s) => s.surface)
+        .toList();
+
+    testWidgets('school: Daily Tasks, Continue Learning, Top Student', (
+      tester,
+    ) async {
+      when(repo.getMe).thenAnswer((_) async => schoolProfile());
+      await pumpHome(tester);
+
+      expect(surfaces(tester), [
+        ComingSoonSurface.dailyTasks,
+        ComingSoonSurface.continueLearning,
+        ComingSoonSurface.topStudent,
+      ]);
+    });
+
+    testWidgets('university inserts Learning Tools, and it stays PLAIN', (
+      tester,
+    ) async {
+      // The frame gives Learning Tools no surface of its own — its five tiles
+      // are recorded unbuilt (DESIGN_ISSUES #20) — so it must not borrow the
+      // Daily Tasks surface it sits next to.
+      when(repo.getMe).thenAnswer((_) async => universityProfile());
+      await pumpHome(tester);
+
+      expect(surfaces(tester), [
+        ComingSoonSurface.dailyTasks,
+        ComingSoonSurface.plain,
+        ComingSoonSurface.continueLearning,
+        ComingSoonSurface.topStudent,
+      ]);
+    });
+
+    for (final (label, profile, track) in [
+      ('school', schoolProfile, Track.school),
+      ('university', universityProfile, Track.university),
+    ]) {
+      testWidgets('$label · the track reaches the card and every section', (
+        tester,
+      ) async {
+        when(repo.getMe).thenAnswer((_) async => profile());
+        await pumpHome(tester);
+
+        expect(tester.widget<LevelCard>(find.byType(LevelCard)).track, track);
+        for (final section in tester.widgetList<ComingSoonSection>(
+          find.byType(ComingSoonSection),
+        )) {
+          expect(section.track, track, reason: section.title);
+        }
+      });
+    }
   });
 
   group('levelProgressFraction (the one derived value on this screen)', () {

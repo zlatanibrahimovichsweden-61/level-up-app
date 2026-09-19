@@ -13,6 +13,7 @@ import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/widgets/language_pill.dart';
 import 'package:level_up_app/features/home/widgets/home_header.dart';
 import 'package:level_up_app/features/home/widgets/level_card.dart';
+import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/screens/signup_track_screen.dart';
@@ -49,7 +50,23 @@ void main() {
           brightness: brightness,
           // Mid-level student: the bar is partly filled, so the purple fill and
           // the track behind it are both visible.
-          child: const LevelCard(level: 8, totalPoints: 3700),
+          //
+          // School, so the dark capture carries the `348:6951` back-light.
+          //
+          // The UNIVERSITY level-card ellipse (`349:16784`, two pixels higher)
+          // has no pixel coverage at all. `home_screen_test.dart` asserts that
+          // the university track reaches this widget, and
+          // `app_elevation_test.dart` asserts the token's own offset, but
+          // nothing renders the two together — the same is true of every other
+          // track-specific back-light. Stated rather than implied, because a
+          // second golden here is cheap and the reason there is not one is
+          // that the school capture already proves the PAINTING path; what is
+          // untested is only the two-pixel difference.
+          child: const LevelCard(
+            level: 8,
+            totalPoints: 3700,
+            track: Track.school,
+          ),
         ),
       );
       await tester.pumpAndSettle();

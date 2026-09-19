@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/router/app_router.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/catalog/screens/lectures_screen.dart';
@@ -496,5 +498,362 @@ void main() {
       );
       expect(find.text('Retry'), findsNothing);
     });
+  });
+
+  // -------------------------------------------------------------------------
+  /// edit3.md #9 — the tabs became a `SegmentedTrack`.
+  ///
+  /// The chip row is gone and the segments are EQUAL WIDTH inside one groove,
+  /// so a long label can no longer take just the space it wants. The first
+  /// build resolved that by shrinking the label; the owner's 2026-09-19 ruling
+  /// (`docs/DECISIONS.md` D-012) resolved it the other way — the label keeps
+  /// its size and the GROOVE gives way, scrolling when it has to.
+  ///
+  /// The cases below pin that ruling on the real screen, with the real
+  /// localised labels and the widest tab set the contract allows.
+  group('the segmented track (edit3 #9)', () {
+    /// The rendered segment boxes, in visual left-to-right order.
+    List<Rect> segmentRects(WidgetTester tester) => tester
+        .widgetList<Semantics>(
+          find.descendant(
+            of: find.byType(QuizTypeTabs),
+            matching: find.byType(Semantics),
+          ),
+        )
+        .where((s) => s.properties.inMutuallyExclusiveGroup ?? false)
+        .map((s) => tester.getRect(find.byWidget(s)))
+        .toList();
+
+    testWidgets('one segment per server quiz type, all the same width', (
+      tester,
+    ) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      final rects = segmentRects(tester);
+      expect(rects, hasLength(3), reason: 'the fixture lists three types');
+      // Equal width to within a rounding pixel — `Expanded` divides the track.
+      for (final r in rects) {
+        expect(r.width, closeTo(rects.first.width, 1));
+        expect(r.height, 44, reason: 'the frame is 44 tall');
+      }
+    });
+
+    testWidgets('the labels take the READ tokens, not the old chip colours', (
+      tester,
+    ) async {
+      // Read off the Properties panel 2026-09-19 (DESIGN_ISSUES #77). The idle
+      // LIGHT value is the one that matters: `#384F47`, a dark green, where the
+      // chips this replaced drew the grey `textSecondary` `#2C2C2C`. Had the
+      // §7.6.2 fallback shipped, that grey would have been permanent.
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      final light = AppTheme.light.extension<AppColors>()!;
+      expect(light.pillTrackLabel, const Color(0xFF384F47));
+      expect(light.pillTrackSelectedLabel, const Color(0xFFFCFBF9));
+      expect(
+        AppTheme.dark.extension<AppColors>()!.pillTrackLabel,
+        const Color(0xFFFCFBF9),
+      );
+
+      // And the widget actually reads them: 'Normal' is idle here, 'Midterm'
+      // is not selected either, so both carry the idle colour.
+      expect(
+        tester.widget<Text>(find.text('Midterm')).style!.color,
+        light.pillTrackLabel,
+      );
+      expect(
+        tester.widget<Text>(find.text('Normal')).style!.color,
+        light.pillTrackSelectedLabel,
+        reason: 'Normal is the selected segment on first load',
+      );
+    });
+
+    testWidgets('tapping a segment SELECTS it, in semantics', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      Set<String> selectedLabels() => tester
+          .widgetList<Semantics>(
+            find.descendant(
+              of: find.byType(QuizTypeTabs),
+              matching: find.byType(Semantics),
+            ),
+          )
+          .where((s) => s.properties.selected ?? false)
+          .map((s) => s.properties.label!)
+          .toSet();
+
+      // Exactly one is selected at a time — the control is a radio group, and
+      // `inMutuallyExclusiveGroup` is a promise a screen reader relies on.
+      expect(selectedLabels(), {'Normal'});
+
+      await tester.tap(find.text('Midterm'));
+      await tester.pumpAndSettle();
+      expect(selectedLabels(), {'Midterm'});
+    });
+
+    testWidgets('RTL orders the segments right-to-left', (tester) async {
+      await pumpCatalogApp(
+        tester,
+        catalog: catalog,
+        track: Track.university,
+        locale: 'ar',
+      );
+      await openLearnTab(tester, locale: 'ar');
+      await tester.tap(find.text('Biology'));
+      await tester.pumpAndSettle();
+
+      // The FIRST server type must sit at the trailing (right) edge in Arabic.
+      // The primitive gets this from `Row` + `Directionality`; the assertion
+      // exists because "it is a Row" is exactly the kind of claim that stops
+      // being true when someone reaches for `Positioned` later.
+      final first = tester.getRect(find.text('عادي'));
+      final second = tester.getRect(find.text('منتصف الترم'));
+      expect(first.center.dx, greaterThan(second.center.dx));
+    });
+
+    /// **Run at a real phone width, with the WIDEST tab set.**
+    ///
+    /// The first version of these ran at the default 800 dp test surface with
+    /// the fixture's three quiz types, and asserted the track's own geometry.
+    /// It could not fail: `Expanded` fixes the segment widths and the
+    /// primitive's `FittedBox(scaleDown)` guarantees no `RenderFlex` overflow
+    /// at any width, so "no exception, track is 760 wide" is true however long
+    /// a label is. It measured the test surface.
+    ///
+    /// What §7.6.4 actually asks is whether the longest labels FIT — and the
+    /// case that matters is the one the fixture omits: a subject offering all
+    /// FOUR contract quiz types, on a 375 dp phone, in Arabic. The tabs come
+    /// from the server's `tree.quizTypes`, so four is a real payload.
+    ///
+    /// What these pin is the label's PAINTED size against its LAID-OUT size,
+    /// which is the only place the scale-down is visible.
+    const phone = Size(375, 800);
+
+    /// The painted (post-`FittedBox`) and laid-out (pre-scale) heights of one
+    /// label. `getRect` walks the ancestor transforms and so sees the scale;
+    /// `getSize` is the unscaled box the text asked for.
+    (double painted, double laid) glyph(WidgetTester tester, String label) => (
+      tester.getRect(find.text(label)).height,
+      tester.getSize(find.text(label)).height,
+    );
+
+    /// The text scale is applied AFTER the drill-down, on purpose.
+    ///
+    /// `SubjectCard` overflows its 89 dp box by 9.1 dp at 1.3x on a 375 dp
+    /// phone — measured, and measured to be **exactly the same 9.1 dp at
+    /// `HEAD` before this wave**, so it is the pre-existing item in
+    /// `docs/RESPONSIVE.md`'s unapplied queue and not edit3's doing. Scaling
+    /// the Subjects grid on the way past would drag that failure into a test
+    /// about the tabs and make it impossible to tell the two apart.
+    /// Errors raised while the text scale is applied, captured instead of
+    /// being reported, so a test can assert WHICH ones happened.
+    late List<String> scaledErrors;
+
+    Future<void> openLectures(
+      WidgetTester tester, {
+      required String locale,
+      required double scale,
+      required List<String> quizTypes,
+    }) async {
+      await tester.binding.setSurfaceSize(phone);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree(quizTypes: quizTypes));
+
+      await pumpCatalogApp(
+        tester,
+        catalog: catalog,
+        track: Track.university,
+        locale: locale,
+      );
+      await openLearnTab(tester, locale: locale);
+      await tester.tap(find.text('Biology'));
+      await tester.pumpAndSettle();
+
+      // Intercept rather than let the binding record them: the Lectures screen
+      // has a KNOWN pre-existing overflow at this scale (see the caller), and
+      // an unconsumed exception fails a widget test outright no matter what it
+      // asserts. Captured here so the caller can prove it is only that one.
+      scaledErrors = <String>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) => scaledErrors.add(details.toString());
+      addTearDown(() => FlutterError.onError = previous);
+
+      tester.platformDispatcher.textScaleFactorTestValue = scale;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpAndSettle();
+    }
+
+    const allFour = <String>[
+      'normal',
+      'midTermRevision',
+      'finalRevision',
+      'practicalRevision',
+    ];
+
+    for (final (locale, scale) in [
+      ('en', 1.0),
+      ('en', 1.3),
+      ('ar', 1.0),
+      ('ar', 1.3),
+    ]) {
+      testWidgets('$locale at text scale $scale: four tabs stay equal, and '
+          'every label keeps its full size', (tester) async {
+        await openLectures(
+          tester,
+          locale: locale,
+          scale: scale,
+          quizTypes: allFour,
+        );
+
+        // The Lectures screen already throws at `en` 1.3x on a 375 dp phone:
+        // `TreeListRow`'s progress row (bar + caption) overflows by 7 and 20
+        // dp. Measured at `HEAD` before this wave and again after it, the
+        // exceptions are IDENTICAL in count and in kind — another unapplied
+        // `docs/RESPONSIVE.md` item, not edit3's doing, and edit3 §10 does not
+        // put that row's layout in scope.
+        //
+        // So the assertion is not "nothing threw" but "nothing NEW threw, and
+        // nothing thrown came from the tabs" — which is the part this wave is
+        // answerable for.
+        for (final e in scaledErrors) {
+          expect(
+            e,
+            contains('tree_list_row.dart'),
+            reason: 'an overflow from outside TreeListRow belongs to edit3',
+          );
+        }
+        expect(
+          scaledErrors.where((e) => e.contains('segmented_track.dart')),
+          isEmpty,
+        );
+        expect(
+          scaledErrors.where((e) => e.contains('quiz_type_tabs.dart')),
+          isEmpty,
+        );
+
+        final rects = segmentRects(tester);
+        expect(rects, hasLength(4));
+        // Min/max, not first/last: the list is in WIDGET order, and in Arabic
+        // the first segment is the rightmost one.
+        final left = rects.map((r) => r.left).reduce(min);
+        final right = rects.map((r) => r.right).reduce(max);
+        // `>=`, not `closeTo`, and this is the D-012 change. The groove is
+        // never NARROWER than the space it is given; when the labels do not
+        // fit it is WIDER, and that overflow is scrollable rather than being
+        // absorbed by shrinking the type.
+        expect(right - left, greaterThanOrEqualTo(375 - 40 - 1));
+        for (final r in rects) {
+          expect(r.height, 44, reason: 'the frame keeps its 44 dp height');
+          expect(r.width, closeTo(rects.first.width, 1));
+        }
+
+        // The ruling itself, per label: painted size == laid-out size.
+        for (final label
+            in locale == 'ar'
+                ? const ['عادي', 'منتصف الترم', 'نهائي', 'عملي']
+                : const ['Normal', 'Midterm', 'Final', 'Practice']) {
+          final (painted, laid) = glyph(tester, label);
+          expect(painted, closeTo(laid, 0.01), reason: '$label at $scale');
+        }
+      });
+    }
+
+    testWidgets('no label is scaled AT ALL — D-012', (tester) async {
+      // This test used to read "only ever scaled DOWN, never up", and guarded
+      // `BoxFit.scaleDown` against being loosened to `BoxFit.contain`. The
+      // ruling removed the `FittedBox` outright, so the property to hold is now
+      // the stronger one: no scale in either direction, on any label, in the
+      // worst configuration this screen can be handed.
+      await openLectures(tester, locale: 'ar', scale: 1.0, quizTypes: allFour);
+
+      for (final label in ['عادي', 'منتصف الترم', 'نهائي', 'عملي']) {
+        final (painted, laid) = glyph(tester, label);
+        expect(painted, closeTo(laid, 0.01), reason: label);
+      }
+    });
+
+    testWidgets(
+      'the worst label keeps its full size, and the GROOVE gives way — #81',
+      (tester) async {
+        // ✅ The #81 ratchet, inverted by the ruling.
+        //
+        // It used to pin a defect in place: the Arabic "منتصف الترم" painted at
+        // **10.2 dp** against a 16.0 dp layout box, held there so it could not
+        // get worse while the owner decided. The decision came back on the side
+        // of readability, so the same measurement now asserts that the shrink
+        // is gone — same label, same width, same tab set.
+        await openLectures(
+          tester,
+          locale: 'ar',
+          scale: 1.0,
+          quizTypes: allFour,
+        );
+
+        final (painted, laid) = glyph(tester, 'منتصف الترم');
+        expect(laid, 16.0);
+        expect(painted, 16.0, reason: 'painted 10.2 before D-012');
+
+        // ...and the cost lands where the ruling says to put it: the groove is
+        // wider than the phone and the overflow scrolls.
+        //
+        // ⚠️ WIDTHS HERE ARE THE TEST FONT'S, NOT INTER'S. The test binding
+        // draws every glyph as a box of the font size, which is ~1.5x wider
+        // than Inter at the same px — Figma reads "Normal" at 49 px where this
+        // lays it out at 72. So this asserts that the fallback ENGAGES, not
+        // where it engages on a device. Only a device pass settles that.
+        final rects = segmentRects(tester);
+        final span =
+            rects.map((r) => r.right).reduce(max) -
+            rects.map((r) => r.left).reduce(min);
+        expect(span, greaterThan(375));
+
+        // That the overflow is DRAGGABLE is asserted in the primitive's own
+        // test, not here. Dragging inside this harness leaves a scroll offset
+        // that the tear-down's surface reset has to correct after
+        // `FlutterError.onError` has already been restored, which reports as a
+        // failure after the test completed — harness noise, not a finding.
+      },
+    );
+
+    testWidgets(
+      'raising the text scale enlarges EVERY label, the worst included — #81',
+      (tester) async {
+        // The sharp end of #81, and the reason it was filed as an
+        // accessibility defect rather than a cosmetic one: a student who set a
+        // LARGER system text size used to get no change at all on this label
+        // while the label beside it grew — a row with a 21 dp label next to a
+        // 10 dp one. The fixed segment handed back exactly what the scale
+        // added.
+        await openLectures(
+          tester,
+          locale: 'ar',
+          scale: 1.0,
+          quizTypes: allFour,
+        );
+        final atOne = glyph(tester, 'منتصف الترم').$1;
+        final shortAtOne = glyph(tester, 'عادي').$1;
+
+        await openLectures(
+          tester,
+          locale: 'ar',
+          scale: 1.3,
+          quizTypes: allFour,
+        );
+        final atOneThree = glyph(tester, 'منتصف الترم').$1;
+        final shortAtOneThree = glyph(tester, 'عادي').$1;
+
+        expect(shortAtOneThree, greaterThan(shortAtOne));
+        expect(atOneThree, greaterThan(atOne));
+        // The same factor, which is what makes the row read as ONE type scale.
+        // The old build's failure shows up here as 1.0 against 1.3.
+        expect(atOneThree / atOne, closeTo(shortAtOneThree / shortAtOne, 0.01));
+      },
+    );
   });
 }

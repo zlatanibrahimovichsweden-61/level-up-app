@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 import 'catalog_scaffold.dart';
 
 /// One row of the drill-down lists · Figma `337:5926` (Units `337:5894`,
@@ -86,11 +88,15 @@ class TreeListRow extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
     final (fill, border, content, badgeFill) = switch (palette) {
+      // Its own four tokens since 2026-09-19, read off the row frames rather
+      // than borrowed from the card and field palettes: the light hairline is
+      // the green `#4B675E`, not the grey `fieldBorder`, and the light disc is
+      // the lavender `#F4E6FF`, not `cardFill` (edit3.md #42).
       TreeRowPalette.catalog => (
-        ext.catalogCardFill,
-        ext.fieldBorder,
+        ext.treeRowFill,
+        ext.treeRowBorder,
         ext.textPrimary,
-        ext.cardFill,
+        ext.treeRowBadgeFill,
       ),
       // Every Mistakes value comes from the Mistakes palette, never the
       // catalog's: in light the foreground is the green the pink needs, and in
@@ -199,16 +205,23 @@ class TreeListRow extends StatelessWidget {
   }
 }
 
-/// The frame's 40dp numbered circle (`337:5928`).
+/// The frame's 40dp numbered circle (`337:5928` catalog, `404:7767` Mistakes).
 ///
-/// The disc colour arrives as [fill] from the row's palette: `cardFill` on the
-/// catalog, [AppColors.mistakesBadgeFill] on Mistakes.
+/// The disc colour arrives as [fill] from the row's palette:
+/// [AppColors.treeRowBadgeFill] on the catalog, [AppColors.mistakesBadgeFill]
+/// on Mistakes.
 ///
 /// This badge used to keep `cardFill` on both palettes, because the Mistakes
 /// disc had not been read. The dark one now has (`404:7767`, `#27282C` at 20%)
 /// and it differs from dark `cardFill`, so it is a token of its own. The light
 /// Mistakes disc is still unread and keeps the value it always shipped with.
 /// The digit follows the row's content colour.
+///
+/// **The disc is the one part of this row that is a raised surface.** In dark
+/// both palettes wash it to 20% and light it with Glass **G5**; the row
+/// underneath is opaque and flat on both canvases, so the rim is the only
+/// thing separating the disc from it. Light has no Glass at all, and the
+/// primitive draws none — `treeRowBadgeGlass` is null there.
 class _IndexBadge extends StatelessWidget {
   const _IndexBadge({
     required this.index,
@@ -222,27 +235,33 @@ class _IndexBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final elevation = Theme.of(context).extension<AppElevation>()!;
+
+    return ElevatedSurface(
       width: 40,
       height: 40,
-      alignment: AlignmentDirectional.center,
-      decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
-      child: Text(
-        // Locale-aware formatting — grouping separators, not digit shapes.
-        //
-        // This comment used to claim Arabic renders ١، ٢، ٣ rather than 1, 2,
-        // 3. It does not. `intl` formats `ar` with WESTERN digits in this app,
-        // which two tests already assert (`lectures_screen_test.dart:294`,
-        // `profile_screen_test.dart:534`) and which was seen on a Pixel 8 on
-        // 2026-09-12: the Arabic Mistakes tree draws its badges as 1 and 2.
-        //
-        // `formatDecimal` is still the right call — it is what applies the
-        // locale's grouping to numbers large enough to need it. Do not
-        // "restore" Arabic-Indic digits here on the strength of the old
-        // comment; that would be a product decision, and the shipped
-        // behaviour is the one under test.
-        MaterialLocalizations.of(context).formatDecimal(index),
-        style: AppType.h4.copyWith(color: content),
+      shape: const CircleBorder(),
+      color: fill,
+      glass: elevation.treeRowBadgeGlass,
+      child: Align(
+        alignment: AlignmentDirectional.center,
+        child: Text(
+          // Locale-aware formatting — grouping separators, not digit shapes.
+          //
+          // This comment used to claim Arabic renders ١، ٢، ٣ rather than 1, 2,
+          // 3. It does not. `intl` formats `ar` with WESTERN digits in this app,
+          // which two tests already assert (`lectures_screen_test.dart:294`,
+          // `profile_screen_test.dart:534`) and which was seen on a Pixel 8 on
+          // 2026-09-12: the Arabic Mistakes tree draws its badges as 1 and 2.
+          //
+          // `formatDecimal` is still the right call — it is what applies the
+          // locale's grouping to numbers large enough to need it. Do not
+          // "restore" Arabic-Indic digits here on the strength of the old
+          // comment; that would be a product decision, and the shipped
+          // behaviour is the one under test.
+          MaterialLocalizations.of(context).formatDecimal(index),
+          style: AppType.h4.copyWith(color: content),
+        ),
       ),
     );
   }
@@ -253,7 +272,8 @@ class _IndexBadge extends StatelessWidget {
 /// An enum rather than three `Color` parameters, so the palette stays a
 /// decision the design system makes and the call sites only name a role.
 enum TreeRowPalette {
-  /// The catalog drill-down - `catalogCardFill` on `fieldBorder`.
+  /// The catalog drill-down - [AppColors.treeRowFill] on
+  /// [AppColors.treeRowBorder].
   catalog,
 
   /// The Mistakes drill-down - the pink `404:6642` row in light, the dark

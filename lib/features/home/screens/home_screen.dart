@@ -81,9 +81,19 @@ class _Loaded extends StatelessWidget {
           HomeHeader(name: profile.name, avatarUrl: profile.avatar.url),
           const SizedBox(height: 25),
           // Server-authoritative, straight from GET /me — never recomputed.
-          LevelCard(level: profile.level, totalPoints: profile.points.total),
+          // `track` is passed for the dark back-light only: the two frames'
+          // ellipses sit two pixels apart and neither is derived.
+          LevelCard(
+            level: profile.level,
+            totalPoints: profile.points.total,
+            track: profile.track,
+          ),
           const SizedBox(height: 25),
-          ComingSoonSection(title: l10n.dailyTasks),
+          ComingSoonSection(
+            title: l10n.dailyTasks,
+            surface: ComingSoonSurface.dailyTasks,
+            track: profile.track,
+          ),
           const SizedBox(height: 25),
           // University only (`125:2373`) — the school frame has no such section.
           // The frame draws five shortcut cards (Flash Card, Normal EX, Midterm,
@@ -93,7 +103,14 @@ class _Loaded extends StatelessWidget {
           // all (docs/DESIGN_ISSUES.md #18). Stubbed rather than drawn as dead
           // cards a student can tap into nothing.
           if (profile.track == Track.university) ...[
-            ComingSoonSection(title: l10n.learningTools),
+            // `plain`, not a section surface of its own: the frame's five
+            // Learning Tools tiles are recorded unbuilt (DESIGN_ISSUES #20,
+            // edit3.md #43) and there is no surface behind them to take.
+            ComingSoonSection(
+              title: l10n.learningTools,
+              surface: ComingSoonSurface.plain,
+              track: profile.track,
+            ),
             const SizedBox(height: 25),
           ],
           // TODO(day7): the university frame's row reads "12 lecture left" where
@@ -101,9 +118,17 @@ class _Loaded extends StatelessWidget {
           // which is quiz-history data we deliberately do not invent — so the
           // noun has nowhere to render today. Whoever builds the real card must
           // pick it by track, not hardcode "lesson".
-          ComingSoonSection(title: l10n.continueLearning),
+          ComingSoonSection(
+            title: l10n.continueLearning,
+            surface: ComingSoonSurface.continueLearning,
+            track: profile.track,
+          ),
           const SizedBox(height: 25),
-          ComingSoonSection(title: l10n.topStudent),
+          ComingSoonSection(
+            title: l10n.topStudent,
+            surface: ComingSoonSurface.topStudent,
+            track: profile.track,
+          ),
           const SizedBox(height: 25),
           const HomeBanner(),
         ],

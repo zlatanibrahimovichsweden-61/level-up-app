@@ -27,6 +27,7 @@ class SegmentedTrackStyle {
     this.trackInsetShadows = const [],
     this.selectedInsetShadows = const [],
     this.idleSegmentColor,
+    this.segmentPadding = const EdgeInsetsDirectional.symmetric(horizontal: 10),
   });
 
   final Color trackColor;
@@ -50,6 +51,20 @@ class SegmentedTrackStyle {
   final Color idleLabelColor;
   final Color selectedLabelColor;
 
+  /// The gap between a segment's edge and its label. Figma reads `Padding 10`
+  /// on BOTH segment frames — idle `180:5338`, selected `180:5340` — each of
+  /// them an auto-layout frame at `Fill (72.4px) x Fixed (44px)` inside the
+  /// 362-wide groove.
+  ///
+  /// Horizontal only, on purpose. The frame's height is fixed at 44 and its
+  /// label is 17 tall, so the vertical 10 drives nothing there either;
+  /// modelling it here would only eat the headroom a large text scale needs.
+  ///
+  /// It became load-bearing when the labels stopped being shrunk: a segment in
+  /// the scrolling fallback is exactly as wide as the longest label PLUS this,
+  /// so this is what keeps two labels from touching.
+  final EdgeInsetsGeometry segmentPadding;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -63,7 +78,8 @@ class SegmentedTrackStyle {
           listEquals(other.selectedInsetShadows, selectedInsetShadows) &&
           other.labelStyle == labelStyle &&
           other.idleLabelColor == idleLabelColor &&
-          other.selectedLabelColor == selectedLabelColor;
+          other.selectedLabelColor == selectedLabelColor &&
+          other.segmentPadding == segmentPadding;
 
   @override
   int get hashCode => Object.hash(
@@ -77,6 +93,7 @@ class SegmentedTrackStyle {
     labelStyle,
     idleLabelColor,
     selectedLabelColor,
+    segmentPadding,
   );
 }
 
@@ -84,6 +101,25 @@ class SegmentedTrackStyle {
 ///
 /// RTL comes free: the segments are a `Row`, so the first segment is the
 /// leading one on either canvas — no mirroring code, and nothing to forget.
+///
+/// ---
+///
+/// **A label is never shrunk to make it fit** — owner ruling 2026-09-19,
+/// `docs/DECISIONS.md` D-012.
+///
+/// The first build wrapped every label in a `FittedBox(BoxFit.scaleDown)`,
+/// which is what Figma's fixed 362 x 44 groove implies when the labels are
+/// longer than the groove can hold. It cost two things the ruling puts above
+/// that geometry: with four quiz types on a 375 dp phone the longest Arabic
+/// label painted at **10.2 dp** inside a 16 dp box, and raising the system
+/// text size from 1.0x to 1.3x moved it by **nothing at all** — a fixed
+/// segment handed straight back whatever the scale added
+/// (`docs/DESIGN_ISSUES.md` #81).
+///
+/// So the track keeps the design's shape and gives up only its fixed WIDTH.
+/// Segments stay equal, every label paints at its full scaled size, and when
+/// the labels genuinely do not fit the track scrolls — which is what the chip
+/// row this replaced already did, on this same screen.
 class SegmentedTrack<T> extends StatelessWidget {
   const SegmentedTrack({
     super.key,
@@ -106,6 +142,13 @@ class SegmentedTrack<T> extends StatelessWidget {
   final Key? Function(T segment)? keyOf;
 
   final SegmentedTrackStyle style;
+
+  /// Figma's 44, and fixed rather than a minimum.
+  ///
+  /// Only the WIDTH was costing readability. Vertically the label has room to
+  /// roughly **3x** before it meets the groove — measured, not assumed, and far
+  /// past the 1.3x that `docs/RESPONSIVE.md` tests at — so letting the groove breathe
+  /// vertically as well would buy nothing and would change a Figma value for it.
   final double height;
 
   /// The existing `ScopeToggle`'s duration, kept so the two controls do not
@@ -116,7 +159,7 @@ class SegmentedTrack<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     if (segments.isEmpty) return const SizedBox.shrink();
 
-    return ElevatedSurface(
+    final track = ElevatedSurface(
       height: height,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(style.trackRadius),
@@ -137,6 +180,40 @@ class SegmentedTrack<T> extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+
+    // Three mechanisms, each doing one job; the `LayoutBuilder` is only there
+    // to hand the third one the width it has to work with.
+    //
+    // `IntrinsicWidth` asks the `Row` how wide it WANTS to be. A row of flex-1
+    // children answers `n x widest child` — equal segments sized to the
+    // longest label, which is the same "Fill" rule the Figma frame uses, and
+    // the reason nothing here has to measure a `TextPainter` by hand.
+    //
+    // `minWidth` puts the groove back to the full available width whenever
+    // that is the larger of the two. This is the common case and it lays out
+    // exactly as it did before the ruling: one groove spanning the row, the
+    // segments dividing it equally, nothing to scroll.
+    //
+    // `SingleChildScrollView` is therefore inert until the labels genuinely do
+    // not fit, at which point the groove runs past the edge and the overflow
+    // is visible and draggable instead of being absorbed by shrinking type.
+    // In RTL it starts at the trailing edge on its own, for the same reason
+    // the `Row` does.
+    //
+    // The selected segment never needs scrolling into view: on first build it
+    // is the leading one, and after that it is whichever one the student just
+    // tapped, which they could only tap because it was on screen.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: constraints.hasBoundedWidth ? constraints.maxWidth : 0.0,
+          ),
+          child: IntrinsicWidth(child: track),
+        ),
       ),
     );
   }
@@ -170,6 +247,12 @@ class _Segment<T> extends StatelessWidget {
       // The label here IS the child's text, so without this a screen reader
       // announces the segment twice.
       excludeSemantics: true,
+      // Excluding the subtree also drops the `GestureDetector`'s tap ACTION,
+      // which left this node a button carrying no actions at all: a screen
+      // reader could announce which quiz type was selected and offer no way to
+      // change it. Re-declared here rather than by dropping the exclusion,
+      // which would bring the double announcement back.
+      onTap: onTap,
       // The whole segment is the target, not just the label — a 44pt-high
       // segment whose tappable area is the text is a 12pt-high target.
       child: GestureDetector(
@@ -191,12 +274,16 @@ class _Segment<T> extends StatelessWidget {
               style.selectedInsetShadows,
               t,
             ),
+            // No `FittedBox`. The label is laid out at whatever size the
+            // style and the student's text scale ask for, and the track above
+            // widens to hold it — see the class doc and D-012.
             child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: style.segmentPadding,
                 child: Text(
                   label,
                   maxLines: 1,
+                  softWrap: false,
                   style: style.labelStyle.copyWith(
                     color: Color.lerp(
                       style.idleLabelColor,

@@ -35,7 +35,6 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.bellRing,
     required this.bellGlyph,
     required this.bellUnreadDot,
-    required this.catalogCardFill,
     required this.catalogTrack,
     required this.sheetFill,
     required this.onboardingIllustrationMask,
@@ -103,6 +102,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.treeRowBadgeFill,
     required this.pillTrackFill,
     required this.pillTrackSelectedFill,
+    required this.pillTrackLabel,
+    required this.pillTrackSelectedLabel,
+    required this.continueLearningContent,
     required this.aiPanelOuterFill,
     required this.aiPanelOuterBorder,
     required this.aiPanelCardFill,
@@ -220,11 +222,6 @@ class AppColors extends ThemeExtension<AppColors> {
   // the dark values are Figma-verbatim and the light values reuse an approved
   // light token rather than an invented hex.
 
-  /// The subject card / drill-down row surface. Figma dark `#27282C` — an
-  /// OPAQUE raised surface, unlike [cardFill] (a 20% wash that composites to the
-  /// background), so the two are genuinely different tokens, not a duplicate.
-  final Color catalogCardFill;
-
   /// Unfilled track of the per-subject progress bar. Figma dark `#ECECEC` — a
   /// LIGHT track on a dark card, the inverse of [progressTrack] on Home. Kept
   /// separate so correcting one bar never silently restyles the other.
@@ -310,8 +307,8 @@ class AppColors extends ThemeExtension<AppColors> {
   // theme. A wrong answer is red in dark mode too.
 
   /// The un-chosen option tile's surface, and the AI panel's own surface.
-  /// Figma light `#FCFBF9`; dark reuses [catalogCardFill], the file's approved
-  /// opaque raised surface.
+  /// Figma light `#FCFBF9`; dark is the same opaque `#27282C` the subject card
+  /// and the tree rows use — it had no dark frame of its own to read.
   final Color quizOptionFill;
 
   /// Hairline around an ungraded option tile and the AI panel, and the colour
@@ -761,7 +758,10 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color? subjectSearchTopBorder;
 
   /// The subject card. `135:618` / `337:5732`. Light is pure `#FFFFFF`, not
-  /// the cream, which is why it supersedes [catalogCardFill] for the card.
+  /// the cream — which is why it replaced the shared `catalogCardFill` the card
+  /// used to borrow, and why that token no longer exists: its last three
+  /// consumers each turned out to have a frame value of their own (edit3.md
+  /// §7.9.4).
   final Color subjectCardFill;
 
   /// The Mistakes pill in the Subjects header. `404:7421`.
@@ -787,6 +787,31 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// The selected segment of that track. `#AE87E7` on both canvases.
   final Color pillTrackSelectedFill;
+
+  /// An UNSELECTED segment's label. Light `180:5339` is a dark green, NOT the
+  /// grey [textSecondary] the hand-rolled chips used to draw; dark `337:11091`
+  /// is the cream. Both are Inter 500 / 14 with a 100% line height.
+  final Color pillTrackLabel;
+
+  /// The SELECTED segment's label — `#FCFBF9` on both canvases (`180:5341`,
+  /// `337:11095`).
+  ///
+  /// It is the same value `colorScheme.onPrimary` carries, and it is still its
+  /// own token: this one is a reading off `Frame 1000003007`, and the day the
+  /// designer fixes the 2.74:1 contrast it fails against `#AE87E7`
+  /// (DESIGN_ISSUES #77) it must move WITHOUT dragging every filled CTA in the
+  /// app with it.
+  final Color pillTrackSelectedLabel;
+
+  /// Foreground on Home's Continue Learning card — `#2B2B2B` on both canvases
+  /// and both tracks, read off all four frames (light school `308:4190`, dark
+  /// school `337:5435`/`337:5436`, light university `309:5633`).
+  ///
+  /// A near-black on a lilac card, which is why it cannot be [mutedText]: that
+  /// grey measures **1.00:1** against the dark school fill `#C4A8E3` — the same
+  /// luminance, i.e. invisible — where this measures 6.78:1. See
+  /// DESIGN_ISSUES #79.
+  final Color continueLearningContent;
 
   /// The AI explanation panel's outer container. `159:1811` / `337:9270`.
   final Color aiPanelOuterFill;
@@ -909,9 +934,6 @@ class AppColors extends ThemeExtension<AppColors> {
     bellRing: Color(0xFF4B675E), // Figma 59:1466 — same in both canvases
     bellGlyph: Color(0xFF4B675E), // Figma 59:1466
     bellUnreadDot: Color(0xFFE67E22), // Figma 59:1466
-    catalogCardFill: Color(
-      0xFFFDFDFD,
-    ), // = light fieldFill (no light Learn frame)
     catalogTrack: Color(
       0xFFD1D1D1,
     ), // = light fieldBorder (no light Learn frame)
@@ -986,6 +1008,9 @@ class AppColors extends ThemeExtension<AppColors> {
     treeRowBadgeFill: Color(0xFFF4E6FF), // catalog row disc
     pillTrackFill: Color(0xFFECECEC), // Figma 180:5337
     pillTrackSelectedFill: Brand.purplePrimary, // #AE87E7 — same in both
+    pillTrackLabel: Color(0xFF384F47), // Figma 180:5339
+    pillTrackSelectedLabel: Color(0xFFFCFBF9), // Figma 180:5341
+    continueLearningContent: Color(0xFF2B2B2B), // Figma 308:4190
     aiPanelOuterFill: Color(0xFFFCFBF9), // Figma 159:1811
     aiPanelOuterBorder: Color(0xFF4B675E), // Figma 159:1811
     aiPanelCardFill: Color(0xFFFCFBF9), // Figma 159:1826
@@ -1036,7 +1061,6 @@ class AppColors extends ThemeExtension<AppColors> {
     bellRing: Color(0xFF4B675E), // Figma 337:5330
     bellGlyph: Color(0xFFFCFBF9), // Figma 337:5330
     bellUnreadDot: Brand.purplePrimary, // #AE87E7 — Figma 337:5330
-    catalogCardFill: Color(0xFF27282C), // Figma 337:5732
     catalogTrack: Color(0xFFECECEC), // Figma 337:5744
     sheetFill: Color(0x33232628), // rgba(35,38,40,0.2) — Figma 337:15643
     // Figma 337:19256 `Rectangle 6429` — #232428 at 100%, i.e. [background].
@@ -1046,7 +1070,7 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to light ON PURPOSE — a success badge must not follow the
     // green→purple accent flip. See the field doc above.
     successBadge: Color(0xFF22C55E),
-    quizOptionFill: Color(0xFF27282C), // = dark catalogCardFill (no dark frame)
+    quizOptionFill: Color(0xFF27282C), // = the dark card fill (no dark frame)
     quizOptionBorder: Color(
       0xFF4B675E,
     ), // Figma — kept in both, like the border above
@@ -1125,6 +1149,9 @@ class AppColors extends ThemeExtension<AppColors> {
     treeRowBadgeFill: Color(0x3327282C), // #27282C @20% — Figma 337:5926
     pillTrackFill: Color(0xFF232429), // Figma 337:8177
     pillTrackSelectedFill: Brand.purplePrimary, // #AE87E7 — same in both
+    pillTrackLabel: Color(0xFFFCFBF9), // Figma 337:11091
+    pillTrackSelectedLabel: Color(0xFFFCFBF9), // Figma 337:11095
+    continueLearningContent: Color(0xFF2B2B2B), // Figma 337:5435 — as light
     aiPanelOuterFill: Color(0x3327282C), // #27282C @20% — Figma 337:9270
     aiPanelOuterBorder: null, // no outer hairline in the dark frame
     aiPanelCardFill: Color(0x331A1A1A), // #1A1A1A @20% — Figma 337:9279
@@ -1175,7 +1202,6 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? bellRing,
     Color? bellGlyph,
     Color? bellUnreadDot,
-    Color? catalogCardFill,
     Color? catalogTrack,
     Color? sheetFill,
     Color? onboardingIllustrationMask,
@@ -1243,6 +1269,9 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? treeRowBadgeFill,
     Color? pillTrackFill,
     Color? pillTrackSelectedFill,
+    Color? pillTrackLabel,
+    Color? pillTrackSelectedLabel,
+    Color? continueLearningContent,
     Color? aiPanelOuterFill,
     Color? aiPanelOuterBorder,
     Color? aiPanelCardFill,
@@ -1292,7 +1321,6 @@ class AppColors extends ThemeExtension<AppColors> {
       bellRing: bellRing ?? this.bellRing,
       bellGlyph: bellGlyph ?? this.bellGlyph,
       bellUnreadDot: bellUnreadDot ?? this.bellUnreadDot,
-      catalogCardFill: catalogCardFill ?? this.catalogCardFill,
       catalogTrack: catalogTrack ?? this.catalogTrack,
       sheetFill: sheetFill ?? this.sheetFill,
       // As with languagePillBorder, `??` cannot CLEAR this one; light takes
@@ -1373,6 +1401,11 @@ class AppColors extends ThemeExtension<AppColors> {
       pillTrackFill: pillTrackFill ?? this.pillTrackFill,
       pillTrackSelectedFill:
           pillTrackSelectedFill ?? this.pillTrackSelectedFill,
+      pillTrackLabel: pillTrackLabel ?? this.pillTrackLabel,
+      pillTrackSelectedLabel:
+          pillTrackSelectedLabel ?? this.pillTrackSelectedLabel,
+      continueLearningContent:
+          continueLearningContent ?? this.continueLearningContent,
       aiPanelOuterFill: aiPanelOuterFill ?? this.aiPanelOuterFill,
       aiPanelOuterBorder: aiPanelOuterBorder ?? this.aiPanelOuterBorder,
       aiPanelCardFill: aiPanelCardFill ?? this.aiPanelCardFill,
@@ -1435,7 +1468,6 @@ class AppColors extends ThemeExtension<AppColors> {
       bellRing: Color.lerp(bellRing, other.bellRing, t)!,
       bellGlyph: Color.lerp(bellGlyph, other.bellGlyph, t)!,
       bellUnreadDot: Color.lerp(bellUnreadDot, other.bellUnreadDot, t)!,
-      catalogCardFill: Color.lerp(catalogCardFill, other.catalogCardFill, t)!,
       catalogTrack: Color.lerp(catalogTrack, other.catalogTrack, t)!,
       sheetFill: Color.lerp(sheetFill, other.sheetFill, t)!,
       // Nullable like languagePillBorder, mirrored: Color.lerp fades the
@@ -1647,6 +1679,17 @@ class AppColors extends ThemeExtension<AppColors> {
       pillTrackSelectedFill: Color.lerp(
         pillTrackSelectedFill,
         other.pillTrackSelectedFill,
+        t,
+      )!,
+      pillTrackLabel: Color.lerp(pillTrackLabel, other.pillTrackLabel, t)!,
+      pillTrackSelectedLabel: Color.lerp(
+        pillTrackSelectedLabel,
+        other.pillTrackSelectedLabel,
+        t,
+      )!,
+      continueLearningContent: Color.lerp(
+        continueLearningContent,
+        other.continueLearningContent,
         t,
       )!,
       aiPanelOuterFill: Color.lerp(

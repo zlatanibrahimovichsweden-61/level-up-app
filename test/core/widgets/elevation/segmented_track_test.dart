@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/theme/app_typography.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/core/widgets/elevation/segmented_track.dart';
 
 void main() {
@@ -115,6 +117,42 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a screen-reader user can actually CHANGE the selection', (
+    tester,
+  ) async {
+    // `excludeSemantics: true` stops the label being announced twice — and it
+    // took the `GestureDetector`'s tap action out with the subtree, leaving a
+    // node that announced itself a button, announced which segment was
+    // selected, and offered no action to select another one. The quiz-type
+    // selector was unusable by a screen reader for exactly as long as this
+    // primitive has existed.
+    final handle = tester.ensureSemantics();
+    String? picked;
+    await tester.pumpWidget(
+      host(
+        segments: const ['MCQ', 'Essay'],
+        selected: 'MCQ',
+        onChanged: (s) => picked = s,
+      ),
+    );
+
+    final node = tester.getSemantics(find.byKey(const Key('segment-Essay')));
+    expect(
+      node.getSemanticsData().hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'a button with no actions is not a control',
+    );
+
+    // Driven through the semantics tree, not through a synthetic pointer — a
+    // pointer tap would pass whether or not the action is exposed. This throws
+    // by itself if the action is missing, so it is a second guard on the same
+    // regression rather than a restatement of the first.
+    tester.semantics.tap(find.semantics.byLabel('Essay'));
+    await tester.pumpAndSettle();
+    expect(picked, 'Essay');
+    handle.dispose();
+  });
+
   testWidgets('keyOf is honoured, so a screen keeps its existing test keys', (
     tester,
   ) async {
@@ -162,29 +200,169 @@ void main() {
     );
   });
 
-  group('no overflow at 1.3x text scale', () {
-    // The measured breaking point for this project's cards
-    // (docs/RESPONSIVE.md). Labels scale down rather than clip or overflow.
-    for (final entry in <String, List<String>>{
-      'en': ['Multiple choice', 'True or False', 'Essay'],
-      'ar': ['اختيار من متعدد', 'صح أو خطأ', 'مقال'],
-    }.entries) {
-      testWidgets(entry.key, (tester) async {
-        await tester.pumpWidget(
-          host(
-            segments: entry.value,
-            selected: entry.value.first,
-            onChanged: (_) {},
-            direction: entry.key == 'ar'
-                ? TextDirection.rtl
-                : TextDirection.ltr,
-            textScale: 1.3,
-          ),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-      });
+  /// The label is NEVER shrunk to fit · D-012 · DESIGN_ISSUES #81.
+  ///
+  /// This group is the guard on the owner's 2026-09-19 ruling: Arabic
+  /// readability and the student's text-scale setting outrank the Figma
+  /// groove's fixed width. Each test below fails if a `FittedBox` — or
+  /// anything else that trades type size for fit — comes back.
+  group('labels are laid out at full size, and the track yields instead', () {
+    /// The PAINTED height against the LAID-OUT height.
+    ///
+    /// `getRect` walks the ancestor transforms and so sees any scale applied
+    /// above the text; `getSize` is the box the text itself asked for. A
+    /// shrink-to-fit shows up as the first being smaller than the second, and
+    /// shows up nowhere else — which is why this pair, and not a pixel size,
+    /// is what these assert.
+    (double painted, double laid) glyph(WidgetTester tester, String label) => (
+      tester.getRect(find.text(label)).height,
+      tester.getSize(find.text(label)).height,
+    );
+
+    /// The groove, which is the first `ElevatedSurface` under the track.
+    double grooveWidth(WidgetTester tester) => tester
+        .getSize(
+          find
+              .descendant(
+                of: find.byType(SegmentedTrack<String>),
+                matching: find.byType(ElevatedSurface),
+              )
+              .first,
+        )
+        .width;
+
+    const long = ['A label that does not fit', 'Short', 'Middling'];
+
+    for (final scale in [1.0, 1.3]) {
+      for (final entry in <String, List<String>>{
+        'en': ['Multiple choice', 'True or False', 'Essay'],
+        'ar': ['اختيار من متعدد', 'صح أو خطأ', 'مقال'],
+      }.entries) {
+        testWidgets('${entry.key} at ${scale}x: nothing is scaled down', (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            host(
+              segments: entry.value,
+              selected: entry.value.first,
+              onChanged: (_) {},
+              direction: entry.key == 'ar'
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
+              textScale: scale,
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+
+          for (final label in entry.value) {
+            final (painted, laid) = glyph(tester, label);
+            expect(painted, closeTo(laid, 0.01), reason: '$label at ${scale}x');
+          }
+        });
+      }
     }
+
+    testWidgets('the text-scale setting reaches EVERY label, not just the '
+        'short ones', (tester) async {
+      // The sharp end of #81. At the old build a long label came back the same
+      // size at 1.3x as at 1.0x — the fixed segment handed back exactly what
+      // the scale added — while a short one beside it grew. A student who
+      // enlarged their text got a row with two different type sizes in it.
+      await tester.pumpWidget(
+        host(segments: long, selected: long.first, onChanged: (_) {}),
+      );
+      final before = [for (final l in long) glyph(tester, l).$1];
+
+      await tester.pumpWidget(
+        host(
+          segments: long,
+          selected: long.first,
+          onChanged: (_) {},
+          textScale: 1.3,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final after = [for (final l in long) glyph(tester, l).$1];
+
+      for (var i = 0; i < long.length; i++) {
+        expect(
+          after[i],
+          greaterThan(before[i]),
+          reason: '${long[i]} ignored the text scale',
+        );
+        // ...and they all grow by the SAME factor, which is the part that
+        // makes the row read as one type scale rather than three.
+        expect(after[i] / before[i], closeTo(after.first / before.first, 0.05));
+      }
+    });
+
+    testWidgets('labels that FIT lay out exactly as the frame draws them', (
+      tester,
+    ) async {
+      // The common case, and the one that must not have moved: the groove
+      // spans the full width it is given and the segments divide it equally.
+      // It is what keeps `quiz_type_tabs_dark.png` to a ONE-pixel move: the
+      // groove's width now arrives through `IntrinsicWidth` rather than
+      // straight off the parent's constraint, which rounds one edge pixel's
+      // blend by 1/255 and changes nothing else.
+      await tester.pumpWidget(
+        host(
+          segments: const ['One', 'Two', 'Six'],
+          selected: 'One',
+          onChanged: (_) {},
+        ),
+      );
+
+      expect(grooveWidth(tester), 362, reason: 'nothing to scroll');
+      final widths = [
+        for (final s in const ['One', 'Two', 'Six'])
+          tester.getSize(find.byKey(Key('segment-$s'))).width,
+      ];
+      for (final w in widths) {
+        expect(w, closeTo(362 / 3, 1));
+      }
+    });
+
+    testWidgets('labels that do NOT fit widen the groove past the viewport', (
+      tester,
+    ) async {
+      // The fallback: equal segments still, each one as wide as the LONGEST
+      // label plus the frame's own 10 dp padding, and the overflow becomes
+      // something the student can drag instead of something the type size
+      // absorbs.
+      await tester.pumpWidget(
+        host(segments: long, selected: long.first, onChanged: (_) {}),
+      );
+
+      expect(grooveWidth(tester), greaterThan(362));
+
+      final widths = [
+        for (final l in long)
+          tester.getSize(find.byKey(Key('segment-$l'))).width,
+      ];
+      for (final w in widths) {
+        expect(w, closeTo(widths.first, 1), reason: 'segments stay equal');
+      }
+      // Each segment holds its own label at full size, plus the padding.
+      final longest = tester.getSize(find.text(long.first)).width;
+      expect(widths.first, closeTo(longest + 20, 1));
+
+      // And the overflow is really draggable, not merely off the edge.
+      final before = tester
+          .getRect(find.byKey(const Key('segment-Short')))
+          .left;
+      await tester.drag(
+        find.byType(SegmentedTrack<String>),
+        const Offset(-60, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getRect(find.byKey(const Key('segment-Short'))).left,
+        lessThan(before),
+      );
+    });
   });
 
   testWidgets('an empty segment list renders nothing rather than throwing', (
@@ -213,5 +391,26 @@ void main() {
     );
     expect(twin, style);
     expect(twin.hashCode, style.hashCode);
+
+    // `segmentPadding` is part of that identity: it decides how wide a segment
+    // has to be, so a style that differs only there is a different layout.
+    expect(
+      twin.segmentPadding,
+      const EdgeInsetsDirectional.symmetric(horizontal: 10),
+      reason: "Figma's own segment padding, `180:5338` / `180:5340`",
+    );
+    final padded = SegmentedTrackStyle(
+      trackColor: AppColors.dark.pillTrackFill,
+      trackRadius: 22,
+      trackInsetShadows: AppElevation.dark.pillTrackInsetShadows,
+      selectedColor: AppColors.dark.pillTrackSelectedFill,
+      selectedRadius: 22,
+      selectedInsetShadows: AppElevation.dark.pillTrackSelectedInsetShadows,
+      labelStyle: AppType.h3,
+      idleLabelColor: AppColors.dark.textSecondary,
+      selectedLabelColor: AppColors.dark.background,
+      segmentPadding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+    );
+    expect(padded, isNot(style));
   });
 }
