@@ -2569,6 +2569,14 @@ it permanent on a control that always has exactly one selected item.
 Continue Learning card, #79) — offered as a precedent, not chosen here. If near-white on `#AE87E7`
 is intended, say so and this is recorded as accepted.
 
+> 🟠 **OWNER 2026-09-19 — routed to the designer, no colour chosen in the build.** The owner
+> declined to pick a replacement here and asked that the designer confirm first, on the grounds that
+> `#FCFBF9` on `#AE87E7` is their value and it reaches far past these tabs — the same pair is on
+> every filled CTA in the app, so changing it here would either fork the palette or ripple app-wide.
+> **The tabs therefore ship at Figma's measured 2.74:1**, which is a live AA failure on a control
+> that always has exactly one selected item, recorded rather than quietly corrected. **This is
+> question 2 of 2 for the designer**, alongside #81's question 1.
+
 **Also for the designer — a contradiction inside our own spec, not inside Figma.** edit3.md §5
 records the dark TRACK's inner shadow as `inset (0, −3) blur 4 black 25%`, and §12's QA checklist
 describes the result as "a top inner shadow". A negative-Y inner shadow casts along the **bottom**
@@ -2844,23 +2852,33 @@ Two more things the device settled, which no test could:
 - **The selected label's 2.74:1 is visible as low contrast** in the hand, not just on paper. That is
   #77's problem, unchanged by this entry.
 
-### Still open — designer, and none of it blocks the build
+### The four follow-up questions, answered by the owner 2026-09-19
 
-1. **Is scrolling the right fallback**, or should the track wrap to two lines at the cost of the
-   44 dp height? Scrolling was chosen because it needs no invented number and restores what this
-   screen already did.
-2. **Are the Arabic labels negotiable?** منتصف الترم is 11 characters where "Midterm" is 7. A
-   shorter Arabic term would keep the track tiling even at 1.3x. Deliberately **not** changed —
-   the ruling forbids touching copy without recording it, and this is the record of the question,
-   not of a change.
+Two are closed. **One is escalated to the designer and is the only thing still owed on this entry.**
+
+1. 🟠 **ESCALATED — is scrolling the right fallback, or should the track wrap to two lines?**
+   The owner's call is that the designer decides, not the build. **The scrolling implementation
+   holds unchanged in the meantime** — it is what ships today, and it was chosen because it needs
+   no invented number and restores what this screen already did before edit3. Wrapping is the
+   alternative, and its cost is explicit: Figma's 44 dp track height would have to become variable,
+   trading one Figma value for another and inventing the two-line metrics. **This is question 1 of
+   2 for whoever owns `Frame 1000003007`.**
+2. ✅ **CLOSED — the Arabic labels stay exactly as they are.** منتصف الترم is 11 characters where
+   "Midterm" is 7, and a shorter term would keep the track tiling even at 1.3x. The owner chose to
+   keep it: on a Pixel 8 all four labels **fit at the default text scale**, so the length only bites
+   at 1.3x, and the term is one students already recognise. No copy changed, and none will be
+   without a string supplied by the copy owner.
 3. Figma's own frame has almost no slack even in English: five tabs at 72.4 dp with 10 dp padding
-   leaves **52.4 dp** for a label, and "Normal" is **49**. The design was drawn at its limit.
-4. 🆕 **The overflow has no affordance** — noticed on the device, invisible in every test. When the
-   track does scroll, the dark groove `#232429` is within a shade of the dark page, so what a
-   student sees is a half-drawn word at the screen edge and nothing that says "swipe me". In light
-   the `#ECECEC` groove reads better. If scrolling stays the answer to 1, this needs a fade, an
-   arrow, or a partially-revealed next segment — none of which exists in the frame, so it is a
-   design question rather than something to invent.
+   leaves **52.4 dp** for a label, and "Normal" is **49**. The design was drawn at its limit. Not a
+   question — context for question 1.
+4. ✅ **CLOSED — the overflow gets no affordance, deliberately.** Noticed on the device, invisible
+   in every test: when the track does scroll, the dark groove `#232429` is within a shade of the
+   dark page, so what a student sees is a half-drawn word at the screen edge and nothing that says
+   "swipe me". In light the `#ECECEC` groove reads better. The owner's call is to leave it — it is
+   only reachable at 1.3x text scale, and a fade, an arrow or a peeking next segment are each a
+   visual element **the frame does not contain**, so building one would be inventing design. It
+   stays recorded here rather than built, and it is worth revisiting if question 1 comes back as
+   "keep scrolling".
 
 **Pinned by tests** in `lectures_screen_test.dart` and
 `test/core/widgets/elevation/segmented_track_test.dart`: painted == laid on every label, every
