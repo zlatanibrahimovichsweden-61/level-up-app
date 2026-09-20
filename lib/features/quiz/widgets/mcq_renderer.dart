@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import 'question_option_tile.dart';
@@ -35,19 +36,28 @@ class _McqBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
     final l10n = AppLocalizations.of(context);
     final question = presentation.question;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Question card — 308:5180.
+        // Question card — 308:5180. Flat in both canvases: no shadow and no
+        // Glass in either frame, only a hairline, and the hairline is the one
+        // thing that differs. Light `308:5180` draws 0.5 of the green
+        // `#4B675E`; dark `337:6434` draws **0.2** of lavender at 60% - the
+        // thinnest stroke anywhere in the design, which is why its width is a
+        // token rather than the 0.5 every other hairline uses.
         Container(
           padding: const EdgeInsetsDirectional.all(20.5),
           decoration: BoxDecoration(
             color: ext.quizOptionFill,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ext.quizOptionBorder, width: 0.5),
+            border: Border.all(
+              color: ext.quizQuestionCardBorder,
+              width: elevation.quizQuestionCardBorderWidth,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -423,6 +423,18 @@ perceptible against the cream canvas, which is why it was not worked around.
 wanted, we can add it as a Flutter `BoxShadow` — but then the SVG should be re-exported *without* the
 filter so the two do not double up.
 
+**The shadow's actual values, recorded 2026-09-20 so answering (b) needs no re-read.** edit5 item
+#53 asked for this and explicitly asked for **no change**, which is what happened. The `Vector`
+inside the badge is `#22C55E` and carries a drop shadow at **(2, 1.5), blur 4, black 25%** — the
+same in BOTH canvases, unlike every other surface in this wave, which is itself a small argument
+that it was never restyled for dark rather than deliberately matched.
+
+Two things make this a designer question rather than an implementation one. The filter is inside
+the asset, so adding a Flutter shadow without a re-export double-draws it; and the badge's export
+already pads its canvas by the shadow's own bleed (`inset[-1.79% -4.17% -3.93% -1.39%]` = 8dp per
+axis, which is why the widget is sized 152 × 148 for a 144 × 140 shape). A re-export without the
+filter changes that padding, and therefore the widget's size, so the two have to move together.
+
 ---
 
 ## 29. 🟠 The result screen has two buckets; a quiz can end with three
@@ -480,6 +492,23 @@ so there is no upgrade string to approve. Items 1 (weekly) and 2 (the bar) still
 **Built as:** both omitted.
 
 **Fix we need:** drop both, or specify the endpoints that would feed them.
+
+### The pool card's elevation, recorded 2026-09-20 so it is not re-read later
+
+edit4 item #45 is the same card seen from the elevation side, and it is **BLOCKED on the
+same thing** — `seif_fight.md` S15. The spec is written down here rather than lost, so that
+whoever builds it when S15 resolves does not have to go back to Figma:
+
+`Frame 5`, 363 × 127, radius 15.
+
+| Canvas | Fill | Shadow | Glass | Back-light |
+| --- | --- | --- | --- | --- |
+| Light | `#FCFBF9` | (0.5, 0.5) blur 4 black 25% | — | — |
+| Dark `337:6275` (uni `349:15412`) | `#27282C` @20% | the same black shadow | **G12** — frost 73 · refraction 0.80 · depth 20 · angle −45 · intensity 0.80 · dispersion **0.11** · splay **0.59** | B4 `348:7592` (uni B12 `349:15376`), 100 × 14 at (4, 6.81) |
+
+When S15 resolves: add `poolCard*` tokens to `AppColors`/`AppElevation` in the edit1 style
+with these citations and build it with `ElevatedSurface`. G12's dispersion and splay are not
+shared with any other node in the file, so it needs its own `GlassStyle` rather than G5.
 
 ---
 
@@ -738,7 +767,7 @@ explicitly out of scope.
 
 ---
 
-## 40. ✅ RESOLVED (rendering) — Sign Up_2 was correctly wired but rendered with stand-in art
+## 40. 🔴 Sign Up_2 — the stand-in art is RESOLVED; the SELECTED card is unreadable (2.19:1)
 
 **Where:** **`82:1785`** `Sign Up_2` (light) — the light twin of `337:15947`, which
 `signup_track_screen.dart` was built against. Cards `125:862` / `125:959`, back button `90:208`.
@@ -815,6 +844,101 @@ the elevation read.
 
 The OTP screens have **no** back chip in Figma — the build added one — so it keeps the standard
 variant, there being no evidence for the registration one.
+
+### The cards' elevation, and the art shadow coming BACK — 2026-09-20, edit5 #32 and #54
+
+The visual list above was about geometry and art. What was still missing is how the card elevates,
+and the two canvases turn out to do it by different mechanisms:
+
+| | Light `125:862` | Dark `337:15981` |
+|---|---|---|
+| Fill | `#FCFBF9` | `#232428` at **20%** — the build painted the opaque page colour |
+| Outline | 1px gradient `#384F47` → `#95CDBB`, inner alignment | **none** |
+| Shadow | (0.5, 0.5) blur 4 black 25% | **none** |
+| Glass | — | **G20** on card 1, **G5** on card 2 |
+
+**The two cards carry two Glass tokens whose ONLY difference is the light angle** — 25 against
+−45. That is why `AppElevation` keeps `trackCardGlassFirst` and `trackCardGlassSecond` apart
+rather than sharing one, and why the index→track mapping had to be read rather than assumed:
+**School is the first card on both canvases** (`337:15947` and `82:1785`, read 2026-09-20). The
+build already listed School first, so nothing moved — but it is a fact now instead of a
+coincidence.
+
+Because the dark fill equals the dark page colour, the 20% change is invisible on its own; what
+makes the card read at all in dark is the Glass rim, and the rim lands in different places on the
+two cards. Measured in `test/goldens/track_screen_dark.png`: at x=300 the FIRST card's top and
+bottom edges stay flat at (35, 36, 40) while the second card's read (81, 82, 85) and (54, 55, 59).
+Both cards rim on their vertical edges. Every one of those pixels was flat before.
+
+#### ✅ The illustration's shadow is back, and this entry is why it was gone
+
+The 2026-08-04 note above records deleting `<g opacity="0.53" filter="url(#filter0_f_771_4476)">`
+from `track_school.svg`, because `flutter_svg` ignores `<filter>` and painted the shadow paths
+**crisp** — a hard grey duplicate beside the books. That was the right call then: a wrong-looking
+shadow is worse than none. It also meant the app had been shipping the School illustration without
+a shadow the frame draws.
+
+`edit5.md` #54 asked for that layer to be identified before anything was built, and the read
+settles it on both canvases:
+
+- `Group 37219` (99 × 100) inside `Component 2` holds the **same 98 × 98 asset twice**;
+- the front copy is sharp, at the group's origin;
+- the back copy is offset **(left 1, top 2)**, at **53%** opacity, under a **layer blur of 7.4**
+  (σ 3.7, edit1.md R3);
+- **both copies wrap the same `Group` at 75.66 × 84.91** — the same shape — **but the back one's
+  whole group is one flat `#000000` at 25%.**
+
+So it is a black silhouette, not a coloured duplicate, and 0.53 × 0.25 black is exactly what the
+2026-08-04 note read off the SVG. It is now rendered in Flutter, where the blur is real: a new
+`lib/core/widgets/elevation/layer_blur.dart` wraps `ImageFiltered(ImageFilter.blur)` — the elevation
+folder being one of the two the guard exempts from that ban — and the card draws the same
+`SvgPicture` a second time behind the art under `ColorFilter.mode(trackCardArtShadow,
+BlendMode.srcIn)`.
+
+**This was nearly built wrong, and the way it was caught is worth recording.** The first
+implementation blurred a copy of the COLOURED art, which is the natural reading of "a blurred
+duplicate behind it" and is what `edit5.md` §7.10.2 prescribes. The golden measured it as a **teal**
+haze under the teal book — `(252,251,249)` → `(172,224,222)`, a delta of 80 — which is not what the
+frame draws. The correction measures neutral: `(252,251,249)` → `(228,228,226)`, delta 24, and on
+the dark canvas **1139 pixels darker and 0 lighter**, which is what a black shadow must do.
+
+**Only the School card has one.** The University card's art (`Component 3`) is a plain vector group
+with no duplicate, so it gets none — `_TrackCard.artShadow` is per-card for that reason, and the
+tests assert the University card has no `LayerBlur`.
+
+#### 🔴 NEW, and the most serious thing this wave found: the SELECTED card is unreadable
+
+**Found on a Pixel 8, 2026-09-20, `docs/DEVICE_VERIFICATION_2026-09-20-edit5.md`. Not changed.**
+
+Tapping a track card turns it **solid `#384F47`**, not the 8%-primary wash its code reads as. The
+label stays `textPrimary`, so it goes from **18.67:1 on the unselected card to 2.19:1 on the
+selected one** — below WCAG AA's 4.5:1 for body text and below even the 3:1 large-text floor.
+Selecting a track makes that track's own name the hardest text on the screen to read.
+
+**The cause is a compositing order, not a wrong colour.** The card is two nested boxes: an outer
+one filled `cs.primary` that draws the 2px outline, and an inner one, inset by the border width,
+filled `cs.primary.withValues(alpha: 0.08)`. An 8% wash over a **solid primary parent** is solid
+primary. The wash never had anything to tint.
+
+**This is not an edit5 regression.** `git show HEAD:…/signup_track_screen.dart` has the identical
+nesting — inner `color: selected ? cs.primary.withValues(alpha: 0.08) : ext.background` over outer
+`color: selected ? cs.primary`. It has shipped this way since the state was invented on Day 2.
+edit5 changed only the *unselected* inner fill (`ext.background` → `ext.trackCardFill`), which is
+the 20%-in-dark correction #32 asked for and does not touch this path.
+
+**Why it was left alone.** `edit5.md` §7.10.1 says in as many words to keep the invented selected
+state exactly as it is, and the whole of open question 4 above is that this state has no frame
+behind it. Fixing it means choosing — drop the outer fill to a ring, or light the label — and both
+are design decisions on a state the designer has not drawn. It is the designer's call, and it is
+now a call with a number attached.
+
+#### 🟠 NEW, small, and recorded rather than changed: the radio is 16, not 19
+
+`Ellipse 4` in `Group 37220` reads **16 × 16** on the light card. The build draws 19 (r = 9.5),
+which the table above records as the frame's value. `edit5.md` §7.10.1 says to keep the radio, so
+it is kept. Also noted: `Group 37220` holds a second, **hidden** `Ellipse 5` — presumably the
+selected state's fill, which would be the first real evidence for a state this entry has called
+invented since Day 2. Neither was acted on.
 
 ---
 
@@ -1040,6 +1164,37 @@ different jobs:
 
 Also `seif_fight.md` **S26**, because Seif's side sees it in the same screen.
 
+### The swatches' own values, recorded 2026-09-20 so the unblock does not need a re-read
+
+`edit5.md` item **#51** asked for the three circles' elevation to be recorded rather than built,
+and this is that record. Nothing below was applied — the app still ships two `SettingsChoiceRow`s.
+
+Three `Ellipse 124` circles, diameter **47.51**, at x **9.58 / 76.24 / 142.91**. On canvas each is
+a diagonal two-colour split (green/white, purple/dark, teal/white), the second colour supplied by
+an `Ellipse 125` (`#AE87E7`, rotated) forming one half.
+
+| Swatch | Light frame | Dark frame |
+| --- | --- | --- |
+| 1 | `#FCFBF9` + a **5** `#384F47` ring (selected) + drop (0, −1) blur 3 black 25% + **inset** (0, 2) blur 4 black 25% | `#FCFBF9`, the same two shadows, **no ring** |
+| 2 | `#232428` + drop (0, −1) blur 3 + **inset** (0, −2) blur 4 `#FFFFFF` | `#232428` + a **5** `#AE87E7` ring (selected) + drop (0, −1) blur 3 + **inset** (0, −2) blur 2 `rgba(255,255,255,0.25)` |
+| 3 | `#FFFFFF` + drop (0, −1) blur 3 + **inset** (0, 2) blur 4 black 25% | same as light |
+
+Two things in that table are worth naming, because they are the reason this cannot be half-built:
+
+1. **The selected ring moves between canvases.** Light rings swatch 1, dark rings swatch 2 — so the
+   frames do not merely restyle one control, they select a DIFFERENT option on each. That is a
+   product statement (the default canvas differs per theme?) hiding inside a visual one.
+2. **Every swatch carries an inner shadow, and two of them are white.** `#FFFFFF` and
+   `rgba(255,255,255,0.25)` inner shadows appear nowhere else in this wave; they are not the
+   measured-black family the rest of the dark frames use, so they cannot be derived from an
+   existing token.
+
+**Also recorded, and it is not only the swatches.** Figma draws **no section card** around Mode
+(`176:1840`, `337:8141`) — the circles sit straight under the heading, exactly as the Languages
+track does. The build keeps the card, deliberately: restyling the container of a control whose
+contents are blocked would polish the wrong half, and removing it would leave two stand-in rows
+floating with nothing to group them. When #45 is answered, the card goes with the rows.
+
 ---
 
 ## 46. 🟠 "Show Rank" is one switch where the contract has two independent booleans
@@ -1191,7 +1346,7 @@ what "unsaved" means when the app has already visibly changed language.
 
 ---
 
-## 49. 🟡 OTP resend-timer pill — built from a 100%-zoom screenshot, not Dev Mode; glyph landed
+## 49. 🟡 OTP resend-timer pill — was built from a 100%-zoom screenshot; the panel was read 2026-09-20 and three values moved
 
 **Where:** OTP (`82:1328`, "Frame 1000002977") → its third child, Frame `427319517` (161 × hug,
 vertical, gap 20): a stadium pill holding a stopwatch glyph and `00.21`, with "Resend OTP" under
@@ -1211,13 +1366,13 @@ Mode) and a screenshot at 100% zoom.
 | Value | Built as | Source |
 |---|---|---|
 | Gap pill → label | 20 | Properties panel (Frame 427319517 · Gap) — **the only read value** |
-| Pill height / radius | 36 / 18 | measured; equals `LanguagePill`'s 36.10 stadium |
-| Pill horizontal inset | 14 | measured |
+| Pill height / radius | ~~36 / 18~~ → **42 / stadium** | **read 2026-09-20** (`332:3391`, r100 on a 42-high pill) — the measurement was 6dp short |
+| Pill horizontal inset | ~~14~~ → **15** | **read 2026-09-20** (`332:3390` panel padding) |
 | Glyph size | 15 × 19 | **read** — the export's own viewBox, drawn at native size |
 | Gap glyph → digits | 8 | measured |
 | Digits | `AppType.bodyMedium` (14/20, 400) | measured; 14 vs 16 is within the reading error |
 | Pill fill | `AppColors.cardFill` | approved raised-surface token, not a read hex |
-| Pill shadow | `elevationShadow` @ 0.25, 0.5/0.5/4 | the recipe the five #47 shadows share; the frame's looks softer/wider |
+| Pill shadow | ~~`elevationShadow` @ 0.25, 0.5/0.5/4 outer~~ → **`AppElevation.otpTimerInsetShadows`** | **read 2026-09-20** — and it is an **inner** shadow, not a drop. Light `332:3391`: black 25%, (0, −1), blur 4. Dark `337:19503`: `rgba(198,198,198,0.25)`, (−0.5, 0.5), blur 1.2. The two canvases share nothing about it |
 | Glyph tint | `colorScheme.primary` | **read** — the export's stroke is `#384F47`, the light primary and the colour of the "Resend OTP" label beneath it; `app_colors_test.dart` pins the two together |
 | Digit tint | `AppColors.textSecondary` | approved token; the frame gives no value — **designer: same green as the glyph, or the dark grey?** |
 
@@ -1237,9 +1392,74 @@ accent flip on the dark canvas, and `test/core/theme/app_colors_test.dart` asser
 literal stroke still equals that token, so a re-export in another colour fails a test instead
 of quietly disagreeing with the palette.
 
-**Still worth reading off the Properties panel** (view seat is enough): the pill's Width /
-Height / Padding / Gap / corner radius, and the digits' text style and colour — each replaces a
-measured row above.
+**Still worth reading off the Properties panel** (view seat is enough): the digits' text style and
+colour — the last measured row above. The pill's Width / Height / Padding / Gap / radius are now
+read; see the table.
+
+---
+
+### The rest of the OTP screen, read and built 2026-09-20 (edit5 #30, #31, #52, §7.11a)
+
+**The code card exists now, and the biggest finding is what is INSIDE it.** `308:5114` is a
+component wrapper; the card is its variant `Type= correct` (dark: `337:19501`, in
+`Component 18_dark`). Both canvases give the same four geometry numbers:
+
+| | Value |
+|---|---|
+| Size | 354 × hug 171.01, radius **19** |
+| Padding | top **15**, right **10**, bottom **15**, left **10** |
+| Gap | **20** |
+| Fill | light `#FCFBF9` (`308:5114`) · dark `#232428` (`337:19501`) |
+| Shadow | light black 25% (0.2, 0.2) blur 4 · dark **lavender** `rgba(174,135,231,0.25)` (0.2, 0.2) blur **7.9** |
+
+The variant has **exactly two children**: the digit row (`Frame 427319511`, 320 × 61.01, gap 14)
+and the Verify button (`Component 8`, 334 × 60). 15 + 61.01 + 20 + 60 + 15 = 171.01 to the
+hundredth, which is the arithmetic that proves the child list is complete — **the CTA is inside
+the card**, which no previous reading of this screen had recorded. It is built that way.
+
+**Two surrounding gaps moved with it**, both read rather than kept: `Frame 1000002976` (`308:5109`)
+gives **35** between the subtitle block and the card (the build had 32), and `Frame 1000002977`
+(`308:5108`) gives **26** between the card and the resend block (the build had 16). That frame also
+confirms the screen's **24** left gutter, which the build already had.
+
+**The inline error message has no Figma slot.** The light component set ships one variant and it is
+the correct-state one; no frame draws an error line inside or outside the card. It keeps the place
+the build already gave it — between the digits and the button — rather than being moved somewhere
+Figma also does not draw it. Recorded, not decided.
+
+**The digit cells take the frame's surface and keep the build's box.** Light `#FDFDFD` with a
+**1.17333** `#D1D1D1` hairline; dark `#232428` at **20%** with a **0.5** hairline of the same grey
+and **G19** (frost 56 · refraction 0.80 · depth 100 · angle −45 · intensity 0.80 · dispersion 0.65 ·
+splay 0.50). Geometry stays 6 × 48 × 56 at r16 against Figma's 4 × 66 × 61.01 at r11.73, because the
+contract mandates six digits (#5) and six boxes at the frame's width do not fit a 334-wide card.
+The focused (1.5 primary) and error (1.5 error + 6% tint) states are the app's own; Figma draws
+neither.
+
+#### 🟡 The blinking caret is gone, and it was the owner's call
+
+Moving the cells onto `Pinput.builder` — which the dark canvas forces, because `PinTheme` carries a
+`BoxDecoration` and a `BoxDecoration` cannot express frost, refraction or splay — takes the caret
+with it: pinput 6.0.2 hard-codes `showCursor = false` and `cursor = null` in that constructor
+(`pinput.dart:176`). Reproducing it means a `Text('|')`, and the hardcoded-copy guard counts that
+literal, so the baseline would have to rise from 4 to 5 on a ratchet `RISKS.md` R-7 freezes at
+"may fall further, never rise".
+
+**Owner's decision, 2026-09-20: keep the guard, drop the caret.** Recorded here because the screen
+visibly changed and nothing in Figma asked for it. What replaces it is not nothing — the active
+cell still carries its 1.5 `colorScheme.primary` stroke, so "where am I typing" is still answered.
+If the caret is wanted back, the cheapest honest route is an ARB-free `cursor` widget upstream in
+pinput, or the owner authorising the baseline raise.
+
+**Both CTAs are wrapped.** "Verify" and the success "Continue" now take `PrimaryCta`
+(`Frame 427319502` / `427319511`), so they get the light tight black shadow and the dark
+`#AE87E7` glow layer. Verify's halo dims with the button until six digits are entered.
+
+**`AppColors.elevationShadow` is deleted.** The pill was its last call site in `lib/`; the field's
+own doc comment asked whoever removed it to delete the token, both values, its `copyWith` and
+`lerp` lines and the `palette_discipline_test.dart` group that pinned them, and that is done. The
+withdrawn cream survives only as a literal in `app_elevation_test.dart`, which asserts it appears
+in no elevation token on either canvas. The raw-elevation guard reached **0** in the same change
+and is now zero-enforcement rather than a ratchet.
 
 **Behaviour, which the frame does not show.** Only the counting state is drawn. Built: while
 `secondsRemaining > 0` the label is rendered in full colour under the pill (as drawn) but is
@@ -1392,13 +1612,64 @@ Asserted by test — `quiz_review_screen_test.dart` renders the dark theme and e
 `app_colors.dart:230-237` needs rewriting — say so and we will do both. Otherwise re-draw
 `337:6705`'s rows opaque.
 
+### BUILT 2026-09-20, edit4 item #48 — what the ruling actually produced
+
+Read first, built second. `337:6731` and its wrong twin were re-read off the Properties panel
+on 2026-09-20, in the owner's signed-in Figma session:
+
+| Dark row | Geometry | Fill | Stroke | Effects |
+| --- | --- | --- | --- | --- |
+| correct `337:6731` | 362 × 73, r16 | `#BFFFC3` **20%** | 0.5 `#00D33C`, inner | 1 effect (Glass; values hidden on this seat — #72) |
+| wrong (its twin) | 362 × 73, r16 | `#FDE9E8` **20%** | 0.5 `#921019`, inner | 1 effect |
+
+**Built:** three new `AppColors` tokens — `reviewRowCorrectFill`, `reviewRowWrongFill`,
+`reviewRowSkippedFill` — plus `AppElevation.reviewRowGlass` (null light, G5 dark), consumed
+through `ElevatedSurface`. Light is byte-identical to what shipped before; only dark moved.
+
+Four decisions inside that, each of which could look like a mistake later:
+
+1. **All three states take 20% and the same Glass**, including the skipped row the frame
+   never draws. That is the ruling's "equal in treatment" clause. Here it costs nothing:
+   20% is both the frame's number and the consistent one, so the clause and the literal
+   value agree.
+2. **The wrong row keeps the SHIPPED hue, not the frame's.** `#FDE9E8` / `#921019` is the
+   drift **#52** already ruled unadopted; only the alpha follows the frame. Note this means
+   the wrong row's alpha went **down**, 30% → 20% — it was never opaque.
+3. **The correct row's foreground had to move, and it was READ, not chosen.** See #54.
+4. **The quiz page's graded option tiles are untouched**, per the ruling's own scope. They
+   are now visibly different from the review rows one tap apart: opaque mint there, a 20%
+   wash with a Glass rim here. That is the comparison the ruling said to raise as a NEW
+   question with both renders side by side. **It is open and nobody has looked at the two
+   on a device yet.**
+
+Pinned by `quiz_review_screen_test.dart`, whose dark-row assertions were **rewritten** to the
+new ruling rather than deleted — including one that now asserts no row is left opaque beside
+a glassed neighbour, which is the specific defect the ruling named.
+
 ---
 
-## 54. 🟠 The dark review frame specifies no FOREGROUND anywhere — row text, AI glyph, or chip label
+## 54. 🟠 The dark review frame's foregrounds — PREMISE REFUTED 2026-09-20; it specifies four of them
+
+> ⚠️ **CORRECTION, 2026-09-20.** This entry was titled *"The dark review frame specifies no
+> FOREGROUND anywhere"* and every number under it was derived from that premise plus #53's
+> since-superseded opaque-rows ruling. **Both are gone.** The dark frame was walked node by
+> node on the Properties panel, in the owner's signed-in Figma session, and it specifies a
+> foreground in every place this entry said it did not:
+>
+> | Element | Node | Value | Type |
+> | --- | --- | --- | --- |
+> | correct row question text | `337:6715` | **`#FCFBF9`** | Inter 500 / 18, line height 25.6 |
+> | wrong row question text | `337:6725` | **`#FCFBF9`** | same |
+> | "QUESTION n" label | `337:6711` | **`#AE87E7`** | Inter 400 / 12, line height 18 |
+> | selected chip label ("All (10)") | inside `337:6825` | **`#FCFBF9`** | Inter 600 / 14 |
+> | idle chip label ("Correct") | `337:6831` | **`#FCFBF9`** | Inter 600 / 14 |
+> | correct badge tick | inside `337:6731` | `#FFFFFF`, 1.17 stroke | vector |
+>
+> The original finding is kept below for history. What is still open is narrower and is
+> restated at the end of this entry.
 
 **Where:** quiz review dark `337:6705` — rows (`162:2510` in light), the AI glyph, and the selected
-filter chip (`337:6825`). The light frame gives `#384F47` for the row content and `#FCFBF9` for the
-chip label; the dark frame gives neither.
+filter chip (`337:6825`).
 
 **What:** a foreground had to come from somewhere, and the obvious answer is wrong in a way worth
 recording, because #53 causes it. Since the dark rows stay **opaque** (that ruling), the two fills
@@ -1424,7 +1695,55 @@ The selected chip is the same class of fault and gained its own token: `colorSch
 dark (5.48:1) — following the convention at `app_colors.dart:230-232`, *light is Figma-verbatim and
 dark reuses an already-approved dark value rather than an invented hex.*
 
-**Fix we need:** confirm the three dark values, or supply the intended foregrounds on `337:6705`.
+### What the rows actually do now (edit4 #48 / D-010, built 2026-09-20)
+
+The fills stopped being opaque, so the old table's arithmetic is void. Composites are src-over
+onto the `#232428` page; ratios are WCAG 2.1 with the sRGB linearisation.
+
+| Dark row | Fill @20% | Composite | Foreground | Was | Is |
+| --- | --- | --- | --- | --- | --- |
+| correct | `#BFFFC3` | `#425047` | `quizReviewRowContent` | **1.04:1** with the old green | **8.24:1** with `#FCFBF9` |
+| wrong | `#FFC0C0` | `#4F4346` | `textPrimary` | 6.92:1 at 30% | **9.11:1** |
+| skipped | `#27282C` | `#242529` | `textPrimary` | 14.24:1 | **14.84:1** |
+
+**The correct row's 1.04:1 is why `quizReviewRowContent` had to split.** It is the exact mirror
+of the failure this entry originally recorded: a fixed dark-green foreground was right while
+the fill was opaque mint and is invisible the moment the fill composites dark. The replacement
+was **read off `337:6715`**, not chosen — which is also what refutes the premise above.
+
+### Two things this did NOT fix, both still open
+
+1. 🟠 **Non-text contrast fell, and the frame is what asks for it.** The hairlines and badges
+   sit on a much darker surface now, and WCAG 1.4.11 wants 3:1 for them:
+
+   | Mark vs its own row fill | @20% (shipped) |
+   | --- | --- |
+   | correct stroke `#00D33C` | 4.21:1 ✔ |
+   | `successBadge` `#22C55E` | 3.74:1 ✔ |
+   | wrong stroke `#921119` | **1.04:1** ✘ |
+   | `quizWrongBadge` `#EF4444` | **2.50:1** ✘ |
+   | skipped stroke `#4B675E` | **2.49:1** ✘ |
+
+   The dark red hairline effectively disappears into its own row. It was already marginal —
+   1.71:1 against the bare page — and the translucent fill finishes it. **Nothing was changed
+   over this:** the stroke is the frame's own value at the frame's own alpha, the correctness
+   signal is still carried by the badge and the text, and picking a lighter red would be
+   inventing a token. It needs the designer, not a build decision.
+
+2. 🟡 **Two frame values were read and deliberately not adopted.** Recording them so the gap
+   is a decision rather than an oversight:
+   - the **"QUESTION n" label** is `#AE87E7` lavender in the frame; the build paints it the
+     same colour as the question text beneath it, because hierarchy there comes from size and
+     weight. Adopting the lavender is a visual change with no elevation component, so it was
+     out of edit4's scope.
+   - the **selected chip label** is `#FCFBF9` in the frame, which is the 2.74:1 this entry
+     already records. The build keeps `quizReviewFilterLabel` (the `#232428` page fill,
+     5.48:1) because moving to the frame's value would be a deliberate accessibility
+     regression. #77 is the sibling ruling and it accepted 2.74:1 for the pill track; whether
+     it extends here is the designer's call.
+
+**Fix we need:** a ruling on the wrong-row hairline at 1.04:1, and on whether the two read-but-
+unadopted values above should ship as drawn.
 
 > ⚠ **The same fault is already shipped on the quiz page, and was left alone.**
 > `question_option_tile.dart:119-120` paints the option label with `textPrimary` on
@@ -2320,6 +2639,53 @@ What each renders, per unit `lightIntensity`:
 did not move. C5 and C6 are confounded (see above) and neither is a rim
 reference. C7 is the frost through a real backdrop and is unaffected by the rim.
 
+### edit4 outcomes, 2026-09-20
+
+**G10 was NOT layered, and the reason is structural rather than "we looked and could not see
+it".** `edit4.md` §7.9 says a leaderboard row carries two Glass effects — G5 on the rectangle
+`337:5630` and G10 (splay 0.31, else G5) on the `Group` wrapping it, `337:5629` — and to add a
+rim-only second layer if the difference is visible. It is not layered, because
+**`kGlassRimBackLobe` and the rim geometry are independent of `splay`** — that is what the
+2026-09-19 calibration measured and what `glass_rim_calibration_test.dart` asserts. G10 and G5
+differ only in `splay`, and `splay` moves nothing the tier-1 model renders, so a second layer
+would paint the identical rim twice and read as one rim at roughly double alpha. That is a
+brightness change nobody asked for, not a missing effect. **Recorded rather than built; revisit
+if `depth`/`refraction` is ever implemented, since splay may drive those.**
+
+**The light selected scope hex was re-read and it MOVED.** `edit4.md` §5 flagged `#D8B0FF`
+(read 2026-09-08) against `#DBB0FF` (2026-09-16 CSS export) and asked for `158:840` to settle
+it. Properties panel, 2026-09-20: **`#DBB0FF`**, together with `Fill (181px) × Fixed (44px)`,
+`Radius 51`, `Padding 10`, `Gap 10`. `AppColors.scopeSelectedFill` light is corrected.
+**`podiumAccent` was deliberately left at `#D8B0FF`**: the caller's own board row `134:3554`
+was not re-read, and moving a token on the strength of a sibling's reading is exactly the
+class of thing this register exists to stop.
+
+**Three values `edit4.md` §13 listed as UNREAD are read.** None needed its documented fallback,
+and one fallback would have been wrong:
+
+| Value | Read | Node(s) | Note |
+| --- | --- | --- | --- |
+| previous-button chevron | `#FCFBF9` both canvases | `159:1922`, `337:6466` | §7.3's dark fallback proposed `textPrimary` — same number today, different token, different reason to move |
+| light selected scope fill | `#DBB0FF` | `158:840` | see above |
+| dark A/B/C/D badge ring | `#AE87E7` @50%, 1.18 stroke | `337:6447` | **differs from what ships** — see #83 |
+
+Two more that `edit4.md` did not list as unread because its §5 table had no node for them: the
+scope toggle's **idle** label (`158:843` `#384F47`, `337:5619` `#FCFBF9`) and its **selected**
+label (`158:841` / `337:5617`, both `#FCFBF9`). §7.8 asked for `textSecondary` on the idle one,
+which is the grey; it is a dark green, exactly as #77 found on the sibling control.
+
+### Two edit4 readings that could not be reconciled, recorded rather than resolved
+
+1. **`edit4.md` §5 #48 lists THREE dark review-row fills** — `#BFFFC3` / `#FDE9E8` /
+   `#DCFFE9` — for what the 2026-09-20 walk of `337:6731` and its twin found to be **two**
+   row states. `#DCFFE9` is a third mint, four units of green from the correct row's, and
+   nothing on the frame was found drawing it. It may belong to a state the build does not
+   render, or be a stale value in the guide. **Not adopted, not explained.**
+2. **`edit4.md` §5 #20 says the dark frame's 9th leaderboard row is opaque `#232428` with no
+   Glass**, against every other row's 20% + G5, and asks for it to be recorded as a probable
+   designer slip. Recorded here. The build draws every ordinary row identically; no special
+   case was added, which is what §5 asked for.
+
 ### Recorded, not built (#55)
 
 Glass exists on screens this app has not built: Customer Support (`337:8390`, G5 ×46 + G17),
@@ -2327,6 +2693,359 @@ Notifications (G5 ×46), Messages / chat (G5, G11 search), Friends (G5 chips `Fr
 47.5×19 `#384F47` @20%, G11 search), Create Ticket, Your progress, Refer a Friend (all G5), and the
 University Learning Tools tiles (inner shadows — edit3 #43). Listed so the reading is not lost;
 none of them is built by this pass.
+
+### edit5 outcomes, part 1 — Profile and Edit Profile, 2026-09-20
+
+`edit5.md` §13 listed four **verify-first** items and three **unread colours**. Two of each fall in
+this chunk. All four were read on the Properties panel of the owner's own signed-in Figma session
+(the route §1.6 of `CLAUDE.md` describes), not from a CSS export and not from a canvas render.
+
+**The icon disc is on EVERY menu row, and the build was drawing eight of them wrong.**
+
+`edit5.md` §5 #24 flagged this as a contradiction: a CSS export showed a `#F4E6FF` 35×35 disc on
+every row, while `ProfileMenuRow`'s own doc said the eight navigation rows carried a bare glyph and
+cited an older frame (`170:4933`). **The export was right.**
+
+| Row | Node | Read |
+| --- | --- | --- |
+| Settings (neutral) | `170:4861` | 35×35, radius 48.17, `#F4E6FF` |
+| Privacy & policy (neutral) | `170:4902` | 35×35, radius 48.17, `#F4E6FF` |
+| Logout (destructive) | `176:1186` | 35×35, radius 48.17, `#F4E6FF` |
+
+**Why three readings disagreed with the layer list for two months.** The disc is not a sibling
+`Ellipse` — it is the *Iconify component frame's own fill*. `Button` → `lets-icons:setting-fill` →
+`Vector` is the whole subtree, so walking the layers looks exactly like "glyph, no disc"; and
+`#F4E6FF` on `#FCFBF9` is invisible at the 50% zoom the frame is usually viewed at. Built on all
+ten rows, and the enum's doc now says where the old reading came from.
+
+**Two more row values, read in passing.** The emphasis row's stroke (`170:4921`) is `#101010` and
+the destructive row's (`176:1185`) is `#EF4444`, both 0.5 all-sides on `#FCFBF9`. The first is a
+NEW token — `profileMenuEmphasisRowBorder` — because the row had been borrowing `textPrimary`,
+which is `#0E0E0E`. Two units of every channel: invisible, and still a different value from a
+different source, which is exactly the class of drift this register exists to stop.
+
+**The light edit-chip glyph is read, so no fallback was needed.** `edit5.md` §7.2.3 allowed keeping
+`homeAccent` if the value could not be read. It could: `170:4674` is a 20×20 vector at (10, 10)
+inside the 40 chip, filled **`#333333`**. With the dark `#FCFBF9` (`337:7466`, read 2026-09-17)
+that is the new `profileEditChipGlyph`. The shipped lavender was on neither canvas.
+
+**Two geometry readings taken and NOT adopted, both recorded rather than applied.**
+
+| What | Frame | Build | Why not moved |
+| --- | --- | --- | --- |
+| menu row padding | 14 / 16 (`170:4790`) | 14.5 / 16.5 | half a dp; `edit5.md` §7.4.1 explicitly keeps the build's, and this edit changes elevation, not geometry |
+| menu glyph size | 21–23, per export (`170:4674` 23×23, `170:4910` 21×26) | 22 | each Iconify export has its own box inside the shared 35 frame. The glyphs are Material stand-ins (ASSET_MANIFEST), so adopting one export's number for all ten would be precision the asset cannot cash |
+
+**The header back-light renders, measured rather than eyeballed.** `test/goldens/profile_header_dark.png`
+decoded pixel-wise: the page reads `(35, 36, 40)` with a blue-minus-green of **+4**, and the band the
+B7 ellipse occupies peaks at `(52, 48, 63)` — **+15** — across x≈26–98, fading back to +9 by the
+card's lower edge. The right-hand side of the same card (300, 60) stays at +4. That is a lavender
+haze confined to the avatar side, which is what `edit5.md` §12 asks for, and it is the only place
+the G15 frost and the B7 ellipse are proven to composite — the value test can only prove they were
+handed over.
+
+**The tap target and the frame's size are different numbers, and both are kept.** The edit chip is
+drawn at the frame's 40 and given a 48 gesture box around it (`edit5.md` §7.2.2). Growing the disc
+would change a read value to satisfy a platform minimum; shrinking the target would fail the
+minimum. `IconButton` had been doing this for free and the replacement has to do it on purpose.
+
+**Still owed on these screens.** Nothing designer-gated was found in this chunk. The Iconify glyph
+set itself (`fluent:edit-16-filled`, `lets-icons:setting-fill`, `solar:logout-2-bold-duotone` and
+the rest) is still a `TODO(design-asset)` in `docs/ASSET_MANIFEST.md`, unchanged by this pass — the
+colours and boxes are read, the shapes are Material stand-ins.
+
+### edit5 outcomes, part 2 — Settings, 2026-09-20
+
+`edit5.md` §7.6.2 asked for the language segments' ORDER and their label colours to be read before
+the control was rebuilt. Both were, on the Properties panel, on both canvases.
+
+**The segment order was wrong in the build, and it is the only behavioural change in this chunk.**
+
+| | Frame | Build (before) |
+| --- | --- | --- |
+| first segment | **English** — `176:2373` (light), `337:8179` (dark) | Arabic |
+| second segment | Arabic — `176:2375`, `337:8181` | English |
+
+Corrected to the frame's order. Nothing else about the behaviour moved: both `Key`s are carried
+through `SegmentedTrack.keyOf`, both names are still endonyms in both locales, and the control
+still calls `select()` rather than `toggle()` so tapping the current language does nothing.
+
+**All four label colours confirm tokens edit3 already added** — no new token was needed and no
+fallback was used:
+
+| | Light | Dark |
+| --- | --- | --- |
+| idle | `#384F47` (`176:2375`) | `#FCFBF9` (`337:8181`) |
+| selected | `#FCFBF9` (`176:2373`) | `#FCFBF9` (`337:8179`) |
+
+The light track itself re-read at `#ECECEC`, `Fixed 362 × 44`, radius 32 (`176:2371`) — also
+matching. The selected pair is the **2.74:1** the owner accepted under #77; it is unchanged here
+and is not re-opened by this chunk.
+
+#### 🟠 NEW, and it is a question rather than a finding: one component, three label sizes
+
+Reading the labels turned up something `edit5.md` did not ask about and that no previous pass has
+recorded. `Frame 1000003007` is ONE Figma component with two consumers, and it does not carry one
+label size:
+
+| Where | Node | Frame says | Build draws |
+| --- | --- | --- | --- |
+| Lectures quiz-type tabs | `180:5339` | Inter **Medium 500 / 14** | `AppType.labelMedium` — 12 / 500 |
+| Settings › Languages | `176:2373`, `176:2375`, `337:8179`, `337:8181` | Inter **Medium 500 / 18** | `AppType.labelMedium` — 12 / 500 |
+
+**Nothing was changed on the strength of it.** 18/w500 does not exist in the type scale at all
+(`h3` is 18/**w600**, one weight heavier at the same size), and `docs/AGENT_WORKFLOW.md` puts
+"typography scales" at the top of the never-invent list. 14/w500 *does* exist — it is
+`bodyMediumStrong` — so the Lectures tabs could be corrected today; the Settings track could not,
+and correcting one consumer of a shared style while the other stays put is how a shared style
+stops being shared.
+
+**For the designer, two questions, no answer proposed here:**
+
+1. Is the size meant to differ per screen, or is one of the two frames stale?
+2. If it is meant to be 18 at Medium weight, that is a new scale entry and it has to come from
+   the scale's owner, not from this build.
+
+Until then both consumers keep `labelMedium`, which is what they already shipped.
+
+#### The rest of the Settings chunk
+
+**The section card's light hairline moved for a reading, not a preference.** It had been borrowing
+the Profile hub's `#7070A0` (`profileRowBorder`); `176:1840` draws **`#AE87E7`** at 0.5, and
+`642:8583` / `337:8195` draw **no stroke at all** in dark, taking **G16** (frost 63, else G5) over
+a 20% wash instead. Both halves of the dark reading are honoured: the colour token AND the width
+token go to null/0 together, and the card checks both, because a 0-wide `BorderSide` is still a
+decision the frame did not make.
+
+**The divider inside a section is deliberately UNCHANGED.** No frame reading was taken for it on
+either canvas. Moving it to the card's new lavender because the outline moved would be inferring a
+value from a sibling, which is the same mistake `podiumAccent` was protected from in edit4.
+Recorded here rather than left silent.
+
+**The Notification Preferences back-light waits for `/me`.** Which ellipse to draw depends on the
+student's track (school B8 `348:8975` at (0, 33); university B15 `349:12114` at (0, 27) — six
+pixels apart, both kept verbatim). The track is a server fact, so the card renders without a
+back-light until the profile arrives rather than guessing one and putting the haze at the wrong
+height for half the students. Rank never gets one on either canvas, and neither does anything on
+the light canvas.
+
+**Measured, not eyeballed:** `test/goldens/settings_section_dark.png` decoded pixel-wise gives the
+page at `(35, 36, 40)` — blue-minus-green **+4** — and the card's leading side at `(51, 48, 62)`,
+**+14**, while the same card at x=300 stays at +4. A lavender haze at the top-start edge, which is
+what §12's checklist asks for.
+
+**One golden `edit5.md` §11.3 offers was deliberately NOT taken:** the dark Settings language
+track. It would photograph the same `SegmentedTrack` with the same `pillTrack*` tokens that
+`quiz_type_tabs_dark.png` already pins — different text over identical elevation. Its own claims
+(order, keys, RTL, tokens, semantics, text scale 1.3) are asserted by value instead.
+
+### edit5 outcomes, part 3 — OTP, 2026-09-20
+
+The screen's three surfaces, its two CTAs and the guard's last ratchet step. **The full reading and
+every value is in #49**, which is this screen's own entry; what follows is only what belongs to the
+elevation wave's own ledger.
+
+**The verify-first item (#31, "read the card's children and padding before building") paid for
+itself.** `308:5114` turned out to be a component WRAPPER with no fill and no effects of its own —
+the card is its `Type= correct` variant — and that variant's child list is the digit row **and the
+Verify button**. edit5.md §7.8 assumed the card wrapped the Pinput; had it been built that way the
+button would have sat outside a card the frame puts it inside, and nothing in the value assertions
+would have caught it. Padding 15/10/15/10 and gap 20 came from the same read.
+
+**Three raw-elevation values were corrected as well as re-mechanised**, which is the pattern every
+chunk of this wave has repeated: the timer pill's height was 6dp short (36 → 42), its inset 1dp
+short (14 → 15), and its shadow was an OUTER black borrowed from the five #47 card frames where
+both canvases draw an **inner** bevel — and the two canvases share neither its colour, its offset
+nor its blur.
+
+**The ratchet is spent.** `raw elevation effects` went 11 → 9 → 7 → 4 → 1 → **0** across edits 2–5
+and is now a zero-enforcement test that names offending `file:line`, which is what edit1.md §7.6
+asked for at zero. `tool/verify_guards.ps1`'s probe was renamed with it and still fails the test on
+a planted `BoxShadow`. `AppColors.elevationShadow` lost its last call site in the same change and
+was deleted — field, both values, `copyWith`, `lerp`, and its `palette_discipline_test.dart` group.
+
+**Measured, not eyeballed:** `test/goldens/otp_dark.png` decoded pixel-wise shows the lavender glow
+**knocked out** exactly as edit1.md R4 requires. Outside the card's left edge the row at y=227 runs
+(41,40,48) → (43,42,52) → (47,44,56) → (51,47,61) — blue-minus-green climbing +8 → +14 with red
+climbing with it, which is lavender and not a black shadow — and then snaps to (35,36,40), the
+card's own fill, at the first pixel inside the shape. The right edge peaks higher, at +16, because
+the shadow's offset is (0.2, 0.2): down and to the right. The focused cell's stroke measures
+(174,135,231) exactly — `#AE87E7` at full strength — and the other five hairlines measure neutral
+grey, which is the `#D1D1D1` both canvases read.
+
+**The cells' G19 rim needed a second measurement, because the golden alone cannot separate it from
+the hairline.** The rim is a bright band ON the shape's edge and the 0.5 `#D1D1D1` stroke paints
+over the same pixels, so in the image the two are one. A throwaway probe (written, run and deleted
+2026-09-20) rendered the same 48 × 56 cell over the same `#232428` backdrop twice, once with the
+token and once with `glass: null`, and diffed the raw RGBA: **692 of 32400 bytes differ, peak delta
+71, at the cell's TOP-LEFT corner** — which is where G19's −45° angle and 0.50 splay put its lobe.
+With the hairline on top the peak falls to **45**, so the stroke dims the rim but does not hide it.
+G19 is painting, and it is painting where the frame's angle says it should. For contrast,
+`settings_section_dark.png` — whose dark card carries **no** hairline — shows its rim cleanly in
+the image itself, at (78,78,83) against a (35,36,40) page.
+
+**Device-gated:** no device was connected. Nothing here is DEVICE VERIFIED.
+
+### edit5 outcomes, part 4 — the sign-up track cards, 2026-09-20
+
+The cards' own readings and the illustration-shadow finding live in **#40**, which is that screen's
+entry. What belongs here is the wave-level outcome.
+
+**The wave gained one primitive, and only one.** `lib/core/widgets/elevation/layer_blur.dart`:
+`LayerBlur(sigma, opacity, child)` over `ImageFiltered(ImageFilter.blur)`. Figma's **layer** blur
+is not its **background** blur — `GlassStyle.frost` is the latter — and the two are named apart
+in that file because reaching for the wrong one produces a plausible picture of the wrong effect.
+It uses `TileMode.decal`, not the default `clamp`, so the blurred art fades to transparent instead
+of smearing its edge colour across the card. It lives in the elevation folder because that folder
+and `lib/core/theme/` are the only two the `ImageFilter.blur` ban exempts.
+
+**One token was added**, `AppColors.trackCardArtShadow` — `#000000` at 25%, the same on both
+canvases because the frames draw the identical layer on both. It is a colour, so it is a token; a
+`Color.fromRGBO(0, 0, 0, 0.25)` at the call site would have failed the palette guard, and rightly.
+
+**One token was deleted.** `profileIconChip` had been unreferenced since edit5's Profile chunk
+moved the menu rows onto `profileMenuIconDiscFill`; it is gone — field, both values, `copyWith`,
+`lerp` — with a tombstone recording that its premise (only two rows have a disc) was refuted by
+three Properties-panel reads. That is the second dead token this wave removed, after
+`elevationShadow`.
+
+**A golden HARNESS defect was fixed, and it had been hiding a whole page fill.**
+`track_screen_{light,dark}.png` were captured from a private `_TrackCard` finder, and
+`matchesGoldenFile` snapshots the nearest enclosing repaint boundary — `Scrollable`'s, which sits
+INSIDE the `Scaffold`. So the page fill was outside the capture and both baselines were
+transparent-backed. Harmless while the dark card was an opaque `#232428`; fatal the moment it
+became `#232428` at 20%, because the baseline would have shown a card that all but vanished while
+the device shows no change at all. The finder is now the `Scaffold`, which is the same rule
+`golden_harness.dart` already follows for every widget-level golden. Both baselines therefore
+change for TWO reasons at once, and this paragraph is the record of which is which.
+
+**Measured, not eyeballed** (regions chosen to exclude the harness change, i.e. pixels opaque in
+both baselines):
+
+| | School art | University art | School's text half |
+|---|---|---|---|
+| light | 2270/8369 px changed, max **24**, toward neutral grey | 112 px, max 5 (resampling noise) | **0** px |
+| dark | 1139 px **darker, 0 lighter**, max −3 | 109 px, max 5 | **0** px |
+
+The University column is the point: it is the control. The card that the frame gives no shadow to
+did not change, and the card that carries one changed only where the art is.
+
+**Device-gated:** still no device. Nothing in this wave is DEVICE VERIFIED.
+
+### edit5 outcomes, part 5 — the §12 visual QA pass, 2026-09-20
+
+Parts 1–4 recorded what was built. This is the pass `edit5.md` §12 asks for, walked end to end.
+
+**Every line was measured, not looked at.** Fifteen surfaces were rendered through a throwaway
+probe (deleted), captured from their own repaint boundary and decoded pixel by pixel, on top of the
+seven baselines the wave already owns. What follows is only what the numbers say.
+
+| §12 line | Canvas | Measured |
+|---|---|---|
+| #21 header | light | shadow reaches 5 rows above, **6 below**, deepest −37 — offset (0.5, 0.5), blur 4 |
+| | dark | rim **+47** top / **+31** bottom; fill flat at the page value; shadow −5 OUTSIDE only |
+| #22 chip | light | 40×40 disc, shadow −9 above / −10 below — one row each, the tight blur-1.3 |
+| | dark | rim +35 top / +29 bottom, 20% wash, shadow outside |
+| #23 stat | light | edge reaches **2–3 rows** (blur 2), deepest −46 |
+| | dark | interior exactly **(39, 40, 44) = #27282C**, opaque, **no rim** |
+| #24 rows | light | `#7070A0`, `#101010`, `#EF4444` — all three recovered to the byte from a 37%-coverage hairline |
+| | dark | rims only (b−g = 4, i.e. neutral) on two tones; Logout keeps r≫g |
+| #25 badge | light | 34×34, shadow **one row, −7** — the 1.105 blur |
+| | dark | **87** over the avatar and **78** over the page: 20% cream over each backdrop, exactly |
+| #28 section | light | hairline **(223, 208, 242) = `#AE87E7`** at 37% coverage — lavender, not grey |
+| | dark | no hairline at all; haze peaks at x≈40–50, y≈88 — the top-start corner |
+| #50 track | light | selected **`#AE87E7`**, flat, no bevel; idle is **byte-identical to the bare track** |
+| | dark | track recessed (bottom −8), selected recessed (top −41); idle identical to the track |
+| #30 pill | light | **no outer shadow on any edge**; inset −37 bottom, −16 top, −24/−24 sides |
+| | dark | pale inset **+20 top, +19 end**, +3 on the other two |
+| #31/#52 | light | card knockout clean; resting cell border **(209,209,209) = `#D1D1D1`** |
+| | | focused cell **(56, 79, 71) = `#384F47`** at coverage **1.50** |
+| #12 CTA | light | fill `#384F47`, b−g −2 throughout — a neutral shadow, no glow |
+| | dark | halo b−g rises **+4 → +46** over ~10 px — the lavender glow, unmistakable |
+
+**Three things this pass established that no value assertion could.**
+
+**The back-light really does mirror.** `edit5.md` §13 lists RTL mirroring as an *assumption*
+(edit1.md R9) and the existing test can only show that the card hands the painter an unresolved
+offset. Rendered: in LTR the haze spans x 39–116 and in RTL x 294–371 of the same 24–387 card —
+mirrored to within a pixel, with the excess summing to 1009 and 1011. It is now measured, not
+assumed.
+
+**R10's 0.45 is exact, in three independent places.** The disabled Verify reads (164, 174, 169),
+which is 0.45×`#384F47` over cream to the byte; the disabled dark CTA reads (98, 81, 126), which
+is 0.45×`#AE87E7` over `#232428` to the byte.
+
+**The `SegmentedTrack` idle segment is transparent in the rendered pixels**, not merely in the API.
+On both canvases the idle half and the bare track are the same colour — (236, 236, 236) light,
+(35, 36, 41) dark. That rule has been enforced by review since edit3; this is the first pixel proof.
+
+#### ⚠️ One wording correction, and it is `edit5.md`'s, not the build's
+
+§12 describes the OTP timer as "42 tall stadium with **an inner top bevel**". Its own §5 table
+reads the effect as **inset (0, −1) blur 4 black 25%**, and an inner shadow with a negative y puts
+its dark band along the **bottom** inside edge, the way CSS's does. The render agrees with the
+table: −37 at the bottom against −16 at the top. The table is the Figma reading, the table is what
+was built, and the checklist line is loose prose.
+
+Two test NAMES in `test/features/auth/otp_elevation_test.dart` had inherited the same slip and were
+corrected in this pass — light is "along the BOTTOM edge", dark is "in the TOP-END corner"
+(−0.5 lands on the end edge, +0.5 on the top one). Neither assertion changed; both named the wrong
+edge while checking the right number, which is the kind of comment that survives precisely because
+nothing tests it.
+
+#### Coverage closed in this pass
+
+* **OTP forced-LTR under Arabic.** §11.2 asks for "6 cells, LTR even in AR"; the suite asserted the
+  `Directionality` wrapper under `en`, which proves the widget exists and not that the boxes fill
+  left-to-right on an RTL page. Now pumped in `ar`, asserting the page is RTL, the cells are not,
+  and the six cells' laid-out x positions strictly increase.
+* **Text scale 1.3 on the two surfaces that lacked it.** §12 names three — the language track, the
+  menu rows and the OTP row — and only the track had a test. The hub and the OTP screen are now
+  pumped at **402 wide** (the frame's own width; the harnesses' 800 is wide enough that nothing
+  could overflow) at 1.3 in both locales. No overflow in any of the four. The #81 caveat stands:
+  the test font is ~1.5× wider than Inter, so this is stricter than the device, and a pass here is
+  still not a device pass.
+
+**Device-gated:** at the time of writing, nothing in edit5 was DEVICE VERIFIED. That changed the
+same day — see part 6.
+
+### edit5 outcomes, part 6 — the §11.5 device walk, 2026-09-20
+
+**`docs/DEVICE_VERIFICATION_2026-09-20-edit5.md` is the full record**, in the dated form the 09-12,
+09-19 and 09-20-edit4 passes use. A second file for the same date because 09-20 already belongs to
+the edit4 walk. Two things are repeated here rather than only linked.
+
+**No local-only changes were needed.** The edit4 walk needed three unblocks and a paragraph
+defending each, including switching `FLAG_SECURE` off. This one needed **none** — every edit5
+surface is reachable in the stock `main_mock.dart` build and none of them sets `FLAG_SECURE`. The
+only device-level change was the font scale, set to 1.3 for the text-scale checks and back to 1.0
+after.
+
+**Thirteen items across light, dark, RTL and 1.3, all measured off the screencap pixels.** The
+three that only hardware could settle:
+
+* **The back-light mirrors.** §13 listed it as an assumption. English against Arabic, row for row,
+  the lavender excess matches within 1% (6540/6562, 8021/8045, 5985/6008) while the peak crosses
+  from x≈170 to x≈870.
+* **The two track cards rim differently, and it is visible.** Card 1 rims on its vertical edges only
+  (128 left, 95 right, flat top and bottom); card 2 rims on all four (97, 75, 97, 75). That is the
+  entire consequence of G20 vs G5 differing by light angle alone, and it is why `AppElevation`
+  keeps both.
+* **The illustration's shadow is neutral, School-only, and physical.** 5535 grey px in Arabic
+  against 5588 in English — the same in both directions, so the offset does not mirror — and on the
+  dark canvas 6882 px **darker and none lighter**. The University card has none in any of the three.
+
+**R10's 0.45 turned up twice more, on mechanisms nothing had checked:** a disabled menu row's light
+hairline is **0.448** of a live row's, and its dark Glass rim is **0.452** of a live rim's.
+
+**What the device could NOT do.** §11.5 asks for a wrong OTP code. The mock has no `otp_invalid`
+branch — `000000`/`111111` authenticate and *every* other 6-digit code forks to registration
+(`lib/dev/mock_backend.dart:137`). Producing the error state would have meant editing the mock,
+i.e. changing code to work around a harness limitation, so it was not done; the state stays covered
+by `otp_elevation_test.dart`. Also uncovered: the avatar badge in RTL, iOS, and scales above 1.3.
+
+**One defect found, and it is not ours to fix** — the selected track card at 2.19:1, recorded in
+**#40** above with its cause and its `HEAD` provenance.
 
 ---
 
@@ -2544,8 +3263,16 @@ they can become `pillTrackLabel` / `pillTrackSelectedLabel` tokens that both scr
 | `pillTrackLabel` (idle) | **`#384F47`** `180:5339` | **`#FCFBF9`** `337:11091` |
 | `pillTrackSelectedLabel` | **`#FCFBF9`** `180:5341` | **`#FCFBF9`** `337:11095` |
 
-Both are Inter 500 / 14 px, line height 100%, letter spacing 0, centre/middle — which matches
-`AppType.labelMedium` and confirms the style choice the build already made.
+Both are Inter 500 / 14 px, line height 100%, letter spacing 0, centre/middle.
+
+⚠️ **Correction 2026-09-20.** An earlier version of this line said that "matches
+`AppType.labelMedium` and confirms the style choice the build already made". **It does not.**
+`AppType.labelMedium` is **12 px at a 16/12 line height**, w500 — the WEIGHT matches Figma and
+nothing else does: the frame is 2 px larger and its line height is 100% where the token's is 133%.
+The build uses `labelMedium` because the typography ratchet is 0 and a new size would have to come
+from the designer's own scale, which is the same reasoning `#57` records for the review screen — it
+is a **deliberate nearest-token mapping, not a match**. Do not cite this entry as evidence that a
+type token agrees with a Figma reading.
 
 **The idle light value is the finding.** It is `#384F47`, a dark GREEN. The hand-rolled chips drew
 the grey `textSecondary` `#2C2C2C` there, and the §7.6.2 fallback would have shipped that grey
@@ -2576,6 +3303,43 @@ is intended, say so and this is recorded as accepted.
 > **The tabs therefore ship at Figma's measured 2.74:1**, which is a live AA failure on a control
 > that always has exactly one selected item, recorded rather than quietly corrected. **This is
 > question 2 of 2 for the designer**, alongside #81's question 1.
+
+### 🔴 A SECOND, WORSE pair — found 2026-09-20 on the leaderboard scope toggle
+
+The ruling above is explicitly scoped: *"`#FCFBF9` on `#AE87E7` is their value and it reaches
+far past these tabs — the same pair is on every filled CTA"*. **The scope toggle is not that
+pair.** `Frame 1000003008` is a different component with a different selected fill, and edit4
+moved the control onto `SegmentedTrack` on 2026-09-20, which is what surfaced it.
+
+| Pair | Node | Ratio |
+| --- | --- | --- |
+| `#FCFBF9` on `#DBB0FF` (light selected) | `158:841` on `158:840` | **1.74:1** |
+| `#FCFBF9` on `#C4A8E3` (dark selected) | `337:5617` on `337:5616` | **2.02:1** |
+| `#384F47` on `#ECECEC` (light idle) | `158:843` on `158:839` | 7.48:1 ✔ |
+| `#FCFBF9` on `#232429` (dark idle) | `337:5619` on `337:5615` | 14.61:1 ✔ |
+
+1.74:1 is the worst text contrast measured anywhere in this register — worse than the 2.74:1
+the owner accepted above, and on a control that, like the tabs, always has exactly one
+selected item. Because the fill is NOT `#AE87E7`, the reasoning that made 2.74:1 shippable
+(changing it would fork the palette or ripple to every CTA) does **not** transfer: these two
+fills are used by this control and by the podium, and nothing else.
+
+**Shipped as measured, no colour chosen in the build**, following the same discipline as the
+ruling above. `lib/features/leaderboard/widgets/scope_toggle.dart` carries the numbers in a
+comment so the next reader does not rediscover them.
+
+**Fix we need:** a darker selected label or a darker selected fill for `Frame 1000003008`
+specifically. Two values this design already uses on a lilac ground, measured on both fills:
+
+| Candidate label | on `#DBB0FF` (light) | on `#C4A8E3` (dark) |
+| --- | --- | --- |
+| `continueLearningContent` `#2B2B2B` (#79's precedent) | **7.87:1** | **6.78:1** |
+| the page fill `#232428` (`quizReviewFilterLabel`'s precedent) | **8.61:1** | **7.43:1** |
+| `Brand.greenPrimary` `#384F47` | 4.91:1 | 4.23:1 |
+
+Offered as precedents, **not chosen here**. Going the other way instead — keeping the cream
+label and darkening the fill — needs roughly `#8A5CD6` to reach 4.43:1, which is a hex nobody
+has supplied and is well away from both frames. **This is question 3 for the designer.**
 
 **Also for the designer — a contradiction inside our own spec, not inside Figma.** edit3.md §5
 records the dark TRACK's inner shadow as `inset (0, −3) blur 4 black 25%`, and §12's QA checklist
@@ -2884,3 +3648,470 @@ Two are closed. **One is escalated to the designer and is the only thing still o
 `test/core/widgets/elevation/segmented_track_test.dart`: painted == laid on every label, every
 label growing by the same factor under text scale, and the groove never narrower than the space it
 is given. A `FittedBox` coming back fails all three.
+
+---
+
+### 🟠 A SECOND consumer, and it fails in ENGLISH — measured 2026-09-20
+
+edit4 moved the leaderboard scope toggle onto this same primitive, which made the ruling's fallback
+reachable on a second screen. Measured there at the widths the tests use, with the two-scope school
+board:
+
+| Config | Groove | Scrolls? | Overflow |
+| --- | --- | --- | --- |
+| EN `System \| Governorate` @375 dp | 335 | **yes** | 101 |
+| AR `نظامي \| المحافظة` @375 dp | 335 | no | — |
+| EN @411.4 dp (Pixel 8 width) | 371.4 | **yes** | 64.6 |
+| AR @411.4 dp | 371.4 | no | — |
+| EN @375 dp at 1.3x text scale | 335 | yes | 219.8 |
+| EN university `Global \| Cohort` @375 dp | 335 | no | — |
+
+**This is the inverse of the finding above.** #81 is an Arabic-first legibility defect; here Arabic
+fits comfortably and **English is the one that overflows**, because "Governorate" is simply a long
+word and there are only two segments to spread across the groove. The university board, whose
+labels are short, fits in both languages.
+
+Two things this does NOT establish, and it matters because the numbers look alarming:
+
+- **These are BUILD-level widths, not device widths.** The test binding's font is ~1.5x wider than
+  Inter — the same caveat that made the quiz-type tabs scroll in tests and fit on a real Pixel 8.
+  Scaled to Inter, "Governorate" is roughly 132 dp and two segments plus padding land near 304,
+  which fits 371.4 comfortably and 335 marginally. **Nobody has put this control on a device.**
+- **It is not a regression.** The hand-rolled toggle this replaced set `overflow: ellipsis`, so the
+  same overflow used to truncate "Governorate" silently instead. Scrolling is the ruling's chosen
+  behaviour and is strictly more recoverable than truncation.
+
+Recorded rather than acted on, for the reason D-012 gives: shortening the label is a copy change
+that needs the copy owner, and re-adding a `FittedBox` or an `ellipsis` is the defect D-012 removed.
+`test/goldens/scope_toggle_dark.png` deliberately photographs the UNIVERSITY pair so the baseline
+pins the control rather than the scrolling fallback.
+
+**Fix we needed — ANSWERED 2026-09-20 by the device pass. It does not scroll.**
+
+> **Classification of this sub-finding: device false positive.** The overflow was real in the
+> test binding and is not real on a phone. Nothing is owed by the copy owner and no label
+> changes.
+
+On a Pixel 8 at **411 dp** with the system text size at **1.3** — Android's largest standard
+setting — `System | Governorate` lays out as two **186 dp** segments in a groove spanning the
+full width, and **nothing scrolls**. Arabic at the same scale measures the same 186 dp.
+
+That is this entry's own caveat coming true: the 101 px was measured in a binding whose font
+is roughly 1.5x wider than Inter, and the scaled estimate above — "roughly 132 dp… near 304,
+which fits" — was the right one. D-012 had already seen this once on the quiz-type tabs.
+
+`test/goldens/scope_toggle_dark.png` still photographs the UNIVERSITY pair deliberately, so
+the baseline keeps pinning the control rather than a fallback that no real phone reaches.
+Full record: `docs/DEVICE_VERIFICATION_2026-09-20.md`.
+
+---
+
+## 82. ✅ RESOLVED 2026-09-20 (owner ruling) — Setup, Result and Review move onto the shared header
+
+> ✅ **OWNER RULING, 2026-09-20.** Option (b): all three screens move to the shared
+> `TitledChrome` + `CircleBackButton`, treated as **one architectural decision, not three
+> independent fixes**, with the shared header's contract and the existing navigation
+> behaviour verified first. Both verifications are below. **Built the same day.**
+
+
+**Where:** setup light `135:1622` / dark `337:6239`. Code:
+`lib/features/quiz/screens/quiz_setup_screen.dart`.
+
+**What:** Figma draws the title beside a 35 × 35 `tdesign:service-filled` back chip — light
+`#FCFBF9` with a (0.02833, 0.02833) blur 1.3 black 25% shadow, dark 20% with **G5** — which is the
+same chip `CircleBackButton` already implements for every other screen that has one. The setup
+screen instead uses a Material `AppBar` with its default back arrow, so it has an `AppBar`'s height,
+its own title alignment and no elevation treatment at all.
+
+**Built as:** unchanged. This is a **structural** divergence, not an elevation one: fixing it means
+replacing the `AppBar` with a custom header row, which changes the screen's layout, its scroll
+behaviour and its `SafeArea` handling. edit4 §5 #49 explicitly records it rather than touching it.
+
+**Fix we needed — ANSWERED 2026-09-20, see the banner.**
+
+### What was verified before touching anything
+
+The ruling asked for the shared header's contract and the existing navigation behaviour to be
+checked first. Three things came out of that, and the third is the one that made this safe:
+
+1. **`TitledChrome` is the contract** (`lib/core/widgets/titled_chrome.dart`): a `Column`, not
+   an `AppBar`, so it goes in `Scaffold.body` under the screen's existing `SafeArea`. Title
+   centred at `AppType.h2`, `CircleBackButton` pinned to the start edge, `onBack` defaulting
+   to `maybePop`, and a `backKey` so a test can leave the screen the way a student does. Five
+   screens already consume it the same way.
+2. **The frames agree.** `135:1622`, `159:1964` and `162:2377` were opened on 2026-09-20: all
+   three draw a back chip at the start edge beside a **centred** title. The quiz TAKING screen
+   does not — its start-edge control is a `✕` that discards the attempt — so it is not part of
+   this and keeps its `AppBar`.
+3. **The title does not move.** `appBarTheme.centerTitle` is already `true` and
+   `textTheme.titleLarge` is already `AppType.h2` (`app_typography.dart:257`), which is
+   exactly what `TitledChrome` renders. So the migration changes the **affordance only** — a
+   Material arrow becomes the 35 dp chip the frames draw, with its light shadow and its dark
+   Glass. Had the title alignment or type actually differed, this would have been a visual
+   decision and would have gone back to the owner rather than being built.
+
+### What was built
+
+| Screen | Back behaviour | Note |
+| --- | --- | --- |
+| Setup | default `maybePop` | unchanged from the `AppBar`'s implicit back |
+| Result | `onBack: () => _leave(context)` | **not** `maybePop` — the finished quiz and its setup screen are both still on the stack; the existing `PopScope` is untouched |
+| Review | default `maybePop` | was an explicit `pop`; identical today, and the default keeps behaving if a `PopScope` is ever added |
+
+Two consequences worth naming:
+
+- **Three tests moved from `Icons.arrow_back` to `CircleBackButton`.** The chip carries a
+  `Semantics` label rather than a `Tooltip`, which is why the result screen's
+  `expect(find.byType(Tooltip), findsNothing)` still holds.
+- **The result screen's bottom CTA now needs scrolling to in the 800x600 test viewport.** The
+  header and the new 33 dp star disc together moved "Review Questions" from y 559-619 to
+  y 570-630, putting its centre exactly on the edge. The tests scroll first, the way
+  `quiz_screen_test.dart` already does for the same reason. On a 375 x 812 phone the screen
+  still fits without scrolling.
+
+---
+
+## 83. ✅ RESOLVED 2026-09-20 (owner ruling) — the dark A/B/C/D badge ring takes its own token
+
+> ✅ **OWNER RULING, 2026-09-20.** Option (b): a dedicated `quizOptionBadgeRing`. **Keep
+> `quizOptionBorder` unchanged, because it is shared by other surfaces.** Use the Figma-read
+> lavender for dark and the existing appropriate light value. Built the same day.
+
+
+**Where:** dark option tile `337:6445`, badge `337:6447`. Code:
+`lib/features/quiz/widgets/question_option_tile.dart` (`_Badge`).
+
+**What:** `edit4.md` §5 #47 recorded the dark ring's colour as **not read**, and §7.4 therefore
+kept it on `quizOptionBorder`. It has now been read off the Properties panel:
+
+| | Shipped | Figma `337:6447` |
+| --- | --- | --- |
+| ring colour | `quizOptionBorder` — `#4B675E`, a green | **`#AE87E7` at 50%**, lavender |
+| ring width | 1.18 | 1.18 ✔ |
+
+So in dark the ring is the **same value as the option tile's own hairline** (`337:6440`, which edit4
+did move to `quizOptionTileBorder`) — the frame draws the tile outline and the letter ring in one
+colour, and the build draws them in two.
+
+**Built as:** unchanged, on purpose. `quizOptionBorder` is shared: the review screen's skipped row
+takes it for both its outline and its badge, and it is the correct light value in every case. Moving
+it in dark would restyle four surfaces to fix one, and §7.4 says the ring is unchanged. Changing
+one shared token on the strength of one node's reading is the kind of expansion the wave was told
+not to make.
+
+**Fix we needed — ANSWERED 2026-09-20, see the banner.**
+
+**Built as:** `AppColors.quizOptionBadgeRing`, consumed by `_Badge`'s **idle** branch only —
+the three graded states draw their own semantic ring and never read it. Dark is `337:6447`'s
+lavender at 50%, which makes it identical to `quizOptionTileBorder`, so the frame's "one
+colour for the outline and the ring" is reproduced.
+
+**The light value was NOT separately read.** It is `quizOptionBorder`'s light green carried
+across, which is what the badge already drew, so the light canvas is byte-identical. Recorded
+here rather than presented as a reading: if the light badge ever turns out to differ from the
+tile hairline, this token is the one to move.
+
+`quizOptionBorder` is untouched and still has four consumers, including the review screen's
+skipped row, which reads it for both its outline and its own badge. Pinned by
+`app_colors_test.dart` and `quiz_elevation_test.dart`, which assert both that the ring moved
+and that the shared token did not.
+
+---
+
+## 84. ✅ RESOLVED 2026-09-20 (owner ruling) — an idle segment is transparent, always
+
+> **Classification:** **resolved implementation item.** Built, pinned by tests, and confirmed
+> on hardware for both consumers (`docs/DEVICE_VERIFICATION_2026-09-20.md`). Nothing is owed
+> by the designer.
+
+> ✅ **OWNER RULING, 2026-09-20:** *"idle segment = transparent always."*
+>
+> So the knob was **removed**, not defaulted. `SegmentedTrackStyle.idleSegmentColor` no
+> longer exists; an unselected segment is always `selectedColor` at zero alpha. That is the
+> answer to the second half of the question below — the style does not *reject* an opaque
+> idle fill, it gives no way to express one — and it closes the first half at the same time,
+> because edit3's consumer had nothing left to pass. `docs/ENFORCEMENT.md`'s rule: a
+> mechanised rule holds where a prose one drifts.
+
+**Where:** `lib/core/widgets/elevation/segmented_track.dart` (`_Segment.build`),
+consumed by `lib/features/catalog/widgets/quiz_type_tabs.dart` and
+`lib/features/leaderboard/widgets/scope_toggle.dart`.
+
+**What:** a `_Segment` is the full height of the groove it sits in. If its idle fill is **opaque**,
+it paints over the track's inner shadows and flattens the idle part of the control. On the LIGHT
+canvas the two look identical — the track has no inner shadows there and both fills are the same
+grey — which is exactly why an opaque idle fill looks correct when it is written.
+
+**Measured, 2026-09-20.** Rendering the dark scope-toggle golden both ways differs in **2087
+pixels**, every one of them inside the idle segment, concentrated in two bands: the top inside edge
+(the lavender inner glow, up to 19/255 darker when covered) and the bottom (the black inner shadow).
+At (34, 12) the opaque version paints the flat track `rgb(35,36,41)` where the transparent one
+paints `rgb(46,44,55)`.
+
+**Built as:** the field is gone from the style — constructor, `==`, `hashCode` and all — and
+`_Segment` computes `style.selectedColor.withAlpha(0)` directly. The selected HUE at zero alpha
+rather than a bare transparent, so the 150 ms tween runs one colour's alpha up instead of
+cross-fading through a third colour; that is asserted mid-flight, not reasoned about.
+
+Both consumers lost a line. `ScopeToggle` had already been corrected within this wave and was
+passing `null`; `QuizTypeTabs` was passing `ext.pillTrackFill`, the opaque one.
+
+### What it actually cost the Lectures screen — measured, 2026-09-20
+
+`test/goldens/quiz_type_tabs_dark.png` was regenerated, alone, and it moved in **1699 pixels of
+27336**, `x 32..369`, `y 12..55` — the full width of the groove, in exactly the two
+inset-shadow bands, with the bottom one (`y 49..55`, ~190 px per row) carrying most of it.
+
+**Max channel delta 9/255**, against the scope toggle's 19. So this was the same defect and a
+milder one, because the pill track's inset shadows are the weaker pair — which is worth saying
+plainly: it is subtle enough that it would probably never have been caught by looking, on this
+screen. It was caught because the primitive was made incapable of it.
+
+No other golden moved; the repo's 38 are still 38. Pinned twice — at the consumer by
+`test/features/leaderboard/leaderboard_elevation_test.dart`, which now asserts on the PAINTED
+colour rather than on a style field that no longer exists, and at the primitive by
+`test/core/widgets/elevation/segmented_track_test.dart`, which covers all three call sites at
+once including Settings > Language, which `edit5.md` §363 has not built yet.
+
+**Fix we need:** nothing. Closed.
+
+---
+
+## 85. 🟡 The rewards row hard-overflowed at text scale 1.3, before and after this wave
+
+**Where:** `lib/features/quiz/screens/quiz_result_screen.dart` (`_RewardsCard`'s star + points row).
+
+**What:** the row is a star, an 8 dp gap and the points label, inside a card 331 dp wide. Measured at
+375 x 812, the label had no `Flexible`, so once it outgrew the space the result was a hard
+`RenderFlex` overflow rather than a wrap:
+
+| Text scale | Before edit4 (22 dp glyph) | After the 33 dp disc | Shipped (`Flexible`) |
+| --- | --- | --- | --- |
+| 1.0 | 0 | 0 | 0 |
+| 1.3 | **11 px** | **22 px** | 0 |
+| 2.0 | — | 176 px | 0 |
+| 3.0 | — | 396 px | 0 |
+
+**1.3 is Android's largest standard font setting**, so this was reachable on a stock phone before
+this wave touched the screen; the 33 dp star disc that `337:6685` specifies doubled it.
+
+**Built as:** the label is `Flexible` and **not** ellipsised. Wrapping rather than truncating
+because the one thing on that row that must survive is the number — an ellipsis could eat the digits
+and leave "+2…" — and the card hugs its content, so a second line makes it taller rather than
+clipping it. Pinned by a text-scale test in `quiz_result_screen_test.dart`.
+
+**Fix we need:** nothing, unless the designer objects to the card growing a line at large text
+scales. Recorded because it is a **pre-existing** defect this wave surfaced and fixed rather than
+one it introduced, and because `docs/RESPONSIVE.md`'s queue is still 0/11 applied — there are very
+likely more rows like this one.
+
+---
+
+## 86. 🟠 The leaderboard row that says "You" is 1.75:1 — found on a device, in both canvases
+
+> **Classification:** **pre-existing finding** → **designer decision**. NOT an edit4
+> regression, and NOT an implementation task. No colour is proposed here and none should be
+> chosen until the designer rules. DEVICE VERIFIED
+> (`docs/DEVICE_VERIFICATION_2026-09-20.md`).
+
+**Where:** `lib/features/leaderboard/widgets/leaderboard_row.dart:44` — `podiumOnAccent` on
+`podiumAccent`.
+
+**Measured off a Pixel 8 screencap, 2026-09-20** (not computed from tokens — decoded from the pixels
+the phone actually put on the glass):
+
+| | fill | label | contrast |
+| --- | --- | --- | --- |
+| the caller's own row, light | `rgb(216,176,255)` = `#D8B0FF` | `#FCFBF9` | **1.75:1** |
+| the caller's own row, dark | `rgb(216,176,255)` = `#D8B0FF` | `#FCFBF9` | **1.75:1** |
+| an ordinary row, dark | `rgb(35,36,40)` (the 20% wash) | `#FCFBF9` | 14.99:1 |
+
+`podiumAccent` is `#D8B0FF` and `podiumOnAccent` is `#FCFBF9` in **both** palettes, so the failure is
+canvas-independent. The row beside it measures 14.99:1, which is why it reads as a drop rather than
+as a style: the one row a student looks for first is the least legible thing on the board.
+
+**Not this wave's.** edit4 gave `LeaderboardRow` its fill, its list shadow and its dark Glass; the
+foreground pair predates it and was not touched. It is recorded here because the device pass is what
+made it visible, and because it is the same **family** as #77 — `#FCFBF9` on a light lavender — at a
+third set of values.
+
+**Fix we need:** a designer ruling, and **no colour is proposed here.** Worth putting in front of
+them together with #77: the review screen's own selected filter pill already solves this exact
+problem the other way round, drawing a DARK label on the lavender and measuring **5.48:1** on the
+same phone. That is an existing in-app precedent, not a suggestion.
+
+---
+
+## 87. 🔴 The dark quiz page's CORRECT option tile is 1.11:1 — effectively unreadable
+
+> **Classification:** **pre-existing finding** → **designer decision**. NOT an edit4
+> regression, and NOT an implementation task. This entry also carries **#53's device
+> comparison**, which D-010 asked for; that comparison is evidence, not a ruling. No colour
+> is proposed here. DEVICE VERIFIED (`docs/DEVICE_VERIFICATION_2026-09-20.md`).
+>
+> **Why the red marker**, since this file defines it as *"breaks a required flow"* and nothing
+> here crashes: the flow the quiz page owes a student after they answer is *learning what the
+> right answer was*, and at 1.11:1 the right answer cannot be read. The tile is drawn, the tap
+> works, and the information does not arrive. If the designer reads that as cosmetic, the
+> marker should drop to 🟠 — the number does not change either way.
+
+**Where:** `lib/core/theme/app_colors.dart` — `quizCorrectFill` / `quizWrongFill`, drawn by
+`lib/features/quiz/widgets/question_option_tile.dart`.
+
+**What:** the two graded fills are not symmetrical, and never have been:
+
+- `quizCorrectFill` is `0xFFBFFFC3` — **fully opaque**, the same light mint on both canvases;
+- `quizWrongFill` is `0x4DFFC0C0` — **30% alpha**, so it composites against whatever is behind it.
+
+In light that is invisible, because both fills stay pale and the label is near-black. In dark the
+label flips to cream while the correct tile's fill does **not** flip, and the result is cream on
+light mint.
+
+**Measured off a Pixel 8 screencap, 2026-09-20:**
+
+| tile | canvas | fill as rendered | label | contrast |
+| --- | --- | --- | --- | --- |
+| correct | dark | `rgb(191,255,195)` | `#FCFBF9` | **1.11:1** |
+| wrong | dark | `rgb(101,83,86)` | `#FCFBF9` | 6.94:1 |
+| idle | dark | `rgb(39,40,44)` | `#FCFBF9` | 14.24:1 |
+| correct | light | `rgb(191,255,195)` | `rgb(14,14,14)` | 16.83:1 |
+| wrong | light | `rgb(253,233,232)` | `rgb(14,14,14)` | 16.54:1 |
+
+**1.11:1 is the worst number in this entire document.** It is on the one tile a student is most
+likely to read — the one telling them what the right answer was — and it is reachable by finishing a
+question in dark mode.
+
+**Not this wave's, and deliberately not fixed.** edit4 touched the idle tile's hairline and the
+A/B/C/D badge ring on this widget and nothing else; both graded fills and the foreground predate it.
+Under the owner's 2026-09-20 instruction the build does not invent a colour and does not decide this.
+
+### This is also #53's comparison, which D-010 asked for
+
+D-010 deferred the question of whether the quiz page's graded tiles should follow the review rows
+onto a 20% wash, and asked for the two to be seen **side by side** before anyone ruled. They now
+have been, one tap apart, on the same phone, in the same session:
+
+| | dark fill as rendered | label | contrast |
+| --- | --- | --- | --- |
+| **review** row, correct | `rgb(66,80,71)` — the 20% wash | `#FCFBF9` | **8.22:1** |
+| **review** row, wrong | `rgb(79,67,70)` — the 20% wash | `#FCFBF9` | **9.13:1** |
+| **quiz** tile, correct | `rgb(191,255,195)` — opaque | `#FCFBF9` | **1.11:1** |
+| **quiz** tile, wrong | `rgb(101,83,86)` — 30% | `#FCFBF9` | 6.94:1 |
+
+The measured review figure of 8.22:1 is the same number #54 computed from the tokens (8.24:1), which
+is a useful check on that arithmetic: the phone and the spreadsheet agree to within rounding.
+
+**Fix we need:** a ruling. The evidence points one way, but the decision is the owner's, and the
+comparison is now on the record instead of being described.
+
+---
+
+## 88. 🟡 Question bodies render their markup as literal text
+
+> **Classification:** **contract clarification**. Not a design question, not a build defect
+> until the contract says so, and explicitly NOT a renderer change made on an assumption.
+> The next action is reading `contract/openapi.yaml` at the current pin, not editing
+> `mcq_renderer.dart`.
+
+**Where:** `lib/features/quiz/widgets/mcq_renderer.dart` — noticed on the device walk, 2026-09-20.
+
+**What:** the mock's question bodies contain `<u>…</u>`, and the phone draws the angle brackets. The
+renderer is a plain `Text`, so any markup in a question body appears verbatim.
+
+**This may be nothing.** The tags come from `lib/dev/mock_backend.dart:1419`, which is a fixture, not
+the server. Two things are unknown and neither was chased, because both are out of this wave:
+whether `Question.body` is specified as plain text or as markup in `contract/openapi.yaml`, and
+whether the real bank contains any.
+
+**Fix we need:** someone to check the contract. If the body is plain text this entry closes and the
+fixture should lose its tags; if it is markup, the renderer has a gap and it is a `seif_fight.md`
+question about which subset is allowed.
+
+---
+
+# Appendix — edit4's open ledger, as of 2026-09-20
+
+Everything the quiz/leaderboard elevation wave could not close by itself, in one
+place, so that "unanswered" and "forgotten" stay distinguishable. Each row says who it is
+waiting on. **None of it blocks the wave**; all of it blocks calling the wave finished.
+
+## How to read a row — the six kinds
+
+This wave produced all six, and they are not interchangeable. A row's **Kind** says what it is and
+therefore who moves next; it does **not** say how urgent it is.
+
+| Kind | What it means | Who acts next |
+| --- | --- | --- |
+| **pre-existing finding** | true before this wave touched the screen. Surfaced here, not caused here | nobody, until it is also classed below |
+| **edit4 regression** | this wave made it worse or made it new | the build. **There are none.** |
+| **designer decision** | the value is a choice, and the build must not make it | the designer |
+| **contract clarification** | the answer is in `contract/openapi.yaml` or owed by Seif | whoever reads the pin |
+| **device false positive** | the defect exists in the test binding and not on a phone | nobody — it closes |
+| **resolved implementation item** | built, pinned, and confirmed | nobody — it closes |
+
+Everything below is one of those. **None of it blocks the wave**; all of it blocks calling the wave
+finished.
+
+## Waiting on the DESIGNER — owner ruled 2026-09-20 that the build must not choose
+
+Every row here is **pre-existing** unless it says otherwise, and **none is an implementation task**.
+No colour is proposed in any of them, and none should be chosen from this table.
+
+| # | Kind | Question | Shipped as | Why the build did not decide |
+| --- | --- | --- | --- | --- |
+| **#77** | pre-existing → designer | The scope toggle's selected label is **1.74:1** light and **2.02:1** dark | measured, unchanged | #77's 2.74:1 ruling is scoped to `#FCFBF9` on `#AE87E7`; this is a different pair on a different component, so it is not pre-covered. Three candidate labels are measured in #77 and **none was picked.** **DEVICE VERIFIED 2026-09-20** — both figures reproduced exactly off a Pixel 8 screencap. |
+| **#86** | pre-existing → designer | The leaderboard's own row — the one that says "You" — is **1.75:1**, in BOTH canvases | measured, unchanged | Found by the device pass; worse than #77's, on a third colour pair (`podiumOnAccent` on `podiumAccent`), and the row beside it measures 14.99:1. **Not an edit4 regression** — this wave gave `LeaderboardRow` its fill, list shadow and dark Glass, never that foreground. |
+| **#87** | pre-existing → designer | The dark quiz page's CORRECT option tile is **1.11:1** | measured, unchanged | Found by the device pass. **Not an edit4 regression:** `quizCorrectFill` is opaque in both canvases and only the foreground flips, so dark puts cream on a light mint. edit4 touched this widget's idle hairline and badge ring and nothing else. Carries **#53's comparison** as evidence. |
+| **#54** | pre-existing → designer | The dark wrong row's hairline is **1.04:1** against its own fill | the frame's value at the frame's alpha | Any replacement red would be an invented hex. Raising the row's alpha instead is arithmetically dominated — the table in #54 shows it makes the badge and the text worse to make the stroke barely better. |
+| **#54** | pre-existing → designer | Two frame values read and **not adopted** — the lavender "QUESTION n" label, and the selected chip label at 2.74:1 | build's own values | The first is a visual change with no elevation component; the second would be a deliberate accessibility regression. Both are recorded with their node ids. |
+| **#72** | **NEW 2026-09-20 → designer** | `Frame 1000003007` is ONE component and its label reads **14** on Lectures (`180:5339`) and **18** on Settings (`176:2373`) — both Inter Medium 500 | `AppType.labelMedium`, 12/500, on both consumers | 18/w500 is **not in the type scale** (`h3` is 18/w600) and typography scales are top of the never-invent list. 14/w500 exists (`bodyMediumStrong`) so Lectures alone could move — but correcting one consumer of a shared style and not the other is how a shared style stops being shared. **No size was chosen.** Found while reading the Settings segments for edit5 #50. |
+
+**One piece of context for the designer, offered as fact and not as a proposal.** The review
+screen's own selected filter pill is the same lavender family as #77's and #86's fills, drawn the
+other way round — a dark label on the accent — and it measures **5.48:1** on the same phone in the
+same session. That is an existing product precedent. It is **not** a recommendation, and nothing in
+this repo should be changed on the strength of it.
+
+## Waiting on the CONTRACT
+
+| # | Kind | Question | Next action |
+| --- | --- | --- | --- |
+| **#88** | contract clarification | Question bodies render `<u>…</u>` as literal text. Is `Question.body` plain text, or does the contract allow markup? | **Read `contract/openapi.yaml` at the current pin** (`contract/SOURCE.md` says which). If plain text, the mock fixture loses its tags and this closes. If markup, it is a `docs/seif_fight.md` question about which subset. **Do not change `mcq_renderer.dart` on an assumption.** |
+
+## Closed by the 2026-09-20 device pass
+
+| # | Kind | Was | Now |
+| --- | --- | --- | --- |
+| **#81** | **device false positive** | `System \| Governorate` overflows by 101 px at 375 dp and the groove scrolls | **It does not.** Pixel 8, 411 dp, English, text scale 1.3: two **186 dp** segments, groove spans the full width, nothing scrolls. Arabic measures the same. The 101 px was the test binding's font, ~1.5x wider than Inter — the caveat #81's own body already carried, and the case D-012 had already seen once. **No copy change is owed.** |
+| **#53** | evidence gathered; **the ruling is still open** | The review rows are 20% + Glass while the quiz page's graded tiles are opaque, one tap apart, and nobody had seen them together | **The comparison D-010 asked for now exists**, measured on one phone in one session: review rows **8.22:1** and **9.13:1**, quiz correct tile **1.11:1**. Recorded in **#87**. **Neither treatment was changed**, and the decision remains the owner's. |
+
+## Resolved implementation items from this wave
+
+Listed so that "done" is as legible as "owed". None of these needs anything from anyone.
+
+| # | What | Confirmation |
+| --- | --- | --- |
+| **#82** | Setup, Result and Review moved onto the shared header | built + DEVICE VERIFIED, both back paths walked |
+| **#83** | the dark A/B/C/D badge ring took its own token | built + DEVICE VERIFIED |
+| **#84** | `SegmentedTrackStyle.idleSegmentColor` removed; idle segments always transparent | built + DEVICE VERIFIED on **both** consumers. `quiz_type_tabs_dark.png` moved 1699/27336 px at a max channel delta of 9/255; no other golden moved and the repo's 38 are still 38 |
+| **#85** | the rewards row's overflow at text scale 1.3 | built + DEVICE VERIFIED at 1.3 in Arabic |
+
+## The walkthrough — RUN 2026-09-20 on a Pixel 8
+
+**The full record is `docs/DEVICE_VERIFICATION_2026-09-20.md`**, in the dated form the 09-12 and
+09-19 passes use: device and build, method, per-item coverage table, every contrast measurement,
+and what was *not* covered. It is a separate file on purpose — this appendix is deleted when edit4
+closes, and the device evidence should not go with it.
+
+Two things are repeated here rather than only linked, because they must not be missed:
+
+**A security control was switched off to take the screenshots.** The quiz screen sets `FLAG_SECURE`,
+so `screencap` returns a black frame; `screenProtectionProvider` was overridden to a no-op **in
+`lib/main_mock.dart` only**, which is the seam the feature was built with, against fabricated mock
+questions, for one session. Together with a local-only `/leaderboard` ungating and a mock fixture
+for it, that is three changes — **all three reverted**, `git diff` against `HEAD` empty for each,
+and the reinstalled build re-checked on the phone showing "Coming soon" again.
+
+**Still not verified on a device:** the university Lectures quiz-type tabs **in Arabic**, the
+**offline and error states** of any edit4 screen, the **limit sheet**, **iOS**, and text scales
+above 1.3.

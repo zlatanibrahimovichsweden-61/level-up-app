@@ -372,6 +372,157 @@ void main() {
     });
   });
 
+  // Same reasoning as the Mistakes group above: every value here was read off a
+  // Properties panel in the owner's signed-in Figma session on 2026-09-20, and
+  // pinning them is what stops a later tidy-up from carrying a neighbour's
+  // value across again. Two of them ARE a later tidy-up being undone.
+  group('edit4 — quiz review rows, prev button, scope toggle', () {
+    final light = AppColors.light;
+    final dark = AppColors.dark;
+
+    test(
+      'the three review-row fills: light opaque, dark at the frame\'s 20%',
+      () {
+        // Light is byte-identical to what shipped before D-010 — the ruling is a
+        // DARK ruling and the light frame was never in question.
+        expect(light.reviewRowCorrectFill, light.quizCorrectFill);
+        expect(light.reviewRowWrongFill, light.quizWrongFill);
+        expect(light.reviewRowSkippedFill, light.quizOptionFill);
+
+        // Dark: the semantic HUE unchanged, at the frame's alpha. 337:6731.
+        expect(dark.reviewRowCorrectFill, const Color(0x33BFFFC3));
+        expect(dark.reviewRowWrongFill, const Color(0x33FFC0C0));
+        expect(dark.reviewRowSkippedFill, const Color(0x3327282C));
+
+        // Equal in treatment — the ruling's own words. A row left opaque beside
+        // a glassed neighbour is the defect it named.
+        for (final c in [
+          dark.reviewRowCorrectFill,
+          dark.reviewRowWrongFill,
+          dark.reviewRowSkippedFill,
+        ]) {
+          expect(c.a, closeTo(0.2, 0.005));
+        }
+      },
+    );
+
+    test(
+      'the wrong row keeps the SHIPPED hue, not the review frame\'s drift',
+      () {
+        // 337:6731's wrong twin draws #FDE9E8 with a #921019 stroke — one hex
+        // digit from the shipped pair, ruled unadopted in 2026-09-08 and still
+        // open as DESIGN_ISSUES #52. Only the ALPHA follows the frame.
+        expect(dark.reviewRowWrongFill.r, dark.quizWrongFill.r);
+        expect(dark.reviewRowWrongFill.g, dark.quizWrongFill.g);
+        expect(dark.reviewRowWrongFill.b, dark.quizWrongFill.b);
+        expect(dark.quizWrongBorder, const Color(0xFF921119));
+      },
+    );
+
+    test(
+      'quizReviewRowContent stopped being canvas-independent, and had to',
+      () {
+        // It used to be the same green on both, because its fill was opaque mint
+        // on both. Once the dark fill composites to #425047 that green measures
+        // 1.04:1. The replacement was READ off 337:6715, not chosen.
+        expect(light.quizReviewRowContent, const Color(0xFF384F47)); // 162:2510
+        expect(dark.quizReviewRowContent, const Color(0xFFFCFBF9)); // 337:6715
+        expect(light.quizReviewRowContent, isNot(dark.quizReviewRowContent));
+      },
+    );
+
+    test('the previous-button glyph is cream on BOTH canvases', () {
+      // 159:1922 and 337:6466. edit4.md §13 listed this as unread and offered
+      // a two-branch fallback; neither branch was needed.
+      expect(light.quizPrevButtonGlyph, const Color(0xFFFCFBF9));
+      expect(dark.quizPrevButtonGlyph, const Color(0xFFFCFBF9));
+      // Its own token even so: it sits on quizPrevButtonFill, which is a 60%
+      // green wash in light and a 20% neutral in dark — unrelated surfaces.
+      expect(light.quizPrevButtonFill, isNot(dark.quizPrevButtonFill));
+    });
+
+    test('the light selected scope fill is #DBB0FF — the re-read value', () {
+      // Carried #D8B0FF (read 2026-09-08) until a 2026-09-16 CSS export
+      // disagreed. 158:840 settles it. Three units of red apart, which is how
+      // it survived two readings.
+      expect(light.scopeSelectedFill, const Color(0xFFDBB0FF));
+      expect(dark.scopeSelectedFill, const Color(0xFFC4A8E3));
+      // podiumAccent was deliberately NOT moved with it: 134:3554 was not
+      // re-read, and a sibling's reading is not evidence about this one.
+      expect(light.podiumAccent, const Color(0xFFD8B0FF));
+      expect(light.scopeSelectedFill, isNot(light.podiumAccent));
+    });
+
+    test('the idle scope label is a dark GREEN, not textSecondary grey', () {
+      // 158:843 / 337:5619. edit4.md §7.8 asked for textSecondary here, which
+      // is the same substitution DESIGN_ISSUES #77 caught on the pill track.
+      expect(light.scopeIdleLabel, const Color(0xFF384F47));
+      expect(dark.scopeIdleLabel, const Color(0xFFFCFBF9));
+      expect(light.scopeIdleLabel, isNot(light.textSecondary));
+
+      // Numerically equal to pillTrackLabel and still its own token: the two
+      // controls are different Figma components with different selected fills
+      // and, per #77, two contrast problems that will not be fixed together.
+      expect(light.scopeIdleLabel, light.pillTrackLabel);
+      expect(light.scopeTrackFill, isNot(light.pillTrackSelectedFill));
+    });
+
+    test('the badge ring took the frame\'s lavender without moving the shared '
+        'token', () {
+      // Owner ruling 2026-09-20, DESIGN_ISSUES #83. 337:6447.
+      expect(
+        dark.quizOptionBadgeRing,
+        const Color.fromRGBO(174, 135, 231, 0.5),
+      );
+      expect(dark.quizOptionBadgeRing, dark.quizOptionTileBorder);
+      // The shared token stayed: the review skipped row still reads it for
+      // both its outline and its own badge.
+      expect(dark.quizOptionBorder, const Color(0xFF4B675E));
+      expect(dark.quizOptionBorder, isNot(dark.quizOptionBadgeRing));
+      // Light was not separately read — it is quizOptionBorder carried across,
+      // so the light canvas is byte-identical.
+      expect(light.quizOptionBadgeRing, light.quizOptionBorder);
+    });
+
+    test('every edit4 token is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(
+        light.copyWith(reviewRowCorrectFill: probe).reviewRowCorrectFill,
+        probe,
+      );
+      expect(
+        light.copyWith(reviewRowWrongFill: probe).reviewRowWrongFill,
+        probe,
+      );
+      expect(
+        light.copyWith(reviewRowSkippedFill: probe).reviewRowSkippedFill,
+        probe,
+      );
+      expect(
+        light.copyWith(quizPrevButtonGlyph: probe).quizPrevButtonGlyph,
+        probe,
+      );
+      expect(light.copyWith(scopeIdleLabel: probe).scopeIdleLabel, probe);
+      expect(
+        light.copyWith(quizOptionBadgeRing: probe).quizOptionBadgeRing,
+        probe,
+      );
+
+      // …and each leaves its neighbours alone.
+      final one = light.copyWith(scopeIdleLabel: probe);
+      expect(one.scopeSelectedFill, light.scopeSelectedFill);
+      expect(one.pillTrackLabel, light.pillTrackLabel);
+
+      // lerp endpoints are exact, so a mid-animation frame cannot be the only
+      // place a token is correct.
+      final mixed = light.lerp(dark, 1);
+      expect(mixed.reviewRowCorrectFill, dark.reviewRowCorrectFill);
+      expect(mixed.scopeIdleLabel, dark.scopeIdleLabel);
+      expect(mixed.quizOptionBadgeRing, dark.quizOptionBadgeRing);
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.

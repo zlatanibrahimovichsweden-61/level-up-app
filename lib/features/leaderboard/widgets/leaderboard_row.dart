@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/leaderboard_models.dart';
 import 'board_avatar.dart';
@@ -34,7 +36,9 @@ class LeaderboardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     final isMe = entry.isMe;
     final foreground = isMe ? ext.podiumOnAccent : ext.textPrimary;
@@ -44,17 +48,27 @@ class LeaderboardRow extends StatelessWidget {
 
     return Semantics(
       selected: isMe,
-      child: Container(
-        height: _height,
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 16, 0),
-        decoration: BoxDecoration(
-          // The frame fills an ordinary row `#FFFFFF`; [cardFill] is `#FDFDFD`,
-          // 2/255 away, and is reused rather than adding a fourth near-white to
-          // the palette — the same call [bodyMuted] documents. It also gives
-          // the dark canvas a sane value, which a literal white would not.
-          color: isMe ? ext.podiumAccent : ext.cardFill,
+      child: ElevatedSurface(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_radius),
         ),
+        height: _height,
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 16, 0),
+        // `leaderboardRowFill` now, not `cardFill`: the frame fills an
+        // ordinary row pure white in light and a 20% wash in dark, and the
+        // near-white `cardFill` was standing in for the first of those.
+        color: isMe ? ext.podiumAccent : ext.leaderboardRowFill,
+        // Figma hangs one soft drop shadow on the whole vertical stack
+        // (`133:3117`), not on each row. The stack here is a
+        // `ListView.separated`, so a single shadow behind it would be
+        // covered by the rows themselves; drawn per row, knocked out
+        // behind each fill, it lands where the frame's does. Both canvases
+        // keep it - this is one of the few dark surfaces that does.
+        shadows: elevation.leaderboardListShadows,
+        // The caller's own row (`134:3554`) carries NO Glass in the frame,
+        // where every other row does. It is the one opaque lilac row in a
+        // column of translucent ones, which is the point of it.
+        glass: isMe ? null : elevation.leaderboardRowGlass,
         child: Row(
           children: [
             SizedBox(

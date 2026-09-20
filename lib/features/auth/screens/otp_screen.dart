@@ -7,8 +7,11 @@ import 'package:pinput/pinput.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/language_pill.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
@@ -169,30 +172,31 @@ class _InputView extends StatelessWidget {
   final VoidCallback? onVerify;
   final VoidCallback? onResend;
 
+  /// The card's own radius and auto-layout · `308:5114` / `337:19501`, read
+  /// on the Properties panel 2026-09-20. Both canvases give the same four
+  /// numbers, so there is one set here rather than a token per theme.
+  static const _cardRadius = 19.0;
+  static const _cardPadding = EdgeInsetsDirectional.fromSTEB(10, 15, 10, 15);
+
+  /// The card's auto-layout gap — between the digit row and "Verify", which
+  /// are its only two children. The build had 28 here, measured off a
+  /// screenshot.
+  static const _cardGap = 20.0;
+
+  /// `Frame 1000002976`'s gap (`308:5109`) — subtitle block to card. The build
+  /// had 32.
+  static const _gapTitleToCard = 35.0;
+
+  /// `Frame 1000002977`'s gap (`308:5108`) — card to the resend block. The
+  /// build had 16.
+  static const _gapCardToResend = 26.0;
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final ext = Theme.of(context).extension<AppColors>()!;
-
-    final defaultPinTheme = PinTheme(
-      width: 48,
-      height: 56,
-      textStyle: AppType.h2.copyWith(color: ext.textPrimary),
-      decoration: BoxDecoration(
-        color: ext.fieldFill,
-        border: Border.all(color: ext.fieldBorder, width: 1.17),
-        borderRadius: BorderRadius.circular(16),
-      ),
-    );
-    final focusedPinTheme = defaultPinTheme.copyBorderWith(
-      border: Border.all(color: cs.primary, width: 1.5),
-    );
-    final errorPinTheme = defaultPinTheme.copyWith(
-      decoration: defaultPinTheme.decoration!.copyWith(
-        color: cs.error.withValues(alpha: 0.06),
-        border: Border.all(color: cs.error, width: 1.5),
-      ),
-    );
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     // The mapped inline message: otp_invalid uses the "incorrect code" copy and
     // red boxes; other failures (expired/throttled/offline/generic) show below.
@@ -215,50 +219,85 @@ class _InputView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
           ),
-          const SizedBox(height: 32),
-          // OTP boxes fill left-to-right regardless of UI locale.
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Pinput(
-              length: 6,
-              controller: pinController,
-              focusNode: focusNode,
-              autofocus: true,
-              keyboardType: TextInputType.number,
-              defaultPinTheme: defaultPinTheme,
-              focusedPinTheme: focusedPinTheme,
-              errorPinTheme: errorPinTheme,
-              forceErrorState: state.isInvalidCode,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              onChanged: onChanged,
-              onCompleted: onCompleted,
+          const SizedBox(height: _gapTitleToCard),
+          // ---------------------------------------------------------------
+          // The code card · edit5 #31. It is 354 wide, which is exactly this
+          // scroll view's content width, so it needs no width of its own.
+          //
+          // **"Verify" is INSIDE it**, and that is a reading, not a choice:
+          // the variant `Type= correct` has exactly two children — the digit
+          // row (`Frame 427319511`, 320 x 61.01) and the button
+          // (`Component 8`, 334 x 60) — with gap 20 between them and the
+          // card's own 15/10/15/10 padding around both. 15 + 61.01 + 20 + 60
+          // + 15 is the card's hug height of 171.01 to the hundredth, which
+          // is the arithmetic that proves the child list is complete.
+          //
+          // The inline error has NO slot in either frame: the light component
+          // set ships one variant and it is the correct-state one. It keeps
+          // the place the build already gives it, between the digits and the
+          // button, rather than being moved somewhere Figma also does not
+          // draw it. Recorded in docs/DESIGN_ISSUES.md #49.
+          ElevatedSurface(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_cardRadius),
+            ),
+            padding: _cardPadding,
+            color: ext.otpCardFill,
+            // Light: black 0.2/0.2/4. Dark: the same offsets at blur 7.9 in
+            // `rgba(174,135,231,0.25)` — the one drop shadow in the whole
+            // file whose dark colour is not black, and the reason this card
+            // elevates in dark with a glow instead of Glass.
+            shadows: elevation.otpCardShadows,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // OTP boxes fill left-to-right regardless of UI locale.
+                Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: Pinput.builder(
+                    length: 6,
+                    controller: pinController,
+                    focusNode: focusNode,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    forceErrorState: state.isInvalidCode,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    onChanged: onChanged,
+                    onCompleted: onCompleted,
+                    builder: (context, pin) => _DigitBox(state: pin),
+                  ),
+                ),
+                if (hasError) ...[
+                  const SizedBox(height: 16),
+                  _InlineMessage(
+                    text: authErrorMessage(l10n, state.error),
+                    color: cs.error,
+                    icon: isOffline(state.error)
+                        ? Icons.wifi_off
+                        : Icons.error_outline,
+                  ),
+                ],
+                const SizedBox(height: _cardGap),
+                PrimaryCta(
+                  enabled: onVerify != null,
+                  child: FilledButton(
+                    onPressed: onVerify,
+                    child: state.isVerifying
+                        ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: cs.onPrimary,
+                            ),
+                          )
+                        : Text(l10n.verify, style: AppType.buttonLarge),
+                  ),
+                ),
+              ],
             ),
           ),
-          if (hasError) ...[
-            const SizedBox(height: 16),
-            _InlineMessage(
-              text: authErrorMessage(l10n, state.error),
-              color: cs.error,
-              icon: isOffline(state.error)
-                  ? Icons.wifi_off
-                  : Icons.error_outline,
-            ),
-          ],
-          const SizedBox(height: 28),
-          FilledButton(
-            onPressed: onVerify,
-            child: state.isVerifying
-                ? SizedBox(
-                    height: 24,
-                    width: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: cs.onPrimary,
-                    ),
-                  )
-                : Text(l10n.verify, style: AppType.buttonLarge),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: _gapCardToResend),
           _ResendRow(
             l10n: l10n,
             secondsRemaining: state.secondsRemaining,
@@ -267,6 +306,81 @@ class _InputView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// One OTP cell · edit5 #52, Figma `Rectangle 104`-`107` light and
+/// `I337:19501;337:19276`-`...19279` dark.
+///
+/// **Why a builder and not a `PinTheme`.** `PinTheme` carries a
+/// `BoxDecoration`, and a `BoxDecoration` cannot express the dark canvas's
+/// G19 — frost, refraction, dispersion and splay are painted by
+/// `ElevatedSurface`, not by a border and a fill. `Pinput.builder` hands the
+/// cell over whole, which is the only way this surface gets built once instead
+/// of twice.
+///
+/// **The geometry stays the build's**: 6 boxes at 48 x 56 / r16, where Figma
+/// draws 4 at 66 x 61.01 / r11.73. The contract mandates six digits
+/// (docs/DESIGN_ISSUES.md #5), and six boxes at the frame's width do not fit a
+/// 334-wide card. Only the SURFACE follows Figma.
+class _DigitBox extends StatelessWidget {
+  const _DigitBox({required this.state});
+
+  final PinItemState state;
+
+  static const _width = 48.0;
+  static const _height = 56.0;
+  static const _radius = 16.0;
+
+  /// The focused and error strokes, both unchanged from the build. Figma
+  /// draws neither state, so these two are the app's own and stay that way.
+  static const _stateBorderWidth = 1.5;
+
+  /// The error tint over the cell, also unchanged.
+  static const _errorFillOpacity = 0.06;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
+
+    final (Color fill, Color border, double borderWidth) = switch (state.type) {
+      PinItemStateType.error => (
+        cs.error.withValues(alpha: _errorFillOpacity),
+        cs.error,
+        _stateBorderWidth,
+      ),
+      PinItemStateType.focused => (
+        ext.otpDigitFill,
+        cs.primary,
+        _stateBorderWidth,
+      ),
+      // `disabled` is unreachable here - the field is never disabled - and
+      // `submitted` / `following` / `initial` are all the resting look.
+      _ => (
+        ext.otpDigitFill,
+        ext.otpDigitBorder,
+        elevation.otpDigitBorderWidth,
+      ),
+    };
+
+    final textStyle = AppType.h2.copyWith(color: ext.textPrimary);
+
+    return ElevatedSurface(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      width: _width,
+      height: _height,
+      // Dark is `#232428` at 20%, so the cell composites over the card rather
+      // than over its own fill - which is what makes the Glass rim read.
+      color: fill,
+      side: BorderSide(color: border, width: borderWidth),
+      glass: elevation.otpDigitGlass,
+      child: Center(child: Text(state.value, style: textStyle)),
     );
   }
 }
@@ -327,39 +441,40 @@ class _ResendRow extends StatelessWidget {
   }
 }
 
-/// The countdown pill · Figma `82:1328` → Frame `427319517`, first child.
+/// The countdown pill · Figma `Item / Timer` in `Frame 1000002977`
+/// (`332:3390`): light `332:3391`, dark `337:19503`.
 ///
 /// A stadium holding a stroke-drawn stopwatch and the remaining time as
 /// `mm.ss`. The frame really does separate with a DOT ("00.21"); that is built
 /// verbatim and flagged (docs/DESIGN_ISSUES.md #49) rather than silently
 /// "corrected" to a colon.
 ///
-/// **The pill's numbers except [gapBelow] are measured off a 100%-zoom
-/// screenshot, not read from Dev Mode** — the Figma MCP connector is on a
-/// view-only seat (issue #49) — so treat them as ±2dp until the designer
-/// confirms. The glyph is the exception: it is the designer's own export, so
-/// its 15×19 box and its `#384F47` stroke are read, not measured.
+/// **The geometry and the bevel are now READ, and both moved.** The height was
+/// 36 and the horizontal padding 14, measured off a 100%-zoom screenshot
+/// because the connector was on a view-only seat; the panel gives **42** and
+/// **15**. The shadow was an OUTER black borrowed from the five card frames;
+/// both canvases draw an **inset** bevel instead, and they agree on nothing
+/// about it — light is black 25% from directly above at blur 4, dark is a pale
+/// `rgba(198,198,198,0.25)` from the start-bottom at blur 1.2. Those live in
+/// `AppElevation.otpTimerInsetShadows`; an inner shadow is a real inset here
+/// (edit1.md R7), not a second surface drawn on top.
 ///
-/// Fill, shadow and tints are approved tokens reused rather than hexes
-/// invented: [AppColors.cardFill] is the raised surface, the shadow is the
-/// recipe the five measured card shadows share (issue #47), the glyph takes
-/// `colorScheme.primary` — `#384F47` in light, i.e. exactly the stroke the
-/// export carries, and the colour the "Resend OTP" label under it already
-/// wears — and the digits take [AppColors.textSecondary], for which the frame
-/// gives no value (issue #49).
+/// Unchanged and still unread: the glyph takes `colorScheme.primary` —
+/// `#384F47` in light, i.e. exactly the stroke the designer's own export
+/// carries, and the colour the "Resend OTP" label under it already wears —
+/// and the digits take [AppColors.textSecondary], for which the frame gives no
+/// value (issue #49). The 15×19 glyph box is read, not measured.
 class _ResendTimerPill extends StatelessWidget {
   const _ResendTimerPill({required this.l10n, required this.secondsRemaining});
 
   final AppLocalizations l10n;
   final int secondsRemaining;
 
-  /// Frame 427319517's vertical gap to "Resend OTP" — the ONE value here that
-  /// comes from the Properties panel rather than a measurement.
+  /// Frame 427319517's vertical gap to "Resend OTP".
   static const gapBelow = 20.0;
 
-  static const _height = 36.0;
-  static const _radius = _height / 2; // a full stadium, holds at any width
-  static const _inset = 14.0;
+  static const _height = 42.0;
+  static const _inset = 15.0;
   static const _gap = 8.0;
 
   /// The export's own viewBox (`assets/icons/stopwatch.svg` is 15×19). Drawn
@@ -370,8 +485,10 @@ class _ResendTimerPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
     final minutes = (secondsRemaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (secondsRemaining % 60).toString().padLeft(2, '0');
 
@@ -379,20 +496,15 @@ class _ResendTimerPill extends StatelessWidget {
       // A screen reader gets the sentence, not "zero zero dot two one".
       label: l10n.resendIn(secondsRemaining),
       excludeSemantics: true,
-      child: Container(
+      child: ElevatedSurface(
+        // r100 in the frame on a 42-high pill: a stadium at any width, which
+        // is what the shape says without carrying a number that stops being
+        // true if the copy grows.
+        shape: const StadiumBorder(),
         height: _height,
         padding: const EdgeInsetsDirectional.symmetric(horizontal: _inset),
-        decoration: BoxDecoration(
-          color: ext.cardFill,
-          borderRadius: BorderRadius.circular(_radius),
-          boxShadow: [
-            BoxShadow(
-              color: ext.elevationShadow.withValues(alpha: 0.25),
-              offset: const Offset(0.5, 0.5),
-              blurRadius: 4,
-            ),
-          ],
-        ),
+        color: ext.otpTimerFill,
+        shadows: elevation.otpTimerInsetShadows,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -418,6 +530,19 @@ class _ResendTimerPill extends StatelessWidget {
     );
   }
 }
+
+// The blinking caret that used to sit in the active cell is GONE, and it is
+// not an oversight. `Pinput.builder` hard-codes `showCursor = false` and
+// `cursor = null` (pinput 6.0.2, `pinput.dart:176`), so the move off
+// `PinTheme` - which the dark canvas's G19 forces, because a `BoxDecoration`
+// cannot express frost, refraction or splay - takes the caret with it.
+// Drawing it back means a `Text('|')`, and the hardcoded-copy guard counts
+// that literal: baseline 4 -> 5 on a ratchet RISKS.md R-7 freezes at "may
+// fall further, never rise". Owner's call, 2026-09-20: keep the guard.
+//
+// What is left in its place is not nothing - the active cell still carries
+// the 1.5 `colorScheme.primary` border, so "where am I typing" is still
+// answered. Recorded in docs/DESIGN_ISSUES.md #49.
 
 class _SuccessView extends StatelessWidget {
   const _SuccessView({required this.onContinue});
@@ -452,9 +577,13 @@ class _SuccessView extends StatelessWidget {
             style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
           ),
           const SizedBox(height: 60),
-          FilledButton(
-            onPressed: onContinue,
-            child: Text(l10n.continueLabel, style: AppType.buttonLarge),
+          // edit5 §7.11a. Always enabled: the only way onto this view is a
+          // stored session, so there is no state in which "Continue" is dead.
+          PrimaryCta(
+            child: FilledButton(
+              onPressed: onContinue,
+              child: Text(l10n.continueLabel, style: AppType.buttonLarge),
+            ),
           ),
         ],
       ),

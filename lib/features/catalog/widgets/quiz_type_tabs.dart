@@ -86,10 +86,14 @@ class QuizTypeTabs extends StatelessWidget {
           trackColor: ext.pillTrackFill,
           trackRadius: 32,
           trackInsetShadows: elevation.pillTrackInsetShadows,
-          // The idle segment is the track's own colour on both canvases — the
-          // frame draws no separate idle fill, so a segment only becomes
-          // visible when it is selected.
-          idleSegmentColor: ext.pillTrackFill,
+          // No idle fill is passed, and none can be: the primitive always
+          // draws an unselected segment at zero alpha so the groove shows
+          // through. This used to pass `ext.pillTrackFill` — an OPAQUE
+          // colour — on the reading that the frame draws no separate idle
+          // fill. That reading is right and the implementation was still
+          // wrong: a full-height opaque segment covers the dark track's two
+          // inner shadows, which is not the same thing as showing the track.
+          // Owner ruling 2026-09-20, docs/DESIGN_ISSUES.md #84.
           selectedColor: ext.pillTrackSelectedFill,
           // The frame's 51/72; anything at or above half the 44 height is the
           // same stadium, and 22 is that half exactly.

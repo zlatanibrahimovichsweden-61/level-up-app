@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/explanation_state.dart';
 
@@ -37,16 +39,29 @@ class AiExplanationPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
     final l10n = AppLocalizations.of(context);
 
-    return Container(
+    final outerBorder = ext.aiPanelOuterBorder;
+    final backlight = elevation.aiPanelBacklight;
+
+    return ElevatedSurface(
       width: double.infinity,
-      padding: const EdgeInsetsDirectional.all(16.679),
-      decoration: BoxDecoration(
-        color: ext.quizOptionFill,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.179),
-        border: Border.all(color: ext.quizOptionBorder, width: 0.5),
       ),
+      padding: const EdgeInsetsDirectional.all(16.679),
+      color: ext.aiPanelOuterFill,
+      // Light `159:1811` outlines the panel; dark `337:9270` does NOT, and
+      // the token is null there to say so. A null border is a reading.
+      side: outerBorder == null
+          ? null
+          : BorderSide(color: outerBorder, width: 0.5),
+      // G18 - the frostiest Glass in the file, which is what makes the
+      // lavender ellipse behind the header glyph read as a haze rather than
+      // as a shape.
+      glass: elevation.aiPanelGlass,
+      backlights: [?backlight],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -111,6 +126,19 @@ class AiExplanationPanel extends StatelessWidget {
 }
 
 /// The inner card the frame draws around each explanation body (`159:1826`).
+///
+/// **Its shadow is not its own.** Figma hangs a `drop-shadow` filter on the
+/// wrapper `159:1825` / `337:9278` that groups the inner cards, so what the
+/// eye reads as each card's shadow is the wrapper's, seen around each card's
+/// outline. Drawn here as the card's own, knocked out behind the fill (R4) -
+/// which matters, because in dark that fill is only 20% opaque and an
+/// unclipped shadow would show straight through it.
+///
+/// Two numbers in the old comment here were wrong and are worth naming. The
+/// blur is **3**, not 1.5 - the wrapper's, not a guess at the card's. And the
+/// colour is black on both canvases: the cream `elevationShadow` came from
+/// "a black shadow does not exist on a dark page", a derivation the thirteen
+/// dark frames refuted (DESIGN_ISSUES #47 superseded, D-009).
 class _Body extends StatelessWidget {
   const _Body({required this.child});
 
@@ -118,26 +146,19 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    return Container(
+    return ElevatedSurface(
       width: double.infinity,
-      padding: const EdgeInsetsDirectional.all(12.134),
-      decoration: BoxDecoration(
-        color: ext.quizOptionFill,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20.224),
-        boxShadow: [
-          // Figma `drop-shadow(0.02px 0.02px 1.5px rgba(0,0,0,0.25))`. The
-          // DEPTH is this component's and stays here; the shadow's colour is
-          // the canvas's and comes from the palette, because a black shadow
-          // does not exist on a `#232428` page.
-          BoxShadow(
-            color: ext.elevationShadow.withValues(alpha: 0.25),
-            blurRadius: 1.5,
-            offset: const Offset(0.02, 0.02),
-          ),
-        ],
       ),
+      padding: const EdgeInsetsDirectional.all(12.134),
+      color: ext.aiPanelCardFill,
+      shadows: elevation.aiPanelCardShadows,
+      glass: elevation.aiPanelCardGlass,
       child: child,
     );
   }

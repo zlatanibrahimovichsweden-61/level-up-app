@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/app_modal.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/notifier/me_notifier.dart';
 import '../bloc/quiz_bloc.dart';
@@ -244,8 +249,13 @@ class _QuizView extends ConsumerWidget {
   }
 
   Future<bool> _confirmExit(BuildContext context, AppLocalizations l10n) async {
-    final leave = await showDialog<bool>(
+    // No Figma frame draws this dialog, so it takes the app's own dialog
+    // scrim rather than Material's default barrier - the same one the
+    // logout and delete confirmations wear (edit2 §13). That is a
+    // consistency choice between two existing values, not an invented one.
+    final leave = await showAppDialog<bool>(
       context: context,
+      scrim: Theme.of(context).extension<AppElevation>()!.logoutDialogScrim,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.exitQuizTitle),
         content: Text(l10n.exitQuizBody),
@@ -350,31 +360,113 @@ class _ActionBar extends StatelessWidget {
       child: Row(
         children: [
           // Directional: leads the row, so it sits on the right in RTL and the
-          // arrow flips with the text direction rather than being mirrored by
-          // hand.
-          if (!session.isFirst)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 12),
-              child: IconButton.filledTonal(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: busy
-                    ? null
-                    : () => bloc.add(const PreviousQuestionRequested()),
-              ),
+          // chevron flips with the text direction rather than being mirrored
+          // by hand.
+          if (!session.isFirst) ...[
+            _PreviousButton(
+              onPressed: busy
+                  ? null
+                  : () => bloc.add(const PreviousQuestionRequested()),
             ),
+            // Figma puts the pill at x 20 ending at 99 and starts the CTA at
+            // 114.
+            const SizedBox(width: 15),
+          ],
           Expanded(
-            child: FilledButton(
-              onPressed: busy ? null : action,
-              child: busy
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(label),
+            child: PrimaryCta(
+              enabled: !busy && action != null,
+              child: FilledButton(
+                onPressed: busy ? null : action,
+                child: busy
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(label),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The previous-question pill · Figma `159:1920` (light) / `337:6464` (dark).
+///
+/// A 79 x 58 rounded rectangle, not the Material tonal icon button that stood
+/// here - which was roughly 40 dp round and carried M3's own tonal colours.
+///
+/// **The radius differs by canvas**: 9 light, 10 dark, both read off the
+/// Properties panel on 2026-09-20. One dp on a 58-high pill is invisible, and
+/// normalising it is still not this edit's call, so it lives in
+/// [AppElevation.quizPrevButtonRadius] with both values.
+///
+/// The glyph is the shared `chevron.svg`, mirrored the way
+/// [CircleBackButton] mirrors it: the asset points RIGHT, so "back" is its
+/// flip in LTR and its unflipped self in RTL. Its colour was read in both
+/// canvases - `159:1922` and `337:6466` both say cream.
+class _PreviousButton extends StatelessWidget {
+  const _PreviousButton({required this.onPressed});
+
+  /// Null while an answer or a finish is in flight.
+  final VoidCallback? onPressed;
+
+  static const _width = 79.0;
+  static const _height = 58.0;
+  static const _chevronWidth = 16.57;
+  static const _chevronHeight = 28.64;
+
+  /// `kProfileDisabledOpacity`, the project's one disabled convention. Figma
+  /// draws no disabled state for this chip (edit1.md R10).
+  static const _disabledOpacity = 0.45;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final busy = onPressed == null;
+
+    return Semantics(
+      button: true,
+      enabled: !busy,
+      // `previousPageTooltip`, NOT `backButtonTooltip`. This screen already
+      // has a control that means "back" - the ✕ in the app bar, which LEAVES
+      // the quiz - so announcing this one as "Back" would give a screen reader
+      // two buttons with the same name and very different consequences. Both
+      // strings are framework-localised, so neither needs an ARB entry.
+      label: MaterialLocalizations.of(context).previousPageTooltip,
+      child: Opacity(
+        opacity: busy ? _disabledOpacity : 1,
+        child: ElevatedSurface(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(elevation.quizPrevButtonRadius),
+          ),
+          width: _width,
+          height: _height,
+          color: ext.quizPrevButtonFill,
+          shadows: elevation.quizPrevButtonShadows,
+          glass: elevation.quizPrevButtonGlass,
+          onTap: onPressed,
+          child: Center(
+            child: Transform.flip(
+              flipX: !rtl,
+              child: SvgPicture.asset(
+                'assets/icons/chevron.svg',
+                width: _chevronWidth,
+                height: _chevronHeight,
+                excludeFromSemantics: true,
+                colorFilter: ColorFilter.mode(
+                  ext.quizPrevButtonGlyph,
+                  BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

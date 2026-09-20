@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 
-/// One stat card · Figma `661:8571`.
+/// One stat card · Figma `661:8571` (light) / `661:8579` (dark).
+///
+/// **The one OPAQUE surface in the profile block.** Every other dark card here
+/// is a 20% wash under Glass; `661:8579` is solid `#27282C` with no Glass and
+/// the same black shadow light carries. It is also the node that settled
+/// docs/DESIGN_ISSUES.md #47 — a dark card with a measurable black shadow on
+/// it, which is what refuted the cream `elevationShadow` this widget used to
+/// paint. The blur is **2**, not the 1 that shipped.
 ///
 /// Takes [value] as an already-formatted string and prints it. There is no
 /// arithmetic in this widget and there must never be any: the frame's stat
@@ -22,23 +31,15 @@ class ProfileStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    return Container(
+    return ElevatedSurface(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       padding: const EdgeInsetsDirectional.all(12),
-      decoration: BoxDecoration(
-        color: ext.cardFill,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            // Figma `661:8571`: 0.02 / 0.02 / 1, at 25%. Colour from the
-            // canvas — see [AppColors.elevationShadow].
-            color: ext.elevationShadow.withValues(alpha: 0.25),
-            offset: const Offset(0.02, 0.02),
-            blurRadius: 1,
-          ),
-        ],
-      ),
+      color: ext.profileStatFill,
+      shadows: elevation.profileStatShadows,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -23,12 +23,15 @@ import 'golden_harness.dart';
 
 /// Goldens for the other three Day 7b surfaces, in both canvases.
 ///
-/// Two of the subjects are private widgets (`_TrackCard`, `_BellChip`), so they
-/// are located by runtime type name. That keeps the capture tight on the thing
-/// under test — the whole track screen would drag in the language pill, and the
-/// whole header would drag in a network avatar.
-Finder _byPrivateType(String name) =>
-    find.byWidgetPredicate((w) => w.runtimeType.toString() == name);
+/// Two of the subjects are private widgets (`_TrackCard`, `_BellChip`), so
+/// neither can be named in a finder. Both are captured from a public ancestor
+/// instead — the header for the bell, the `Scaffold` for the track cards —
+/// which is what a `RepaintBoundary`-based capture ends up framing anyway.
+/// A `_byPrivateType` helper used to locate them by runtime type name; it
+/// bought nothing, because `matchesGoldenFile` snapshots the nearest enclosing
+/// boundary regardless of what the finder points at, and for the track screen
+/// it actively hurt: the nearest boundary was `Scrollable`'s, INSIDE the
+/// Scaffold, so the page fill fell outside the capture.
 
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
@@ -159,11 +162,20 @@ void main() {
       // radius 25, the illustrations in their leading slots — plus, for free,
       // the C3 back chip and the C4 side inset.
       //
-      // Screen-level rather than card-level for the same reason as the bell:
-      // `_TrackCard` is private and carries no repaint boundary, so a finder on
-      // it snapshots the enclosing surface regardless.
+      // **The finder is the `Scaffold`, not the card, and that matters.** It
+      // used to be `_byPrivateType('_TrackCard').first`, which walks up to the
+      // nearest repaint boundary — `Scrollable`'s, INSIDE the Scaffold — so
+      // the page fill was outside the capture and the baseline was
+      // transparent-backed. That was invisible while the dark card was an
+      // opaque `#232428`. edit5 made it `#232428` at **20%** (`337:15981`),
+      // and a 20% card over nothing is a pale ghost: the baseline would have
+      // shown a card that all but vanished while the device shows no change
+      // at all, because on a device the 20% composites over a `#232428` page.
+      // Capturing from the Scaffold puts `scaffoldBackgroundColor` inside the
+      // boundary, which is the same rule `golden_harness.dart`'s `goldenApp`
+      // already follows for every widget-level golden.
       await expectLater(
-        _byPrivateType('_TrackCard').first,
+        find.byType(Scaffold),
         matchesGoldenFile('track_screen_$canvas.png'),
       );
     });

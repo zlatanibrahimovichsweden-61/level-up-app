@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/answer_result.dart';
 import '../models/quiz_question.dart';
@@ -94,51 +97,48 @@ class _QuizReviewScreenState extends ConsumerState<QuizReviewScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        // `Icons.arrow_back` carries `matchTextDirection: true`, so it mirrors
-        // itself in Arabic. (`Icons.arrow_back_ios_new` does not, which is why
-        // catalog_scaffold.dart needs a helper and this does not.)
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(l10n.quizReviewTitle),
-      ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _FilterRow(
-              selected: _filter,
-              // Count on "All" only. The frame gives "Correct" and "Wrong" a
-              // leading glyph and a bare label — do not invent counts for them.
-              total: questions.length,
-              onChanged: (filter) => setState(() => _filter = filter),
-            ),
-            Expanded(
-              child: rows.isEmpty
-                  ? _EmptyState(message: l10n.quizReviewEmpty)
-                  : ListView.separated(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        20,
-                        4,
-                        20,
-                        24,
+        child: TitledChrome(
+          title: l10n.quizReviewTitle,
+          backKey: const Key('quiz_review_back'),
+          // Default `maybePop`, not the explicit `pop` this used to call.
+          // There is no `PopScope` on this screen so the two are the same
+          // today; the default is the one that keeps behaving if one is
+          // ever added.
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _FilterRow(
+                selected: _filter,
+                // Count on "All" only. The frame gives "Correct" and "Wrong" a
+                // leading glyph and a bare label — do not invent counts for them.
+                total: questions.length,
+                onChanged: (filter) => setState(() => _filter = filter),
+              ),
+              Expanded(
+                child: rows.isEmpty
+                    ? _EmptyState(message: l10n.quizReviewEmpty)
+                    : ListView.separated(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          20,
+                          4,
+                          20,
+                          24,
+                        ),
+                        itemCount: rows.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (_, index) {
+                          final (number, question) = rows[index];
+                          return _ReviewRow(
+                            number: number,
+                            question: question,
+                            grade: widget.args.grades[question.id],
+                          );
+                        },
                       ),
-                      itemCount: rows.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (_, index) {
-                        final (number, question) = rows[index];
-                        return _ReviewRow(
-                          number: number,
-                          question: question,
-                          grade: widget.args.grades[question.id],
-                        );
-                      },
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -201,8 +201,13 @@ class _FilterRow extends StatelessWidget {
 }
 
 /// Hug × 32, stadium, padding 6/12. Selected fills with
-/// [AppColors.quizReviewFilterFill]; unselected is the raised cream surface
-/// with the file's elevation shadow, per `162:2780`.
+/// [AppColors.quizReviewFilterFill] and is FLAT in both canvases; idle is the
+/// raised surface - a tight black shadow in light (`162:2782`), and in dark a
+/// 20% fill with G5 Glass and no shadow at all (`337:6827`).
+///
+/// This used to be a `Material(elevation: selected ? 0 : 2, shadowColor: ...)`
+/// - a Material approximation standing in for a measured Figma shadow, and
+/// two of the seven raw elevation sites the ratchet was counting.
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,
@@ -236,6 +241,7 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     return Semantics(
       button: true,
@@ -243,47 +249,52 @@ class _FilterChip extends StatelessWidget {
       child: SizedBox(
         height: _tapTarget,
         child: Center(
-          child: Material(
-            color: selected ? ext.quizReviewFilterFill : ext.quizOptionFill,
+          // No `width`/`height` on the surface on purpose: it would emit its
+          // own `SizedBox`, and the pill's 32 is a MINIMUM while the 48 above
+          // is the real box. Same reason the height was a constraint before.
+          child: ElevatedSurface(
             shape: const StadiumBorder(),
-            elevation: selected ? 0 : 2,
-            shadowColor: ext.elevationShadow,
-            child: InkWell(
-              customBorder: const StadiumBorder(),
-              onTap: onTap,
-              child: Container(
-                constraints: const BoxConstraints(minHeight: _height),
-                padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (glyphColor != null) ...[
-                      glyph == null
-                          ? Container(
-                              width: _glyph,
-                              height: _glyph,
-                              decoration: BoxDecoration(
-                                color: glyphColor,
-                                shape: BoxShape.circle,
-                              ),
-                            )
-                          : Icon(glyph, size: _glyph + 4, color: glyphColor),
-                      const SizedBox(width: 10),
-                    ],
-                    Text(
-                      label,
-                      style: AppType.labelLarge.copyWith(
-                        // NOT `onPrimary`: it is #FCFBF9 in both themes, which is
-                        // right on the light chip (5.97:1) and wrong on the dark
-                        // chip's purple (2.74:1). See the token's field doc.
-                        color: selected
-                            ? ext.quizReviewFilterLabel
-                            : ext.textPrimary,
-                      ),
-                    ),
+            color: selected
+                ? ext.quizReviewFilterFill
+                : ext.reviewFilterIdleFill,
+            // The selected pill has no shadow and no Glass in either frame.
+            shadows: selected ? const [] : elevation.reviewFilterIdleShadows,
+            glass: selected ? null : elevation.reviewFilterIdleGlass,
+            onTap: onTap,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: _height),
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (glyphColor != null) ...[
+                    glyph == null
+                        ? Container(
+                            width: _glyph,
+                            height: _glyph,
+                            decoration: BoxDecoration(
+                              color: glyphColor,
+                              shape: BoxShape.circle,
+                            ),
+                          )
+                        : Icon(glyph, size: _glyph + 4, color: glyphColor),
+                    const SizedBox(width: 10),
                   ],
-                ),
+                  Text(
+                    label,
+                    style: AppType.labelLarge.copyWith(
+                      // NOT `onPrimary`: it is the same cream in both themes,
+                      // which is right on the light chip (5.97:1) and wrong on
+                      // the dark chip's purple (2.74:1). See the token's field
+                      // doc, and DESIGN_ISSUES #54 for what the dark frame
+                      // itself specifies here.
+                      color: selected
+                          ? ext.quizReviewFilterLabel
+                          : ext.textPrimary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -293,14 +304,41 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-/// One question, `162:2502` (correct) / `162:2563` (wrong): 73 tall, radius 16,
-/// 0.5px border.
+/// One question, `162:2502` (correct) / `162:2563` (wrong) in light,
+/// `337:6731` and its wrong twin in dark: 362 x 73, radius 16, 0.5px stroke.
 ///
-/// The three fills come straight from the shipped quiz-page tokens. The review
-/// frame draws a fourth pair for the wrong row (`#FDE9E8` / `#921019`, opaque)
-/// that differs from the shipped pair by one hex digit and by opacity; that
-/// reads as drift, and the owner chose the shipped values. See
+/// **The dark rows changed on 2026-09-17 by designer ruling** - D-010, which
+/// resolved DESIGN_ISSUES #53 in the opposite direction to its 2026-09-08
+/// predecessor. They used to be the shipped quiz-page fills, opaque, on both
+/// canvases, because "a correctness signal must not change with the canvas".
+/// The ruling keeps that rule where it actually bites - the HUE - and takes
+/// the frame's TREATMENT: the semantic fill at the frame's alpha, the 0.5
+/// semantic stroke, and Glass. Green stays green and red stays red.
+///
+/// Two consequences worth naming, because both look like mistakes:
+///
+///  * **All three states take the same alpha and the same Glass**, including
+///    the skipped row the frame never draws. The ruling's own emphasis was
+///    that the rows be EQUAL in treatment rather than one opaque beside a
+///    glassed neighbour, and it said the literal 20% yields to that where
+///    the two conflict. Here they do not - 20% is both the frame's number
+///    and the consistent one.
+///  * **The correct row's foreground follows the canvas now.** It could not
+///    before: its fill was opaque mint on both, so a flipping foreground put
+///    cream on mint at 1.11:1. Now the dark fill composites to a dark
+///    `#425047`, on which the old dark green measures **1.04:1** - the same
+///    failure from the other side. `337:6715` specifies cream and that is
+///    what [AppColors.quizReviewRowContent] now carries in dark: **8.24:1**.
+///
+/// The wrong row's HUE still does not follow the frame. `337:6731`'s twin
+/// draws `#FDE9E8` with a `#921019` stroke, one hex digit from the shipped
+/// pair; the owner ruled that drift unadopted and it stays open as
 /// docs/DESIGN_ISSUES.md #52.
+///
+/// This ruling was scoped to these rows. It gives no instruction about the
+/// quiz page's graded option tiles one tap away, which are unchanged - if
+/// the two screens visibly disagree, that is a new question for the designer
+/// with both renders side by side, not a reason to hold these.
 class _ReviewRow extends StatelessWidget {
   const _ReviewRow({
     required this.number,
@@ -323,14 +361,12 @@ class _ReviewRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    // `content` is per-state because the FILLS behave differently, and a
-    // foreground has to follow the fill it sits on:
-    //   - quizCorrectFill is opaque #BFFFC3 in BOTH canvases, so its foreground
-    //     must also be fixed. A flipping one puts cream on mint in dark —
-    //     measured 1.11:1, i.e. invisible.
-    //   - quizWrongFill (30% alpha) and quizOptionFill DO follow the canvas, so
-    //     theirs is textPrimary, which follows with them (6.94:1 dark).
+    // Every fill here follows the canvas now, so every foreground does too.
+    // Measured on the dark composites: correct 8.24:1, wrong 9.11:1, skipped
+    // 14.84:1. The correct row keeps its own token rather than sharing
+    // textPrimary, because in LIGHT it is a green that textPrimary is not.
     final (
       fill,
       border,
@@ -340,7 +376,7 @@ class _ReviewRow extends StatelessWidget {
       semantic,
     ) = switch (grade?.correct) {
       true => (
-        ext.quizCorrectFill,
+        ext.reviewRowCorrectFill,
         ext.quizCorrectBorder,
         ext.successBadge,
         Icons.check,
@@ -348,7 +384,7 @@ class _ReviewRow extends StatelessWidget {
         l10n.resultCorrect,
       ),
       false => (
-        ext.quizWrongFill,
+        ext.reviewRowWrongFill,
         ext.quizWrongBorder,
         ext.quizWrongBadge,
         Icons.close,
@@ -359,7 +395,7 @@ class _ReviewRow extends StatelessWidget {
       // ungraded surface and shows no ✓/✕ at all rather than guessing at a
       // third signal colour. TODO(design): docs/DESIGN_ISSUES.md #55.
       null => (
-        ext.quizOptionFill,
+        ext.reviewRowSkippedFill,
         ext.quizOptionBorder,
         null,
         null,
@@ -378,75 +414,87 @@ class _ReviewRow extends StatelessWidget {
 
     return Semantics(
       label: semantic,
-      child: Container(
-        // A MINIMUM, not a fixed height. At 73 the two lines have 13px of
-        // slack, which text scale 1.35 exhausts — one RenderFlex overflow per
-        // row, and Android's largest standard font setting is already 1.30.
-        constraints: const BoxConstraints(minHeight: _height),
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: border, width: 0.5),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: _circle,
-              height: _circle,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: badge,
-                shape: BoxShape.circle,
-                border: Border.all(color: border, width: 1.18),
-              ),
-              child: mark == null
-                  ? null
-                  : Icon(mark, size: 14, color: theme.colorScheme.onPrimary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.quizReviewQuestionLabel(number),
-                    // Same `content` as the question: textSecondary is #DCDCDC
-                    // in dark, which on the correct row's mint measures 1.20:1.
-                    // Hierarchy here comes from size and weight, not colour —
-                    // the frame specifies no colour for this label.
-                    style: AppType.captionRegular.copyWith(color: content),
+      child: ElevatedSurface(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: fill,
+        side: BorderSide(color: border, width: 0.5),
+        // Null in light, G5 in dark. This is the whole of D-010's change
+        // beyond the fill alpha, and in dark it is what delineates the
+        // skipped row at all - its composite is 1.01:1 against the page.
+        glass: elevation.reviewRowGlass,
+        // The constraint wraps the padding rather than sitting inside it,
+        // which is what the `Container` here did: a MINIMUM, not a fixed
+        // height. At 73 the two lines have 13px of slack, which text scale
+        // 1.35 exhausts — one RenderFlex overflow per row, and Android's
+        // largest standard font setting is already 1.30.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _height),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: _circle,
+                  height: _circle,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: badge,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: border, width: 1.18),
                   ),
-                  Text(
-                    question.text,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppType.h3.copyWith(color: content),
+                  child: mark == null
+                      ? null
+                      : Icon(
+                          mark,
+                          size: 14,
+                          color: theme.colorScheme.onPrimary,
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.quizReviewQuestionLabel(number),
+                        // Same `content` as the question: textSecondary is #DCDCDC
+                        // in dark, which on the correct row's mint measures 1.20:1.
+                        // Hierarchy here comes from size and weight, not colour —
+                        // the frame specifies no colour for this label.
+                        style: AppType.captionRegular.copyWith(color: content),
+                      ),
+                      Text(
+                        question.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppType.h3.copyWith(color: content),
+                      ),
+                    ],
+                  ),
+                ),
+                if (showAi) ...[
+                  const SizedBox(width: 8),
+                  Semantics(
+                    label: l10n.quizReviewAiAvailable,
+                    child: SvgPicture.asset(
+                      'assets/icons/ai_education.svg',
+                      width: _aiGlyph,
+                      height: _aiGlyph,
+                      // The glyph's viewBox is 27×25, not square — box it and it
+                      // stretches. Same reason main_shell.dart does this.
+                      fit: BoxFit.contain,
+                      // The outer Semantics already labels it; without this the
+                      // SvgPicture's own image semantics merge upward and the whole
+                      // row is announced as an image.
+                      excludeFromSemantics: true,
+                      colorFilter: ColorFilter.mode(content, BlendMode.srcIn),
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
-            if (showAi) ...[
-              const SizedBox(width: 8),
-              Semantics(
-                label: l10n.quizReviewAiAvailable,
-                child: SvgPicture.asset(
-                  'assets/icons/ai_education.svg',
-                  width: _aiGlyph,
-                  height: _aiGlyph,
-                  // The glyph's viewBox is 27×25, not square — box it and it
-                  // stretches. Same reason main_shell.dart does this.
-                  fit: BoxFit.contain,
-                  // The outer Semantics already labels it; without this the
-                  // SvgPicture's own image semantics merge upward and the whole
-                  // row is announced as an image.
-                  excludeFromSemantics: true,
-                  colorFilter: ColorFilter.mode(content, BlendMode.srcIn),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

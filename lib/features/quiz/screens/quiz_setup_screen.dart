@@ -5,8 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/offline_banner.dart';
+import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/quiz.dart';
 import '../models/quiz_mode.dart';
@@ -58,97 +62,108 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
     ref.listen<AsyncValue<Quiz?>>(quizSetupProvider, _onCreationChanged);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.quizSetupTitle)),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (offline) const OfflineBanner(),
+        child: TitledChrome(
+          title: l10n.quizSetupTitle,
+          backKey: const Key('quiz_setup_back'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (offline) const OfflineBanner(),
 
-            // Scope header — 146:2287. The frame also shows the SUBJECT above
-            // the scope name ("Biology" / "Cell Membrane"), but no quiz
-            // endpoint returns a subject: `Quiz` carries only `scopeName`, and
-            // plumbing it from the catalog would mean changing the Learn stack.
-            // Scope alone, flagged in docs/DESIGN_ISSUES.md.
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsetsDirectional.fromSTEB(22, 16, 16, 13.18),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: ext.quizDivider, width: 1.18),
+              // Scope header — 146:2287. The frame also shows the SUBJECT above
+              // the scope name ("Biology" / "Cell Membrane"), but no quiz
+              // endpoint returns a subject: `Quiz` carries only `scopeName`, and
+              // plumbing it from the catalog would mean changing the Learn stack.
+              // Scope alone, flagged in docs/DESIGN_ISSUES.md.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  22,
+                  16,
+                  16,
+                  13.18,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: ext.quizDivider, width: 1.18),
+                  ),
+                ),
+                child: Text(
+                  // Server copy, already in the content language (adr-018) —
+                  // rendered verbatim, never looked up in the ARB.
+                  widget.args.scopeName,
+                  style: AppType.h2.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ),
-              child: Text(
-                // Server copy, already in the content language (adr-018) —
-                // rendered verbatim, never looked up in the ARB.
-                widget.args.scopeName,
-                style: AppType.h2.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 25, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.selectQuizSize,
-                      style: AppType.h3.copyWith(color: ext.textPrimary),
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 15,
-                      runSpacing: 15,
-                      children: [
-                        for (final length in QuizLength.values)
-                          _LengthChip(
-                            label: l10n.quizSizeOption(length.value),
-                            selected: _length == length,
-                            onTap: creation.isLoading
-                                ? null
-                                : () => setState(() => _length = length),
-                          ),
-                      ],
-                    ),
-
-                    // 422 and every other non-sheet failure, inline. A 422
-                    // says the pool is smaller than the chosen length — the
-                    // student picks a shorter quiz; the app never silently
-                    // retries with a smaller number on their behalf.
-                    if (creation.error case final error?
-                        when !opensLimitSheet(error)) ...[
-                      const SizedBox(height: 20),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 25, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       Text(
-                        quizErrorMessage(l10n, error),
-                        style: AppType.bodyMedium.copyWith(
-                          color: ext.quizWrongBorder,
-                        ),
+                        l10n.selectQuizSize,
+                        style: AppType.h3.copyWith(color: ext.textPrimary),
                       ),
+                      const SizedBox(height: 20),
+                      Wrap(
+                        spacing: 15,
+                        runSpacing: 15,
+                        children: [
+                          for (final length in QuizLength.values)
+                            _LengthChip(
+                              label: l10n.quizSizeOption(length.value),
+                              selected: _length == length,
+                              onTap: creation.isLoading
+                                  ? null
+                                  : () => setState(() => _length = length),
+                            ),
+                        ],
+                      ),
+
+                      // 422 and every other non-sheet failure, inline. A 422
+                      // says the pool is smaller than the chosen length — the
+                      // student picks a shorter quiz; the app never silently
+                      // retries with a smaller number on their behalf.
+                      if (creation.error case final error?
+                          when !opensLimitSheet(error)) ...[
+                        const SizedBox(height: 20),
+                        Text(
+                          quizErrorMessage(l10n, error),
+                          style: AppType.bodyMedium.copyWith(
+                            color: ext.quizWrongBorder,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
 
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-              child: FilledButton(
-                // Disabled while offline (the request would fail anyway) and
-                // while one is already in flight.
-                onPressed: offline || creation.isLoading ? null : _start,
-                child: creation.isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(l10n.startLearning),
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
+                child: PrimaryCta(
+                  enabled: !offline && !creation.isLoading,
+                  child: FilledButton(
+                    // Disabled while offline (the request would fail anyway) and
+                    // while one is already in flight.
+                    onPressed: offline || creation.isLoading ? null : _start,
+                    child: creation.isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(l10n.startLearning),
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -187,6 +202,12 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
 }
 
 /// One length option · Figma `146:2315` (unselected) / `146:2316` (selected).
+///
+/// 171 x 45 at radius 10, and **no hairline in either frame** - the chip is
+/// raised off the page by the same tight black shadow on both canvases
+/// (`337:6289` keeps it; it is one of the few dark surfaces that does, and it
+/// carries no Glass). The border this used to draw was the light frame's
+/// neighbour, not its own.
 class _LengthChip extends StatelessWidget {
   const _LengthChip({
     required this.label,
@@ -202,32 +223,26 @@ class _LengthChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     return Semantics(
       button: true,
       selected: selected,
-      child: Material(
+      child: ElevatedSurface(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        width: 171,
+        height: 45,
         color: selected ? theme.colorScheme.primary : ext.quizOptionFill,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Ink(
-            height: 45,
-            width: 171,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: ext.quizOptionBorder, width: 0.5),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: AppType.h3.copyWith(
-                  color: selected
-                      ? theme.colorScheme.onPrimary
-                      : ext.textPrimary,
-                ),
-              ),
+        shadows: elevation.lengthChipShadows,
+        // Null while a creation is in flight, which also drops the ink. The
+        // frame draws no disabled chip, so the look is unchanged (R10 dims a
+        // treatment; here there is nothing to dim).
+        onTap: onTap,
+        child: Center(
+          child: Text(
+            label,
+            style: AppType.h3.copyWith(
+              color: selected ? theme.colorScheme.onPrimary : ext.textPrimary,
             ),
           ),
         ),

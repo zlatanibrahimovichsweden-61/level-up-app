@@ -558,6 +558,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.aiPanelCardGlass,
     required this.quizPrevButtonShadows,
     required this.quizPrevButtonGlass,
+    required this.quizPrevButtonRadius,
     required this.quizQuestionCardBorderWidth,
     required this.resultBucketShadows,
     required this.resultBucketGlass,
@@ -567,6 +568,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.resultStarDiscGlass,
     required this.reviewFilterIdleShadows,
     required this.reviewFilterIdleGlass,
+    required this.reviewRowGlass,
     required this.scopeTrackInsetShadows,
     required this.scopeSelectedInsetShadows,
     required this.leaderboardListShadows,
@@ -795,6 +797,15 @@ class AppElevation extends ThemeExtension<AppElevation> {
   /// Quiz previous button, dark only — G13, `lightAngle 51`. `337:6464`.
   final GlassStyle? quizPrevButtonGlass;
 
+  /// The previous button's corner radius, which differs by canvas: the light
+  /// chip `159:1920` reads 9 and the dark chip `337:6464` reads 10.
+  ///
+  /// Both READ from the Properties panel on 2026-09-20, in the owner's own
+  /// signed-in Figma session. One dp apart on a 58-high pill is not a
+  /// difference anyone would notice, and it is also not this edit's call to
+  /// normalise: the two frames say two numbers, so the file carries two.
+  final double quizPrevButtonRadius;
+
   /// The quiz question card's hairline: 0.5 light, 0.2 dark.
   final double quizQuestionCardBorderWidth;
 
@@ -823,6 +834,18 @@ class AppElevation extends ThemeExtension<AppElevation> {
 
   /// Idle review filter pill, dark only — G5. `337:6827`.
   final GlassStyle? reviewFilterIdleGlass;
+
+  /// A review ANSWER row, dark only — G5. `337:6731` (correct) and its wrong
+  /// twin, both READ 2026-09-20: 362 x 73, radius 16, a 0.5 semantic stroke,
+  /// the semantic fill at 20% and one Glass effect whose values the view seat
+  /// hides (DESIGN_ISSUES #72) — G5, the file's default, like every other
+  /// plain translucent card on this canvas.
+  ///
+  /// One token for all three row states on purpose. The designer's 2026-09-17
+  /// ruling (D-010) asks for the rows to be EQUAL in treatment rather than
+  /// one opaque and its neighbour glassed, so the skipped row — which the
+  /// frame never draws — takes the same Glass as the two it does.
+  final GlassStyle? reviewRowGlass;
 
   /// The leaderboard scope toggle's track, dark `337:5615`: a lavender inner
   /// shadow AND a black one. Light draws a flat track.
@@ -1038,6 +1061,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
       FigmaShadow(color: _black25, offset: Offset(0.02833, 0.02833), blur: 1.3),
     ],
     quizPrevButtonGlass: null,
+    quizPrevButtonRadius: 9,
     quizQuestionCardBorderWidth: 0.5,
     resultBucketShadows: const [
       FigmaShadow(color: _black25, offset: Offset(0.02, 0.02), blur: 2),
@@ -1053,6 +1077,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
       FigmaShadow(color: _black25, offset: Offset(0.02, 0.02), blur: 1.5),
     ],
     reviewFilterIdleGlass: null,
+    reviewRowGlass: null,
     scopeTrackInsetShadows: const [],
     scopeSelectedInsetShadows: const [],
     leaderboardListShadows: const [
@@ -1252,6 +1277,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     aiPanelCardGlass: _g5,
     quizPrevButtonShadows: const [],
     quizPrevButtonGlass: _g13,
+    quizPrevButtonRadius: 10,
     quizQuestionCardBorderWidth: 0.2,
     resultBucketShadows: const [],
     resultBucketGlass: _g5,
@@ -1265,6 +1291,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     resultStarDiscGlass: _g5,
     reviewFilterIdleShadows: const [],
     reviewFilterIdleGlass: _g5,
+    reviewRowGlass: _g5,
     scopeTrackInsetShadows: const [
       FigmaShadow(
         color: Color.fromRGBO(207, 179, 255, 0.1),
@@ -1401,6 +1428,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? aiPanelCardGlass,
     List<FigmaShadow>? quizPrevButtonShadows,
     GlassStyle? quizPrevButtonGlass,
+    double? quizPrevButtonRadius,
     double? quizQuestionCardBorderWidth,
     List<FigmaShadow>? resultBucketShadows,
     GlassStyle? resultBucketGlass,
@@ -1410,6 +1438,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? resultStarDiscGlass,
     List<FigmaShadow>? reviewFilterIdleShadows,
     GlassStyle? reviewFilterIdleGlass,
+    GlassStyle? reviewRowGlass,
     List<FigmaShadow>? scopeTrackInsetShadows,
     List<FigmaShadow>? scopeSelectedInsetShadows,
     List<FigmaShadow>? leaderboardListShadows,
@@ -1509,6 +1538,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
       quizPrevButtonShadows:
           quizPrevButtonShadows ?? this.quizPrevButtonShadows,
       quizPrevButtonGlass: quizPrevButtonGlass ?? this.quizPrevButtonGlass,
+      quizPrevButtonRadius: quizPrevButtonRadius ?? this.quizPrevButtonRadius,
       quizQuestionCardBorderWidth:
           quizQuestionCardBorderWidth ?? this.quizQuestionCardBorderWidth,
       resultBucketShadows: resultBucketShadows ?? this.resultBucketShadows,
@@ -1521,6 +1551,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
           reviewFilterIdleShadows ?? this.reviewFilterIdleShadows,
       reviewFilterIdleGlass:
           reviewFilterIdleGlass ?? this.reviewFilterIdleGlass,
+      reviewRowGlass: reviewRowGlass ?? this.reviewRowGlass,
       scopeTrackInsetShadows:
           scopeTrackInsetShadows ?? this.scopeTrackInsetShadows,
       scopeSelectedInsetShadows:
@@ -1791,6 +1822,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.quizPrevButtonGlass,
         t,
       ),
+      quizPrevButtonRadius: lerpDouble(
+        quizPrevButtonRadius,
+        other.quizPrevButtonRadius,
+        t,
+      )!,
       quizQuestionCardBorderWidth: lerpDouble(
         quizQuestionCardBorderWidth,
         other.quizQuestionCardBorderWidth,
@@ -1836,6 +1872,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.reviewFilterIdleGlass,
         t,
       ),
+      reviewRowGlass: GlassStyle.lerp(reviewRowGlass, other.reviewRowGlass, t),
       scopeTrackInsetShadows: FigmaShadow.lerpList(
         scopeTrackInsetShadows,
         other.scopeTrackInsetShadows,
@@ -2018,6 +2055,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     aiPanelCardGlass,
     quizPrevButtonShadows,
     quizPrevButtonGlass,
+    quizPrevButtonRadius,
     quizQuestionCardBorderWidth,
     resultBucketShadows,
     resultBucketGlass,
@@ -2027,6 +2065,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     resultStarDiscGlass,
     reviewFilterIdleShadows,
     reviewFilterIdleGlass,
+    reviewRowGlass,
     scopeTrackInsetShadows,
     scopeSelectedInsetShadows,
     leaderboardListShadows,

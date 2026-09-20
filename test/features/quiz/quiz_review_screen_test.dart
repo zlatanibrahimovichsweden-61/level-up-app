@@ -9,7 +9,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
+import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_review_screen.dart';
 import 'package:mocktail/mocktail.dart';
@@ -194,12 +196,28 @@ void main() {
   });
 
   group('legibility', () {
-    // The correct row's fill is opaque #BFFFC3 in BOTH canvases, so its
-    // foreground must not follow the theme. It used to: cream on mint measured
-    // 1.11:1 in dark, which is invisible rather than merely dim.
-    testWidgets('the correct row keeps its dark foreground in dark mode', (
-      tester,
-    ) async {
+    // ------------------------------------------------------------------
+    // REWRITTEN 2026-09-20, edit4 item #48, under docs/DECISIONS.md D-010.
+    //
+    // The assertion that stood here said the opposite, and it was right at
+    // the time: the correct row's fill was opaque mint on BOTH canvases, so
+    // its foreground could not follow the theme - cream on mint measured
+    // 1.11:1 in dark, invisible rather than dim - and the test pinned that
+    // with `isNot(ext.textPrimary)`.
+    //
+    // The designer reversed the ruling underneath it. The dark rows now take
+    // the frame's own treatment: the semantic fill at 20%, a 0.5 semantic
+    // stroke and G5 Glass. `reviewRowCorrectFill` composites to a DARK
+    // `#425047`, on which the old dark-green foreground measures 1.04:1 -
+    // the same failure arriving from the other direction.
+    //
+    // So the rule the group enforces is inverted, not dropped: every row's
+    // foreground follows its fill, and every fill now follows the canvas.
+    // The token that carries it is unchanged, which is the point of it
+    // being a token.
+    // ------------------------------------------------------------------
+    testWidgets('the correct row follows the canvas now, because its fill '
+        'does', (tester) async {
       await openReview(tester, args: compact(), theme: AppTheme.dark);
 
       final ext = Theme.of(
@@ -209,9 +227,38 @@ void main() {
       final label = tester.widget<Text>(find.text('QUESTION 1'));
       final body = tester.widget<Text>(find.text('Question q1?'));
 
+      // Still its own token - the row does not borrow textPrimary.
       expect(body.style?.color, ext.quizReviewRowContent);
       expect(label.style?.color, ext.quizReviewRowContent);
-      // The whole point: it does NOT flip to the cream dark foreground.
+
+      // What changed, stated as the design fact rather than as "it now
+      // equals textPrimary" - the two being equal in dark is a
+      // coincidence the token's own field doc calls a coincidence, so
+      // pinning it would pin the wrong thing. `337:6715` says cream, and
+      // cream is what has to survive on the composited fill.
+      expect(body.style?.color, const Color(0xFFFCFBF9));
+      // It is NOT the light value any more, which is the actual break
+      // from the superseded ruling.
+      expect(
+        body.style?.color,
+        isNot(AppTheme.light.extension<AppColors>()!.quizReviewRowContent),
+      );
+    });
+
+    testWidgets('the correct row keeps its own token, which is GREEN in '
+        'light', (tester) async {
+      await openReview(tester, args: compact());
+
+      final ext = Theme.of(
+        tester.element(find.byType(QuizReviewScreen)),
+      ).extension<AppColors>()!;
+
+      final body = tester.widget<Text>(find.text('Question q1?'));
+
+      expect(body.style?.color, ext.quizReviewRowContent);
+      // The half of the old rule that survives: the light row is unchanged,
+      // its fill is still the opaque mint, and its foreground is the green
+      // 162:2510 specifies - NOT the near-black textPrimary.
       expect(body.style?.color, isNot(ext.textPrimary));
     });
 
@@ -224,10 +271,97 @@ void main() {
         tester.element(find.byType(QuizReviewScreen)),
       ).extension<AppColors>()!;
 
-      // q3 is wrong in the compact fixture; quizWrongFill is 30% alpha, so it
-      // composites with the canvas and its foreground must too.
+      // q3 is wrong in the compact fixture; reviewRowWrongFill is 20% alpha
+      // in dark, so it composites with the canvas and its foreground must
+      // too. Measured 9.11:1 on the composite.
       final body = tester.widget<Text>(find.text('Question q3?'));
       expect(body.style?.color, ext.textPrimary);
+    });
+
+    testWidgets('every dark row is translucent and glassed - none is left '
+        'opaque beside a glassed neighbour', (tester) async {
+      await openReview(tester, args: compact(), theme: AppTheme.dark);
+
+      final element = tester.element(find.byType(QuizReviewScreen));
+      final ext = Theme.of(element).extension<AppColors>()!;
+      final elevation = Theme.of(element).extension<AppElevation>()!;
+
+      // D-010's own emphasis: EQUAL in treatment. A row state that stayed
+      // opaque here would be the specific defect the ruling named.
+      for (final fill in [
+        ext.reviewRowCorrectFill,
+        ext.reviewRowWrongFill,
+        ext.reviewRowSkippedFill,
+      ]) {
+        expect(fill.a, closeTo(0.2, 0.01), reason: 'the frame reads 20%');
+      }
+      expect(elevation.reviewRowGlass, isNotNull);
+
+      // And ALL THREE rows really do paint them. Checking only the
+      // correct row would let the other two be reverted to opaque with
+      // the suite still green - which is the exact defect the ruling
+      // named, so the assertion has to walk every state.
+      //
+      // The compact fixture is 5 questions, 4 answered, 2 correct:
+      // q1-q2 correct, q3-q4 wrong, q5 never committed.
+      ElevatedSurface rowFor(String question) => tester
+          .widgetList<ElevatedSurface>(
+            find.ancestor(
+              of: find.text(question),
+              matching: find.byType(ElevatedSurface),
+            ),
+          )
+          .first;
+
+      for (final (question, fill, stroke, state) in [
+        (
+          'Question q1?',
+          ext.reviewRowCorrectFill,
+          ext.quizCorrectBorder,
+          'correct',
+        ),
+        ('Question q3?', ext.reviewRowWrongFill, ext.quizWrongBorder, 'wrong'),
+        (
+          'Question q5?',
+          ext.reviewRowSkippedFill,
+          ext.quizOptionBorder,
+          'skipped',
+        ),
+      ]) {
+        final row = rowFor(question);
+        expect(row.color, fill, reason: state);
+        expect(row.glass, elevation.reviewRowGlass, reason: state);
+        expect(row.glass, isNotNull, reason: state);
+        expect(row.side?.width, 0.5, reason: state);
+        expect(row.side?.color, stroke, reason: state);
+        // The thing the ruling actually forbids: one row opaque beside a
+        // glassed neighbour.
+        expect(row.color!.a, closeTo(0.2, 0.01), reason: state);
+      }
+    });
+
+    testWidgets('the light rows keep their opaque fills and take no Glass', (
+      tester,
+    ) async {
+      await openReview(tester, args: compact());
+
+      final element = tester.element(find.byType(QuizReviewScreen));
+      final ext = Theme.of(element).extension<AppColors>()!;
+
+      // D-010 is a DARK ruling. The light frame was never in question.
+      expect(ext.reviewRowCorrectFill, ext.quizCorrectFill);
+      expect(ext.reviewRowWrongFill, ext.quizWrongFill);
+      expect(ext.reviewRowSkippedFill, ext.quizOptionFill);
+
+      final surface = tester
+          .widgetList<ElevatedSurface>(
+            find.ancestor(
+              of: find.text('Question q1?'),
+              matching: find.byType(ElevatedSurface),
+            ),
+          )
+          .first;
+      expect(surface.glass, isNull);
     });
 
     testWidgets('rows and chips survive a large text scale without overflow', (

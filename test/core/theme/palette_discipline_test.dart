@@ -1,10 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:level_up_app/core/theme/app_colors.dart';
-import 'package:level_up_app/core/theme/app_theme.dart';
-import 'package:level_up_app/features/profile/widgets/profile_stat_card.dart';
 
 /// The standing rule from Day 7b — *"every new colour becomes a token in
 /// AppColors; no hex at a call site"* — as a test rather than a grep somebody
@@ -64,101 +60,24 @@ void main() {
     });
   });
 
-  // FROZEN per edit1.md #34 (owner ruling, 2026-09-17). This group describes
-  // code that still ships: the token keeps its cream dark value until the last
-  // call site moves to `AppElevation`, because flipping it early would darken
-  // the 20%-alpha cards that still paint an unclipped shadow under their own
-  // fill. The edit that removes the LAST reference deletes both the field and
-  // this group. Do not "correct" it here — see the doc comment on
-  // `AppColors.elevationShadow` and DESIGN_ISSUES #47/#72.
-  group('elevationShadow', () {
-    test('is a different colour on each canvas — that is the entire point', () {
-      // If these are ever equalised, one of the two canvases has lost its
-      // elevation: black does not read on `#232428`, cream does not read on
-      // `#FCFBF9`.
-      expect(
-        AppColors.light.elevationShadow,
-        isNot(AppColors.dark.elevationShadow),
-      );
-    });
+  // The `elevationShadow` group lived here and is GONE too, deleted in the
+  // same change as the token itself (2026-09-20, edit5's OTP chunk). It
+  // asserted that the field differed per canvas, carried no alpha of its own,
+  // and was wired into `copyWith` and `lerp` — three claims about a field
+  // that no longer exists. The group was frozen precisely so nobody would
+  // "correct" the cream dark value while call sites still painted it; the
+  // last call site moved to `AppElevation.otpTimerInsetShadows`, so the field
+  // and its pins went together. See the tombstone in `app_colors.dart` and
+  // docs/DESIGN_ISSUES.md #47/#72.
 
-    test('carries no alpha of its own — the call site owns the depth', () {
-      // The five shadows are measured at two depths (0.15 and 0.25). Baking one
-      // into the token would silently restyle the onboarding sheet to the
-      // cards' depth.
-      expect(AppColors.light.elevationShadow.a, 1.0);
-      expect(AppColors.dark.elevationShadow.a, 1.0);
-    });
-
-    test('is wired into copyWith and lerp', () {
-      const probe = Color(0xFF010203);
-      expect(
-        AppColors.light.copyWith(elevationShadow: probe).elevationShadow,
-        probe,
-      );
-
-      final mid = AppColors.light.lerp(AppColors.dark, 0.5);
-      expect(
-        mid.elevationShadow,
-        isNot(AppColors.light.elevationShadow),
-        reason: 'a token missing from lerp silently stops animating',
-      );
-    });
-  });
-
-  // FROZEN per edit1.md #34 — replaced by edit5 when `ProfileStatCard` moves
-  // onto `ElevatedSurface` and takes `AppElevation.profileStatShadows`, whose
-  // dark value is the measured black (Figma `661:8579`) rather than the cream
-  // this asserts. Until then the card really does paint cream, and a test that
-  // says otherwise would be describing code that does not exist.
-  group('a card on each canvas', () {
-    // The end of the wire. `ProfileStatCard` is the smallest of the five
-    // components using the token and they all use the identical expression, so
-    // this is the one that proves the value actually reaches a `BoxShadow`.
-    Future<BoxShadow> shadowOf(
-      WidgetTester tester,
-      Brightness brightness,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: brightness == Brightness.light
-              ? AppTheme.light
-              : AppTheme.dark,
-          home: const ProfileStatCard(label: 'Points', value: '3,700'),
-        ),
-      );
-
-      final box = tester.widget<Container>(find.byType(Container));
-      return ((box.decoration! as BoxDecoration).boxShadow!).single;
-    }
-
-    testWidgets('light draws the frame-measured black at 25%', (tester) async {
-      final shadow = await shadowOf(tester, Brightness.light);
-
-      expect(
-        shadow.color,
-        AppColors.light.elevationShadow.withValues(alpha: 0.25),
-      );
-      expect(shadow.blurRadius, 1, reason: 'Figma 661:8571 — unchanged');
-    });
-
-    testWidgets('dark draws the canvas shadow, not the light one', (
-      tester,
-    ) async {
-      final shadow = await shadowOf(tester, Brightness.dark);
-
-      expect(
-        shadow.color,
-        AppColors.dark.elevationShadow.withValues(alpha: 0.25),
-      );
-      expect(
-        shadow.color,
-        isNot(AppColors.light.elevationShadow.withValues(alpha: 0.25)),
-        reason:
-            'this is the defect: the dark card used to paint a black '
-            'shadow measured on the cream canvas, which is invisible',
-      );
-      expect(shadow.blurRadius, 1, reason: 'the DEPTH does not change canvas');
-    });
-  });
+  // The `a card on each canvas` group lived here and is GONE, replaced by
+  // `test/features/profile/profile_stat_card_test.dart` (edit5.md §7.3.2).
+  //
+  // It pinned `ProfileStatCard`'s `Container` / `BoxShadow` — cream in dark,
+  // blur 1 — as the proof that `elevationShadow` reached a real call site.
+  // The card now draws `AppElevation.profileStatShadows` through
+  // `ElevatedSurface`: the measured black on BOTH canvases, at the frame's
+  // blur 2 (Figma `661:8571` / `661:8579`). Keeping the old group would pin
+  // code that no longer exists; the new file asserts the new values, and the
+  // group above still proves the token itself is wired.
 }

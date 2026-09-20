@@ -167,13 +167,14 @@ $fileProbes = @(
        Body = "var s = TextStyle(fontSize: 99);"
        Test = 'hardcoded fontSize does not increase' },
 
-    # The elevation ratchet's twin. A BoxShadow is the exact construct the
-    # 2026-09-16 audit found eleven of, each carrying Figma's blur number in
-    # Flutter's blurRadius field - two different units - under a colour that
-    # only read on one canvas.
-    @{ Name = 'Elevation effects ratchet'
+    # A BoxShadow is the exact construct the 2026-09-16 audit found eleven of,
+    # each carrying Figma's blur number in Flutter's blurRadius field - two
+    # different units - under a colour that only read on one canvas. The last
+    # of the eleven moved to AppElevation on 2026-09-20, so the ratchet became
+    # zero-enforcement and this probe now checks a ban rather than a count.
+    @{ Name = 'Elevation effects enforced at zero'
        Body = "var s = BoxShadow(blurRadius: 1);"
-       Test = 'raw elevation effects do not increase' }
+       Test = 'no raw elevation effect outside the two elevation folders' }
 )
 
 $i = 1

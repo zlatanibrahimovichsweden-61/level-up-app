@@ -53,6 +53,87 @@ void main() {
     ),
   );
 
+  testWidgets('an unselected segment paints NOTHING, whatever the style says', (
+    tester,
+  ) async {
+    // The mechanised form of the 2026-09-20 ruling (docs/DESIGN_ISSUES.md #84):
+    // an idle segment is transparent, always. `SegmentedTrackStyle` used to
+    // carry an `idleSegmentColor` and `QuizTypeTabs` set it to the track's own
+    // opaque colour, which covered the dark groove's two inner shadows — 2087
+    // differing pixels on the scope toggle's dark golden, every one of them
+    // inside the idle segment.
+    //
+    // The knob is gone rather than defaulted, so this test is really asserting
+    // that it stays gone: the only way to reintroduce the defect is to add a
+    // colour back, and the moment anyone does, this fails for every consumer at
+    // once rather than for whichever one they remembered to check.
+    await tester.pumpWidget(
+      host(
+        segments: const ['MCQ', 'Essay', 'True/False'],
+        selected: 'Essay',
+        onChanged: (_) {},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final surfaces = tester
+        .widgetList<ElevatedSurface>(
+          find.descendant(
+            of: find.byType(SegmentedTrack<String>),
+            matching: find.byType(ElevatedSurface),
+          ),
+        )
+        .toList();
+
+    // The groove, then one surface per segment.
+    expect(surfaces, hasLength(4));
+    expect(surfaces.first.color, style.trackColor);
+
+    final segments = surfaces.skip(1).toList();
+    expect(segments[1].color, style.selectedColor, reason: 'the selected one');
+    for (final i in const [0, 2]) {
+      expect(
+        segments[i].color?.a,
+        0,
+        reason: 'segment $i is idle and must paint nothing',
+      );
+    }
+
+    // Transparent is not enough on its own: the tween runs between the idle
+    // fill and the selected colour, so the idle fill has to be the SELECTED
+    // hue at zero alpha, or a half-finished animation passes through a third
+    // colour on its way. Checked mid-flight rather than reasoned about.
+    //
+    // Driven by moving the selection on a rebuild, not by tapping: this host is
+    // stateless and its `onChanged` is a no-op, so a tap reports the change and
+    // renders nothing. The theme is the same object across the two pumps, so
+    // nothing here is reading a half-lerped canvas.
+    await tester.pumpWidget(
+      host(
+        segments: const ['MCQ', 'Essay', 'True/False'],
+        selected: 'MCQ',
+        onChanged: (_) {},
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 75));
+    final mid = tester
+        .widgetList<ElevatedSurface>(
+          find.descendant(
+            of: find.byType(SegmentedTrack<String>),
+            matching: find.byType(ElevatedSurface),
+          ),
+        )
+        .elementAt(1)
+        .color!;
+    expect(mid.a, greaterThan(0));
+    expect(mid.a, lessThan(1));
+    expect(mid.r, closeTo(style.selectedColor.r, 0.001));
+    expect(mid.g, closeTo(style.selectedColor.g, 0.001));
+    expect(mid.b, closeTo(style.selectedColor.b, 0.001));
+
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('tapping an idle segment reports it', (tester) async {
     String? picked;
     await tester.pumpWidget(

@@ -60,7 +60,15 @@ class QuestionOptionTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final (fill, border, borderWidth) = switch (state) {
-      OptionTileState.idle => (ext.quizOptionFill, ext.quizOptionBorder, 0.5),
+      // The idle hairline is `quizOptionTileBorder`, NOT `quizOptionBorder`:
+      // the two are the same green in light and diverge in dark, where
+      // `337:6440` draws lavender at 50% around the tile while the A/B/C/D
+      // ring keeps its own value. Only the tile moved here.
+      OptionTileState.idle => (
+        ext.quizOptionFill,
+        ext.quizOptionTileBorder,
+        0.5,
+      ),
       OptionTileState.selected => (
         ext.quizOptionFill,
         theme.colorScheme.primary,
@@ -147,7 +155,12 @@ class _Badge extends StatelessWidget {
     final ext = theme.extension<AppColors>()!;
 
     final (fill, border, icon) = switch (state) {
-      OptionTileState.idle => (null, ext.quizOptionBorder, null),
+      // `quizOptionBadgeRing`, not `quizOptionBorder`: `337:6447` draws the
+      // ungraded ring in the same lavender as the tile's own outline, and
+      // the shared token stayed put because four other surfaces read it
+      // (owner ruling 2026-09-20, DESIGN_ISSUES #83). Light is unchanged -
+      // the two tokens carry the same green there.
+      OptionTileState.idle => (null, ext.quizOptionBadgeRing, null),
       OptionTileState.selected => (
         theme.colorScheme.primary,
         theme.colorScheme.primary,

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
+import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
+import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
 import 'package:level_up_app/features/profile/notifier/me_notifier.dart';
 import 'package:level_up_app/features/quiz/models/explanation_result.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_result_screen.dart';
@@ -546,5 +551,240 @@ void main() {
         expect(find.text('إعادة المحاولة'), findsOneWidget);
       },
     );
+  });
+
+  // ---------------------------------------------------------------- #46 -----
+  group('the previous-question pill', () {
+    /// Grades question 1 and advances, which is the only way the pill mounts.
+    Future<QuizHarness> openOnQuestionTwo(
+      WidgetTester tester, {
+      MockQuizRepository? quiz,
+      String locale = 'en',
+      ThemeData? theme,
+    }) async {
+      final repo = quiz ?? MockQuizRepository();
+      stubGrade(repo);
+      final harness = await openQuiz(
+        tester,
+        quiz: repo,
+        locale: locale,
+        theme: theme,
+      );
+
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      return harness;
+    }
+
+    ElevatedSurface pill(WidgetTester tester) => tester.widget<ElevatedSurface>(
+      find.ancestor(
+        of: find.byType(SvgPicture),
+        matching: find.byType(ElevatedSurface),
+      ),
+    );
+
+    testWidgets('does not exist on question 1', (tester) async {
+      await openQuiz(tester);
+
+      expect(find.byType(ElevatedSurface), findsNothing);
+      expect(find.byType(SvgPicture), findsNothing);
+    });
+
+    testWidgets('is a 79 x 58 pill once past question 1', (tester) async {
+      await openOnQuestionTwo(tester);
+
+      expect(find.text('QUESTION 2'), findsOneWidget);
+      // The M3 tonal icon button it replaced was roughly 40 dp round.
+      expect(pill(tester).width, 79);
+      expect(pill(tester).height, 58);
+    });
+
+    testWidgets('takes its radius from the canvas — 9 light, 10 dark', (
+      tester,
+    ) async {
+      // The NUMBERS, not "whatever the token says". Comparing the widget
+      // to the token it just read cannot fail; these are the two values
+      // read off `159:1920` and `337:6464`, and the point of the token is
+      // that they differ.
+      double radiusOf(WidgetTester t) =>
+          ((pill(t).shape as RoundedRectangleBorder).borderRadius.resolve(
+            TextDirection.ltr,
+          )).topLeft.x;
+
+      await openOnQuestionTwo(tester);
+      expect(radiusOf(tester), 9);
+
+      await openOnQuestionTwo(tester, theme: AppTheme.dark);
+      expect(radiusOf(tester), 10);
+    });
+
+    testWidgets('light carries the small black shadow and no Glass', (
+      tester,
+    ) async {
+      await openOnQuestionTwo(tester);
+
+      final e = AppTheme.light.extension<AppElevation>()!;
+      expect(pill(tester).shadows, e.quizPrevButtonShadows);
+      expect(pill(tester).shadows, isNotEmpty);
+      expect(pill(tester).glass, isNull);
+      expect(
+        pill(tester).color,
+        AppTheme.light.extension<AppColors>()!.quizPrevButtonFill,
+      );
+    });
+
+    testWidgets(
+      'dark carries G13 and NO shadow — the empty list is a reading',
+      (tester) async {
+        await openOnQuestionTwo(tester, theme: AppTheme.dark);
+
+        final e = AppTheme.dark.extension<AppElevation>()!;
+        expect(pill(tester).glass, e.quizPrevButtonGlass);
+        expect(pill(tester).glass, isNotNull);
+        expect(pill(tester).shadows, isEmpty);
+      },
+    );
+
+    testWidgets('tapping it dispatches PreviousQuestionRequested', (
+      tester,
+    ) async {
+      await openOnQuestionTwo(tester);
+
+      await tester.tap(find.byType(SvgPicture));
+      await tester.pumpAndSettle();
+
+      // The Bloc is untouched by this wave; this proves the wiring survived
+      // the control being rebuilt.
+      expect(find.text('QUESTION 1'), findsOneWidget);
+    });
+
+    testWidgets('it announces itself as PREVIOUS, not as back', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openOnQuestionTwo(tester);
+
+      // This screen already has a control that means "back": the ✕ that
+      // LEAVES the quiz. Two buttons announced "Back", one of which
+      // discards the attempt, is the regression this pins.
+      expect(find.bySemanticsLabel('Previous page'), findsOneWidget);
+      expect(find.bySemanticsLabel('Back'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('the chevron is mirrored in LTR and left alone in RTL', (
+      tester,
+    ) async {
+      await openOnQuestionTwo(tester);
+      final ltr = tester.widget<Transform>(
+        find
+            .ancestor(
+              of: find.byType(SvgPicture),
+              matching: find.byType(Transform),
+            )
+            .first,
+      );
+
+      await openOnQuestionTwo(tester, locale: 'ar');
+      final rtl = tester.widget<Transform>(
+        find
+            .ancestor(
+              of: find.byType(SvgPicture),
+              matching: find.byType(Transform),
+            )
+            .first,
+      );
+
+      // The shared asset points RIGHT, so "back" is its flip in LTR and
+      // its UNflipped self in RTL - the same rule CircleBackButton
+      // follows. Asserting only that the two differ would pass on an
+      // inverted mirror, which is the bug worth catching, so both are
+      // pinned by value: x-scale -1 in LTR, +1 in RTL.
+      expect(ltr.transform.storage[0], -1.0);
+      expect(rtl.transform.storage[0], 1.0);
+    });
+
+    testWidgets('it sits 15 dp from the primary CTA', (tester) async {
+      await openOnQuestionTwo(tester);
+
+      final pillRect = tester.getRect(
+        find.ancestor(
+          of: find.byType(SvgPicture),
+          matching: find.byType(ElevatedSurface),
+        ),
+      );
+      final ctaRect = tester.getRect(find.byType(FilledButton));
+      // Figma: the pill ends at x 99 and the CTA starts at 114.
+      expect(ctaRect.left - pillRect.right, closeTo(15, 0.01));
+    });
+  });
+
+  // -------------------------------------------------------------- 7.10a -----
+  group('the quiz CTAs wear the primary treatment', () {
+    testWidgets('Confirm is wrapped, and its enabled state follows the Bloc', (
+      tester,
+    ) async {
+      await openQuiz(tester);
+
+      PrimaryCta cta() => tester.widget<PrimaryCta>(
+        find.ancestor(
+          of: find.byType(FilledButton),
+          matching: find.byType(PrimaryCta),
+        ),
+      );
+
+      expect(cta().tone, CtaTone.primary);
+      // Nothing selected yet, so the Bloc says no.
+      expect(cta().enabled, isFalse);
+
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      expect(cta().enabled, isTrue);
+    });
+
+    testWidgets('the error-state Retry stays unwrapped (DESIGN_ISSUES #76)', (
+      tester,
+    ) async {
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.submitAnswer(
+          quizId: any(named: 'quizId'),
+          questionId: any(named: 'questionId'),
+          optionId: any(named: 'optionId'),
+        ),
+      ).thenThrow(const OfflineException());
+
+      await openQuiz(tester, quiz: quiz);
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      // Exactly one CTA on the screen: the primary. The retry affordance has
+      // no Figma frame and deliberately carries no treatment.
+      expect(find.byType(PrimaryCta), findsOneWidget);
+    });
+  });
+
+  // --------------------------------------------------------------- 7.10 -----
+  group('the exit dialog', () {
+    testWidgets('it wears the app dialog scrim rather than Material\'s '
+        'barrier', (tester) async {
+      await openQuiz(tester);
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Leave this quiz?'), findsOneWidget);
+
+      final scrim = AppTheme.light.extension<AppElevation>()!.logoutDialogScrim;
+      expect(scrim, isNotNull);
+      final route = ModalRoute.of(
+        tester.element(find.text('Leave this quiz?')),
+      )!;
+      expect(route.barrierColor, scrim!.color);
+    });
   });
 }

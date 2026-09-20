@@ -5,8 +5,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/circle_back_button.dart';
+import '../../../core/widgets/elevation/app_modal.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
+import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/state_widget.dart';
@@ -246,12 +250,19 @@ class _FormState extends ConsumerState<_Form> {
   }
 
   /// The unsaved-changes guard, matching the quiz's confirm-on-exit dialog
-  /// (`quiz_screen.dart:230`) — same two-button shape, same "leaving must be a
-  /// decision, not an accident" reasoning.
+  /// (`quiz_screen.dart:256`) — same two-button shape, same "leaving must be a
+  /// decision, not an accident" reasoning, and now the same barrier.
+  ///
+  /// [showAppDialog] with `logoutDialogScrim` (edit2 §13 / edit5.md §7.11):
+  /// there is no Figma frame for this dialog, so it borrows the app dialog
+  /// scrim rather than inventing one. The `AlertDialog` inside is unchanged,
+  /// and so are both result keys.
   Future<bool> _confirmDiscard() async {
     final l10n = AppLocalizations.of(context);
-    final discard = await showDialog<bool>(
+    final elevation = Theme.of(context).extension<AppElevation>()!;
+    final discard = await showAppDialog<bool>(
       context: context,
+      scrim: elevation.logoutDialogScrim,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.discardChangesTitle),
         content: Text(l10n.discardChangesBody),
@@ -501,6 +512,13 @@ class _ReadOnlySection extends StatelessWidget {
 }
 
 /// The 151pt avatar with the frame's edit badge (`180:4079`) on its lower edge.
+///
+/// **The badge's shadow is much tighter than the one that shipped.** It was
+/// drawn at (0.5, 0.5) blur 2 — borrowed from the profile header — against the
+/// frame's own (0.0240833, 0.0240833) blur 1.105 (`180:3989`). Dark keeps the
+/// same black shadow and adds **G5** over a 20% cream wash (`337:7925`); both
+/// are `AppElevation` tokens now, so the difference between the canvases is a
+/// reading rather than a call-site decision.
 class _AvatarEditor extends StatelessWidget {
   const _AvatarEditor({
     required this.url,
@@ -517,7 +535,9 @@ class _AvatarEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
     return Semantics(
       button: true,
@@ -551,25 +571,20 @@ class _AvatarEditor extends StatelessWidget {
               ),
               PositionedDirectional(
                 bottom: 0,
-                child: Container(
+                child: ElevatedSurface(
+                  shape: const CircleBorder(),
                   width: _badge,
                   height: _badge,
-                  decoration: BoxDecoration(
-                    color: ext.cardFill,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        // Depth from the frame, colour from the canvas.
-                        color: ext.elevationShadow.withValues(alpha: 0.25),
-                        offset: const Offset(0.5, 0.5),
-                        blurRadius: 2,
-                      ),
-                    ],
+                  color: ext.avatarBadgeFill,
+                  shadows: elevation.avatarBadgeShadows,
+                  glass: elevation.avatarBadgeGlass,
+                  child: Center(
+                    // TODO(design-asset): the frame uses
+                    // `fluent:edit-16-filled` (`170:4669`), already listed in
+                    // docs/ASSET_MANIFEST.md. Material stands in until the
+                    // designer exports it.
+                    child: Icon(Icons.edit, size: 18, color: ext.homeAccent),
                   ),
-                  // TODO(design-asset): the frame uses `fluent:edit-16-filled`
-                  // (`170:4669`), already listed in docs/ASSET_MANIFEST.md.
-                  // Material stands in until the designer exports it.
-                  child: Icon(Icons.edit, size: 18, color: ext.homeAccent),
                 ),
               ),
             ],
@@ -601,6 +616,12 @@ class _AvatarFallback extends StatelessWidget {
 }
 
 /// "Save Change" · Figma `180:4081` — 60pt tall, 20pt radius, primary fill.
+///
+/// Wrapped in [PrimaryCta] (edit5.md §7.11a, design item #12): light draws the
+/// CTA's (0.5, 0.5) blur-4 black shadow (`348:8911`), dark adds the `#AE87E7`
+/// glow layer over it (`348:8909`). The wrapper's `enabled` mirrors
+/// `onPressed != null`, so an in-flight save dims the halo with the button
+/// instead of leaving a lit shadow under a dead control.
 class _SaveButton extends StatelessWidget {
   const _SaveButton({
     required this.busy,
@@ -616,23 +637,26 @@ class _SaveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 60,
-      child: FilledButton(
-        key: const Key('edit_save_button'),
-        // Null while in flight: the guard against a double submit is the
-        // absence of a tap target, not a flag checked after the fact.
-        onPressed: busy ? null : onPressed,
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+      child: PrimaryCta(
+        enabled: !busy,
+        child: FilledButton(
+          key: const Key('edit_save_button'),
+          // Null while in flight: the guard against a double submit is the
+          // absence of a tap target, not a flag checked after the fact.
+          onPressed: busy ? null : onPressed,
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           ),
+          child: busy
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                )
+              : Text(label, style: AppType.buttonLarge),
         ),
-        child: busy
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              )
-            : Text(label, style: AppType.buttonLarge),
       ),
     );
   }

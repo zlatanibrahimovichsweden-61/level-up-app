@@ -72,10 +72,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.profileRowBorder,
     required this.profileStatLabel,
     required this.profileStatValue,
-    required this.profileIconChip,
     required this.destructive,
     required this.dialogNote,
-    required this.elevationShadow,
     required this.podiumAccent,
     required this.podiumOnAccent,
     required this.podiumFirstRing,
@@ -109,12 +107,18 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.aiPanelOuterBorder,
     required this.aiPanelCardFill,
     required this.quizPrevButtonFill,
+    required this.quizPrevButtonGlyph,
     required this.quizQuestionCardBorder,
     required this.quizOptionTileBorder,
+    required this.quizOptionBadgeRing,
     required this.resultCardFill,
     required this.resultStarDiscFill,
     required this.reviewFilterIdleFill,
+    required this.reviewRowCorrectFill,
+    required this.reviewRowWrongFill,
+    required this.reviewRowSkippedFill,
     required this.scopeTrackFill,
+    required this.scopeIdleLabel,
     required this.scopeSelectedFill,
     required this.leaderboardRowFill,
     required this.profileHeaderFill,
@@ -122,7 +126,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.profileStatFill,
     required this.profileMenuRowFill,
     required this.profileMenuRowBorder,
+    required this.profileMenuEmphasisRowBorder,
     required this.profileMenuIconDiscFill,
+    required this.profileEditChipGlyph,
     required this.avatarBadgeFill,
     required this.settingsSectionFill,
     required this.settingsSectionBorder,
@@ -132,6 +138,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.otpDigitFill,
     required this.otpDigitBorder,
     required this.trackCardFill,
+    required this.trackCardArtShadow,
     required this.backlight,
   });
 
@@ -344,27 +351,44 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // --- Quiz Review tokens (Figma 162:2377 light · 337:6705 dark) -----------
   //
-  // The review rows themselves add NOTHING here: they reuse the five semantic
-  // correct/wrong tokens above unchanged, which is the whole point of those
-  // being canvas-independent. The dark frame draws the rows at 20% alpha
-  // instead; that was decided against, because a correctness signal must not
-  // change with the canvas (see the note above [quizOptionFill]). Logged as
-  // docs/DESIGN_ISSUES.md #53.
+  // Until 2026-09-17 this block said the review rows added nothing here and
+  // reused the five semantic correct/wrong tokens unchanged, because the dark
+  // frame's 20% alpha "was decided against". The designer reversed that
+  // (docs/DECISIONS.md D-010, DESIGN_ISSUES #53 RESOLVED): the dark rows take
+  // the approved Glass treatment, which means the frame's alpha, the 0.5
+  // semantic stroke and G5. So the rows DO have their own fills now -
+  // [reviewRowCorrectFill], [reviewRowWrongFill], [reviewRowSkippedFill] -
+  // which exist precisely so that changing them cannot reach the quiz page's
+  // graded option tiles one tap away. The ruling was scoped to these rows and
+  // gave no instruction about those tiles.
+  //
+  // The HUES are untouched: a correct answer is still green and a wrong one
+  // still red, on both canvases. What changed is the TREATMENT.
 
-  /// Foreground of a **correct** review row — its question text (`162:2510`)
-  /// and "QUESTION n" label. Figma-verbatim `#384F47`, and **identical in both
-  /// palettes on purpose**.
+  /// Foreground of a **correct** review row — its question text and its
+  /// "QUESTION n" label. Light `#384F47` (`162:2510`), dark `#FCFBF9`.
   ///
-  /// The reason is the fill it sits on. [quizCorrectFill] is opaque `#BFFFC3`
-  /// in BOTH canvases (a correctness signal must not follow the theme — see the
-  /// note above [quizOptionFill]), so a foreground that DID follow the theme
-  /// would put cream on mint in dark: measured **1.11:1**, which is not dim, it
-  /// is gone. A fill that never changes needs a foreground that never changes.
+  /// **Both values are READ, and the dark one changed on 2026-09-20.** It used
+  /// to be identical to light, and the field doc said so "on purpose": the fill
+  /// underneath it, [quizCorrectFill], was opaque mint on both canvases, so a
+  /// foreground that followed the theme would have put cream on mint in dark at
+  /// a measured **1.11:1**. That reasoning was sound while the premise held.
   ///
-  /// This is why the wrong and skipped rows deliberately do NOT use this token:
-  /// [quizWrongFill] is 30% alpha and [quizOptionFill] follows the canvas, so
-  /// those two composite differently per theme and take [textPrimary], which
-  /// flips with them. Logged as docs/DESIGN_ISSUES.md #54.
+  /// The premise is gone. D-010 moved the dark row to [reviewRowCorrectFill] -
+  /// the same mint at 20% over the `#232428` page, which composites to a DARK
+  /// `#425047`. A dark green foreground on that measures **1.04:1**: the same
+  /// failure the old doc warned about, arriving from the other direction.
+  ///
+  /// The replacement was not chosen, it was read. `337:6715` (the correct row's
+  /// question text) and `337:6725` (the wrong row's) both specify `#FCFBF9`,
+  /// off the Properties panel in the owner's signed-in Figma session on
+  /// 2026-09-20. On the composited fill that measures **8.24:1**. This also
+  /// refutes DESIGN_ISSUES #54's premise that the dark review frame specifies
+  /// no foreground anywhere - it specifies four; see that entry.
+  ///
+  /// Numerically equal to [textPrimary] in dark and kept separate for the
+  /// reason this file keeps every such pair apart: the light value is a green
+  /// that [textPrimary] is not, and restyling one must not restyle the other.
   final Color quizReviewRowContent;
 
   /// Label on the SELECTED filter chip, over [quizReviewFilterFill].
@@ -381,7 +405,7 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Numerically equal to [navAccent], and kept separate for the reason the
   /// rest of this file keeps such pairs apart: restyling the bottom nav must
   /// not silently restyle a quiz filter. The unselected chips need no token —
-  /// they are [quizOptionFill] over [elevationShadow].
+  /// they are [quizOptionFill] under `AppElevation.reviewFilterIdleShadows`.
   final Color quizReviewFilterFill;
 
   final Color quizReviewFilterLabel;
@@ -569,10 +593,14 @@ class AppColors extends ThemeExtension<AppColors> {
   /// canvases, like [cardLabel], which the file uses at the same value.
   final Color profileStatValue;
 
-  /// The lavender circle behind the Go-to-University and Logout glyphs. Figma
-  /// light `#F4E6FF`; dark reuses [navCentreIdleFill] (`#3E3E3E`), the file's
-  /// approved dark chip fill.
-  final Color profileIconChip;
+  // `profileIconChip` lived here and is GONE, deleted 2026-09-20 with the
+  // reading that made it wrong. It was "the lavender circle behind the
+  // Go-to-University and Logout glyphs", on the belief that the other eight
+  // Profile rows had a bare glyph. Three Properties-panel reads refuted
+  // that: the disc is the Iconify component frame's own fill and every row
+  // has one, which is why a layer walk looks like it has none. The rows now
+  // take [profileMenuIconDiscFill] on all ten (edit5 #24), and its dark value
+  // is READ rather than borrowed from `navCentreIdleFill`.
 
   /// Destructive intent — the Logout row's outline and label, and the Logout
   /// dialog's confirm button. Figma `#EF4444`.
@@ -594,62 +622,25 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color dialogNote;
 
   // --- Elevation ------------------------------------------------------------
-
-  /// **SUPERSEDED 2026-09-17 (owner ruling, edit1.md #34). Frozen; do not use
-  /// in new code.** Reach for an `AppElevation` token instead.
-  ///
-  /// The dark value here is a *derivation*, and the premise it rested on was
-  /// wrong. It read "there is no dark frame for any of the five components, so
-  /// black cannot be verified and cream is the defensible stand-in". The dark
-  /// frames **do** exist, and thirteen of them were measured on 2026-09-17:
-  /// the subject card (`337:5732`), the profile stat card (`661:8579`), the
-  /// profile header (`337:7455`), the Mistakes card (`404:7637`), the AI panel
-  /// wrapper (`337:9278`), the pool card, the primary CTA, the onboarding
-  /// sheet, the avatar badge and more. **Every one of them is black at the
-  /// light alpha.** No dark node in the file has a cream or white DROP shadow;
-  /// cream and lavender appear only as INNER shadows and as glows.
-  ///
-  /// What the dark canvas actually does instead is elevate *upward* by a
-  /// different mechanism — Figma's Glass effect over a 20%-alpha fill, plus a
-  /// lavender back-light — which is why the black shadow reads correctly there
-  /// rather than disappearing. That mechanism is now
-  /// `lib/core/theme/app_elevation.dart` and the primitives in
-  /// `lib/core/widgets/elevation/`. See docs/DESIGN_ISSUES.md #47 (superseded)
-  /// and #72, and docs/DECISIONS.md D-009.
-  ///
-  /// **Why the value is still cream.** Flipping it to black here, alone, would
-  /// darken the components that still paint an unclipped `BoxShadow`
-  /// *underneath* a translucent fill — the shadow shows through the 20% wash
-  /// until the component moves onto `ElevatedSurface`, which knocks it out.
-  /// So each call site switches to the measured black in the edit that
-  /// migrates it, not before:
-  ///
-  /// | Call site | Owner |
-  /// | --- | --- |
-  /// | `lib/features/onboarding/screens/onboarding_screen.dart` | edit2 |
-  /// | `lib/features/mistakes/widgets/mistakes_subject_card.dart` | edit3 |
-  /// | `lib/features/quiz/screens/quiz_review_screen.dart` | edit4 |
-  /// | `lib/features/quiz/widgets/ai_explanation_panel.dart` | edit4 |
-  /// | `lib/features/auth/screens/otp_screen.dart` | edit5 |
-  /// | `lib/features/profile/screens/edit_profile_screen.dart` | edit5 |
-  /// | `lib/features/profile/widgets/profile_header_card.dart` | edit5 |
-  /// | `lib/features/profile/widgets/profile_stat_card.dart` | edit5 |
-  ///
-  /// **Whoever removes the LAST reference deletes this field** — both values,
-  /// its `copyWith` and `lerp` lines, and the `elevationShadow` group in
-  /// `test/core/theme/palette_discipline_test.dart`, which pins the behaviour
-  /// this comment supersedes.
-  ///
-  /// Historical note, kept because it is the reasoning the ruling overturned:
-  /// the token carries no alpha, because the five original shadows were
-  /// measured at two depths (0.15 for the onboarding sheet, 0.25 for the rest)
-  /// and depth belongs to the component. `AppElevation` keeps that split, but
-  /// puts the alpha in the token where the frame put it.
-  ///
-  /// `navShadow` used to sit beside it with the same disclaimer and is now
-  /// gone: edit2 replaced it with `AppElevation.navBarShadows`, which has both
-  /// canvases measured (DESIGN_ISSUES #37, open question 2 — resolved).
-  final Color elevationShadow;
+  //
+  // `elevationShadow` lived here and is GONE, deleted 2026-09-20 by the edit
+  // that removed its last call site (edit5's OTP chunk, the resend-timer
+  // pill). Its own doc comment asked for exactly that: "whoever removes the
+  // LAST reference deletes this field".
+  //
+  // It carried a DERIVED dark value - a cream `#FCFBF9` - on the premise that
+  // no dark frame existed to verify a shadow against. Thirteen dark frames
+  // were measured on 2026-09-17 and every drop shadow in them is black; the
+  // dark canvas elevates upward instead, with Glass over a 20% fill plus a
+  // lavender back-light. The owner withdrew the derivation (edit1.md #34) and
+  // the mechanism now lives in `lib/core/theme/app_elevation.dart` and
+  // `lib/core/widgets/elevation/`. See docs/DESIGN_ISSUES.md #47 (superseded)
+  // and #72, and docs/DECISIONS.md D-009.
+  //
+  // `test/core/theme/app_elevation_test.dart` still asserts that the cream
+  // appears in no elevation token on either canvas. It now writes the hex out
+  // rather than reading it from here, which is the point: the value survives
+  // only as something to test AGAINST.
 
   // --- Leaderboard tokens ----------------------------------------------------
   //
@@ -826,6 +817,20 @@ class AppColors extends ThemeExtension<AppColors> {
   /// `337:6464` dark.
   final Color quizPrevButtonFill;
 
+  /// The chevron inside that button. `#FCFBF9` on BOTH canvases - light
+  /// `159:1922`, dark `337:6466`, each read from the Properties panel on
+  /// 2026-09-20. `edit4.md` §13 listed this as unread and offered a two-branch
+  /// fallback; neither branch was needed, and the dark branch would have been
+  /// wrong - it proposed [textPrimary], which is the same value in dark but is
+  /// a different token with a different reason to move.
+  ///
+  /// Numerically equal to `ColorScheme.onPrimary` today. Kept separate because
+  /// it sits on [quizPrevButtonFill], not on the primary accent, and the two
+  /// fills are unrelated: light is a 60% green wash, dark a 20% neutral.
+  /// Measured **4.60:1** on the light wash over the cream page and **9.26:1**
+  /// on the dark composite.
+  final Color quizPrevButtonGlyph;
+
   /// The quiz question card's hairline. Width in
   /// `AppElevation.quizQuestionCardBorderWidth`. `337:6434`.
   final Color quizQuestionCardBorder;
@@ -833,6 +838,28 @@ class AppColors extends ThemeExtension<AppColors> {
   /// The quiz option tile's hairline. `337:6440`. Distinct from
   /// [quizOptionBorder], which is the A/B/C/D letter ring.
   final Color quizOptionTileBorder;
+
+  /// The ring around an UNGRADED A/B/C/D badge. The graded states draw
+  /// their own semantic ring and do not use this.
+  ///
+  /// **Dark is READ, light is CARRIED.** `337:6447` gives the dark ring as
+  /// the same lavender at 50% that the tile's own hairline uses - the frame
+  /// draws the outline and the letter ring in one colour, where the build
+  /// had been drawing the ring in the light canvas's green. Read from the
+  /// Properties panel on 2026-09-20, together with its 1.18 stroke, which
+  /// already matched.
+  ///
+  /// The LIGHT value was **not** separately read. It is [quizOptionBorder]'s
+  /// light value carried across, which is what the badge drew before this
+  /// token existed, so the light canvas is byte-identical. If the light
+  /// badge ever turns out to differ from the tile hairline, this is the
+  /// token to move.
+  ///
+  /// It exists rather than moving [quizOptionBorder] because that token is
+  /// shared - the review screen's skipped row takes it for both its outline
+  /// and its badge - and one node's reading must not restyle four surfaces
+  /// (owner ruling, 2026-09-20; docs/DESIGN_ISSUES.md #83).
+  final Color quizOptionBadgeRing;
 
   /// The result screen's stat buckets and rewards card. `159:2289`,
   /// `159:2252` / `337:6667`, `337:6680`.
@@ -845,13 +872,76 @@ class AppColors extends ThemeExtension<AppColors> {
   /// one keeps [quizReviewFilterFill].
   final Color reviewFilterIdleFill;
 
+  /// A CORRECT review answer row. Light keeps [quizCorrectFill]'s opaque mint
+  /// verbatim; dark is the same mint at **20%**, read off `337:6731` on
+  /// 2026-09-20 together with its 0.5 `#00D33C` stroke and its one Glass
+  /// effect. Composites to `#425047` over the page.
+  final Color reviewRowCorrectFill;
+
+  /// A WRONG review answer row. Light keeps [quizWrongFill] verbatim (30%);
+  /// dark is the same HUE at **20%**, composited `#4F4346`.
+  ///
+  /// Two deliberate decisions are frozen in that sentence. The alpha follows
+  /// the dark frame, which reads 20% on both row states - equal treatment is
+  /// what D-010 asked for above the literal number. The hue does NOT follow
+  /// the frame: `337:6731`'s wrong twin draws `#FDE9E8` with a `#921019`
+  /// stroke, one hex digit from the shipped pair, and the owner ruled that
+  /// drift unadopted in 2026-09-08 - DESIGN_ISSUES #52, still open, untouched
+  /// here.
+  final Color reviewRowWrongFill;
+
+  /// A SKIPPED review answer row - a question the student never committed.
+  ///
+  /// **The frame has no such state**, in either canvas, so this is the neutral
+  /// ungraded surface given the same treatment as the two rows beside it
+  /// rather than a third signal colour invented for it (DESIGN_ISSUES #55).
+  /// Light keeps [quizOptionFill]; dark is `#27282C` at 20%, the alpha its
+  /// neighbours read, composited `#242529`.
+  ///
+  /// That composite is **1.01:1** against the page - no colour step at all.
+  /// The row is delineated by its Glass rim, not by its fill, which is the
+  /// same bargain [mistakesCardFill] already documents on this canvas.
+  final Color reviewRowSkippedFill;
+
   /// The leaderboard scope toggle's track. `158:839` / `337:5615`.
   final Color scopeTrackFill;
 
-  /// The scope toggle's selected segment. `158:840` / `337:5615`. The light
-  /// value is the existing [podiumAccent] reading; a 2026-09-16 CSS export
-  /// showed `#DBB0FF` instead, and edit4 re-reads `158:840` before consuming
-  /// it. Recorded rather than silently picked.
+  /// An UNSELECTED scope segment's label. Light `158:843` is `#384F47`, a
+  /// dark GREEN; dark `337:5619` is the cream. Both Inter 500 / 18 at a 100%
+  /// line height, READ off the Properties panel on 2026-09-20.
+  ///
+  /// `edit4.md` §7.8 asked for [textSecondary] here. That is the grey
+  /// `#2C2C2C`, and it is the same substitution DESIGN_ISSUES #77 had already
+  /// caught on the sibling pill track five days earlier - the guide's table
+  /// simply had no idle-label node in it. Measured on the track: **7.48:1**
+  /// light, **14.61:1** dark.
+  ///
+  /// Numerically equal to [pillTrackLabel], and its own token anyway. The two
+  /// controls are different Figma components - `Frame 1000003008` here,
+  /// `Frame 1000003007` there - with different track fills, different
+  /// selected fills and, per #77 and this edit's own finding, two different
+  /// contrast problems that will not be fixed by the same edit.
+  final Color scopeIdleLabel;
+
+  /// The scope toggle's selected segment. Light `#DBB0FF` (`158:840`), dark
+  /// `#C4A8E3` (`337:5616`).
+  ///
+  /// **The light value was re-read on 2026-09-20 and it moved.** It had been
+  /// carrying the 2026-09-08 [podiumAccent] reading `#D8B0FF`; a 2026-09-16
+  /// CSS export of `133:3117` disagreed, and the Properties panel settles it
+  /// for `158:840` at `#DBB0FF`. Three units of red apart, which is why it
+  /// survived two readings - and why it is worth pinning rather than eyeing.
+  ///
+  /// [podiumAccent] is deliberately NOT moved with it. The caller's own board
+  /// row (`134:3554`) was not re-read here, and the two tokens are only
+  /// near-identical by accident: this one genuinely differs per canvas, that
+  /// one is semantic and identical on both.
+  ///
+  /// ⚠️ The selected LABEL on this fill fails AA badly - [podiumOnAccent]
+  /// measures **1.74:1** here in light and **2.02:1** in dark, worse than the
+  /// 2.74:1 the owner accepted for the pill track, and on a different colour
+  /// pair, so #77's ruling does not cover it. Recorded as a new finding in
+  /// docs/DESIGN_ISSUES.md #77; no colour is chosen here.
   final Color scopeSelectedFill;
 
   /// A leaderboard row. `134:3538` / `337:5630`.
@@ -874,8 +964,26 @@ class AppColors extends ThemeExtension<AppColors> {
   /// [destructive] on both canvases.
   final Color? profileMenuRowBorder;
 
+  /// The EMPHASIS row's hairline — "Go to University", `170:4921`.
+  ///
+  /// Its own token rather than [textPrimary], which is what the row used to
+  /// borrow. Read off the Properties panel 2026-09-20: the frame's stroke is
+  /// `#101010` and `textPrimary` light is `#0E0E0E` — two units of every
+  /// channel apart, invisible on screen and still a different value from a
+  /// different source. Dark is null: `337:7433`'s rows carry no stroke at all
+  /// (edit5.md §5 #24), the same as [profileMenuRowBorder].
+  final Color? profileMenuEmphasisRowBorder;
+
   /// The 35x35 icon disc inside a Profile menu row. `337:7480`.
   final Color profileMenuIconDiscFill;
+
+  /// The glyph inside the 40x40 Profile edit pencil chip.
+  ///
+  /// Both canvases READ, 2026-09-20 / 2026-09-17: light `170:4674` is a 20x20
+  /// vector at `#333333`, dark `337:7466`'s is the same box at `#FCFBF9`.
+  /// Neither is [homeAccent], which is what the bare `IconButton` this chip
+  /// replaced was tinted with (edit5.md §7.2.3).
+  final Color profileEditChipGlyph;
 
   /// The Edit Profile avatar badge. `180:3989` / `337:7925`.
   final Color avatarBadgeFill;
@@ -908,6 +1016,21 @@ class AppColors extends ThemeExtension<AppColors> {
   /// The sign-up track card. `125:862` / `337:15981`. Dark was opaque
   /// [background]; the frame is a 20% wash under Glass.
   final Color trackCardFill;
+
+  /// The School track illustration's own soft shadow — a black-25% silhouette
+  /// of the books, blurred and dropped behind them (edit5 #54).
+  ///
+  /// **The same value on both canvases**, because the frames draw the same
+  /// layer on both: inside `Component 2`, `Group 37219` holds the 98×98 art
+  /// TWICE, and the back copy's group is one flat `#000000` at 25%, offset
+  /// (1, 2), at 53% layer opacity under a 7.4 layer blur. Read on the
+  /// Properties panel 2026-09-20; `docs/DESIGN_ISSUES.md` #40 recorded the
+  /// same 0.53 × 0.25-black from the SVG export on 2026-08-04 and deleted it
+  /// from the asset, because `flutter_svg` painted it CRISP. It comes back
+  /// here, through `LayerBlur`, where the blur is real.
+  ///
+  /// The University card has no such layer and gets none.
+  final Color trackCardArtShadow;
 
   /// The lavender back-light ellipse behind a dark glass surface — all
   /// sixteen of them, B1..B16. Same value on both canvases because no light
@@ -976,11 +1099,9 @@ class AppColors extends ThemeExtension<AppColors> {
     profileRowBorder: Color(0xFF7070A0), // Figma 170:4790
     profileStatLabel: Brand.greenPrimary, // #384F47 — Figma 661:8572
     profileStatValue: Color(0xFF7070A0), // Figma 661:8573
-    profileIconChip: Color(0xFFF4E6FF), // Figma 176:1186
     // Identical to dark ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444), // Figma 176:1191
     dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
-    elevationShadow: Color(0xFF000000), // the five frames' rgba(0,0,0,α)
     podiumAccent: Color(0xFFD8B0FF), // Figma 158:840 / 134:3554
     podiumOnAccent: Color(0xFFFCFBF9), // Figma 158:841
     podiumFirstRing: Color(0xFFFFCA28), // Figma 134:3418 border / 134:3429
@@ -1015,20 +1136,30 @@ class AppColors extends ThemeExtension<AppColors> {
     aiPanelOuterBorder: Color(0xFF4B675E), // Figma 159:1811
     aiPanelCardFill: Color(0xFFFCFBF9), // Figma 159:1826
     quizPrevButtonFill: Color.fromRGBO(56, 79, 71, 0.6), // light Quiz chip
+    quizPrevButtonGlyph: Color(0xFFFCFBF9), // Figma 159:1922
     quizQuestionCardBorder: Color(0xFF4B675E), // light Container
     quizOptionTileBorder: Color(0xFF4B675E), // light Button
+    quizOptionBadgeRing: Color(0xFF4B675E), // carried, not read
     resultCardFill: Color(0xFFFCFBF9), // Figma 159:2289 / 159:2252
     resultStarDiscFill: Color(0xFFF8EFFC), // light Result disc
     reviewFilterIdleFill: Color(0xFFFCFBF9), // Figma 162:2782
+    // The light review rows are unchanged: the light frame draws them opaque
+    // and D-010 is a DARK ruling.
+    reviewRowCorrectFill: Color(0xFFBFFFC3), // = quizCorrectFill, 162:2502
+    reviewRowWrongFill: Color(0x4DFFC0C0), // = quizWrongFill, 162:2563
+    reviewRowSkippedFill: Color(0xFFFCFBF9), // = quizOptionFill (no frame)
     scopeTrackFill: Color(0xFFECECEC), // Figma 158:839
-    scopeSelectedFill: Color(0xFFD8B0FF), // Figma 158:840 — see field doc
+    scopeIdleLabel: Color(0xFF384F47), // Figma 158:843
+    scopeSelectedFill: Color(0xFFDBB0FF), // Figma 158:840 — see field doc
     leaderboardRowFill: Color(0xFFFFFFFF), // Figma 134:3538
     profileHeaderFill: Color(0xFFFCFBF9), // Figma 169:4609
     profileEditChipFill: Color(0xFFFCFBF9), // pencil chip in 166:4416
     profileStatFill: Color(0xFFFCFBF9), // Figma 661:8571
     profileMenuRowFill: Color(0xFFFCFBF9), // Figma 170:4790
     profileMenuRowBorder: Color(0xFF7070A0), // Figma 170:4790
-    profileMenuIconDiscFill: Color(0xFFF4E6FF), // light menu rows
+    profileMenuEmphasisRowBorder: Color(0xFF101010), // Figma 170:4921
+    profileMenuIconDiscFill: Color(0xFFF4E6FF), // Figma 170:4861, 176:1186
+    profileEditChipGlyph: Color(0xFF333333), // Figma 170:4674
     avatarBadgeFill: Color(0xFFFCFBF9), // Figma 180:3989
     settingsSectionFill: Color(0xFFFCFBF9), // Figma 176:1840
     settingsSectionBorder: Brand.purplePrimary, // #AE87E7 — Figma 176:1840
@@ -1038,6 +1169,7 @@ class AppColors extends ThemeExtension<AppColors> {
     otpDigitFill: Color(0xFFFDFDFD), // Rectangle 104-107
     otpDigitBorder: Color(0xFFD1D1D1), // Rectangle 104-107 — same in both
     trackCardFill: Color(0xFFFCFBF9), // Figma 125:862
+    trackCardArtShadow: Color.fromRGBO(0, 0, 0, 0.25), // 125:862
     backlight: Brand.purplePrimary, // #AE87E7 — B1..B16, dark frames only
   );
 
@@ -1083,9 +1215,9 @@ class AppColors extends ThemeExtension<AppColors> {
     quizWrongBorder: Color(0xFF921119),
     quizWrongBadge: Color(0xFFEF4444),
     quizExplanationBody: Color(0xFF7070A0),
-    // Identical to light ON PURPOSE, like the five semantic tokens above: it
-    // sits on quizCorrectFill, which does not flip either. See the field doc.
-    quizReviewRowContent: Brand.greenPrimary,
+    // NOT identical to light any more. Its fill flips now (reviewRowCorrectFill
+    // is 20% here), so its foreground has to. Read off 337:6715. Field doc.
+    quizReviewRowContent: Color(0xFFFCFBF9),
     quizReviewFilterFill: Brand.purplePrimary, // #AE87E7 — Figma 337:6825
     // Dark counterpart unspecified in 337:6825 — the page fill, for contrast
     // on the purple chip. See the field doc.
@@ -1112,11 +1244,9 @@ class AppColors extends ThemeExtension<AppColors> {
     profileRowBorder: Color(0xFF7070A0), // Figma — kept in both, like cardLabel
     profileStatLabel: Color(0xFFFCFBF9), // = dark legalText (no dark frame)
     profileStatValue: Color(0xFF7070A0), // Figma — kept in both
-    profileIconChip: Color(0xFF3E3E3E), // = navCentreIdleFill (no dark frame)
     // Identical to light ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444),
     dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
-    elevationShadow: Color(0xFFFCFBF9), // TODO(design) derived — see field doc
     // Same in both palettes. The first four are semantic (selection, medal
     // order) and must not flip with the theme; the last two are light values
     // carried across because `337:5528` has not been measured yet.
@@ -1156,12 +1286,20 @@ class AppColors extends ThemeExtension<AppColors> {
     aiPanelOuterBorder: null, // no outer hairline in the dark frame
     aiPanelCardFill: Color(0x331A1A1A), // #1A1A1A @20% — Figma 337:9279
     quizPrevButtonFill: Color(0x3327282C), // #27282C @20% — Figma 337:6464
+    quizPrevButtonGlyph: Color(0xFFFCFBF9), // Figma 337:6466
     quizQuestionCardBorder: Color.fromRGBO(174, 135, 231, 0.6), // 337:6434
     quizOptionTileBorder: Color.fromRGBO(174, 135, 231, 0.5), // 337:6440
+    quizOptionBadgeRing: Color.fromRGBO(174, 135, 231, 0.5), // 337:6447
     resultCardFill: Color(0x3327282C), // #27282C @20% — 337:6667, 337:6680
     resultStarDiscFill: Color(0x3327282C), // #27282C @20% — Figma 337:6685
     reviewFilterIdleFill: Color(0x3327282C), // #27282C @20% — Figma 337:6827
+    // D-010: the frame's alpha, the frame's stroke, G5. All three rows take
+    // 20% so that none of them is opaque beside a glassed neighbour.
+    reviewRowCorrectFill: Color(0x33BFFFC3), // #BFFFC3 @20% — Figma 337:6731
+    reviewRowWrongFill: Color(0x33FFC0C0), // shipped hue @20% — see field doc
+    reviewRowSkippedFill: Color(0x3327282C), // #27282C @20% (no frame state)
     scopeTrackFill: Color(0xFF232429), // Figma 337:5615
+    scopeIdleLabel: Color(0xFFFCFBF9), // Figma 337:5619
     scopeSelectedFill: Color(0xFFC4A8E3), // Figma 337:5615 segment
     leaderboardRowFill: Color(0x33232428), // #232428 @20% — Figma 337:5630
     profileHeaderFill: Color(0x3327282C), // #27282C @20% — Figma 337:7455
@@ -1169,7 +1307,9 @@ class AppColors extends ThemeExtension<AppColors> {
     profileStatFill: Color(0xFF27282C), // Figma 661:8579 — opaque
     profileMenuRowFill: Color(0x3327282C), // #27282C @20% — Figma 337:7479
     profileMenuRowBorder: null, // Figma 337:7479 — no hairline in dark
+    profileMenuEmphasisRowBorder: null, // Figma 337:7433 — none in dark either
     profileMenuIconDiscFill: Color(0x3327282C), // #27282C @20% — 337:7480
+    profileEditChipGlyph: Color(0xFFFCFBF9), // Figma 337:7466
     avatarBadgeFill: Color(0x33FCFBF9), // #FCFBF9 @20% — Figma 337:7925
     settingsSectionFill: Color(0x3327282C), // #27282C @20% — Figma 337:8195
     settingsSectionBorder: null, // no hairline in the dark frame
@@ -1179,6 +1319,9 @@ class AppColors extends ThemeExtension<AppColors> {
     otpDigitFill: Color(0x33232428), // #232428 @20% — Rectangle 104-107
     otpDigitBorder: Color(0xFFD1D1D1), // same in both canvases
     trackCardFill: Color(0x33232428), // #232428 @20% — Figma 337:15981
+    // The same black on both canvases — `337:15981` draws the identical
+    // layer, which is unusual enough in this wave to be worth the comment.
+    trackCardArtShadow: Color.fromRGBO(0, 0, 0, 0.25), // 337:15981
     backlight: Brand.purplePrimary, // #AE87E7 — B1..B16
   );
 
@@ -1239,10 +1382,8 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? profileRowBorder,
     Color? profileStatLabel,
     Color? profileStatValue,
-    Color? profileIconChip,
     Color? destructive,
     Color? dialogNote,
-    Color? elevationShadow,
     Color? podiumAccent,
     Color? podiumOnAccent,
     Color? podiumFirstRing,
@@ -1276,12 +1417,18 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? aiPanelOuterBorder,
     Color? aiPanelCardFill,
     Color? quizPrevButtonFill,
+    Color? quizPrevButtonGlyph,
     Color? quizQuestionCardBorder,
     Color? quizOptionTileBorder,
+    Color? quizOptionBadgeRing,
     Color? resultCardFill,
     Color? resultStarDiscFill,
     Color? reviewFilterIdleFill,
+    Color? reviewRowCorrectFill,
+    Color? reviewRowWrongFill,
+    Color? reviewRowSkippedFill,
     Color? scopeTrackFill,
+    Color? scopeIdleLabel,
     Color? scopeSelectedFill,
     Color? leaderboardRowFill,
     Color? profileHeaderFill,
@@ -1289,7 +1436,9 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? profileStatFill,
     Color? profileMenuRowFill,
     Color? profileMenuRowBorder,
+    Color? profileMenuEmphasisRowBorder,
     Color? profileMenuIconDiscFill,
+    Color? profileEditChipGlyph,
     Color? avatarBadgeFill,
     Color? settingsSectionFill,
     Color? settingsSectionBorder,
@@ -1299,6 +1448,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? otpDigitFill,
     Color? otpDigitBorder,
     Color? trackCardFill,
+    Color? trackCardArtShadow,
     Color? backlight,
   }) {
     return AppColors(
@@ -1364,10 +1514,8 @@ class AppColors extends ThemeExtension<AppColors> {
       profileRowBorder: profileRowBorder ?? this.profileRowBorder,
       profileStatLabel: profileStatLabel ?? this.profileStatLabel,
       profileStatValue: profileStatValue ?? this.profileStatValue,
-      profileIconChip: profileIconChip ?? this.profileIconChip,
       destructive: destructive ?? this.destructive,
       dialogNote: dialogNote ?? this.dialogNote,
-      elevationShadow: elevationShadow ?? this.elevationShadow,
       podiumAccent: podiumAccent ?? this.podiumAccent,
       podiumOnAccent: podiumOnAccent ?? this.podiumOnAccent,
       podiumFirstRing: podiumFirstRing ?? this.podiumFirstRing,
@@ -1410,13 +1558,19 @@ class AppColors extends ThemeExtension<AppColors> {
       aiPanelOuterBorder: aiPanelOuterBorder ?? this.aiPanelOuterBorder,
       aiPanelCardFill: aiPanelCardFill ?? this.aiPanelCardFill,
       quizPrevButtonFill: quizPrevButtonFill ?? this.quizPrevButtonFill,
+      quizPrevButtonGlyph: quizPrevButtonGlyph ?? this.quizPrevButtonGlyph,
       quizQuestionCardBorder:
           quizQuestionCardBorder ?? this.quizQuestionCardBorder,
       quizOptionTileBorder: quizOptionTileBorder ?? this.quizOptionTileBorder,
+      quizOptionBadgeRing: quizOptionBadgeRing ?? this.quizOptionBadgeRing,
       resultCardFill: resultCardFill ?? this.resultCardFill,
       resultStarDiscFill: resultStarDiscFill ?? this.resultStarDiscFill,
       reviewFilterIdleFill: reviewFilterIdleFill ?? this.reviewFilterIdleFill,
+      reviewRowCorrectFill: reviewRowCorrectFill ?? this.reviewRowCorrectFill,
+      reviewRowWrongFill: reviewRowWrongFill ?? this.reviewRowWrongFill,
+      reviewRowSkippedFill: reviewRowSkippedFill ?? this.reviewRowSkippedFill,
       scopeTrackFill: scopeTrackFill ?? this.scopeTrackFill,
+      scopeIdleLabel: scopeIdleLabel ?? this.scopeIdleLabel,
       scopeSelectedFill: scopeSelectedFill ?? this.scopeSelectedFill,
       leaderboardRowFill: leaderboardRowFill ?? this.leaderboardRowFill,
       profileHeaderFill: profileHeaderFill ?? this.profileHeaderFill,
@@ -1424,8 +1578,11 @@ class AppColors extends ThemeExtension<AppColors> {
       profileStatFill: profileStatFill ?? this.profileStatFill,
       profileMenuRowFill: profileMenuRowFill ?? this.profileMenuRowFill,
       profileMenuRowBorder: profileMenuRowBorder ?? this.profileMenuRowBorder,
+      profileMenuEmphasisRowBorder:
+          profileMenuEmphasisRowBorder ?? this.profileMenuEmphasisRowBorder,
       profileMenuIconDiscFill:
           profileMenuIconDiscFill ?? this.profileMenuIconDiscFill,
+      profileEditChipGlyph: profileEditChipGlyph ?? this.profileEditChipGlyph,
       avatarBadgeFill: avatarBadgeFill ?? this.avatarBadgeFill,
       settingsSectionFill: settingsSectionFill ?? this.settingsSectionFill,
       settingsSectionBorder:
@@ -1436,6 +1593,7 @@ class AppColors extends ThemeExtension<AppColors> {
       otpDigitFill: otpDigitFill ?? this.otpDigitFill,
       otpDigitBorder: otpDigitBorder ?? this.otpDigitBorder,
       trackCardFill: trackCardFill ?? this.trackCardFill,
+      trackCardArtShadow: trackCardArtShadow ?? this.trackCardArtShadow,
       backlight: backlight ?? this.backlight,
     );
   }
@@ -1590,7 +1748,6 @@ class AppColors extends ThemeExtension<AppColors> {
         other.profileStatValue,
         t,
       )!,
-      profileIconChip: Color.lerp(profileIconChip, other.profileIconChip, t)!,
       // Identical endpoints — destructive does not move across a theme
       // animation, which is the exemption made visible (as with successBadge).
       destructive: Color.lerp(destructive, other.destructive, t)!,
@@ -1598,7 +1755,6 @@ class AppColors extends ThemeExtension<AppColors> {
       // Black → cream is the widest travel of any token here, so a theme
       // animation passes through a mid grey. Correct: the shadow fades out as
       // the canvas darkens and fades back in as a rim light.
-      elevationShadow: Color.lerp(elevationShadow, other.elevationShadow, t)!,
       // Identical endpoints — the "this row is you" highlight does not move
       // across a theme change, for the reason on the field docs.
       podiumAccent: Color.lerp(podiumAccent, other.podiumAccent, t)!,
@@ -1708,6 +1864,11 @@ class AppColors extends ThemeExtension<AppColors> {
         other.quizPrevButtonFill,
         t,
       )!,
+      quizPrevButtonGlyph: Color.lerp(
+        quizPrevButtonGlyph,
+        other.quizPrevButtonGlyph,
+        t,
+      )!,
       quizQuestionCardBorder: Color.lerp(
         quizQuestionCardBorder,
         other.quizQuestionCardBorder,
@@ -1716,6 +1877,11 @@ class AppColors extends ThemeExtension<AppColors> {
       quizOptionTileBorder: Color.lerp(
         quizOptionTileBorder,
         other.quizOptionTileBorder,
+        t,
+      )!,
+      quizOptionBadgeRing: Color.lerp(
+        quizOptionBadgeRing,
+        other.quizOptionBadgeRing,
         t,
       )!,
       resultCardFill: Color.lerp(resultCardFill, other.resultCardFill, t)!,
@@ -1729,7 +1895,23 @@ class AppColors extends ThemeExtension<AppColors> {
         other.reviewFilterIdleFill,
         t,
       )!,
+      reviewRowCorrectFill: Color.lerp(
+        reviewRowCorrectFill,
+        other.reviewRowCorrectFill,
+        t,
+      )!,
+      reviewRowWrongFill: Color.lerp(
+        reviewRowWrongFill,
+        other.reviewRowWrongFill,
+        t,
+      )!,
+      reviewRowSkippedFill: Color.lerp(
+        reviewRowSkippedFill,
+        other.reviewRowSkippedFill,
+        t,
+      )!,
       scopeTrackFill: Color.lerp(scopeTrackFill, other.scopeTrackFill, t)!,
+      scopeIdleLabel: Color.lerp(scopeIdleLabel, other.scopeIdleLabel, t)!,
       scopeSelectedFill: Color.lerp(
         scopeSelectedFill,
         other.scopeSelectedFill,
@@ -1761,9 +1943,19 @@ class AppColors extends ThemeExtension<AppColors> {
         other.profileMenuRowBorder,
         t,
       ),
+      profileMenuEmphasisRowBorder: Color.lerp(
+        profileMenuEmphasisRowBorder,
+        other.profileMenuEmphasisRowBorder,
+        t,
+      ),
       profileMenuIconDiscFill: Color.lerp(
         profileMenuIconDiscFill,
         other.profileMenuIconDiscFill,
+        t,
+      )!,
+      profileEditChipGlyph: Color.lerp(
+        profileEditChipGlyph,
+        other.profileEditChipGlyph,
         t,
       )!,
       avatarBadgeFill: Color.lerp(avatarBadgeFill, other.avatarBadgeFill, t)!,
@@ -1784,6 +1976,11 @@ class AppColors extends ThemeExtension<AppColors> {
       otpDigitFill: Color.lerp(otpDigitFill, other.otpDigitFill, t)!,
       otpDigitBorder: Color.lerp(otpDigitBorder, other.otpDigitBorder, t)!,
       trackCardFill: Color.lerp(trackCardFill, other.trackCardFill, t)!,
+      trackCardArtShadow: Color.lerp(
+        trackCardArtShadow,
+        other.trackCardArtShadow,
+        t,
+      )!,
       backlight: Color.lerp(backlight, other.backlight, t)!,
     );
   }

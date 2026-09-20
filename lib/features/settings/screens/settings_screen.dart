@@ -5,7 +5,9 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/segmented_track.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
@@ -78,43 +80,105 @@ class SettingsScreen extends ConsumerWidget {
 ///
 /// The six language PILLS across the pre-auth screens call `toggle()`, which is
 /// the right verb when there is one control and two states. Here both options
-/// are on screen, so the rows call `select()` — tapping the language you are
-/// already using must do nothing, and a toggle would flip you off it.
+/// are on screen, so the control calls `select()` — tapping the language you
+/// are already using must do nothing, and a toggle would flip you off it.
 ///
 /// Both names are written in their OWN language in both ARB files, on purpose:
 /// a student who has landed in a script they cannot read needs to recognise the
-/// row that gets them out, and "الإنجليزية" is no help to someone looking for
-/// English.
+/// option that gets them out, and "الإنجليزية" is no help to someone looking
+/// for English.
+///
+/// ---
+///
+/// **It is a segmented TRACK, not two rows in a card** — owner decision
+/// 2026-09-17, edit5 #50. `176:1840` and `337:8177` both draw `Frame
+/// 1000003007`: one 362 x 44 groove at radius 32 with two equal segments, the
+/// selected one filled `#AE87E7` at radius 51 — no card, no radio rings, no
+/// dividers. It is the SAME Figma component as the Lectures quiz-type tabs, so
+/// it takes the same [SegmentedTrack] primitive and the same `pillTrack*`
+/// tokens; building it a second way is exactly the drift the primitive exists
+/// to stop.
+///
+/// **English comes first.** The build listed Arabic first; both frames list
+/// English first (`176:2373` then `176:2375`, `337:8179` then `337:8181`), and
+/// `SegmentedTrack` lays its segments out as a `Row`, so in Arabic the first
+/// segment is the leading one on the right without any mirroring code.
+///
+/// The two `Key`s are preserved through `keyOf`, so the screen's existing tests
+/// still find the same targets they always did.
 class _LanguagesSection extends ConsumerWidget {
   const _LanguagesSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
     final locale = ref.watch(localeProvider);
 
-    void select(Locale value) =>
-        ref.read(localeProvider.notifier).select(value);
+    // `languageCode`, not the whole `Locale`: the app's locale can arrive with
+    // a country subtag from the platform, and `Locale('ar') == Locale('ar',
+    // 'EG')` is false — which would leave the track with nothing selected.
+    final selected = locale.languageCode == 'ar' ? _arabic : _english;
 
-    return SettingsSection(
-      title: l10n.settingsLanguages,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SettingsChoiceRow(
-          key: const Key('settings_language_ar'),
-          label: l10n.languageArabicName,
-          selected: locale.languageCode == 'ar',
-          onTap: () => select(const Locale('ar')),
+        // The same title treatment `SettingsSection` gives its own blocks, so
+        // losing the card does not make this heading a different size from the
+        // three above and below it.
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 10),
+          child: Text(
+            l10n.settingsLanguages,
+            style: AppType.h3.copyWith(color: ext.textPrimary),
+          ),
         ),
-        SettingsChoiceRow(
-          key: const Key('settings_language_en'),
-          label: l10n.languageEnglishName,
-          selected: locale.languageCode == 'en',
-          onTap: () => select(const Locale('en')),
+        SegmentedTrack<Locale>(
+          segments: const [_english, _arabic],
+          selected: selected,
+          onChanged: (value) => ref.read(localeProvider.notifier).select(value),
+          labelOf: (value) => value.languageCode == 'ar'
+              ? l10n.languageArabicName
+              : l10n.languageEnglishName,
+          keyOf: (value) => Key('settings_language_${value.languageCode}'),
+          style: SegmentedTrackStyle(
+            trackColor: ext.pillTrackFill,
+            trackRadius: 32,
+            trackInsetShadows: elevation.pillTrackInsetShadows,
+            selectedColor: ext.pillTrackSelectedFill,
+            // The frame's 51 on a 44-high segment; anything at or above half
+            // the height is the same stadium and 22 is that half exactly —
+            // the quiz-type tabs' reasoning, on the same component.
+            selectedRadius: 22,
+            selectedInsetShadows: elevation.pillTrackSelectedInsetShadows,
+            // ⚠️ The frame's own label here is Inter Medium 500 at **18**
+            // (`176:2373` / `176:2375`, and `337:8179` / `337:8181` in dark).
+            // The scale has no 18/w500 — `h3` is 18/w600 — and the SAME Figma
+            // component reads **14** on the Lectures screen (`180:5339`). One
+            // component, two sizes, neither of them the build's 12. Recorded
+            // for the designer in docs/DESIGN_ISSUES.md #72; the shared
+            // style is kept rather than inventing a scale entry, which
+            // docs/AGENT_WORKFLOW.md forbids outright.
+            labelStyle: AppType.labelMedium,
+            // Read on the Properties panel 2026-09-20 and both already
+            // tokenised by edit3: idle `#384F47` light / `#FCFBF9` dark,
+            // selected `#FCFBF9` on both. The selected pair is the 2.74:1 the
+            // owner accepted in docs/DESIGN_ISSUES.md #77.
+            idleLabelColor: ext.pillTrackLabel,
+            selectedLabelColor: ext.pillTrackSelectedLabel,
+          ),
         ),
       ],
     );
   }
 }
+
+/// The two locales, as constants so `segments` can be `const` and the identity
+/// comparison inside [SegmentedTrack] is stable across rebuilds.
+const _english = Locale('en');
+const _arabic = Locale('ar');
 
 /// Mode — **two** canvases, where the frame draws three colour circles.
 ///
@@ -125,6 +189,14 @@ class _LanguagesSection extends ConsumerWidget {
 ///
 /// The swatch on each row is that palette's own `background`, so the circle a
 /// student taps cannot drift from the canvas they get.
+///
+/// **Figma draws no card here**, exactly as it draws none around Languages:
+/// `176:1840` and `337:8141` put three `Ellipse 124` swatches straight under
+/// the heading. The card is kept anyway, because the control it belongs to is
+/// BLOCKED (#45) — restyling the container of a stand-in whose contents cannot
+/// be built would be polishing the wrong half. Recorded in
+/// docs/DESIGN_ISSUES.md #45 together with the swatches' own read values, so
+/// whoever unblocks it has both.
 class _ModeSection extends ConsumerWidget {
   const _ModeSection();
 
@@ -258,17 +330,42 @@ class _RankSection extends ConsumerWidget {
 /// time and it settles the question. Both states are equally fictional for a
 /// control nothing can persist, so the design wins for free. See
 /// docs/DESIGN_ISSUES.md #48.
-class _NotificationsSection extends StatelessWidget {
+///
+/// ---
+///
+/// **It is the one Settings card with a back-light, and which one depends on
+/// the student's track.** School is B8 (`348:8975`, 100 x 14 at (0, 33)) and
+/// university is B15 (`349:12114`, the same ellipse at (0, 27)); six pixels of
+/// y apart and both kept verbatim rather than averaged (edit1.md R2), the same
+/// way Home's level card keeps its pair.
+///
+/// **No back-light until `/me` has answered.** The track is a server fact, and
+/// guessing one would put the haze at the wrong height on half the students'
+/// phones for as long as the request takes. The section renders without it and
+/// gains it when the profile arrives — which is also why this widget watches
+/// `meProvider` although nothing else in it needs the profile. On the light
+/// canvas the tokens are null and the list is empty on both tracks.
+class _NotificationsSection extends ConsumerWidget {
   const _NotificationsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
     final hint = l10n.settingsNotificationsUnavailable;
+
+    final track = ref.watch(meProvider).value?.track;
+    final backlight = switch (track) {
+      Track.school => elevation.notificationPreferencesBacklightSchool,
+      Track.university => elevation.notificationPreferencesBacklightUniversity,
+      null => null,
+    };
 
     return SettingsSection(
       title: l10n.settingsNotifications,
+      backlights: [?backlight],
       note: Text(hint, style: AppType.captionRegular.copyWith(color: ext.hint)),
       children: [
         SettingsSwitchRow(

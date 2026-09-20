@@ -26,7 +26,6 @@ class SegmentedTrackStyle {
     required this.selectedLabelColor,
     this.trackInsetShadows = const [],
     this.selectedInsetShadows = const [],
-    this.idleSegmentColor,
     this.segmentPadding = const EdgeInsetsDirectional.symmetric(horizontal: 10),
   });
 
@@ -36,8 +35,12 @@ class SegmentedTrackStyle {
   /// The groove the segments sit in. Dark only in every frame read so far.
   final List<FigmaShadow> trackInsetShadows;
 
-  /// The fill of an UNSELECTED segment. Null means it shows the track.
-  final Color? idleSegmentColor;
+  // There is deliberately **no** idle-segment colour here. An unselected
+  // segment is always [selectedColor] at zero alpha, so it cannot paint
+  // over the groove — owner ruling 2026-09-20, docs/DESIGN_ISSUES.md #84.
+  // This is a knob that was REMOVED, not one that was never added: it
+  // existed, and one of the three call sites set it to an opaque colour.
+  // See `_Segment.build` for the measurement that closed it.
 
   final Color selectedColor;
   final double selectedRadius;
@@ -72,7 +75,6 @@ class SegmentedTrackStyle {
           other.trackColor == trackColor &&
           other.trackRadius == trackRadius &&
           listEquals(other.trackInsetShadows, trackInsetShadows) &&
-          other.idleSegmentColor == idleSegmentColor &&
           other.selectedColor == selectedColor &&
           other.selectedRadius == selectedRadius &&
           listEquals(other.selectedInsetShadows, selectedInsetShadows) &&
@@ -86,7 +88,6 @@ class SegmentedTrackStyle {
     trackColor,
     trackRadius,
     Object.hashAll(trackInsetShadows),
-    idleSegmentColor,
     selectedColor,
     selectedRadius,
     Object.hashAll(selectedInsetShadows),
@@ -237,7 +238,27 @@ class _Segment<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final idleFill = style.idleSegmentColor ?? style.selectedColor.withAlpha(0);
+    // **Always transparent** — owner ruling 2026-09-20,
+    // docs/DESIGN_ISSUES.md #84.
+    //
+    // A segment is the full height of the groove it sits in, so an OPAQUE
+    // idle fill paints over the track's inner shadows and flattens the
+    // idle half of the control. The style used to expose an
+    // `idleSegmentColor` for this and the quiz-type tabs set it to the
+    // track's own colour, which looks correct on a light canvas — there
+    // the track has no inner shadows and both fills are the same grey —
+    // and is a real defect in dark.
+    //
+    // Measured before the knob was removed: rendering the dark
+    // scope-toggle golden both ways differs in **2087 pixels**, every one
+    // of them inside the idle segment, concentrated in the two inset-shadow
+    // bands. At (34, 12) the opaque version painted the flat track where
+    // the transparent one paints the lavender inner glow.
+    //
+    // [SegmentedTrackStyle.selectedColor] at zero alpha rather than a bare
+    // transparent, so the tween below runs one colour's alpha up instead of
+    // cross-fading through a third hue.
+    final idleFill = style.selectedColor.withAlpha(0);
 
     return Semantics(
       button: true,

@@ -658,9 +658,13 @@ void main() {
     });
 
     test('the withdrawn cream appears in no token, on either canvas', () {
-      // `AppColors.dark.elevationShadow` is the derivation #34 overturned. If
-      // it ever shows up here, the ruling has been silently reversed.
-      final cream = AppColors.dark.elevationShadow;
+      // The derivation #34 overturned: `AppColors.dark.elevationShadow` was
+      // this cream, and the token was deleted on 2026-09-20 with its last
+      // call site. The hex is written out here rather than imported, because
+      // this test is the only reason the value still needs to exist at all -
+      // if it ever shows up in a token again, the ruling has been silently
+      // reversed.
+      const cream = Color(0xFFFCFBF9);
       for (final palette in [shadowsOf(light), shadowsOf(dark)]) {
         palette.forEach((name, shadows) {
           for (final s in shadows) {
@@ -785,8 +789,10 @@ void main() {
       // The guard on `==`/`hashCode`: a token added to the class but forgotten
       // in `props` would make two different AppElevations compare equal.
       expect(
+        // 84 until 2026-09-20, when edit4 added `quizPrevButtonRadius` (the
+        // previous button's radius differs per canvas) and `reviewRowGlass`.
         light.props.length,
-        84,
+        86,
         reason:
             'a token was added or removed. Update props (and this count) so '
             'equality keeps covering every field.',

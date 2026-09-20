@@ -187,7 +187,7 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  test('raw elevation effects do not increase (ratchet)', () {
+  test('no raw elevation effect outside the two elevation folders', () {
     // Elevation's version of the fontSize ratchet, and it exists for the same
     // reason: a design value decided at a call site. Five `BoxShadow`s shipped
     // with Figma's *blur* number in Flutter's `blurRadius` field - two
@@ -226,19 +226,51 @@ void main() {
     // both of them and knocks each out behind the 30% fill. The seven left are
     // the OTP timer, the avatar badge, the profile header, a profile stat
     // card, the review filter (2) and the AI panel - edits 4 and 5.
-    const baseline = 7;
-
+    //
+    // 2026-09-20, edit4: 7 -> 4, measured with this detector after the change.
+    // The review filter chip's `Material(elevation: selected ? 0 : 2,
+    // shadowColor: ...)` - a Material approximation standing in for a measured
+    // Figma shadow, and counted twice because the detector counts both keys -
+    // became `AppElevation.reviewFilterIdleShadows` plus `reviewFilterIdleGlass`
+    // under `ElevatedSurface`. The AI explanation card's `BoxShadow` became
+    // `aiPanelCardShadows`, which also corrected two values it had been
+    // carrying: the blur is the wrapper's 3, not 1.5, and the colour is the
+    // measured black rather than the withdrawn cream. The FOUR left are the OTP
+    // timer, the avatar badge, the profile header and a profile stat card -
+    // all edit5's.
+    //
+    // 2026-09-20, edit5 (profile): 4 -> 1, measured with this detector after
+    // the change. The profile header, the Edit Profile avatar badge and the
+    // profile stat card each became an `ElevatedSurface` over its own
+    // `AppElevation` token, and each correction changed a value as well as a
+    // mechanism: the badge's borrowed 0.5/0.5/2 became the frame's
+    // 0.0240833/1.105, the stat card's blur 1 became 2, and all three stopped
+    // painting `AppColors.elevationShadow` - cream on the dark canvas - in
+    // favour of the measured black the dark frames actually carry
+    // (docs/DESIGN_ISSUES.md #47).
+    //
+    // **2026-09-20, edit5 (OTP): 1 -> 0, and the ratchet is spent.** The OTP
+    // resend-timer pill's borrowed outer `BoxShadow` became
+    // `AppElevation.otpTimerInsetShadows` under `ElevatedSurface` - an INSET
+    // bevel in both canvases, which is what the frames draw and what an outer
+    // shadow could never have been (edit1.md R7). That was the last site, so
+    // this test is no longer a count that may fall: it is the enforcement,
+    // and it names every offender's `file:line` the way edit1.md 7.6 asked
+    // for. `AppColors.elevationShadow` lost its last call site in the same
+    // change and was deleted with it.
+    //
+    // Raising this back above zero is not a ratchet step; it is a new raw
+    // elevation effect, and the failure message says what to do instead.
     final sites = rawElevationEffects(sources);
     expect(
-      sites.length,
-      lessThanOrEqualTo(baseline),
+      sites,
+      isEmpty,
       reason:
-          'Raw elevation effects rose to ${sites.length} (baseline '
-          '$baseline). Do not write a BoxShadow, an elevation, a MaskFilter '
-          'or a BackdropFilter at a call site: read the component\'s token '
-          'from `Theme.of(context).extension<AppElevation>()!` and hand it to '
-          '`ElevatedSurface`. If you legitimately removed a site, lower the '
-          'baseline here in the same change.\n${sites.join('\n')}',
+          'Raw elevation effects are enforced at ZERO. Do not write a '
+          'BoxShadow, an elevation, a MaskFilter or a BackdropFilter at a '
+          'call site: read the component\'s token from '
+          '`Theme.of(context).extension<AppElevation>()!` and hand it to '
+          '`ElevatedSurface`. Offending sites:\n${sites.join('\n')}',
     );
   });
 

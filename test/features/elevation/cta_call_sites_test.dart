@@ -37,8 +37,18 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 /// * `registration/screens/registration_expired_view.dart`;
 /// * the `core/router/app_router.dart` "route not found" fallback.
 ///
-/// The CTAs in the quiz, OTP and Edit Profile files are also unwrapped here —
-/// those frames exist, but wrapping them belongs to edits 4 and 5.
+/// **Edit Profile's Save and both OTP CTAs are no longer among them.** edit5
+/// wrapped Save on 2026-09-20 (`348:8911` / glow `348:8909`), pinned in
+/// `test/features/profile/edit_profile_elevation_test.dart`; the same edit's
+/// OTP chunk wrapped "Verify" and the success "Continue"
+/// (`Frame 427319502` / `427319511`), pinned in
+/// `test/features/auth/otp_elevation_test.dart`. Each lives with its own
+/// screen's harness rather than here, because reaching it needs one.
+///
+/// **The quiz CTAs are no longer among them.** edit4 wrapped Setup "Start",
+/// the taking screen's Confirm/Next/Finish and Result "Review Questions" on
+/// 2026-09-20; each is pinned in its own screen's test file rather than here,
+/// because reaching them needs that file's harness.
 void main() {
   PrimaryCta ctaWrapping(WidgetTester tester, Finder button) => tester.widget(
     find.ancestor(of: button, matching: find.byType(PrimaryCta)).first,

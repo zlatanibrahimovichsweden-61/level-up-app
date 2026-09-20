@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
+import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/circle_back_button.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
+import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
 import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/models/quiz_summary.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_result_screen.dart';
@@ -30,6 +35,21 @@ void main() {
     );
     await tester.pumpAndSettle();
     return harness;
+  }
+
+  /// The result screen is taller than the 800x600 test viewport, so the
+  /// bottom CTA has to be scrolled to before it can be tapped - exactly as a
+  /// student would. Same helper, same reason, as `quiz_screen_test.dart`.
+  ///
+  /// It became necessary on 2026-09-20: the 33 dp star disc and the
+  /// `TitledChrome` header together pushed "Review Questions" from y 559-619
+  /// to y 570-630, so its CENTRE landed exactly on the viewport edge. On a
+  /// 375 x 812 phone the whole screen still fits without scrolling.
+  Future<void> tapVisible(WidgetTester tester, Finder finder) async {
+    await tester.ensureVisible(finder);
+    await tester.pumpAndSettle();
+    await tester.tap(finder);
+    await tester.pumpAndSettle();
   }
 
   // MANDATED TEST 2 — a partially-answered quiz.
@@ -167,8 +187,7 @@ void main() {
       expect(find.byType(Tooltip), findsNothing);
       expect(find.textContaining('coming soon'), findsNothing);
 
-      await tester.tap(cta);
-      await tester.pumpAndSettle();
+      await tapVisible(tester, cta);
 
       expect(find.byType(QuizReviewScreen), findsOneWidget);
       expect(harness.router.state.uri.path, '/quiz/quiz-1/result/review');
@@ -179,11 +198,16 @@ void main() {
     ) async {
       await openResult(tester, summary: quizSummary());
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Review Questions'));
-      await tester.pumpAndSettle();
+      await tapVisible(
+        tester,
+        find.widgetWithText(FilledButton, 'Review Questions'),
+      );
       expect(find.byType(QuizReviewScreen), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      // The back chip, not a Material arrow: all three screens in this flow
+      // moved onto the shared `TitledChrome` header on 2026-09-20
+      // (owner ruling, DESIGN_ISSUES #82).
+      await tester.tap(find.byType(CircleBackButton));
       await tester.pumpAndSettle();
 
       // Back out of review lands on the result, NOT on Learn — the result's own
@@ -199,7 +223,7 @@ void main() {
     ) async {
       final harness = await openResult(tester, summary: quizSummary());
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byType(CircleBackButton));
       await tester.pumpAndSettle();
 
       expect(find.byType(QuizResultScreen), findsNothing);
@@ -262,6 +286,216 @@ void main() {
       expect(find.textContaining('Level up'), findsNothing);
       expect(find.textContaining('Badge'), findsNothing);
       expect(find.text('Quiz Complete!'), findsOneWidget);
+    });
+  });
+
+  // ------------------------------------------------------------ #15 / #16 ---
+  group('the result cards are raised, not outlined', () {
+    List<ElevatedSurface> surfaces(WidgetTester tester) => tester
+        .widgetList<ElevatedSurface>(find.byType(ElevatedSurface))
+        .toList();
+
+    ElevatedSurface bucket(WidgetTester tester, String label) =>
+        tester.widget<ElevatedSurface>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(ElevatedSurface),
+              )
+              .first,
+        );
+
+    testWidgets('light: every bucket has a shadow and no hairline', (
+      tester,
+    ) async {
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+      );
+
+      final e = AppTheme.light.extension<AppElevation>()!;
+      for (final label in ['Correct', 'Wrong']) {
+        final b = bucket(tester, label);
+        expect(b.side, isNull, reason: label);
+        expect(b.shadows, e.resultBucketShadows, reason: label);
+        expect(b.shadows, isNotEmpty, reason: label);
+        expect(b.glass, isNull, reason: label);
+      }
+    });
+
+    testWidgets('dark: every bucket has Glass and NO shadow', (tester) async {
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+        theme: AppTheme.dark,
+      );
+
+      final e = AppTheme.dark.extension<AppElevation>()!;
+      for (final label in ['Correct', 'Wrong']) {
+        final b = bucket(tester, label);
+        // `337:6667` carries no shadow at all. The empty list is a reading.
+        expect(b.shadows, isEmpty, reason: label);
+        expect(b.glass, e.resultBucketGlass, reason: label);
+        expect(b.glass, isNotNull, reason: label);
+      }
+    });
+
+    testWidgets('the Skipped bucket takes the same treatment, and only '
+        'appears when the quiz ended early', (tester) async {
+      // 10 questions, 8 answered, 5 correct.
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 8, totalQuestions: 10),
+      );
+      final skipped = bucket(tester, 'Skipped');
+      expect(
+        skipped.shadows,
+        AppTheme.light.extension<AppElevation>()!.resultBucketShadows,
+      );
+      expect(skipped.side, isNull);
+
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+      );
+      expect(find.text('Skipped'), findsNothing);
+    });
+
+    testWidgets('the rewards card is radius 15 and carries the star disc', (
+      tester,
+    ) async {
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+      );
+
+      final card = tester.widget<ElevatedSurface>(
+        find
+            .ancestor(
+              of: find.text('REWARDS EARNED'),
+              matching: find.byType(ElevatedSurface),
+            )
+            .first,
+      );
+      final radius = (card.shape as RoundedRectangleBorder).borderRadius
+          .resolve(TextDirection.ltr);
+      // 15, not the 16 every other card on this screen uses. It is read.
+      expect(radius.topLeft.x, 15);
+      expect(card.side, isNull);
+
+      final disc = tester.widget<ElevatedSurface>(
+        find
+            .ancestor(
+              of: find.byIcon(Icons.star),
+              matching: find.byType(ElevatedSurface),
+            )
+            .first,
+      );
+      expect(disc.shape, isA<CircleBorder>());
+      expect(disc.width, 33);
+      expect(disc.height, 33);
+      expect(
+        disc.color,
+        AppTheme.light.extension<AppColors>()!.resultStarDiscFill,
+      );
+    });
+
+    testWidgets('dark: the rewards card takes G14 and the lavender '
+        'back-light', (tester) async {
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+        theme: AppTheme.dark,
+      );
+
+      final e = AppTheme.dark.extension<AppElevation>()!;
+      final card = tester.widget<ElevatedSurface>(
+        find
+            .ancestor(
+              of: find.text('REWARDS EARNED'),
+              matching: find.byType(ElevatedSurface),
+            )
+            .first,
+      );
+
+      expect(card.glass, e.rewardsCardGlass);
+      expect(card.backlights, [e.rewardsCardBacklight]);
+      expect(card.shadows, isEmpty);
+      // Every back-light in the file needs a frost to be seen through (R6).
+      for (final s in surfaces(tester)) {
+        if (s.backlights.isNotEmpty) expect(s.glass, isNotNull);
+      }
+    });
+
+    testWidgets('the rewards row survives a large text scale without a hard '
+        'overflow', (tester) async {
+      // The 33 dp star disc replaced a 22 dp glyph, which cost the points
+      // label 11 dp on a row that was ALREADY overflowing by 11 px at text
+      // scale 1.3 - Android's largest standard font setting. Measured at
+      // 375 x 812: 11 px before this wave, 22 px after it, 0 px once the label
+      // became `Flexible`.
+      //
+      // Scales past 1.3 are here because RESPONSIVE.md tests at 1.3 and the
+      // failure mode is a cliff, not a slope: it either wraps or it clips.
+      await tester.binding.setSurfaceSize(const Size(375, 812));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final scale in [1.0, 1.3, 2.0, 3.0]) {
+        final errors = <String>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) =>
+            errors.add(details.exceptionAsString());
+
+        await openResult(tester, summary: quizSummary(pointsAwarded: 200));
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await tester.pumpAndSettle();
+
+        FlutterError.onError = previous;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        expect(
+          errors.where((e) => e.contains('overflow')),
+          isEmpty,
+          reason: 'text scale $scale overflowed',
+        );
+      }
+    });
+
+    testWidgets('D-006 still holds — no level, no points total, no meter', (
+      tester,
+    ) async {
+      // The frame draws a Level Progress meter inside the very card this wave
+      // rebuilt. Restyling a card is not a licence to put it back.
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+      );
+
+      expect(find.textContaining('Level'), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+  });
+
+  // -------------------------------------------------------------- 7.10a -----
+  group('the Review Questions CTA wears the primary treatment', () {
+    testWidgets('it is wrapped, and nothing else on the screen is', (
+      tester,
+    ) async {
+      await openResult(
+        tester,
+        summary: quizSummary(score: 5, answeredCount: 10, totalQuestions: 10),
+      );
+
+      final cta = tester.widget<PrimaryCta>(
+        find.ancestor(
+          of: find.widgetWithText(FilledButton, 'Review Questions'),
+          matching: find.byType(PrimaryCta),
+        ),
+      );
+      expect(cta.tone, CtaTone.primary);
+      // The secondary "Back to Learn" is a TextButton with no frame, so it
+      // stays bare — one treatment per screen.
+      expect(find.byType(PrimaryCta), findsOneWidget);
     });
   });
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
+import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
+import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
 import 'package:level_up_app/core/widgets/offline_banner.dart';
 import 'package:level_up_app/features/quiz/models/quiz_mode.dart';
 import 'package:level_up_app/features/quiz/models/quiz_setup_args.dart';
@@ -407,6 +411,124 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('أسئلة كافية'), findsOneWidget);
+    });
+  });
+
+  // ---------------------------------------------------------------- #11 -----
+  group('the length chips are raised, not outlined', () {
+    ElevatedSurface chip(WidgetTester tester, String label) =>
+        tester.widget<ElevatedSurface>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(ElevatedSurface),
+              )
+              .first,
+        );
+
+    testWidgets('171 x 45, no hairline, and the frame\'s own shadow', (
+      tester,
+    ) async {
+      await openSetup(tester);
+
+      final c = chip(tester, '10 Questions');
+      expect(c.width, 171);
+      expect(c.height, 45);
+      // Neither frame draws one; the border this used to carry came from
+      // reading a neighbour rather than the chip.
+      expect(c.side, isNull);
+      expect(
+        c.shadows,
+        AppTheme.light.extension<AppElevation>()!.lengthChipShadows,
+      );
+      expect(c.shadows, isNotEmpty);
+    });
+
+    testWidgets('dark keeps the same black shadow and takes no Glass', (
+      tester,
+    ) async {
+      await openSetup(tester, theme: AppTheme.dark);
+
+      final c = chip(tester, '10 Questions');
+      // One of the few dark surfaces that elevates with a shadow rather than
+      // with Glass — `337:6289` keeps it.
+      expect(
+        c.shadows,
+        AppTheme.dark.extension<AppElevation>()!.lengthChipShadows,
+      );
+      expect(c.shadows, isNotEmpty);
+      expect(c.glass, isNull);
+    });
+
+    testWidgets('selecting one swaps the fill without changing the shape', (
+      tester,
+    ) async {
+      await openSetup(tester);
+      final ext = AppTheme.light.extension<AppColors>()!;
+
+      expect(chip(tester, '10 Questions').color, ext.quizOptionFill);
+      await tester.tap(find.text('50 Questions'));
+      await tester.pumpAndSettle();
+
+      expect(
+        chip(tester, '50 Questions').color,
+        AppTheme.light.colorScheme.primary,
+      );
+      expect(chip(tester, '50 Questions').width, 171);
+    });
+  });
+
+  // -------------------------------------------------------------- 7.10a -----
+  group('the Start CTA wears the primary treatment', () {
+    PrimaryCta cta(WidgetTester tester) => tester.widget<PrimaryCta>(
+      find.ancestor(
+        of: find.byType(FilledButton),
+        matching: find.byType(PrimaryCta),
+      ),
+    );
+
+    testWidgets('it is wrapped in the primary tone', (tester) async {
+      await openSetup(tester);
+
+      expect(cta(tester).tone, CtaTone.primary);
+      expect(cta(tester).enabled, isTrue);
+    });
+
+    testWidgets('offline dims the treatment as well as the button', (
+      tester,
+    ) async {
+      await openSetup(tester, online: false);
+
+      // R10: the whole treatment at 0.45, not just the fill.
+      expect(cta(tester).enabled, isFalse);
+    });
+
+    testWidgets('the limit sheet still carries no CTA at all', (tester) async {
+      // adr-049: the app is purchase-silent, and the sheet is the one place a
+      // CTA would read as a paywall. `PrimaryCta` must never reach it.
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.createQuiz(
+          scope: any(named: 'scope'),
+          length: any(named: 'length'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenThrow(
+        const ApiException(status: 403, code: 'weekly_question_limit_reached'),
+      );
+
+      await openSetup(tester, quiz: quiz);
+      await tester.tap(find.text('Start learning'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LimitSheet), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(LimitSheet),
+          matching: find.byType(PrimaryCta),
+        ),
+        findsNothing,
+      );
     });
   });
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/elevated_surface.dart';
 
 /// Opacity applied to a control that renders but cannot be used.
 ///
@@ -10,15 +12,31 @@ import '../../../core/theme/app_typography.dart';
 /// grep for the rule instead of comparing magic numbers.
 const kProfileDisabledOpacity = 0.45;
 
-/// Which of the frame's three row treatments to draw (Figma `170:4933`).
+/// Which of the frame's three row treatments to draw (Figma `166:4416`).
+///
+/// **The three differ only in their hairline and their label colour.** Every
+/// row — all ten — carries the same 35x35 lavender disc behind its glyph. The
+/// enum's doc used to say the eight navigation rows had a bare glyph; that came
+/// from an older frame (`170:4933`) and was refuted on the Properties panel
+/// 2026-09-20: `170:4861` (Settings), `170:4902` (Privacy) and `176:1186`
+/// (Logout) are each a 35x35 frame at radius 48.17 filled `#F4E6FF`, with the
+/// glyph vector inside. The disc is not a sibling ellipse — it is the Iconify
+/// component frame's own fill, which is why it does not appear as a layer of
+/// its own and is nearly invisible at 50% zoom on a cream card.
+///
+/// In DARK no row but Logout's has a hairline (`337:7433`), and every row and
+/// every disc takes G5 instead.
 enum ProfileRowTone {
-  /// The eight navigation rows — `#7070A0` outline, chevron, plain glyph.
+  /// The eight navigation rows — `#7070A0` outline in light, none in dark,
+  /// chevron.
   neutral,
 
-  /// `GO to University` — `#101010` outline, no chevron, lavender icon chip.
+  /// `GO to University` — `#101010` outline in light (`170:4921`), none in
+  /// dark, no chevron.
   emphasis,
 
-  /// `Logout` — `#EF4444` outline AND label, no chevron, lavender icon chip.
+  /// `Logout` — `#EF4444` outline AND label on BOTH canvases (`176:1185`,
+  /// `337:7545`), no chevron.
   destructive,
 }
 
@@ -62,34 +80,43 @@ class ProfileMenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    final (border, content) = switch (tone) {
-      ProfileRowTone.neutral => (ext.profileRowBorder, ext.textPrimary),
-      ProfileRowTone.emphasis => (ext.textPrimary, ext.textPrimary),
+    // Nullable on purpose: in dark every tone but `destructive` reads NO
+    // hairline, and a null token is that reading, not a missing value.
+    final (Color? border, Color content) = switch (tone) {
+      ProfileRowTone.neutral => (ext.profileMenuRowBorder, ext.textPrimary),
+      ProfileRowTone.emphasis => (
+        ext.profileMenuEmphasisRowBorder,
+        ext.textPrimary,
+      ),
       ProfileRowTone.destructive => (ext.destructive, ext.destructive),
     };
-    // The frame gives the two action rows a lavender disc behind the glyph and
-    // the eight navigation rows a bare glyph.
-    final chipped = tone != ProfileRowTone.neutral;
 
-    final row = Container(
+    final row = ElevatedSurface(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      // The build's 16.5 / 14.5, kept. The Properties panel reads 16 / 14 on
+      // `170:4790` — half a dp apart, and this edit is about the row's
+      // elevation, not its geometry; edit5.md §7.4.1 says to keep these.
+      // Recorded in docs/DESIGN_ISSUES.md #72.
       padding: const EdgeInsetsDirectional.symmetric(
         horizontal: 16.5,
         vertical: 14.5,
       ),
-      decoration: BoxDecoration(
-        color: ext.cardFill,
-        border: Border.all(color: border, width: 0.5),
-        borderRadius: BorderRadius.circular(_radius),
-      ),
+      color: ext.profileMenuRowFill,
+      side: border == null ? null : BorderSide(color: border, width: 0.5),
+      glass: elevation.profileMenuRowGlass,
       child: Row(
         children: [
           // TODO(design-asset): the frame uses per-row Iconify glyphs
           // (`lets-icons:setting-fill`, `stash:save-ribbon`, `solar:logout-2`…).
           // Material stand-ins until the designer exports the set — the same
           // call docs/ASSET_MANIFEST.md already makes for the notification bell.
-          _Glyph(icon: icon, colour: content, chipped: chipped, ext: ext),
+          _Glyph(icon: icon, colour: content),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -131,37 +158,36 @@ class ProfileMenuRow extends StatelessWidget {
   }
 }
 
+/// The 35x35 disc behind a row's glyph — on EVERY row, see [ProfileRowTone].
+///
+/// The glyph is 22. The frame's own vectors are 21-23 (`170:4674` 23x23,
+/// `170:4910` 21x26) because each Iconify export has its own box inside the
+/// shared 35 frame; 22 is one value for a set of Material stand-ins, kept from
+/// the two rows that already had a disc rather than adopting one export's
+/// number for all ten (edit5.md §7.4.2).
 class _Glyph extends StatelessWidget {
-  const _Glyph({
-    required this.icon,
-    required this.colour,
-    required this.chipped,
-    required this.ext,
-  });
+  const _Glyph({required this.icon, required this.colour});
 
   final IconData icon;
   final Color colour;
-  final bool chipped;
-  final AppColors ext;
+
+  static const _glyph = 22.0;
 
   @override
   Widget build(BuildContext context) {
-    final glyph = Icon(icon, size: chipped ? 22 : 28, color: colour);
-    if (!chipped) {
-      return SizedBox(
-        width: ProfileMenuRow._glyphSize,
-        height: ProfileMenuRow._glyphSize,
-        child: Center(child: glyph),
-      );
-    }
-    return Container(
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
+
+    return ElevatedSurface(
+      shape: const CircleBorder(),
       width: ProfileMenuRow._glyphSize,
       height: ProfileMenuRow._glyphSize,
-      decoration: BoxDecoration(
-        color: ext.profileIconChip,
-        shape: BoxShape.circle,
+      color: ext.profileMenuIconDiscFill,
+      glass: elevation.profileMenuIconDiscGlass,
+      child: Center(
+        child: Icon(icon, size: _glyph, color: colour),
       ),
-      child: Center(child: glyph),
     );
   }
 }
@@ -173,7 +199,10 @@ class _Glyph extends StatelessWidget {
 /// so the arrow follows reading direction in both locales.
 ///
 /// TODO(design): the tint is the row outline `#7070A0` — read off the frame's
-/// render, not from a bound variable, because the icon node carries none.
+/// render, not from a bound variable, because the icon node carries none. It
+/// stays on [AppColors.profileRowBorder] rather than following the row to
+/// [AppColors.profileMenuRowBorder], which is null in dark — the hairline goes
+/// away there, the chevron does not.
 class _Chevron extends StatelessWidget {
   const _Chevron();
 

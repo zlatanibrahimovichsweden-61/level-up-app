@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/elevation/segmented_track.dart';
 import '../models/leaderboard_models.dart';
 
 /// The two-segment scope switcher · Figma "Global / Cohort".
@@ -40,75 +42,64 @@ class ScopeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Ahead of every sized surface, deliberately: a one-scope board draws
+    // nothing at all, and `leaderboard_screen_test.dart` measures that as a
+    // height of exactly 0.
     if (scopes.length < 2) return const SizedBox.shrink();
 
-    final ext = Theme.of(context).extension<AppColors>()!;
+    final theme = Theme.of(context);
+    final ext = theme.extension<AppColors>()!;
+    final elevation = theme.extension<AppElevation>()!;
 
-    return Container(
-      height: _height,
-      decoration: BoxDecoration(
-        color: ext.progressTrack,
-        borderRadius: BorderRadius.circular(_height / 2),
-      ),
-      child: Row(
-        children: [
-          for (final scope in scopes)
-            Expanded(
-              child: _Segment(
-                label: labelFor(scope),
-                selected: scope == selected,
-                onTap: () => onChanged(scope),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  const _Segment({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-
-    return Semantics(
-      button: true,
+    return SegmentedTrack<LeaderboardScope>(
+      segments: scopes,
       selected: selected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected ? ext.podiumAccent : Colors.transparent,
-            borderRadius: BorderRadius.circular(ScopeToggle._height / 2),
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            // Figma `158:841` is Inter 500 / 18px. [AppType.h3] is the only
-            // 18pt token and carries w600 — one weight step heavier. The size
-            // is now exact; the weight divergence is recorded rather than fixed
-            // with a new scale entry, which would raise the hardcoded-fontSize
-            // ratchet that Wave 3D is blocked on.
-            style: AppType.h3.copyWith(
-              color: selected ? ext.podiumOnAccent : ext.textSecondary,
-            ),
-          ),
-        ),
+      onChanged: onChanged,
+      labelOf: labelFor,
+      height: _height,
+      style: SegmentedTrackStyle(
+        // `progressTrack` stood in for this until the track was read; it is
+        // the same `#ECECEC` in light and a different grey in dark.
+        trackColor: ext.scopeTrackFill,
+        trackRadius: 32,
+        // Dark only: a lavender inner glow on the leading edge above a
+        // black inner shadow, which is what makes the groove read recessed
+        // (`337:5615`). Light draws a flat track and the list is empty.
+        trackInsetShadows: elevation.scopeTrackInsetShadows,
+        // There is no idle fill to pass: the primitive always draws an
+        // unselected segment transparent, which is what lets this groove's
+        // two inner shadows show through it. The 2087-pixel measurement that
+        // settled it was taken on THIS control's dark golden and lives in
+        // `segmented_track.dart`; owner ruling 2026-09-20,
+        // docs/DESIGN_ISSUES.md #84.
+        selectedColor: ext.scopeSelectedFill,
+        selectedRadius: _height / 2,
+        selectedInsetShadows: elevation.scopeSelectedInsetShadows,
+        // Figma `158:841` / `337:5617` is Inter 500 / 18. [AppType.h3] is
+        // the only 18pt token and carries w600 — one weight step heavier.
+        // The size is exact; the weight divergence is recorded rather than
+        // patched with a `copyWith`, which the typography guard bans
+        // outright, or with a new scale entry, which only the designer can
+        // supply.
+        labelStyle: AppType.h3,
+        // READ 2026-09-20, both canvases: idle `158:843` / `337:5619`,
+        // selected `158:841` / `337:5617`. `edit4.md` §7.8 asked for
+        // `textSecondary` on the idle label; the frame says a dark green in
+        // light, which is the same correction DESIGN_ISSUES #77 made on the
+        // sibling pill track.
+        //
+        // The SELECTED label is a live AA failure - 1.74:1 in light on
+        // `#DBB0FF`, 2.02:1 in dark on `#C4A8E3`. Worse than the 2.74:1 the
+        // owner accepted for the pill track, and a different colour pair, so
+        // #77's ruling does not reach it. Drawn as measured and routed to
+        // the designer; no colour is chosen here.
+        idleLabelColor: ext.scopeIdleLabel,
+        selectedLabelColor: ext.podiumOnAccent,
+        // Figma `Padding 10` on `158:840` itself. The primitive defaults to
+        // the same number off the QUIZ TAB's frames, which would have been
+        // this screen silently inheriting another screen's reading - so it
+        // is passed explicitly even though it changes nothing.
+        segmentPadding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
       ),
     );
   }
