@@ -91,3 +91,45 @@ class UnknownException extends AppException {
 /// to pick the Offline view.
 bool isOffline(Object? error) =>
     error is OfflineException || error is NetworkException;
+
+/// `403 account_pending_deletion` (adr-114) — the account is inside its 30-day
+/// deletion grace window.
+///
+/// Lives here beside [isOffline], and for the same reason: it is **not one
+/// endpoint's error**. The contract's rule is **default-deny** — every
+/// authenticated `/api/v1` endpoint answers this except a four-endpoint
+/// allowlist (`GET /me`, `POST`/`DELETE /me/deletion-request`,
+/// `POST /auth/logout`), and an endpoint added later is blocked unless it is
+/// added to that list (`openapi.yaml:62-71`). So "which operations return it"
+/// is not a property of the operations, and branching on the code at one
+/// screen would be a fix for one of sixteen.
+///
+/// **Only seven of the sixteen stable operations that can return it actually
+/// declare it** — `getMyMistakes`, `getMyMistakesForSubject`, `getExplanation`,
+/// `getFlashcardsForLecture`, `setFlashcardSelfGrade`, `getLeaderboard`,
+/// `getMyRank` — and the contract says so itself on two of them: *"DECLARED
+/// from 3.5.1-m1, but REACHABLE since 3.3.0-m1 — this operation simply failed
+/// to declare it"* (`:2101`, `:2175`). A declaration-only census therefore
+/// materially under-counts the reachable surface, which is exactly why this is
+/// a predicate and not a per-operation branch.
+///
+/// Count operations, not text matches: `getExplanation` declares it twice
+/// (`:1629`, `:1656`), and the occurrence at `:1023` is inside the allowlisted
+/// `requestAccountDeletion`, which documents the rule rather than declaring the
+/// refusal.
+///
+/// The two client rules the contract states, in its own words (`:82-83`): do
+/// **not** log the user out, and do **not** retry. The first already holds —
+/// nothing in [AppException] handling logs out, and `AuthInterceptor` returns
+/// early on anything that is not a `401`. The second is what every call site
+/// that renders a Retry button must ask this function.
+///
+/// The third rule — *route to the cancel screen* — is NOT implemented, because
+/// that screen does not exist. See `docs/seif_fight.md` / the deletion pair in
+/// the stable inventory; this predicate is the seam it will hook into.
+///
+/// Matches on `code` rather than an exception subclass so that a plain
+/// `ApiException` (what `ErrorInterceptor` builds today, and what the existing
+/// tests construct) is recognised alongside any future subclass.
+bool isAccountPendingDeletion(Object? error) =>
+    error is ApiException && error.code == 'account_pending_deletion';

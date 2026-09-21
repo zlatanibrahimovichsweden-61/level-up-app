@@ -272,13 +272,33 @@ class ChooseAvatarSheet extends ConsumerWidget {
         height: _size,
         child: avatars.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Text(
-              isOffline(error) ? l10n.offline : l10n.genericError,
-              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
-            ),
+          // `avatarsProvider` is a plain, non-autoDispose `FutureProvider`,
+          // deliberately OUTSIDE the session scope (global reference data,
+          // identical for every student — see
+          // `session_scope_discipline_test.dart`). Nothing invalidates it, and
+          // this sheet was its only consumer with no way to ask again.
+          //
+          // What was actually happening before is worth stating exactly,
+          // because it was not what it looked like: the provider inherited
+          // Riverpod 3's automatic exponential-backoff retry, so a failing
+          // `getAvatars` was called 7 times in ~15 s off one sheet open and
+          // kept going — a silent network loop behind a modal, with no
+          // deterministic way for the student to recover. `avatarsProvider`
+          // now sets `retry: _noRetry` like every notifier in the app, which
+          // makes the failure stick, and this button is what clears it. Not
+          // every provider does: the six sibling `/reference/*` providers still
+          // carry the automatic retry — see `reference_providers.dart`.
+          //
+          // A user-tapped `ref.invalidate` — the same recovery every reference
+          // picker in the registration wizard already uses. The project rule is
+          // that retry is a button, never silent.
+          error: (error, _) => _SheetFailure(
+            message: isOffline(error) ? l10n.offline : l10n.genericError,
+            onRetry: () => ref.invalidate(avatarsProvider),
           ),
           data: (items) => items.isEmpty
+              // An empty list is not a failure the student can retry away —
+              // the server answered, with nothing. Left as it was.
               ? Center(
                   child: Text(
                     l10n.genericError,
@@ -298,6 +318,45 @@ class ChooseAvatarSheet extends ConsumerWidget {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+}
+
+/// A failed avatar load, inside the sheet's own row height.
+///
+/// Laid out horizontally because the slot is a fixed 69 dp strip — a stacked
+/// message-over-button would not fit, and growing the sheet to make room would
+/// change a measured frame.
+class _SheetFailure extends StatelessWidget {
+  const _SheetFailure({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final ext = Theme.of(context).extension<AppColors>()!;
+
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            key: const Key('avatar_sheet_retry'),
+            onPressed: onRetry,
+            child: Text(l10n.retry),
+          ),
+        ],
       ),
     );
   }

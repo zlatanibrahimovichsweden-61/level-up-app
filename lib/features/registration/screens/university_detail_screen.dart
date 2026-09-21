@@ -138,6 +138,7 @@ class _UniversityDetailScreenState
                                 university.nameEn,
                               ),
                               leading: null,
+                              enabled: true,
                             ),
                         ],
                       ),
@@ -168,6 +169,7 @@ class _UniversityDetailScreenState
                               faculty.nameEn,
                             ),
                             leading: null,
+                            enabled: true,
                           ),
                       ]),
                       errorText: errorFor(RegFields.facultyId),
@@ -193,6 +195,11 @@ class _UniversityDetailScreenState
                               id: year.id,
                               label: l10n.studyYearNumber(year.yearNumber),
                               leading: null,
+                              // Only `active` years reach here at all today.
+                              // Surfacing `soon` rows as disabled is the
+                              // capability's first real use, and it needs copy
+                              // and a treatment from the designer first.
+                              enabled: true,
                             ),
                       ]),
                       errorText: errorFor(RegFields.studyYearId),
@@ -333,6 +340,7 @@ class _UniversityDetailScreenState
         id: row.id,
         label: localizedRefName(context, row.nameAr, row.nameEn),
         leading: null,
+        enabled: true,
       ),
   ];
 

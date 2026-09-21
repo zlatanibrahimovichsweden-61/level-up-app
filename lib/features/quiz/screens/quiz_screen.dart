@@ -186,19 +186,25 @@ class _QuizView extends ConsumerWidget {
                             ),
                           ],
 
+                          // `onRetry` is withheld — not the whole row — when
+                          // the contract forbids retrying: the student still
+                          // needs to read WHY the answer did not go through.
                           if (state case AnswerFailed(:final error)) ...[
                             const SizedBox(height: 16),
                             _RetryRow(
                               message: quizErrorMessage(l10n, error),
-                              onRetry: () => bloc.add(const AnswerRetried()),
+                              onRetry: suppressesRetry(error)
+                                  ? null
+                                  : () => bloc.add(const AnswerRetried()),
                             ),
                           ],
                           if (state case FinishFailed(:final error)) ...[
                             const SizedBox(height: 16),
                             _RetryRow(
                               message: quizErrorMessage(l10n, error),
-                              onRetry: () =>
-                                  bloc.add(const QuizFinishRequested()),
+                              onRetry: suppressesRetry(error)
+                                  ? null
+                                  : () => bloc.add(const QuizFinishRequested()),
                             ),
                           ],
                         ],
@@ -476,7 +482,11 @@ class _RetryRow extends StatelessWidget {
   const _RetryRow({required this.message, required this.onRetry});
 
   final String message;
-  final VoidCallback onRetry;
+
+  /// Null when the contract forbids retrying this failure — the message is
+  /// still rendered, without the button. The student is not left without a way
+  /// out: the header's exit chip is unaffected.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +504,8 @@ class _RetryRow extends StatelessWidget {
         // A user-tapped button, never a silent auto-retry. The request it
         // re-sends is byte-identical; the server's idempotency key makes that
         // safe.
-        TextButton(onPressed: onRetry, child: Text(l10n.retry)),
+        if (onRetry != null)
+          TextButton(onPressed: onRetry, child: Text(l10n.retry)),
       ],
     );
   }

@@ -23,7 +23,19 @@ mixin _$StudentProfile {
 /// SERVER-AUTHORITATIVE — display only.
  int get badges; ProfilePrivacy get privacy;/// Read-only embed for first paint. The paywall source of truth is
 /// `GET /me/entitlements`.
- List<EntitlementState> get entitlements; DateTime get createdAt;
+ List<EntitlementState> get entitlements; DateTime get createdAt;/// adr-114 — present ONLY while a deletion request is pending.
+///
+/// **Absence is the flag, and the contract is emphatic that it is absence
+/// and not null** (`openapi.yaml:2430-2436`: *"Absent otherwise — never
+/// `null`"*). Both decode to null here, which is correct and not a
+/// weakening: `json['pendingDeletion'] as Map?` is null for an absent key
+/// and for an explicit null alike, and the client's question is only ever
+/// "is a deletion pending?".
+///
+/// Not in the contract's `required` list, so it is nullable with no
+/// default — a default would have to invent either a window or the absence
+/// of one.
+ PendingDeletion? get pendingDeletion;
 /// Create a copy of StudentProfile
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -36,16 +48,16 @@ $StudentProfileCopyWith<StudentProfile> get copyWith => _$StudentProfileCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudentProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.track, track) || other.track == track)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.avatar, avatar) || other.avatar == avatar)&&(identical(other.geography, geography) || other.geography == geography)&&(identical(other.school, school) || other.school == school)&&(identical(other.university, university) || other.university == university)&&(identical(other.points, points) || other.points == points)&&(identical(other.level, level) || other.level == level)&&(identical(other.badges, badges) || other.badges == badges)&&(identical(other.privacy, privacy) || other.privacy == privacy)&&const DeepCollectionEquality().equals(other.entitlements, entitlements)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StudentProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.track, track) || other.track == track)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.avatar, avatar) || other.avatar == avatar)&&(identical(other.geography, geography) || other.geography == geography)&&(identical(other.school, school) || other.school == school)&&(identical(other.university, university) || other.university == university)&&(identical(other.points, points) || other.points == points)&&(identical(other.level, level) || other.level == level)&&(identical(other.badges, badges) || other.badges == badges)&&(identical(other.privacy, privacy) || other.privacy == privacy)&&const DeepCollectionEquality().equals(other.entitlements, entitlements)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.pendingDeletion, pendingDeletion) || other.pendingDeletion == pendingDeletion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(entitlements),createdAt);
+int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(entitlements),createdAt,pendingDeletion);
 
 @override
 String toString() {
-  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt)';
+  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt, pendingDeletion: $pendingDeletion)';
 }
 
 
@@ -56,11 +68,11 @@ abstract mixin class $StudentProfileCopyWith<$Res>  {
   factory $StudentProfileCopyWith(StudentProfile value, $Res Function(StudentProfile) _then) = _$StudentProfileCopyWithImpl;
 @useResult
 $Res call({
- String id, Track track, String name, String phone, String? email,@DateOnlyConverter() DateTime dateOfBirth, ProfileAvatar avatar, ProfileGeography geography, ProfileSchool? school, ProfileUniversity? university, ProfilePoints points, int level, int badges, ProfilePrivacy privacy, List<EntitlementState> entitlements, DateTime createdAt
+ String id, Track track, String name, String phone, String? email,@DateOnlyConverter() DateTime dateOfBirth, ProfileAvatar avatar, ProfileGeography geography, ProfileSchool? school, ProfileUniversity? university, ProfilePoints points, int level, int badges, ProfilePrivacy privacy, List<EntitlementState> entitlements, DateTime createdAt, PendingDeletion? pendingDeletion
 });
 
 
-$ProfileAvatarCopyWith<$Res> get avatar;$ProfileGeographyCopyWith<$Res> get geography;$ProfileSchoolCopyWith<$Res>? get school;$ProfileUniversityCopyWith<$Res>? get university;$ProfilePointsCopyWith<$Res> get points;$ProfilePrivacyCopyWith<$Res> get privacy;
+$ProfileAvatarCopyWith<$Res> get avatar;$ProfileGeographyCopyWith<$Res> get geography;$ProfileSchoolCopyWith<$Res>? get school;$ProfileUniversityCopyWith<$Res>? get university;$ProfilePointsCopyWith<$Res> get points;$ProfilePrivacyCopyWith<$Res> get privacy;$PendingDeletionCopyWith<$Res>? get pendingDeletion;
 
 }
 /// @nodoc
@@ -73,7 +85,7 @@ class _$StudentProfileCopyWithImpl<$Res>
 
 /// Create a copy of StudentProfile
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? track = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? dateOfBirth = null,Object? avatar = null,Object? geography = null,Object? school = freezed,Object? university = freezed,Object? points = null,Object? level = null,Object? badges = null,Object? privacy = null,Object? entitlements = null,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? track = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? dateOfBirth = null,Object? avatar = null,Object? geography = null,Object? school = freezed,Object? university = freezed,Object? points = null,Object? level = null,Object? badges = null,Object? privacy = null,Object? entitlements = null,Object? createdAt = null,Object? pendingDeletion = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
@@ -91,7 +103,8 @@ as int,badges: null == badges ? _self.badges : badges // ignore: cast_nullable_t
 as int,privacy: null == privacy ? _self.privacy : privacy // ignore: cast_nullable_to_non_nullable
 as ProfilePrivacy,entitlements: null == entitlements ? _self.entitlements : entitlements // ignore: cast_nullable_to_non_nullable
 as List<EntitlementState>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,pendingDeletion: freezed == pendingDeletion ? _self.pendingDeletion : pendingDeletion // ignore: cast_nullable_to_non_nullable
+as PendingDeletion?,
   ));
 }
 /// Create a copy of StudentProfile
@@ -153,6 +166,18 @@ $ProfilePrivacyCopyWith<$Res> get privacy {
   
   return $ProfilePrivacyCopyWith<$Res>(_self.privacy, (value) {
     return _then(_self.copyWith(privacy: value));
+  });
+}/// Create a copy of StudentProfile
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PendingDeletionCopyWith<$Res>? get pendingDeletion {
+    if (_self.pendingDeletion == null) {
+    return null;
+  }
+
+  return $PendingDeletionCopyWith<$Res>(_self.pendingDeletion!, (value) {
+    return _then(_self.copyWith(pendingDeletion: value));
   });
 }
 }
@@ -236,10 +261,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt,  PendingDeletion? pendingDeletion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StudentProfile() when $default != null:
-return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt);case _:
+return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt,_that.pendingDeletion);case _:
   return orElse();
 
 }
@@ -257,10 +282,10 @@ return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.da
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt,  PendingDeletion? pendingDeletion)  $default,) {final _that = this;
 switch (_that) {
 case _StudentProfile():
-return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt);case _:
+return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt,_that.pendingDeletion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -277,10 +302,10 @@ return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.da
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  Track track,  String name,  String phone,  String? email, @DateOnlyConverter()  DateTime dateOfBirth,  ProfileAvatar avatar,  ProfileGeography geography,  ProfileSchool? school,  ProfileUniversity? university,  ProfilePoints points,  int level,  int badges,  ProfilePrivacy privacy,  List<EntitlementState> entitlements,  DateTime createdAt,  PendingDeletion? pendingDeletion)?  $default,) {final _that = this;
 switch (_that) {
 case _StudentProfile() when $default != null:
-return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt);case _:
+return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.dateOfBirth,_that.avatar,_that.geography,_that.school,_that.university,_that.points,_that.level,_that.badges,_that.privacy,_that.entitlements,_that.createdAt,_that.pendingDeletion);case _:
   return null;
 
 }
@@ -292,7 +317,7 @@ return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.da
 @JsonSerializable()
 
 class _StudentProfile implements StudentProfile {
-  const _StudentProfile({required this.id, required this.track, required this.name, required this.phone, this.email, @DateOnlyConverter() required this.dateOfBirth, required this.avatar, required this.geography, this.school, this.university, required this.points, required this.level, required this.badges, required this.privacy, required final  List<EntitlementState> entitlements, required this.createdAt}): _entitlements = entitlements;
+  const _StudentProfile({required this.id, required this.track, required this.name, required this.phone, this.email, @DateOnlyConverter() required this.dateOfBirth, required this.avatar, required this.geography, this.school, this.university, required this.points, required this.level, required this.badges, required this.privacy, required final  List<EntitlementState> entitlements, required this.createdAt, this.pendingDeletion}): _entitlements = entitlements;
   factory _StudentProfile.fromJson(Map<String, dynamic> json) => _$StudentProfileFromJson(json);
 
 @override final  String id;
@@ -327,6 +352,19 @@ class _StudentProfile implements StudentProfile {
 }
 
 @override final  DateTime createdAt;
+/// adr-114 — present ONLY while a deletion request is pending.
+///
+/// **Absence is the flag, and the contract is emphatic that it is absence
+/// and not null** (`openapi.yaml:2430-2436`: *"Absent otherwise — never
+/// `null`"*). Both decode to null here, which is correct and not a
+/// weakening: `json['pendingDeletion'] as Map?` is null for an absent key
+/// and for an explicit null alike, and the client's question is only ever
+/// "is a deletion pending?".
+///
+/// Not in the contract's `required` list, so it is nullable with no
+/// default — a default would have to invent either a window or the absence
+/// of one.
+@override final  PendingDeletion? pendingDeletion;
 
 /// Create a copy of StudentProfile
 /// with the given fields replaced by the non-null parameter values.
@@ -341,16 +379,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudentProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.track, track) || other.track == track)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.avatar, avatar) || other.avatar == avatar)&&(identical(other.geography, geography) || other.geography == geography)&&(identical(other.school, school) || other.school == school)&&(identical(other.university, university) || other.university == university)&&(identical(other.points, points) || other.points == points)&&(identical(other.level, level) || other.level == level)&&(identical(other.badges, badges) || other.badges == badges)&&(identical(other.privacy, privacy) || other.privacy == privacy)&&const DeepCollectionEquality().equals(other._entitlements, _entitlements)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StudentProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.track, track) || other.track == track)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.avatar, avatar) || other.avatar == avatar)&&(identical(other.geography, geography) || other.geography == geography)&&(identical(other.school, school) || other.school == school)&&(identical(other.university, university) || other.university == university)&&(identical(other.points, points) || other.points == points)&&(identical(other.level, level) || other.level == level)&&(identical(other.badges, badges) || other.badges == badges)&&(identical(other.privacy, privacy) || other.privacy == privacy)&&const DeepCollectionEquality().equals(other._entitlements, _entitlements)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.pendingDeletion, pendingDeletion) || other.pendingDeletion == pendingDeletion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(_entitlements),createdAt);
+int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(_entitlements),createdAt,pendingDeletion);
 
 @override
 String toString() {
-  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt)';
+  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt, pendingDeletion: $pendingDeletion)';
 }
 
 
@@ -361,11 +399,11 @@ abstract mixin class _$StudentProfileCopyWith<$Res> implements $StudentProfileCo
   factory _$StudentProfileCopyWith(_StudentProfile value, $Res Function(_StudentProfile) _then) = __$StudentProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, Track track, String name, String phone, String? email,@DateOnlyConverter() DateTime dateOfBirth, ProfileAvatar avatar, ProfileGeography geography, ProfileSchool? school, ProfileUniversity? university, ProfilePoints points, int level, int badges, ProfilePrivacy privacy, List<EntitlementState> entitlements, DateTime createdAt
+ String id, Track track, String name, String phone, String? email,@DateOnlyConverter() DateTime dateOfBirth, ProfileAvatar avatar, ProfileGeography geography, ProfileSchool? school, ProfileUniversity? university, ProfilePoints points, int level, int badges, ProfilePrivacy privacy, List<EntitlementState> entitlements, DateTime createdAt, PendingDeletion? pendingDeletion
 });
 
 
-@override $ProfileAvatarCopyWith<$Res> get avatar;@override $ProfileGeographyCopyWith<$Res> get geography;@override $ProfileSchoolCopyWith<$Res>? get school;@override $ProfileUniversityCopyWith<$Res>? get university;@override $ProfilePointsCopyWith<$Res> get points;@override $ProfilePrivacyCopyWith<$Res> get privacy;
+@override $ProfileAvatarCopyWith<$Res> get avatar;@override $ProfileGeographyCopyWith<$Res> get geography;@override $ProfileSchoolCopyWith<$Res>? get school;@override $ProfileUniversityCopyWith<$Res>? get university;@override $ProfilePointsCopyWith<$Res> get points;@override $ProfilePrivacyCopyWith<$Res> get privacy;@override $PendingDeletionCopyWith<$Res>? get pendingDeletion;
 
 }
 /// @nodoc
@@ -378,7 +416,7 @@ class __$StudentProfileCopyWithImpl<$Res>
 
 /// Create a copy of StudentProfile
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? track = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? dateOfBirth = null,Object? avatar = null,Object? geography = null,Object? school = freezed,Object? university = freezed,Object? points = null,Object? level = null,Object? badges = null,Object? privacy = null,Object? entitlements = null,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? track = null,Object? name = null,Object? phone = null,Object? email = freezed,Object? dateOfBirth = null,Object? avatar = null,Object? geography = null,Object? school = freezed,Object? university = freezed,Object? points = null,Object? level = null,Object? badges = null,Object? privacy = null,Object? entitlements = null,Object? createdAt = null,Object? pendingDeletion = freezed,}) {
   return _then(_StudentProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
@@ -396,7 +434,8 @@ as int,badges: null == badges ? _self.badges : badges // ignore: cast_nullable_t
 as int,privacy: null == privacy ? _self.privacy : privacy // ignore: cast_nullable_to_non_nullable
 as ProfilePrivacy,entitlements: null == entitlements ? _self._entitlements : entitlements // ignore: cast_nullable_to_non_nullable
 as List<EntitlementState>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,pendingDeletion: freezed == pendingDeletion ? _self.pendingDeletion : pendingDeletion // ignore: cast_nullable_to_non_nullable
+as PendingDeletion?,
   ));
 }
 
@@ -460,7 +499,282 @@ $ProfilePrivacyCopyWith<$Res> get privacy {
   return $ProfilePrivacyCopyWith<$Res>(_self.privacy, (value) {
     return _then(_self.copyWith(privacy: value));
   });
+}/// Create a copy of StudentProfile
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PendingDeletionCopyWith<$Res>? get pendingDeletion {
+    if (_self.pendingDeletion == null) {
+    return null;
+  }
+
+  return $PendingDeletionCopyWith<$Res>(_self.pendingDeletion!, (value) {
+    return _then(_self.copyWith(pendingDeletion: value));
+  });
 }
+}
+
+
+/// @nodoc
+mixin _$PendingDeletion {
+
+ DateTime get effectiveAt;
+/// Create a copy of PendingDeletion
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PendingDeletionCopyWith<PendingDeletion> get copyWith => _$PendingDeletionCopyWithImpl<PendingDeletion>(this as PendingDeletion, _$identity);
+
+  /// Serializes this PendingDeletion to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingDeletion&&(identical(other.effectiveAt, effectiveAt) || other.effectiveAt == effectiveAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,effectiveAt);
+
+@override
+String toString() {
+  return 'PendingDeletion(effectiveAt: $effectiveAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PendingDeletionCopyWith<$Res>  {
+  factory $PendingDeletionCopyWith(PendingDeletion value, $Res Function(PendingDeletion) _then) = _$PendingDeletionCopyWithImpl;
+@useResult
+$Res call({
+ DateTime effectiveAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$PendingDeletionCopyWithImpl<$Res>
+    implements $PendingDeletionCopyWith<$Res> {
+  _$PendingDeletionCopyWithImpl(this._self, this._then);
+
+  final PendingDeletion _self;
+  final $Res Function(PendingDeletion) _then;
+
+/// Create a copy of PendingDeletion
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? effectiveAt = null,}) {
+  return _then(_self.copyWith(
+effectiveAt: null == effectiveAt ? _self.effectiveAt : effectiveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PendingDeletion].
+extension PendingDeletionPatterns on PendingDeletion {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PendingDeletion value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PendingDeletion() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PendingDeletion value)  $default,){
+final _that = this;
+switch (_that) {
+case _PendingDeletion():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PendingDeletion value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PendingDeletion() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime effectiveAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PendingDeletion() when $default != null:
+return $default(_that.effectiveAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime effectiveAt)  $default,) {final _that = this;
+switch (_that) {
+case _PendingDeletion():
+return $default(_that.effectiveAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime effectiveAt)?  $default,) {final _that = this;
+switch (_that) {
+case _PendingDeletion() when $default != null:
+return $default(_that.effectiveAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PendingDeletion implements PendingDeletion {
+  const _PendingDeletion({required this.effectiveAt});
+  factory _PendingDeletion.fromJson(Map<String, dynamic> json) => _$PendingDeletionFromJson(json);
+
+@override final  DateTime effectiveAt;
+
+/// Create a copy of PendingDeletion
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PendingDeletionCopyWith<_PendingDeletion> get copyWith => __$PendingDeletionCopyWithImpl<_PendingDeletion>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PendingDeletionToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingDeletion&&(identical(other.effectiveAt, effectiveAt) || other.effectiveAt == effectiveAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,effectiveAt);
+
+@override
+String toString() {
+  return 'PendingDeletion(effectiveAt: $effectiveAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PendingDeletionCopyWith<$Res> implements $PendingDeletionCopyWith<$Res> {
+  factory _$PendingDeletionCopyWith(_PendingDeletion value, $Res Function(_PendingDeletion) _then) = __$PendingDeletionCopyWithImpl;
+@override @useResult
+$Res call({
+ DateTime effectiveAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$PendingDeletionCopyWithImpl<$Res>
+    implements _$PendingDeletionCopyWith<$Res> {
+  __$PendingDeletionCopyWithImpl(this._self, this._then);
+
+  final _PendingDeletion _self;
+  final $Res Function(_PendingDeletion) _then;
+
+/// Create a copy of PendingDeletion
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? effectiveAt = null,}) {
+  return _then(_PendingDeletion(
+effectiveAt: null == effectiveAt ? _self.effectiveAt : effectiveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
 }
 
 
@@ -1390,7 +1704,21 @@ mixin _$ProfileSchool {
 /// This field was already nullable under v1.0 (where null meant "non-Egypt,
 /// typed a name instead"), so the skipped-school case needed no change —
 /// the same shape now carries a different meaning.
- NamedRef? get school; String get stage; String get educationSystem;
+ NamedRef? get school; String get stage; String get educationSystem;/// adr-165 D7, contract 3.22.0-m1 — the ACTUAL parent-report status,
+/// `active` | `inactive`. School track only; the whole block is null for
+/// university students.
+///
+/// **Optional on the wire**: it is NOT in the contract's
+/// `required: [stage, educationSystem]` (`openapi.yaml:2397`), so a server
+/// that has not started sending it decodes to null rather than throwing.
+///
+/// Kept a wire `String` rather than a generated enum, for the same reason
+/// [ProfileAvatar.type] is: it is a two-value set the UI does not branch on
+/// today, and hard-typing it would only add a way for the whole profile
+/// parse — and with it Home — to throw on a value nobody reads. There is
+/// deliberately no `pending` value; the contract rules one out explicitly,
+/// because no parent-side opt-in exists to pend on.
+ String? get parentReportStatus;
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1403,16 +1731,16 @@ $ProfileSchoolCopyWith<ProfileSchool> get copyWith => _$ProfileSchoolCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentReportStatus, parentReportStatus) || other.parentReportStatus == parentReportStatus));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,school,stage,educationSystem);
+int get hashCode => Object.hash(runtimeType,school,stage,educationSystem,parentReportStatus);
 
 @override
 String toString() {
-  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem)';
+  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem, parentReportStatus: $parentReportStatus)';
 }
 
 
@@ -1423,7 +1751,7 @@ abstract mixin class $ProfileSchoolCopyWith<$Res>  {
   factory $ProfileSchoolCopyWith(ProfileSchool value, $Res Function(ProfileSchool) _then) = _$ProfileSchoolCopyWithImpl;
 @useResult
 $Res call({
- NamedRef? school, String stage, String educationSystem
+ NamedRef? school, String stage, String educationSystem, String? parentReportStatus
 });
 
 
@@ -1440,12 +1768,13 @@ class _$ProfileSchoolCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,Object? parentReportStatus = freezed,}) {
   return _then(_self.copyWith(
 school: freezed == school ? _self.school : school // ignore: cast_nullable_to_non_nullable
 as NamedRef?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String,educationSystem: null == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
-as String,
+as String,parentReportStatus: freezed == parentReportStatus ? _self.parentReportStatus : parentReportStatus // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of ProfileSchool
@@ -1542,10 +1871,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem,  String? parentReportStatus)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfileSchool() when $default != null:
-return $default(_that.school,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem,_that.parentReportStatus);case _:
   return orElse();
 
 }
@@ -1563,10 +1892,10 @@ return $default(_that.school,_that.stage,_that.educationSystem);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( NamedRef? school,  String stage,  String educationSystem,  String? parentReportStatus)  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSchool():
-return $default(_that.school,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem,_that.parentReportStatus);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1583,10 +1912,10 @@ return $default(_that.school,_that.stage,_that.educationSystem);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef? school,  String stage,  String educationSystem)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( NamedRef? school,  String stage,  String educationSystem,  String? parentReportStatus)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSchool() when $default != null:
-return $default(_that.school,_that.stage,_that.educationSystem);case _:
+return $default(_that.school,_that.stage,_that.educationSystem,_that.parentReportStatus);case _:
   return null;
 
 }
@@ -1598,7 +1927,7 @@ return $default(_that.school,_that.stage,_that.educationSystem);case _:
 @JsonSerializable()
 
 class _ProfileSchool implements ProfileSchool {
-  const _ProfileSchool({this.school, required this.stage, required this.educationSystem});
+  const _ProfileSchool({this.school, required this.stage, required this.educationSystem, this.parentReportStatus});
   factory _ProfileSchool.fromJson(Map<String, dynamic> json) => _$ProfileSchoolFromJson(json);
 
 /// The coded school. Null when the student did not pick one — **Egypt
@@ -1612,6 +1941,21 @@ class _ProfileSchool implements ProfileSchool {
 @override final  NamedRef? school;
 @override final  String stage;
 @override final  String educationSystem;
+/// adr-165 D7, contract 3.22.0-m1 — the ACTUAL parent-report status,
+/// `active` | `inactive`. School track only; the whole block is null for
+/// university students.
+///
+/// **Optional on the wire**: it is NOT in the contract's
+/// `required: [stage, educationSystem]` (`openapi.yaml:2397`), so a server
+/// that has not started sending it decodes to null rather than throwing.
+///
+/// Kept a wire `String` rather than a generated enum, for the same reason
+/// [ProfileAvatar.type] is: it is a two-value set the UI does not branch on
+/// today, and hard-typing it would only add a way for the whole profile
+/// parse — and with it Home — to throw on a value nobody reads. There is
+/// deliberately no `pending` value; the contract rules one out explicitly,
+/// because no parent-side opt-in exists to pend on.
+@override final  String? parentReportStatus;
 
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
@@ -1626,16 +1970,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSchool&&(identical(other.school, school) || other.school == school)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentReportStatus, parentReportStatus) || other.parentReportStatus == parentReportStatus));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,school,stage,educationSystem);
+int get hashCode => Object.hash(runtimeType,school,stage,educationSystem,parentReportStatus);
 
 @override
 String toString() {
-  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem)';
+  return 'ProfileSchool(school: $school, stage: $stage, educationSystem: $educationSystem, parentReportStatus: $parentReportStatus)';
 }
 
 
@@ -1646,7 +1990,7 @@ abstract mixin class _$ProfileSchoolCopyWith<$Res> implements $ProfileSchoolCopy
   factory _$ProfileSchoolCopyWith(_ProfileSchool value, $Res Function(_ProfileSchool) _then) = __$ProfileSchoolCopyWithImpl;
 @override @useResult
 $Res call({
- NamedRef? school, String stage, String educationSystem
+ NamedRef? school, String stage, String educationSystem, String? parentReportStatus
 });
 
 
@@ -1663,12 +2007,13 @@ class __$ProfileSchoolCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSchool
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? school = freezed,Object? stage = null,Object? educationSystem = null,Object? parentReportStatus = freezed,}) {
   return _then(_ProfileSchool(
 school: freezed == school ? _self.school : school // ignore: cast_nullable_to_non_nullable
 as NamedRef?,stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String,educationSystem: null == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
-as String,
+as String,parentReportStatus: freezed == parentReportStatus ? _self.parentReportStatus : parentReportStatus // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

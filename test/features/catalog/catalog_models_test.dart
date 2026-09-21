@@ -129,6 +129,35 @@ void main() {
       expect(tree.lectures[2].questionCounter.fraction, 1.0);
     });
 
+    test('hasFlashcards parses per lecture — contract 3.12.0-m1', () {
+      final tree = universityTree();
+
+      // Varies across the fixture on purpose: a surface that hardcoded the
+      // affordance would pass on an all-true tree.
+      expect(tree.lectures.map((l) => l.hasFlashcards), [true, false, true]);
+    });
+
+    test(
+      'hasFlashcards is REQUIRED — an omitted one throws, never defaults',
+      () {
+        // `required: [id, name, questionCounter, hasFlashcards]`
+        // (`openapi.yaml:2569`). A `?? false` would hide a whole surface for a
+        // lecture that has flashcards, and never fail while doing it.
+        expect(
+          () => universityTree(
+            lectures: <dynamic>[
+              <String, dynamic>{
+                'id': 'lec-x',
+                'name': 'No flag',
+                'questionCounter': counterJson(0, 10),
+              },
+            ],
+          ),
+          throwsA(isA<TypeError>()),
+        );
+      },
+    );
+
     test('quizTypes parse as the contract enum, in server order', () {
       final tree = universityTree(
         quizTypes: <String>['practicalRevision', 'normal'],

@@ -61,10 +61,47 @@ abstract class StudentProfile with _$StudentProfile {
     /// `GET /me/entitlements`.
     required List<EntitlementState> entitlements,
     required DateTime createdAt,
+
+    /// adr-114 — present ONLY while a deletion request is pending.
+    ///
+    /// **Absence is the flag, and the contract is emphatic that it is absence
+    /// and not null** (`openapi.yaml:2430-2436`: *"Absent otherwise — never
+    /// `null`"*). Both decode to null here, which is correct and not a
+    /// weakening: `json['pendingDeletion'] as Map?` is null for an absent key
+    /// and for an explicit null alike, and the client's question is only ever
+    /// "is a deletion pending?".
+    ///
+    /// Not in the contract's `required` list, so it is nullable with no
+    /// default — a default would have to invent either a window or the absence
+    /// of one.
+    PendingDeletion? pendingDeletion,
   }) = _StudentProfile;
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) =>
       _$StudentProfileFromJson(json);
+}
+
+/// The live deletion grace window (adr-114) — `{effectiveAt}`.
+///
+/// A type of its own rather than a bare `DateTime?` on [StudentProfile],
+/// because the contract models it as an object and says a cancel screen is
+/// "drawn from `GET /me`'s `pendingDeletion.effectiveAt`" (`openapi.yaml:83`).
+/// Flattening it would mean re-nesting it the moment the window gains a second
+/// field, and `pendingDeletion != null` reads as the presence flag the contract
+/// describes, where `effectiveAt != null` would read as a date that might be
+/// missing.
+///
+/// `effectiveAt` is `required` INSIDE the object even though the object itself
+/// is optional: a pending deletion always has an end date. UTC, and the erasure
+/// job may run up to ~24 h later — so it is the earliest erasure time, not a
+/// promise.
+@freezed
+abstract class PendingDeletion with _$PendingDeletion {
+  const factory PendingDeletion({required DateTime effectiveAt}) =
+      _PendingDeletion;
+
+  factory PendingDeletion.fromJson(Map<String, dynamic> json) =>
+      _$PendingDeletionFromJson(json);
 }
 
 /// The profile avatar — `{type, id?, url}`. `url` is a network image.
@@ -169,6 +206,22 @@ abstract class ProfileSchool with _$ProfileSchool {
     NamedRef? school,
     required String stage,
     required String educationSystem,
+
+    /// adr-165 D7, contract 3.22.0-m1 — the ACTUAL parent-report status,
+    /// `active` | `inactive`. School track only; the whole block is null for
+    /// university students.
+    ///
+    /// **Optional on the wire**: it is NOT in the contract's
+    /// `required: [stage, educationSystem]` (`openapi.yaml:2397`), so a server
+    /// that has not started sending it decodes to null rather than throwing.
+    ///
+    /// Kept a wire `String` rather than a generated enum, for the same reason
+    /// [ProfileAvatar.type] is: it is a two-value set the UI does not branch on
+    /// today, and hard-typing it would only add a way for the whole profile
+    /// parse — and with it Home — to throw on a value nobody reads. There is
+    /// deliberately no `pending` value; the contract rules one out explicitly,
+    /// because no parent-side opt-in exists to pend on.
+    String? parentReportStatus,
   }) = _ProfileSchool;
 
   factory ProfileSchool.fromJson(Map<String, dynamic> json) =>

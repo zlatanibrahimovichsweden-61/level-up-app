@@ -111,20 +111,25 @@ Map<String, dynamic> universityTreeJson({
   'lectures':
       lectures ??
       <dynamic>[
+        // `hasFlashcards` is contract-required and varies across the three, so
+        // a surface that ignores it cannot pass on this fixture alone.
         <String, dynamic>{
           'id': 'lec-1',
           'name': 'Upper Limb',
           'questionCounter': counterJson(0, 60),
+          'hasFlashcards': true,
         },
         <String, dynamic>{
           'id': 'lec-2',
           'name': 'Lower Limb',
           'questionCounter': counterJson(30, 60),
+          'hasFlashcards': false,
         },
         <String, dynamic>{
           'id': 'lec-3',
           'name': 'Thorax',
           'questionCounter': counterJson(45, 45),
+          'hasFlashcards': true,
         },
       ],
 };

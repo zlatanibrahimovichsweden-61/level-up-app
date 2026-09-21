@@ -211,7 +211,19 @@ class _Board extends ConsumerWidget {
               // A rate-limited board recovers on its own clock, and the
               // contract is explicit: do not retry in a tight loop. The button
               // is withheld rather than handed to the student to hammer.
-              onRetry: _isRateLimited(board.error) ? null : notifier.refresh,
+              //
+              // `account_pending_deletion` is withheld for a stronger reason:
+              // it does not recover on any clock. The contract's instruction is
+              // "do not log the user out and do not retry" (`openapi.yaml:82`),
+              // and until the deletion is cancelled every tap answers the same
+              // `403`. This branch used to supply the copy and still hand over
+              // the button — the copy told the student it was pointless while
+              // the button invited them to try.
+              onRetry:
+                  _isRateLimited(board.error) ||
+                      isAccountPendingDeletion(board.error)
+                  ? null
+                  : notifier.refresh,
             ),
             offline: _Message(
               icon: Icons.wifi_off,
@@ -235,12 +247,15 @@ class _Board extends ConsumerWidget {
   /// screen does not exist yet, so the board says what is actually wrong
   /// instead of showing a generic error, and withholds the retry that the
   /// contract says would be pointless.
-  static String _errorText(AppLocalizations l10n, Object? error) {
-    if (error is ApiException && error.code == 'account_pending_deletion') {
-      return l10n.accountPendingDeletion;
-    }
-    return l10n.genericError;
-  }
+  ///
+  /// Recognising the code is [isAccountPendingDeletion]'s job, not this
+  /// screen's: the board was the FIRST surface to handle it and its inline
+  /// string comparison was the de-facto definition, which is how six other
+  /// surfaces ended up with none.
+  static String _errorText(AppLocalizations l10n, Object? error) =>
+      isAccountPendingDeletion(error)
+      ? l10n.accountPendingDeletion
+      : l10n.genericError;
 
   static String _label(AppLocalizations l10n, LeaderboardScope scope) =>
       switch (scope) {

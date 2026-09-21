@@ -320,4 +320,48 @@ void main() {
       expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
     });
   });
+
+  group('account_pending_deletion (adr-114) — the grace window', () {
+    void givenFailure(Object error) {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => throw error);
+    }
+
+    testWidgets('says what is wrong and withholds Retry', (tester) async {
+      // The contract's two client rules for this code, in its own words: "do
+      // not log the user out and do not retry" (`openapi.yaml:82-83`). The
+      // board already supplied the copy; the Retry button contradicted it.
+      givenFailure(
+        const ApiException(status: 403, code: 'account_pending_deletion'),
+      );
+
+      await openLeaderboard(tester, me: schoolProfile());
+
+      expect(
+        find.text(
+          'Your account is scheduled for deletion. '
+          'Cancel the request to use Level Up again.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Something went wrong'), findsNothing);
+    });
+
+    testWidgets('an ordinary failure still gets its Retry', (tester) async {
+      // The other half of the rule. Suppression must be narrow — a board that
+      // withheld Retry for every error would be a regression, not a fix.
+      givenFailure(const ApiException(status: 500, code: 'server_error'));
+
+      await openLeaderboard(tester, me: schoolProfile());
+
+      expect(find.text('Something went wrong'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+  });
 }

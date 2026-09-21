@@ -36,6 +36,11 @@ _StudentProfile _$StudentProfileFromJson(Map<String, dynamic> json) =>
           .map((e) => EntitlementState.fromJson(e as Map<String, dynamic>))
           .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      pendingDeletion: json['pendingDeletion'] == null
+          ? null
+          : PendingDeletion.fromJson(
+              json['pendingDeletion'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$StudentProfileToJson(_StudentProfile instance) =>
@@ -56,9 +61,18 @@ Map<String, dynamic> _$StudentProfileToJson(_StudentProfile instance) =>
       'privacy': instance.privacy,
       'entitlements': instance.entitlements,
       'createdAt': instance.createdAt.toIso8601String(),
+      'pendingDeletion': instance.pendingDeletion,
     };
 
 const _$TrackEnumMap = {Track.school: 'school', Track.university: 'university'};
+
+_PendingDeletion _$PendingDeletionFromJson(Map<String, dynamic> json) =>
+    _PendingDeletion(
+      effectiveAt: DateTime.parse(json['effectiveAt'] as String),
+    );
+
+Map<String, dynamic> _$PendingDeletionToJson(_PendingDeletion instance) =>
+    <String, dynamic>{'effectiveAt': instance.effectiveAt.toIso8601String()};
 
 _ProfileAvatar _$ProfileAvatarFromJson(Map<String, dynamic> json) =>
     _ProfileAvatar(
@@ -105,6 +119,7 @@ _ProfileSchool _$ProfileSchoolFromJson(Map<String, dynamic> json) =>
           : NamedRef.fromJson(json['school'] as Map<String, dynamic>),
       stage: json['stage'] as String,
       educationSystem: json['educationSystem'] as String,
+      parentReportStatus: json['parentReportStatus'] as String?,
     );
 
 Map<String, dynamic> _$ProfileSchoolToJson(_ProfileSchool instance) =>
@@ -112,6 +127,7 @@ Map<String, dynamic> _$ProfileSchoolToJson(_ProfileSchool instance) =>
       'school': instance.school,
       'stage': instance.stage,
       'educationSystem': instance.educationSystem,
+      'parentReportStatus': instance.parentReportStatus,
     };
 
 _ProfileUniversity _$ProfileUniversityFromJson(Map<String, dynamic> json) =>

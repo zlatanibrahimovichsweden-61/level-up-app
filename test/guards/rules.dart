@@ -333,3 +333,127 @@ List<String> rawElevationEffects(List<Source> sources) {
   }
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Contract `required:` vs the Dart model
+// ---------------------------------------------------------------------------
+
+/// Thrown when the contract cannot be read the way this guard assumes.
+///
+/// Deliberately an exception rather than an empty result. A navigator that
+/// returned `[]` for a schema it failed to find would make the guard PASS —
+/// silently, and for every field at once. The failure this guard exists to
+/// catch is a field that is present in the contract and absent from the model;
+/// a lookup that quietly finds nothing looks exactly like a model that is
+/// complete.
+class ContractShapeException implements Exception {
+  ContractShapeException(this.message);
+  final String message;
+  @override
+  String toString() => 'ContractShapeException: $message';
+}
+
+/// The names in the `required: [...]` list of the schema block at [path].
+///
+/// [path] is spelled in the contract's own YAML terms, `properties` and all —
+/// e.g. `['StudentProfile', 'properties', 'school']`. Naming the intermediate
+/// keys is deliberate: an OpenAPI document nests `required` under whichever
+/// object owns it, and a path that skipped `properties` would have to guess.
+///
+/// Only the flow form (`required: [a, b]`) is understood, which is the only
+/// form this contract uses. A block form would raise rather than silently read
+/// as empty.
+List<String> contractRequiredFields(String yaml, List<String> path) {
+  if (path.isEmpty) throw ContractShapeException('empty path');
+  final lines = yaml.split('\n');
+
+  bool blank(String l) => l.trim().isEmpty || l.trimLeft().startsWith('#');
+  int indentOf(String l) => l.length - l.trimLeft().length;
+
+  /// The half-open line range of the block under `key:` at [indent], searched
+  /// within `[from, to)`.
+  (int, int) child(String key, int indent, int from, int to) {
+    final head = RegExp('^ {$indent}${RegExp.escape(key)}:');
+    for (var i = from; i < to; i++) {
+      if (blank(lines[i]) || !head.hasMatch(lines[i])) continue;
+      for (var j = i + 1; j < to; j++) {
+        if (blank(lines[j])) continue;
+        if (indentOf(lines[j]) <= indent) return (i + 1, j);
+      }
+      return (i + 1, to);
+    }
+    throw ContractShapeException(
+      "no `$key:` at indent $indent within lines ${from + 1}-$to",
+    );
+  }
+
+  var (from, to) = child('components', 0, 0, lines.length);
+  (from, to) = child('schemas', 2, from, to);
+
+  // Schema names sit at indent 4; each further step is nested one level deeper.
+  var indent = 4;
+  for (final seg in path) {
+    (from, to) = child(seg, indent, from, to);
+    indent += 2;
+  }
+
+  // `required:` is a sibling of the block's own keys, i.e. at the child indent.
+  // Adjacent literals, the second raw: `'\s'` in an ordinary Dart string is a
+  // plain `s`, not the whitespace class.
+  final want = RegExp(
+    '^ {$indent}required:'
+    r'\s*(.*)$',
+  );
+  for (var i = from; i < to; i++) {
+    if (indentOf(lines[i]) != indent) continue;
+    final m = want.firstMatch(lines[i]);
+    if (m == null) continue;
+    final raw = m.group(1)!.trim();
+    if (!raw.startsWith('[') || !raw.endsWith(']')) {
+      throw ContractShapeException(
+        'line ${i + 1}: `required:` is not a flow list — got "$raw"',
+      );
+    }
+    final names = raw
+        .substring(1, raw.length - 1)
+        .split(',')
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (names.isEmpty) {
+      throw ContractShapeException('line ${i + 1}: empty `required:` list');
+    }
+    return names;
+  }
+  throw ContractShapeException(
+    'no `required:` at indent $indent for ${path.join(" > ")}',
+  );
+}
+
+/// Whether [dart] declares [field] as a constructor parameter.
+///
+/// Comments are stripped first, for the reason [stripComments] exists at all:
+/// this file's whole history is a guard that was satisfied by prose. A doc
+/// comment explaining why `hasFlashcards` is not modelled must NOT count as
+/// modelling it.
+///
+/// The match is the parameter position specifically — the name followed by a
+/// `,`, `)` or `}` — so `json['hasFlashcards']` inside a hand-written parser
+/// does not count either. A field is modelled when the constructor takes it.
+///
+/// ⚠️ **Scope is the FILE, not the class.** [dart] is a whole file's source and
+/// nothing here parses class bodies, so a field of the same name on ANY other
+/// class in the same file satisfies the match. The models in this repo share a
+/// file per feature and repeat names like `id`, `name` and `track` across them,
+/// so the masking is real rather than theoretical — see the limitations list in
+/// `contract_models_test.dart` for what that does and does not cost. Making the
+/// detection class-scoped is future hardening, deliberately not done here.
+///
+/// Built by concatenating RAW strings rather than interpolating into one: in an
+/// ordinary Dart string `'\b'` is a backspace character and `'\s'` is a plain
+/// `s`, so the interpolated form compiles, runs, and matches nothing like what
+/// it appears to. It passed its own positive fixture only by accident of what
+/// it did still match.
+bool dartDeclaresField(String dart, String field) => RegExp(
+  r'\b' + RegExp.escape(field) + r'\s*[,)}]',
+).hasMatch(stripComments(dart));

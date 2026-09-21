@@ -1409,7 +1409,23 @@ as List<Lecture>,
 /// @nodoc
 mixin _$Lecture {
 
- String get id; String get name; QuestionCounter get questionCounter;
+ String get id; String get name; QuestionCounter get questionCounter;/// Whether this lecture has at least one active flashcard — the signal that
+/// decides whether to draw the Flashcards affordance.
+///
+/// **`required` on the wire** (`openapi.yaml:2569`), so it is `required`
+/// here with no default. A `?? false` would have been the wrong kind of
+/// tolerant: it would render "no flashcards" for a lecture that has them
+/// and hide a whole surface without ever failing.
+///
+/// **Content presence, never subscription state.** It is `true` for a free
+/// student too; tapping through then meets the weekly preview or
+/// `403 flashcard_subscription_required` on `getFlashcardsForLecture`. So
+/// it must never be read as an entitlement check.
+///
+/// University track only. It is NOT on `SchoolSubjectTree` and the contract
+/// says it never will be — flashcards are a university-track surface, and a
+/// school tree carries no signal that they exist.
+ bool get hasFlashcards;
 /// Create a copy of Lecture
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1422,16 +1438,16 @@ $LectureCopyWith<Lecture> get copyWith => _$LectureCopyWithImpl<Lecture>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter)&&(identical(other.hasFlashcards, hasFlashcards) || other.hasFlashcards == hasFlashcards));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+int get hashCode => Object.hash(runtimeType,id,name,questionCounter,hasFlashcards);
 
 @override
 String toString() {
-  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter)';
+  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter, hasFlashcards: $hasFlashcards)';
 }
 
 
@@ -1442,7 +1458,7 @@ abstract mixin class $LectureCopyWith<$Res>  {
   factory $LectureCopyWith(Lecture value, $Res Function(Lecture) _then) = _$LectureCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, QuestionCounter questionCounter
+ String id, String name, QuestionCounter questionCounter, bool hasFlashcards
 });
 
 
@@ -1459,12 +1475,13 @@ class _$LectureCopyWithImpl<$Res>
 
 /// Create a copy of Lecture
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,Object? hasFlashcards = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
-as QuestionCounter,
+as QuestionCounter,hasFlashcards: null == hasFlashcards ? _self.hasFlashcards : hasFlashcards // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of Lecture
@@ -1558,10 +1575,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter,  bool hasFlashcards)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Lecture() when $default != null:
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.questionCounter,_that.hasFlashcards);case _:
   return orElse();
 
 }
@@ -1579,10 +1596,10 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  QuestionCounter questionCounter,  bool hasFlashcards)  $default,) {final _that = this;
 switch (_that) {
 case _Lecture():
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.questionCounter,_that.hasFlashcards);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1599,10 +1616,10 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  QuestionCounter questionCounter)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  QuestionCounter questionCounter,  bool hasFlashcards)?  $default,) {final _that = this;
 switch (_that) {
 case _Lecture() when $default != null:
-return $default(_that.id,_that.name,_that.questionCounter);case _:
+return $default(_that.id,_that.name,_that.questionCounter,_that.hasFlashcards);case _:
   return null;
 
 }
@@ -1614,12 +1631,29 @@ return $default(_that.id,_that.name,_that.questionCounter);case _:
 @JsonSerializable()
 
 class _Lecture implements Lecture {
-  const _Lecture({required this.id, required this.name, required this.questionCounter});
+  const _Lecture({required this.id, required this.name, required this.questionCounter, required this.hasFlashcards});
   factory _Lecture.fromJson(Map<String, dynamic> json) => _$LectureFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  QuestionCounter questionCounter;
+/// Whether this lecture has at least one active flashcard — the signal that
+/// decides whether to draw the Flashcards affordance.
+///
+/// **`required` on the wire** (`openapi.yaml:2569`), so it is `required`
+/// here with no default. A `?? false` would have been the wrong kind of
+/// tolerant: it would render "no flashcards" for a lecture that has them
+/// and hide a whole surface without ever failing.
+///
+/// **Content presence, never subscription state.** It is `true` for a free
+/// student too; tapping through then meets the weekly preview or
+/// `403 flashcard_subscription_required` on `getFlashcardsForLecture`. So
+/// it must never be read as an entitlement check.
+///
+/// University track only. It is NOT on `SchoolSubjectTree` and the contract
+/// says it never will be — flashcards are a university-track surface, and a
+/// school tree carries no signal that they exist.
+@override final  bool hasFlashcards;
 
 /// Create a copy of Lecture
 /// with the given fields replaced by the non-null parameter values.
@@ -1634,16 +1668,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Lecture&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.questionCounter, questionCounter) || other.questionCounter == questionCounter)&&(identical(other.hasFlashcards, hasFlashcards) || other.hasFlashcards == hasFlashcards));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,questionCounter);
+int get hashCode => Object.hash(runtimeType,id,name,questionCounter,hasFlashcards);
 
 @override
 String toString() {
-  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter)';
+  return 'Lecture(id: $id, name: $name, questionCounter: $questionCounter, hasFlashcards: $hasFlashcards)';
 }
 
 
@@ -1654,7 +1688,7 @@ abstract mixin class _$LectureCopyWith<$Res> implements $LectureCopyWith<$Res> {
   factory _$LectureCopyWith(_Lecture value, $Res Function(_Lecture) _then) = __$LectureCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, QuestionCounter questionCounter
+ String id, String name, QuestionCounter questionCounter, bool hasFlashcards
 });
 
 
@@ -1671,12 +1705,13 @@ class __$LectureCopyWithImpl<$Res>
 
 /// Create a copy of Lecture
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? questionCounter = null,Object? hasFlashcards = null,}) {
   return _then(_Lecture(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,questionCounter: null == questionCounter ? _self.questionCounter : questionCounter // ignore: cast_nullable_to_non_nullable
-as QuestionCounter,
+as QuestionCounter,hasFlashcards: null == hasFlashcards ? _self.hasFlashcards : hasFlashcards // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

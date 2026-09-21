@@ -384,6 +384,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                 country.code,
                 theme: const EmojiTheme(size: 20),
               ),
+              enabled: true,
             ),
         ],
       );
@@ -422,13 +423,19 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
               id: system.code,
               label: localizedRefName(context, system.nameAr, system.nameEn),
               leading: null,
+              enabled: true,
             ),
         ],
       );
 
   List<PickerOption> _stageOptions(AppLocalizations l10n) => [
     for (final stage in Stage.values)
-      (id: stage.wireValue, label: _stageLabel(l10n, stage), leading: null),
+      (
+        id: stage.wireValue,
+        label: _stageLabel(l10n, stage),
+        leading: null,
+        enabled: true,
+      ),
   ];
 
   List<PickerOption> _namedRefRows(List<NamedRef> rows) => [
@@ -437,6 +444,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
         id: row.id,
         label: localizedRefName(context, row.nameAr, row.nameEn),
         leading: null,
+        enabled: true,
       ),
   ];
 }

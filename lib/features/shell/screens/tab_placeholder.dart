@@ -38,21 +38,20 @@ class TabPlaceholder extends StatelessWidget {
   }
 }
 
-/// `/leaderboard` — real data is `GET /leaderboard`, which is
-/// **`x-stability: draft`** at the pinned contract (`openapi.yaml:1221`;
-/// `/leaderboard/me` likewise at `:1263`). The board itself is fully built and
+/// `/leaderboard` — real data is `GET /leaderboard` and `GET /leaderboard/me`.
+/// Both are **`x-stability: stable`** at the current pin 768e67d (3.22.0-m1),
+/// at `openapi.yaml:2007` and `:2112`. The board itself is fully built and
 /// tested under `lib/features/leaderboard/` — it is held behind this
-/// placeholder, not unwritten, because the app builds only against stable
-/// paths.
+/// placeholder, not unwritten.
 ///
-/// **Both operations are already `stable` UPSTREAM** — promoted in `3.5.0-m1`
-/// (2026-09-05); the source repo is ten minor versions ahead of our pin. This
-/// gate is therefore a holding action until `contract/` is re-vendored, not a
-/// verdict on the board. Un-gating is NOT a plain revert: the board predates
-/// six behavioural changes (top-200 bound, signed/expiring cursor, short pages
-/// while `hasMore` is true, `scoreHidden` exclusion, `403` on self-rank,
-/// `404 not_ranked`). Audit against them first — D-008, Correction of
-/// 2026-09-10.
+/// This doc used to say both operations were `draft` at the pinned contract.
+/// That was true at the old pin 184d6ec (3.0.0-m1) and went stale at the
+/// 2026-09-12 re-vendor. **Stability is no longer the gate.** What remains is
+/// D-008's audit step: un-gating is NOT a plain revert, because the board
+/// predates six behavioural changes (top-200 bound, signed/expiring cursor,
+/// short pages while `hasMore` is true, `scoreHidden` exclusion, `403` on
+/// self-rank, `404 not_ranked`). Audit against them first — D-008, Correction
+/// of 2026-09-10.
 ///
 /// No live updates either way: `contract/realtime.md:9` lists the `leaderboard`
 /// hub as "not drafted".

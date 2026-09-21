@@ -42,14 +42,16 @@ import '../widgets/mistakes_subject_card.dart';
 ///    [ScopeErrorCopy.enrolmentPending] in, which swaps the copy AND restores
 ///    the retry button the subject route suppresses. See #61.
 ///
-/// `account_pending_deletion`, the other `403` both routes can answer, is
-/// deliberately NOT handled here: the contract's rule (route to the cancel
-/// screen, do not log out, do not retry — `openapi.yaml:82-83`) belongs in the
-/// global error interceptor, one place for every endpoint. This screen only has
-/// to avoid swallowing it, which it does — the code is not `insufficient_scope`,
-/// so it falls through to the generic error with retry rather than being
-/// mistaken for a scope refusal.
-/// TODO(contract): the mandated cancel screen does not exist. Both deletion
+/// `account_pending_deletion`, the other `403` both routes can answer, IS
+/// handled — not in this file, but once, in the [CatalogAsyncView] that both
+/// Mistakes routes render their states through. It gets its own copy
+/// (`accountPendingDeletion`) and its Retry button is WITHHELD, because the
+/// contract says outright do not log the user out and do not retry
+/// (`openapi.yaml:82-83`). The single definition is `isAccountPendingDeletion`
+/// in `core/network/exceptions.dart`. This screen's own job is unchanged: do
+/// not mistake the code for a scope refusal, which it does not.
+/// TODO(contract): the contract's THIRD rule — route to the cancel screen — is
+/// still unimplemented, because that screen does not exist. Both deletion
 /// operations became `x-stability: stable` at the current pin — see
 /// docs/seif_fight.md S38 and DESIGN_ISSUES #62.
 class MistakesOverviewScreen extends ConsumerWidget {

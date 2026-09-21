@@ -11,8 +11,15 @@ import '../../core/network/exceptions.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Banner-level copy for a failed save.
+///
+/// `PATCH /me` is NOT on the account-deletion allowlist — only `GET /me` is
+/// (`openapi.yaml:67-69`). So the two halves of the same path behave
+/// differently during grace: the profile still loads, and saving it answers
+/// `403`. Without this branch the student would read "something went wrong"
+/// about an edit the server will refuse for the next thirty days.
 String profileSaveErrorMessage(AppLocalizations l10n, Object? error) {
   if (isOffline(error)) return l10n.offline;
+  if (isAccountPendingDeletion(error)) return l10n.accountPendingDeletion;
   if (error is ValidationException) return l10n.errorValidationFailed;
   return l10n.genericError;
 }

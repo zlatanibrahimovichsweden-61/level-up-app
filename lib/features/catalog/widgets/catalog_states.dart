@@ -88,6 +88,12 @@ class CatalogAsyncView<T> extends StatelessWidget {
     final isScope = _isInsufficientScope(value.error);
     final scopeIsTransient = scopeError == ScopeErrorCopy.enrolmentPending;
 
+    // adr-114, and NOT route-specific: the account is inside its deletion grace
+    // window, so every route this widget serves answers the same `403` for the
+    // same reason. Checked before the scope branch because it outranks it —
+    // during grace the subject id is never resolved at all (`openapi.yaml:1210`).
+    final isPendingDeletion = isAccountPendingDeletion(value.error);
+
     return StateWidget<T>(
       state: state,
       onLoaded: onLoaded,
@@ -96,15 +102,23 @@ class CatalogAsyncView<T> extends StatelessWidget {
       empty: CatalogMessage(icon: Icons.inbox_outlined, text: emptyMessage),
       error: CatalogMessage(
         icon: Icons.error_outline,
-        text: switch ((isScope, scopeIsTransient)) {
-          (true, true) => l10n.mistakesEnrolmentPending,
-          (true, false) => l10n.subjectUnavailable,
+        text: switch ((isPendingDeletion, isScope, scopeIsTransient)) {
+          (true, _, _) => l10n.accountPendingDeletion,
+          (_, true, true) => l10n.mistakesEnrolmentPending,
+          (_, true, false) => l10n.subjectUnavailable,
           _ => l10n.genericError,
         },
         // Retry is suppressed ONLY where it is genuinely futile — a refused
         // subject id answers the same way every time. An enrolment between
         // states resolves on its own, so the student gets the button.
-        onRetry: isScope && !scopeIsTransient ? null : onRetry,
+        //
+        // A pending deletion is futile for a third reason, and the contract
+        // says so outright: "do not log the user out and do not retry"
+        // (`openapi.yaml:82-83`). Nothing the student can tap changes it; only
+        // cancelling the deletion does.
+        onRetry: isPendingDeletion || (isScope && !scopeIsTransient)
+            ? null
+            : onRetry,
       ),
       offline: CatalogMessage(
         icon: Icons.wifi_off,
@@ -121,12 +135,14 @@ class CatalogAsyncView<T> extends StatelessWidget {
   /// `title`/`detail` are developer-facing English and are never shown.
   /// `ScreenError.messageKey` is a KEY, not copy — so it names which of the
   /// two scope meanings was taken, not the sentence either one renders.
-  String _messageKeyFor(Object error) => _isInsufficientScope(error)
-      ? switch (scopeError) {
-          ScopeErrorCopy.subjectNotYours => 'subjectUnavailable',
-          ScopeErrorCopy.enrolmentPending => 'mistakesEnrolmentPending',
-        }
-      : 'genericError';
+  String _messageKeyFor(Object error) => switch (error) {
+    _ when isAccountPendingDeletion(error) => 'accountPendingDeletion',
+    _ when _isInsufficientScope(error) => switch (scopeError) {
+      ScopeErrorCopy.subjectNotYours => 'subjectUnavailable',
+      ScopeErrorCopy.enrolmentPending => 'mistakesEnrolmentPending',
+    },
+    _ => 'genericError',
+  };
 }
 
 /// Centred icon + localized line + optional retry. Shared by empty, error and

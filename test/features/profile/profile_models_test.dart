@@ -230,4 +230,85 @@ void main() {
       expect(free['name'], 'Al Ain');
     });
   });
+
+  /// Contract 3.22.0-m1 added two optional fields to `StudentProfile`. Both are
+  /// absent from `schoolProfileJson()`, which is the point: the fixture is the
+  /// payload the app has been decoding all along, and it must keep decoding.
+  group('the 3.22.0-m1 additive fields', () {
+    test('an EXISTING payload without either field still parses', () {
+      final profile = StudentProfile.fromJson(schoolProfileJson());
+
+      expect(profile.pendingDeletion, isNull);
+      expect(profile.school!.parentReportStatus, isNull);
+      // And nothing else moved.
+      expect(profile.points.total, 2450);
+      expect(profile.school!.stage, 'secondary2');
+    });
+
+    test('pendingDeletion parses when the key IS present', () {
+      final json = schoolProfileJson()
+        ..['pendingDeletion'] = <String, dynamic>{
+          'effectiveAt': '2026-10-21T09:30:00Z',
+        };
+
+      final profile = StudentProfile.fromJson(json);
+
+      expect(profile.pendingDeletion, isNotNull);
+      expect(
+        profile.pendingDeletion!.effectiveAt.toUtc(),
+        DateTime.utc(2026, 10, 21, 9, 30),
+      );
+    });
+
+    test('ABSENCE is the flag — the contract never sends null, but a null '
+        'reads the same way', () {
+      // `openapi.yaml:2430-2436`: "Absent otherwise — never `null`". The client
+      // question is only ever "is a deletion pending?", so both decode to null
+      // rather than one of them throwing.
+      final absent = StudentProfile.fromJson(schoolProfileJson());
+      final explicitNull = StudentProfile.fromJson(
+        schoolProfileJson()..['pendingDeletion'] = null,
+      );
+
+      expect(absent.pendingDeletion, isNull);
+      expect(explicitNull.pendingDeletion, isNull);
+    });
+
+    test('parentReportStatus parses both contract values', () {
+      for (final value in ['active', 'inactive']) {
+        final json = schoolProfileJson();
+        (json['school']! as Map<String, dynamic>)['parentReportStatus'] = value;
+
+        expect(StudentProfile.fromJson(json).school!.parentReportStatus, value);
+      }
+    });
+
+    test('parentReportStatus is NOT required — `required: [stage, '
+        'educationSystem]` is the whole list', () {
+      final json = schoolProfileJson();
+      final school = json['school']! as Map<String, dynamic>;
+      school.remove('parentReportStatus');
+
+      expect(() => StudentProfile.fromJson(json), returnsNormally);
+    });
+
+    test('an unknown parentReportStatus value does not throw', () {
+      // Kept a wire String rather than a generated enum precisely so a value
+      // nobody reads cannot take down the whole profile parse — and with it
+      // Home, which is powered by this one call.
+      final json = schoolProfileJson();
+      (json['school']! as Map<String, dynamic>)['parentReportStatus'] =
+          'somethingNew';
+
+      expect(
+        StudentProfile.fromJson(json).school!.parentReportStatus,
+        'somethingNew',
+      );
+    });
+
+    test('a university profile has no school block to carry it', () {
+      final profile = StudentProfile.fromJson(universityProfileJson());
+      expect(profile.school, isNull);
+    });
+  });
 }

@@ -202,9 +202,16 @@ void main() {
     testWidgets('account_pending_deletion is NOT swallowed as a scope error', (
       tester,
     ) async {
-      // It is the OTHER 403 both routes can answer. Handling it belongs to the
-      // global interceptor (TODO(contract) → seif_fight.md S38); all this
-      // screen owes is not mistaking it for a scope refusal and not hiding it.
+      // It is the OTHER 403 both routes can answer, and it is not route-
+      // specific at all: the contract's rule is default-deny, so every
+      // authenticated endpoint outside a four-entry allowlist answers it
+      // (`openapi.yaml:62-71`).
+      //
+      // This test used to assert "Something went wrong" + a live Retry, with a
+      // note saying the real handling belonged to a global interceptor. Both
+      // halves of that were wrong in the same way: the copy told the student
+      // nothing, and the button invited a request the contract says never
+      // succeeds — "do not log the user out and do not retry" (`:82-83`).
       when(mistakes.getMistakes).thenThrow(
         const ApiException(status: 403, code: 'account_pending_deletion'),
       );
@@ -212,10 +219,22 @@ void main() {
       await pumpCatalogApp(tester, catalog: catalog, mistakes: mistakes);
       await openMistakes(tester);
 
-      expect(find.text('Something went wrong'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(
+        find.text(
+          'Your account is scheduled for deletion. '
+          'Cancel the request to use Level Up again.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Something went wrong'), findsNothing);
+      // Still not confused with either scope meaning.
       expect(
         find.text('Your enrolment is being updated. Try again in a moment.'),
+        findsNothing,
+      );
+      expect(
+        find.text("This subject isn't part of your course."),
         findsNothing,
       );
     });

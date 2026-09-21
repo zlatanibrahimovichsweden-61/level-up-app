@@ -1223,15 +1223,23 @@ final _universitySubjects = <dynamic>[
   _subject('uni-histology', 'الأنسجة', 58, 210),
 ];
 
+/// [hasFlashcards] is contract-REQUIRED on this object (`openapi.yaml:2569`),
+/// so it is always emitted. It varies per lecture below for the same reason
+/// `quizTypes` varies per subject: it decides whether an affordance is drawn,
+/// and a mock that answered `true` everywhere could never catch a surface that
+/// ignores it. Content presence, never subscription state — `true` is correct
+/// for a free student too.
 Map<String, dynamic> _lecture(
   String id,
   String name,
   int answered,
-  int total,
-) => <String, dynamic>{
+  int total, {
+  bool hasFlashcards = true,
+}) => <String, dynamic>{
   'id': id,
   'name': name,
   'questionCounter': _counter(answered, total),
+  'hasFlashcards': hasFlashcards,
 };
 
 /// `UniversitySubjectTree` — flat, plus the quiz types THIS subject offers.
@@ -1271,14 +1279,36 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
       _lecture('physio-l3', 'المحاضرة الثالثة: الجهاز التنفسي', 60, 90),
     ],
   ),
-  // Only one quiz type — the tab row degrades to a single tab.
+  // Only one quiz type — the tab row degrades to a single tab. Also the
+  // subject with NO flashcard content at all: the contract's "a faculty whose
+  // whole tree returns `false` everywhere has no flashcard content, and the
+  // surface should not be offered at all" case, which needs a subject to be
+  // reachable on device.
   'uni-biochem': _universityTree(
     'biochem',
     <String>['normal'],
     <dynamic>[
-      _lecture('biochem-l1', 'المحاضرة الأولى: البروتينات', 0, 0),
-      _lecture('biochem-l2', 'المحاضرة الثانية: الإنزيمات', 5, 50),
-      _lecture('biochem-l3', 'المحاضرة الثالثة: الكربوهيدرات', 25, 50),
+      _lecture(
+        'biochem-l1',
+        'المحاضرة الأولى: البروتينات',
+        0,
+        0,
+        hasFlashcards: false,
+      ),
+      _lecture(
+        'biochem-l2',
+        'المحاضرة الثانية: الإنزيمات',
+        5,
+        50,
+        hasFlashcards: false,
+      ),
+      _lecture(
+        'biochem-l3',
+        'المحاضرة الثالثة: الكربوهيدرات',
+        25,
+        50,
+        hasFlashcards: false,
+      ),
     ],
   ),
   // No lectures published yet — the university EMPTY state.
@@ -1575,6 +1605,12 @@ Map<String, dynamic> _schoolProfile({
     ),
     'stage': 'secondary2',
     'educationSystem': 'nationalLanguages',
+    // adr-165 D7. Optional on the wire, but the contract says it reads
+    // `inactive` for EVERY student today — parent-report delivery is not
+    // switched on and nothing is delivered to any parent. The mock sends the
+    // value the real server sends rather than omitting it, so the decode path
+    // is exercised in dev. There is no `pending` value.
+    'parentReportStatus': 'inactive',
   },
   university: null,
 );

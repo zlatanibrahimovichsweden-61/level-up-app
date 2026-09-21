@@ -74,6 +74,27 @@ final universitiesProvider = FutureProvider<List<UniversityRef>>(
 );
 
 /// `GET /reference/avatars`.
+///
+/// `retry: _noRetry` for the same reason `meProvider`, `subjectsProvider`,
+/// `subjectTreeProvider`, the two mistakes notifiers and `leaderboardProvider`
+/// all set it: **Riverpod 3 retries a failed provider build automatically,
+/// with exponential backoff**, and the project rule is that retry is a
+/// user-tapped button, never silent.
+///
+/// Measured before this line existed — a failing `getAvatars` was called **7
+/// times in ~15 seconds** off a single sheet open, backing off 200 ms → 6.4 s
+/// and continuing. Behind a modal the student may have already walked away
+/// from, that is a background network loop nobody asked for, and it is why the
+/// error view was so hard to see: while Riverpod is retrying, the state stays
+/// `AsyncLoading` carrying the error rather than becoming `AsyncError`.
+///
+/// ⚠️ The other six providers in this file have the SAME defect and are
+/// deliberately left alone here — they belong to the registration wizard, not
+/// to this pass. See the Phase 1 report.
 final avatarsProvider = FutureProvider<List<Avatar>>(
   (ref) => ref.watch(referenceRepositoryProvider).getAvatars(),
+  retry: _noRetry,
 );
+
+/// Returning `null` tells Riverpod not to schedule a retry.
+Duration? _noRetry(int retryCount, Object error) => null;

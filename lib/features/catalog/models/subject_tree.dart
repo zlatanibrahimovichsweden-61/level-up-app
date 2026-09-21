@@ -120,6 +120,24 @@ abstract class Lecture with _$Lecture {
     required String id,
     required String name,
     required QuestionCounter questionCounter,
+
+    /// Whether this lecture has at least one active flashcard — the signal that
+    /// decides whether to draw the Flashcards affordance.
+    ///
+    /// **`required` on the wire** (`openapi.yaml:2569`), so it is `required`
+    /// here with no default. A `?? false` would have been the wrong kind of
+    /// tolerant: it would render "no flashcards" for a lecture that has them
+    /// and hide a whole surface without ever failing.
+    ///
+    /// **Content presence, never subscription state.** It is `true` for a free
+    /// student too; tapping through then meets the weekly preview or
+    /// `403 flashcard_subscription_required` on `getFlashcardsForLecture`. So
+    /// it must never be read as an entitlement check.
+    ///
+    /// University track only. It is NOT on `SchoolSubjectTree` and the contract
+    /// says it never will be — flashcards are a university-track surface, and a
+    /// school tree carries no signal that they exist.
+    required bool hasFlashcards,
   }) = _Lecture;
 
   factory Lecture.fromJson(Map<String, dynamic> json) =>

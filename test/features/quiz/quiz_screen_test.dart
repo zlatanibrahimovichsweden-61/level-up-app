@@ -306,6 +306,51 @@ void main() {
 
       expect(find.byType(LimitSheet), findsOneWidget);
     });
+
+    // adr-114. `suppressesRetry` is unit-tested in
+    // `test/core/network/account_pending_deletion_test.dart`; this is the
+    // WIRING, which that test cannot see — the retry row must render its
+    // message without its button. Unwire `suppressesRetry` in
+    // `quiz_screen.dart` and this goes red; the pure-function test does not.
+    testWidgets(
+      'a mid-quiz account_pending_deletion shows the copy and NO Retry',
+      (tester) async {
+        final quiz = MockQuizRepository();
+        when(
+          () => quiz.submitAnswer(
+            quizId: any(named: 'quizId'),
+            questionId: any(named: 'questionId'),
+            optionId: any(named: 'optionId'),
+          ),
+        ).thenThrow(
+          const ApiException(status: 403, code: 'account_pending_deletion'),
+        );
+
+        await openQuiz(tester, quiz: quiz);
+        await tester.tap(find.text('Option 0'));
+        await tester.pump();
+        await tester.tap(find.text('Confirm'));
+        await tester.pumpAndSettle();
+
+        // Withheld affordance, not withheld explanation: the student still has
+        // to be told why the answer did not go through.
+        expect(
+          find.text(
+            'Your account is scheduled for deletion. Cancel the request to '
+            'use Level Up again.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Retry'), findsNothing);
+
+        // Not mistaken for the two 403s that open the paywall instead.
+        expect(find.byType(LimitSheet), findsNothing);
+
+        // The session survives — nothing logged the student out or unwound the
+        // quiz.
+        expect(find.text('Question q1?'), findsOneWidget);
+      },
+    );
   });
 
   group('AI explanation', () {

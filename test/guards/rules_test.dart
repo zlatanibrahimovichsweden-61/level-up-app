@@ -268,4 +268,135 @@ void initState() {
       expect(d.extraInAr, isEmpty);
     });
   });
+
+  group('contract required-field extraction', () {
+    // A miniature of the real document's shape: two nesting depths, a flow
+    // `required` at each, and a nested object whose own `required` sits deeper.
+    const yaml = '''
+openapi: 3.1.0
+components:
+  schemas:
+    Widget:
+      type: object
+      properties:
+        id: { type: string }
+        nested:
+          type: object
+          properties:
+            deep: { type: string }
+          required: [deep]
+      required: [id, nested]
+    Other:
+      type: object
+      required: [z]
+''';
+
+    test('reads a top-level required list', () {
+      expect(contractRequiredFields(yaml, ['Widget']), ['id', 'nested']);
+    });
+
+    test('reads a NESTED required list, not the outer one', () {
+      expect(contractRequiredFields(yaml, ['Widget', 'properties', 'nested']), [
+        'deep',
+      ]);
+    });
+
+    test('does not leak into the next schema', () {
+      expect(contractRequiredFields(yaml, ['Other']), ['z']);
+    });
+
+    test('raises — never returns empty — when the schema is absent', () {
+      // The failure mode that would make every binding pass vacuously.
+      expect(
+        () => contractRequiredFields(yaml, ['NoSuchSchema']),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises when the block has no required list', () {
+      const noRequired = '''
+components:
+  schemas:
+    Bare:
+      type: object
+      properties:
+        a: { type: string }
+''';
+      expect(
+        () => contractRequiredFields(noRequired, ['Bare']),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises on a block-style required list, never reads it as empty', () {
+      const blockStyle = '''
+components:
+  schemas:
+    Bare:
+      type: object
+      required:
+        - a
+''';
+      expect(
+        () => contractRequiredFields(blockStyle, ['Bare']),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+  });
+
+  group('Dart field declaration', () {
+    test('detects a declared constructor parameter', () {
+      expect(
+        dartDeclaresField(
+          'const factory X({required bool hasFlashcards}) = _X;',
+          'hasFlashcards',
+        ),
+        isTrue,
+      );
+    });
+
+    test('detects one followed by a trailing comma', () {
+      expect(
+        dartDeclaresField(
+          'const factory X({\n  required bool hasFlashcards,\n}) = _X;',
+          'hasFlashcards',
+        ),
+        isTrue,
+      );
+    });
+
+    test('a doc comment mentioning the field does NOT count', () {
+      // The lesson this whole file exists for: prose must never satisfy a rule
+      // about behaviour. A comment explaining why a field is unmodelled is the
+      // likeliest thing to be sitting right next to a missing field.
+      expect(
+        dartDeclaresField(
+          '/// TODO: hasFlashcards, not modelled yet.\n'
+              'const factory X({required String id}) = _X;',
+          'hasFlashcards',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a JSON key read in a hand-written parser does NOT count', () {
+      expect(
+        dartDeclaresField(
+          "X.fromJson(Map j) => X(id: j['hasFlashcards'] as String);",
+          'hasFlashcards',
+        ),
+        isFalse,
+      );
+    });
+
+    test('reports a genuinely missing field', () {
+      expect(
+        dartDeclaresField(
+          'const factory X({required String id}) = _X;',
+          'hasFlashcards',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

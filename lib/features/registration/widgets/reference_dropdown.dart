@@ -11,7 +11,27 @@ import '../registration_error_copy.dart';
 /// One selectable row. Reference rows are bilingual (`nameAr`/`nameEn`) — the
 /// label is resolved by locale at the call site via [localizedRefName], and the
 /// opaque `id` is what gets submitted.
-typedef PickerOption = ({String id, String label, Widget? leading});
+///
+/// [enabled] is PER-OPTION, and distinct from [ReferenceDropdown.enabled],
+/// which gates the whole field on an upstream selection. It exists because the
+/// contract has rows that must be VISIBLE but not selectable — a `soon` study
+/// year is the case that forced it: the year exists, the student can see their
+/// faculty offers it, and `POST /auth/register` answers `validation_failed` if
+/// they pick it.
+///
+/// A record field with no default, so every construction site states it out
+/// loud. That is deliberate: silently defaulting to selectable is how a
+/// `soon` row would become submittable again after a refactor.
+///
+/// **Nothing sets it `false` yet.** The year picker still hides `soon` rows —
+/// showing them needs copy and a visual treatment that are the designer's
+/// call, not this layer's. This is the capability, not the decision.
+typedef PickerOption = ({
+  String id,
+  String label,
+  Widget? leading,
+  bool enabled,
+});
 
 /// Display the reference row in the reading locale; submit the id.
 String localizedRefName(BuildContext context, String nameAr, String nameEn) =>
@@ -122,6 +142,10 @@ class ReferenceDropdown extends ConsumerWidget {
             style: AppType.bodyLarge.copyWith(color: ext.hint),
           ),
         ),
+        // A disabled row can still be the CURRENT value — the server may hold a
+        // selection that has since stopped being selectable — so the lookup
+        // deliberately does not filter on `enabled`. Blanking the field would
+        // lose a value the student never changed.
         AsyncData(value: final rows) => shell(
           _Dropdown(
             value: rows.any((r) => r.id == value) ? value : null,
@@ -176,6 +200,10 @@ class _Dropdown extends StatelessWidget {
           for (final row in rows)
             DropdownMenuItem<String>(
               value: row.id,
+              // Shown, not selectable. `DropdownMenuItem.enabled` drops the
+              // item's tap handler but keeps it in the list, which is exactly
+              // the "visible but refused" shape the contract needs.
+              enabled: row.enabled,
               child: Row(
                 children: [
                   if (row.leading != null) ...[
@@ -183,14 +211,33 @@ class _Dropdown extends StatelessWidget {
                     const SizedBox(width: 10),
                   ],
                   Expanded(
-                    child: Text(row.label, overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      row.label,
+                      overflow: TextOverflow.ellipsis,
+                      // The field's own existing disabled colour — the same one
+                      // `disabledHint` and the cascade-gated state already use.
+                      // No new token, and no decision about what a disabled row
+                      // should eventually look like.
+                      style: row.enabled
+                          ? null
+                          : AppType.bodyLarge.copyWith(color: ext.hint),
+                    ),
                   ),
                 ],
               ),
             ),
         ],
+        // Belt and braces. `DropdownButton` already refuses to fire for a
+        // disabled item, so this can only be reached if that changes — and a
+        // silently-submitted `soon` id is a `validation_failed` the student
+        // cannot explain.
         onChanged: (id) {
-          if (id != null) onSelected(id);
+          if (id == null) return;
+          // `any`, not `firstWhere`: an id with no matching row would make
+          // `firstWhere` throw, and a guard must not be able to crash the
+          // screen it is guarding.
+          if (rows.any((r) => r.id == id && !r.enabled)) return;
+          onSelected(id);
         },
       ),
     );

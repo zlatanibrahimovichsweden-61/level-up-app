@@ -43,8 +43,10 @@ class MistakesRepository {
   /// a track transfer closes the old enrolment before the new one opens
   /// (adr-032). It is not a membership refusal about any subject, not a reason
   /// to log out, and the screen renders it as "your enrolment is between
-  /// states". `account_pending_deletion` is the other possible code and belongs
-  /// to the global interceptor, not to this feature.
+  /// states". `account_pending_deletion` is the other possible code. It is not
+  /// this layer's business either — but it is not an interceptor's either: it
+  /// surfaces through the shared `CatalogAsyncView`, which gives it its own
+  /// copy and withholds Retry. One definition, in `isAccountPendingDeletion`.
   Future<List<MistakesSubject>> getMistakes() async {
     try {
       final res = await _dio.get<List<dynamic>>('/me/mistakes');

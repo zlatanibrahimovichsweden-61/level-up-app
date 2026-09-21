@@ -241,6 +241,91 @@ void main() {
       },
     );
 
+    group('a failed avatar load is recoverable, not permanent', () {
+      /// A repo the TEST decides when to heal, rather than one that heals on
+      /// its own second call.
+      ///
+      /// That distinction is load-bearing here. `avatarsProvider` used to
+      /// inherit Riverpod 3's automatic exponential-backoff retry — a failing
+      /// `getAvatars` was called 7 times in ~15 s off one sheet open — so a
+      /// fixture that succeeded on call 2 would have been healed by the loop
+      /// and the test would have passed without a student ever tapping
+      /// anything. It would have proved the opposite of what it claims.
+      ({MockReferenceRepository repo, void Function() heal})
+      healableAvatarRepo() {
+        final repo = MockReferenceRepository();
+        var failing = true;
+        when(repo.getAvatars).thenAnswer((_) async {
+          if (failing) throw const NetworkException();
+          return avatarChoices;
+        });
+        return (repo: repo, heal: () => failing = false);
+      }
+
+      testWidgets('a failed load offers a Retry', (tester) async {
+        // `avatarsProvider` is a plain, non-autoDispose FutureProvider and is
+        // deliberately OUTSIDE the session scope (global reference data), so
+        // nothing invalidates it. Before this button, one failed load meant the
+        // student could not change their avatar again until app restart.
+        final reference = MockReferenceRepository();
+        when(
+          reference.getAvatars,
+        ).thenAnswer((_) async => throw const NetworkException());
+
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(),
+          reference: reference,
+        );
+        await tapProfileKey(tester, 'edit_avatar_button');
+        await tapProfileKey(tester, 'avatar_use_default');
+
+        expect(find.byKey(const Key('avatar_sheet_retry')), findsOneWidget);
+      });
+
+      testWidgets('tapping Retry re-fetches and renders the avatars', (
+        tester,
+      ) async {
+        final (:repo, :heal) = healableAvatarRepo();
+
+        await pumpEditProfile(tester, profile: editRepo(), reference: repo);
+        await tapProfileKey(tester, 'edit_avatar_button');
+        await tapProfileKey(tester, 'avatar_use_default');
+
+        expect(find.byKey(const Key('avatar_choice_avatar-01')), findsNothing);
+        // Exactly once: no silent background loop is running.
+        verify(repo.getAvatars).called(1);
+
+        heal();
+        await tester.tap(find.byKey(const Key('avatar_sheet_retry')));
+        await tester.pumpAndSettle();
+
+        verify(repo.getAvatars).called(1);
+        expect(
+          find.byKey(const Key('avatar_choice_avatar-01')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a successful load shows no Retry — no regression', (
+        tester,
+      ) async {
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(),
+          reference: avatarReferenceRepo(),
+        );
+        await tapProfileKey(tester, 'edit_avatar_button');
+        await tapProfileKey(tester, 'avatar_use_default');
+
+        expect(find.byKey(const Key('avatar_sheet_retry')), findsNothing);
+        expect(
+          find.byKey(const Key('avatar_choice_avatar-01')),
+          findsOneWidget,
+        );
+      });
+    });
+
     testWidgets('Upload photo is present and genuinely non-interactive', (
       tester,
     ) async {

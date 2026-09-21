@@ -149,13 +149,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              // The real LeaderboardScreen is built and tested, but
-              // `GET /leaderboard` is `x-stability: draft` AT OUR PIN. It is
-              // already `stable` upstream (3.5.0-m1); this stays on the
-              // placeholder until `contract/` is re-vendored and the board is
-              // audited against the behavioural changes it predates — the swap
-              // is one line, the audit is not. D-008 + its 2026-09-10
-              // Correction.
+              // The real LeaderboardScreen is built and tested; this branch
+              // still serves the placeholder.
+              //
+              // This comment used to say `GET /leaderboard` is
+              // "`x-stability: draft` AT OUR PIN", and that was TRUE when it
+              // was written: the pin was 184d6ec (3.0.0-m1), where the
+              // operation really is `draft`. It went stale on 2026-09-12, when
+              // the pin moved to 2dca3c5 — by which point the operation was
+              // already `stable`. At the current pin 768e67d (3.22.0-m1) it is
+              // `stable` at `contract/openapi.yaml:2007`.
+              //
+              // So the contract-stability half of the gate is CLEARED. What
+              // remains is D-008's MIDDLE step, and only that: audit the board
+              // against the behavioural changes it predates, then swap the
+              // builder. The swap is one line; the audit is not. D-008 + its
+              // 2026-09-10 Correction.
               GoRoute(
                 path: '/leaderboard',
                 builder: (_, _) => const LeaderboardPlaceholderScreen(),
