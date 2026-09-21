@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.13.0-m1
+  version: 3.22.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -208,6 +208,143 @@ paths:
                     registrationRequired: '#/components/schemas/RegistrationRequiredResult'
         '400':
           description: "`otp_invalid` · `otp_expired` · `validation_failed`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`otp_throttled` (attempt lockout)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  # ---------------------------------------------------------------------------------------------
+  # The REDEMPTION-SCOPED WEB SESSION (adr-171, spec-036). A SECOND credential kind, for the web
+  # redemption journey only.
+  #
+  # Read adr-171 D3 before building against these. In one paragraph: a student who redeems a
+  # subscription code in the browser must not be logged out of the app as a side effect, and the
+  # session that makes that true can do nothing else. The pair below mints a credential that reaches
+  # EXACTLY THREE operations — `redeemSubscriptionCode`, `getMyEntitlements` and `logout` — and
+  # answers `403 redemption_scope_only` on every other authenticated `/api/v1` operation, present or
+  # future. It carries NO refresh token, cannot be renewed, lives ten minutes, and spends its one
+  # redemption on first success (after which it stays readable so a lost response can be recovered by
+  # RE-READING entitlement state rather than by re-submitting the code).
+  #
+  # `POST /auth/otp/request`, `POST /auth/otp/verify` and `DeviceInfo` are UNCHANGED by this pair and
+  # must stay that way: the native app is deliberately incapable of minting this credential. An OTP
+  # minted here cannot be verified at `/auth/otp/verify`, and a sign-in OTP cannot be verified here;
+  # both answer the operation's ordinary opaque failure.
+  #
+  # Nothing on this journey may appear in a URL — no token, no session id, no code, in either
+  # direction.
+  # ---------------------------------------------------------------------------------------------
+  /auth/redemption-session/otp/request:
+    post:
+      tags: [auth]
+      x-stability: stable
+      x-consumers: [web]
+      operationId: requestRedemptionSessionOtp
+      summary: Send a REDEMPTION-purpose OTP to a phone (adr-171 D3.2)
+      description: >
+        Always `202` for a well-formed phone, whether or not an account exists (anti-enumeration) —
+        the body is two constants and never varies by phone. Server picks the channel and fails over
+        SMS↔WhatsApp; the client is not told which.
+
+
+        The code this mints is **purpose-bound**: it can only ever become a redemption session. It
+        cannot be verified at `POST /auth/otp/verify`, so the value a student types into the
+        redemption page is never a full sign-in credential — which is what makes it safe for that
+        page to be operated by a third party.
+
+
+        A second request inside a live flow is permitted and simply replaces the pending code; it
+        does not extend anything. Same throttle posture as `requestOtp` (60s resend cooldown, 5
+        failed verifies → 15-minute lock) over its OWN counters, so nothing here can lock a student
+        out of signing in to the app.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                phone: { $ref: '#/components/schemas/Phone' }
+              required: [phone]
+      responses:
+        '202':
+          description: OTP dispatched (or silently ignored for abuse-flagged numbers).
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  expiresInSeconds: { type: integer, example: 300 }
+                required: [expiresInSeconds]
+        '400':
+          description: "`validation_failed` (malformed phone, or a property this schema does not declare)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`otp_throttled` (cooldown or per-identifier/IP limit)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /auth/redemption-session/otp/verify:
+    post:
+      tags: [auth]
+      x-stability: stable
+      x-consumers: [web]
+      operationId: verifyRedemptionSessionOtp
+      summary: Verify a redemption OTP — returns a redemption-scoped access token and nothing else
+      description: >
+        Returns `{ accessToken, expiresInSeconds }`. **There is no `refreshToken`, no profile and no
+        entitlement payload** — the confirmation page reads state from `GET /me/entitlements`, and
+        the browser (and any server-side proxy in front of it) therefore never receives a minor's
+        name, phone, school or enrolment.
+
+
+        **The request body takes no `device` and no field naming a student** — absent, not ignored:
+        `additionalProperties: false`, and a body carrying `device`, `deviceId`, `studentId` or
+        `enrolmentId` is answered `400 validation_failed` naming the property. The redemption lands
+        on the token's subject and nowhere else.
+
+
+        **This does NOT evict the student's app session, and is not evicted by one.** A second
+        verify replaces the previous *redemption* session only. The token lives exactly ten minutes,
+        has no refresh path, and fails at `POST /auth/refresh`.
+
+
+        An unknown phone and a wrong code are **byte-identical** here, including at the lockout
+        threshold. There is no `registrationRequired` arm: a redemption session is only ever minted
+        for an existing student.
+
+
+        ⚠ **A timed-out verify is UNKNOWN, not failed. Never replay it automatically** — the code
+        may have been consumed and the answer lost. Request a fresh code instead.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                phone: { $ref: '#/components/schemas/Phone' }
+                code: { type: string, minLength: 6, maxLength: 6, example: "482913" }
+              required: [phone, code]
+      responses:
+        '200':
+          description: Verified — a redemption-scoped session.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  accessToken: { type: string, description: Bearer token. Reaches exactly three operations. Never put it in a URL. }
+                  expiresInSeconds: { type: integer, example: 600 }
+                required: [accessToken, expiresInSeconds]
+        '400':
+          description: >-
+            `otp_invalid` · `otp_expired` · `validation_failed`. `otp_invalid` covers a wrong code
+            AND an unknown phone, indistinguishably; `otp_expired` covers never-requested, expired,
+            already-consumed, and a code minted for sign-in rather than for redemption.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
           description: "`otp_throttled` (attempt lockout)"
@@ -754,7 +891,7 @@ paths:
   /me/fcm-token:
     put:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: registerFcmToken
       summary: Register/replace this device's FCM push token
       requestBody:
@@ -768,6 +905,88 @@ paths:
               required: [token]
       responses:
         '204': { description: Stored (idempotent; one token per the single active device). }
+        '400':
+          description: "`validation_failed` — `token` absent, empty/whitespace-only, or longer than 4096 characters."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/notifications:
+    get:
+      tags: [profile]
+      x-stability: draft
+      operationId: listMyNotifications
+      summary: The caller's own notification inbox (cursor-paginated, newest first)
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: >-
+            A page of the caller's inbox items, newest first. `kind` + `data` are a LOCALIZATION
+            CONTRACT, not display text: render the string for `kind` in the user's language and
+            substitute `data`. Branch on `hasMore`, never on `items.length`.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            notificationId: { $ref: '#/components/schemas/Uuid' }
+                            kind:      { type: string, enum: [enrolment_opened] }
+                            data:      { type: object, additionalProperties: { type: string } }
+                            createdAt: { type: string, format: date-time }
+                            readAt:    { type: [string, "null"], format: date-time }
+                          required: [notificationId, kind, data, createdAt, readAt]
+        '400':
+          description: "`validation_failed` — `cursor` is not a cursor this API issued, or `limit` is out of range."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/notifications/unread-count:
+    get:
+      tags: [profile]
+      x-stability: draft
+      operationId: getUnreadNotificationCount
+      summary: How many of the caller's own inbox items are unread
+      responses:
+        '200':
+          description: The caller's unread count. Zero is an ordinary answer, never an error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unreadCount: { type: integer, minimum: 0 }
+                required: [unreadCount]
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/notifications/{notificationId}/read:
+    post:
+      tags: [profile]
+      x-stability: draft
+      operationId: markNotificationRead
+      summary: Mark one of the caller's own inbox items read (idempotent)
+      parameters:
+        - { name: notificationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '204':
+          description: >-
+            Marked read. Idempotent: `readAt` is set once and is never moved, so a client retry
+            cannot rewrite history and a second call is `204` too.
+        '404':
+          description: >-
+            `not_found` — unknown notification id, **or** an id belonging to another account. One
+            code for both, deliberately: a `403` here would confirm the id exists.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -1355,17 +1574,31 @@ paths:
       tags: [quiz]
       x-stability: stable
       operationId: getExplanation
-      summary: AI explanation (GPT-4o-mini, generated once, cached — only after answering)
+      summary: AI explanation (GPT-4o-mini, generated once, cached — subscription-gated, only after answering)
       description: |
-        DELIBERATELY UNIMPLEMENTED - there is no backend route for this operation today, and a
-        call to it will not succeed. It is published `x-stability: stable` on purpose and is NOT
-        being demoted: the shape documented below is the shape it will have when it ships, so you
-        may model against it, but do NOT put it on a user-facing path yet and do NOT treat its
-        absence as an outage or a regression. The deferral is a recorded owner ruling (2026-09-08,
-        ADR-123, ratifying the original deferral made when the quiz core loop was built); it is
-        owed by the first backend spec that introduces the AI-explanation surface, and no date is
-        set. When the route ships, this note is removed in the same version and announced in
-        contract-changelog.md. `AnswerResult.explanationAvailable` is a hard `false` until then.
+        Explains the CORRECT answer to one question, in the question's own language. The text is
+        generated once per question and cached server-side forever, so the common case is an
+        instant `200`.
+
+        Available after **both correct and incorrect** submitted answers — the gate is
+        answered-vs-not, never wrong-vs-right. The explanation is not specific to the option you
+        chose.
+
+        **Render the affordance from `AnswerResult.explanationAvailable`, and call this endpoint
+        only when it is `true`.** That field is independent of subscription state (the
+        `hasFlashcards` pattern): a free student sees the button, and the tap produces the
+        `subscription_required` popup below. When it is `false`, do not render the affordance and
+        do not call this endpoint.
+
+        **Polling.** On `202`, show a loading state and re-issue the same GET on ~2s backoff.
+        There is deliberately **no terminal failure status on the wire** — a generation that fails
+        keeps answering `202`. Your poll cap IS the failure UX: after roughly 10 polls (~20s), stop
+        and show a "try again" affordance. Re-tapping simply re-issues the GET; the server side is
+        idempotent, so a retry never causes a duplicate generation.
+
+        **This operation is rate limited per student** — it is the one endpoint you poll, so an
+        unbounded loop is refused with `429`. The documented backoff and poll cap stay comfortably
+        inside the limit; see the `429` response below.
       parameters:
         - { name: questionId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -1392,7 +1625,46 @@ paths:
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '403':
-          description: "`insufficient_scope` (question not yet answered by the caller)"
+          description: |
+            `subscription_required` · `insufficient_scope` · `account_pending_deletion` — **branch on
+            `code`, not on the status.**
+
+            **`subscription_required`** — the caller has no active `baseSubscription` covering the
+            question's track. AI explanations are a paid feature. Show this popup, using this
+            approved copy verbatim:
+
+            > "AI explanations are available with a Level Up subscription. Subscribe to get
+            > step-by-step explanations and more learning features."
+
+            (Arabic rendering comes from your normal localization of the stable `code`; the English
+            above is the approved source copy.) The `flashcardSubscription` is irrelevant here —
+            the two subscriptions are independent and only `baseSubscription` opens this surface.
+            This is the only `403` on this operation that needs handling of its own.
+
+            **`insufficient_scope`** — covers several deliberately COLLAPSED causes, returned
+            byte-identically: you have not yet submitted an answer to this question; the question id
+            is outside your scope or names nothing at all; or the surface has been temporarily
+            withdrawn by the operator. **Do not try to distinguish them, do not build an existence
+            probe on this endpoint, and do not report the identical bodies as a defect.** Treat it
+            as: no explanation is available to you for this question — no popup, no error toast.
+
+            Note the ORDER, because it is deliberate: a withdrawn surface answers
+            `insufficient_scope` for **every** caller including a subscriber, so a withdrawal never
+            solicits a subscription; and an unsubscribed caller gets `subscription_required` whether
+            or not they have answered the question.
+
+            **`account_pending_deletion`** — the caller's account is inside the 30-day deletion grace
+            window, during which every authenticated endpoint but four is unavailable (adr-114); this
+            operation is not on that allowlist, so the refusal happens before any subscription or
+            scope check. It is not an error to retry and not a logout: route to the cancel screen
+            from the same global interceptor that already handles this code elsewhere. Reachable
+            since this operation's first implemented version, `3.14.0-m1`.
+
+            All three codes are already registered in `error-codes.md`; this operation introduces
+            none.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — per-student limit on this operation, because it is the one endpoint you POLL. The suggested ~2s backoff with a ~10-poll cap stays well inside it; a tighter loop, or several explanations opened back to back within a minute, can meet it. Honour `Retry-After`, do not retry in a tight loop, and do NOT treat it as a generation failure — the explanation is unaffected and the same GET succeeds after the window."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /questions/{questionId}/favorite:
     put:
@@ -1602,11 +1874,50 @@ paths:
   /subscription-codes/redemptions:
     post:
       tags: [commerce]
-      x-stability: draft
+      x-stability: stable
       x-consumers: [web]   # adr-049 §4 — the app never mentions voucher redemption
+      x-behaviour-changed: 3.21.0-m1
       operationId: redeemSubscriptionCode
       summary: Redeem a prepaid subscription code (adr-016 — single-use, 4-month, atomic)
-      description: Same entitlement-grant path as a verified payment; single-use enforced atomically server-side.
+      description: >
+        Same entitlement-grant path as a verified payment; single-use enforced atomically
+        server-side.
+
+
+        **BEHAVIOURAL CHANGE in 3.21.0-m1 (adr-174 D5) — a submission that is STILL RUNNING no
+        longer claims to have finished.** While one submission for a redemption session is in
+        flight, a second one now answers `403 redemption_in_progress` instead of `403
+        redemption_scope_only`. Both are refusals and the one-redemption-per-session bound is
+        byte-unchanged; what moved is that the old answer told the student their redemption had
+        *already completed* and sent them to read a grant that did not exist yet. **It is not a
+        `409`** — `409` is `code_already_redeemed` on this operation and reusing it would put two
+        causes behind one code again. On `redemption_in_progress`: wait, then read `GET
+        /me/entitlements`. Do not re-submit — a second submission cannot win and it is counted
+        against the attempt limit.
+
+
+        **BEHAVIOURAL CHANGE in 3.20.0-m1 (adr-171 D7.3), restated because it still stands — the
+        schema did not move, the MEANING did.** Re-posting a code **that this same student already
+        redeemed** replays the original success: `201` with the entitlement state that code funded,
+        exactly as the first call returned it. It used to answer `409 code_already_redeemed`. A code
+        still funds exactly one grant — the replay writes nothing — and a **different** student
+        posting a spent code still receives `409 code_already_redeemed`, byte-identical to before.
+
+
+        🔴 **WHICH SESSION replays, corrected in 3.21.0-m1 — the 3.20.0-m1 entry did not say, and
+        the difference decides what you build.** The `201` replay above is reached by an **app
+        session**. On the **web redemption session** — the only consumer this operation declares —
+        it is **NOT reachable**: that session spends its one redemption and then refuses this
+        operation with `403 redemption_scope_only` for the rest of its ten minutes, before the
+        replay path is ever entered. **Web: do not build a re-submit-is-safe retry. Your recovery
+        is `GET /me/entitlements`, which that session keeps answering, and it is the only one.**
+
+
+        **Why the client must care.** A response lost in flight after the server committed used to
+        be indistinguishable, on retry, from somebody else's spent code; there is no code revocation
+        in v1, so a student whose redemption *succeeded* was shown a failure with no remedy. Recover
+        a lost or unknown response by re-reading `GET /me/entitlements` — never by asking the
+        student to type the code again.
       requestBody:
         required: true
         content:
@@ -1622,14 +1933,73 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/EntitlementState' }
+        '400':
+          description: >-
+            `validation_failed` — `code` is absent, empty, or not a well-formed code (wrong length,
+            or a character outside the alphabet). **A typo is a `400`, never a `404`**: the
+            not-found answer means "this code does not exist", and collapsing an unreadable input
+            into it would make that answer say less than it does. A body that is not JSON, or that
+            is sent without a `Content-Type`, lands here too rather than on a `415` this operation
+            does not declare.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '404':
           description: "`code_invalid` (unknown code)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: >-
+            TWO codes since 3.21.0-m1, and they mean different things — **branch on `code`, never on
+            the status** (adr-174 D5).
+
+
+            `redemption_scope_only` — the caller holds a redemption-scoped web session whose one
+            redemption has **already COMMITTED** (adr-171 D3.7). The session stays alive and
+            read-only until its ten minutes elapse: read `GET /me/entitlements` to see what was
+            granted. Do **not** re-submit and do **not** ask the student to re-type the code.
+
+
+            `redemption_in_progress` — a submission for this session is **running right now** and
+            nothing has been granted yet. Wait for it, then read `GET /me/entitlements`. Do **not**
+            re-submit: a second submission cannot win, and it is counted against the `429` attempt
+            limit below. **This was previously `redemption_scope_only` too**, which told the student
+            their redemption had finished when it had not.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '409':
-          description: "`code_already_redeemed`"
+          description: >-
+            `code_already_redeemed` — the code was redeemed by a **different** student. Unchanged in
+            3.20.0-m1; the caller's OWN earlier redemption now replays as `201` instead (see the
+            operation description).
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: >-
+            `rate_limited` — a per-student limit on redemption attempts, **counted on failures and
+            successes alike**. A code is a bearer instrument, so this bounds guessing rather than
+            load; a student redeeming a code they were sold types it once, twice if they mistyped
+            it, and will never meet it. **Honour `Retry-After`** and do not retry in a loop.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '500':
+          description: >-
+            `internal_error` — **declared in 3.21.0-m1. The operation has always been able to answer
+            it; the contract did not say so** (adr-174 D3.1). The session store was unreachable, so
+            this request **granted nothing and consumed no code** — it fails closed and mutates
+            nothing (adr-171 D7.5). The student's code is untouched and still redeemable.
+
+
+            🔴 **What to tell the student, and what NOT to.** Never say the code may have been used:
+            it was not. Neutral, actionable copy only, under the app's vocabulary rules (no price,
+            no "buy", no "purchase", no "payment", no provider name).
+
+
+            🔴 **Retry guidance, corrected in 3.21.0-m1** (adr-174 D3.2/D3.3). Earlier copy said to
+            *retry after the store recovers*. That is not literally available: the redemption
+            session, its OTP and the per-request check are all held in the same store behind a
+            ten-minute lifetime, so a long outage means **start the redemption again from the
+            beginning**, not resume. And **do not retry in a loop** — the `429` attempt limit above
+            is enforced in the API process, keeps counting straight through the outage, and an
+            obedient retry loop will spend the student's attempts and earn a `429` the moment the
+            store comes back. **Try once more after a moment; if it keeps failing, start again.**
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /leaderboard:
     get:
@@ -2016,6 +2386,14 @@ components:
             school: { oneOf: [{ $ref: '#/components/schemas/NamedRef' }, { type: "null" }], description: Coded school (adr-028 §2 — optional; null if the student didn't pick one — Egypt included). }
             stage: { $ref: '#/components/schemas/Stage' }
             educationSystem: { $ref: '#/components/schemas/EducationSystem' }
+            parentReportStatus:
+              type: string
+              enum: [active, inactive]
+              description: >
+                adr-165 D7 — the ACTUAL parent-report status. `active` only once parent-report delivery is
+                switched on; `inactive` otherwise. There is deliberately no pending state: no parent-side
+                opt-in exists, so there is nothing to pend on. School track only; the whole `school` block is
+                null for university students.
           required: [stage, educationSystem]
         university:
           type: [object, "null"]
@@ -2293,7 +2671,17 @@ components:
         correct: { type: boolean }
         correctOptionId: { $ref: '#/components/schemas/Uuid' }
         pointsDelta: { type: integer, description: "0 or 1 (server-side award; 0 on retry replay or free-plan edge)." }
-        explanationAvailable: { type: boolean, description: "If true, GET /questions/{questionId}/explanation returns 200/202." }
+        explanationAvailable:
+          type: boolean
+          description: >-
+            Whether an AI explanation surface exists for this question — i.e. whether GET
+            /questions/{questionId}/explanation would answer 200 or 202. Render the Explain
+            affordance when true; when false, do not render it and do not call the endpoint.
+            INDEPENDENT OF SUBSCRIPTION STATE (the hasFlashcards pattern): a free student sees true
+            too, and the tap yields 403 subscription_required with the approved popup copy. It is
+            true after correct AND incorrect answers alike. It reads false wherever the feature is
+            not enabled for the question's track, and false everywhere while the surface is
+            withdrawn.
       required: [correct, correctOptionId, pointsDelta, explanationAvailable]
     QuizSummary:
       type: object
