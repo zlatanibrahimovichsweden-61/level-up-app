@@ -200,9 +200,47 @@ void main() {
   });
 
   group('academic years', () {
-    testWidgets('only `active` years are offered — `soon` is never listed', (
+    /// The year picker's items, read off the button rather than the rendered
+    /// menu: a CLOSED `DropdownButton` puts no `DropdownMenuItem` in the tree
+    /// at all, so finding them by type would assert on nothing.
+    List<DropdownMenuItem<String>> yearItems(WidgetTester tester) => tester
+        .widget<DropdownButton<String>>(
+          find.descendant(
+            of: find.byKey(const Key('field-studyYearId')),
+            matching: find.byType(DropdownButton<String>),
+          ),
+        )
+        .items!;
+
+    testWidgets('`soon` years are SHOWN, and are not selectable', (
       tester,
     ) async {
+      // openapi.yaml:751 — "Years carry status `active|soon` — `soon` years are
+      // shown but not selectable at registration." This screen used to drop
+      // them, which left a student unable to tell a year their faculty has not
+      // opened yet from one it does not offer at all.
+      final container = await pump(tester);
+      container.read(registrationControllerProvider.notifier)
+        ..setUniversity('uni-cairo')
+        ..setFaculty('fac-medicine');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const Key('field-studyYearId')));
+      await tester.pumpAndSettle();
+
+      // The fixture faculty has years 1 (active), 2 (active), 3 (soon).
+      final items = yearItems(tester);
+      expect(
+        items.map((i) => i.value),
+        ['year-1', 'year-2', 'year-3'],
+        reason: 'the soon year must be offered, not filtered out',
+      );
+      expect(items[0].enabled, isTrue);
+      expect(items[1].enabled, isTrue);
+      expect(items[2].enabled, isFalse, reason: 'soon is not selectable');
+    });
+
+    testWidgets('tapping a `soon` year selects nothing', (tester) async {
       final container = await pump(tester);
       container.read(registrationControllerProvider.notifier)
         ..setUniversity('uni-cairo')
@@ -213,11 +251,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('field-studyYearId')));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Year 3').last, warnIfMissed: false);
+      await tester.pumpAndSettle();
 
-      // The fixture faculty has years 1 (active), 2 (active), 3 (soon).
-      expect(find.text('Year 1'), findsWidgets);
-      expect(find.text('Year 2'), findsWidgets);
-      expect(find.text('Year 3'), findsNothing);
+      // A submitted `soon` id is the validation_failed at openapi.yaml:2330,
+      // which the student cannot act on or explain.
+      expect(
+        container.read(registrationControllerProvider)!.studyYearId,
+        isNull,
+      );
     });
 
     testWidgets('selecting a year stores its id', (tester) async {

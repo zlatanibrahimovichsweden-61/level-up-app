@@ -23,9 +23,10 @@ import '../registration_error_copy.dart';
 /// loud. That is deliberate: silently defaulting to selectable is how a
 /// `soon` row would become submittable again after a refactor.
 ///
-/// **Nothing sets it `false` yet.** The year picker still hides `soon` rows —
-/// showing them needs copy and a visual treatment that are the designer's
-/// call, not this layer's. This is the capability, not the decision.
+/// The university year picker is the first caller to set it `false`: it now
+/// offers `soon` years disabled instead of dropping them, which is what
+/// `openapi.yaml:751` asks for. The disabled treatment is this field's own
+/// existing `ext.hint` colour — no new token, and no wording on the row.
 typedef PickerOption = ({
   String id,
   String label,

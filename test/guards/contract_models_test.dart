@@ -122,6 +122,15 @@ void main() {
       path: ['NamedRef'],
       dart: 'lib/features/registration/models/reference_models.dart',
     ),
+    (
+      // Two of its five required fields are nullable (`imageUrl`, `selfGrade`),
+      // which is exactly the shape a hand-written model is most likely to drop:
+      // "required but usually null" reads like "optional" to a human skimming
+      // the YAML.
+      label: 'FlashcardCard (getFlashcardsForLecture)',
+      path: ['FlashcardCard'],
+      dart: 'lib/features/flashcards/models/flashcard.dart',
+    ),
   ];
 
   test('the contract is actually being read', () {

@@ -22,6 +22,10 @@ import '../models/explanation_state.dart';
 /// Never renders as a failure. An explanation is an extra; a student who cannot
 /// get one still has a working quiz, so [ExplanationFailed] — including the
 /// contract's own expected `403` before answering — reads as "not available".
+///
+/// Two of those failures carry a "try again" beside that line, and only two:
+/// see [ExplanationFailed.isRetryable] for which, and why the list is an
+/// allowlist rather than an exclusion.
 class AiExplanationPanel extends StatelessWidget {
   const AiExplanationPanel({
     super.key,
@@ -112,8 +116,29 @@ class AiExplanationPanel extends StatelessWidget {
             ExplanationLoaded(:final text) => _Body(
               child: Text(text, style: _bodyStyle(ext)),
             ),
-            ExplanationFailed() => _Body(
-              child: Text(l10n.explanationUnavailable, style: _bodyStyle(ext)),
+            // The copy is the same either way — an explanation is an extra, and
+            // losing one must never read as a broken quiz. What changes is
+            // whether there is anything to tap: the contract's failure UX for
+            // the poll cap IS a "try again", and a `429` recovers on its own
+            // after the window. Every other code is terminal for this question,
+            // including `account_pending_deletion`, which must never show one.
+            ExplanationFailed(:final isRetryable) => _Body(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.explanationUnavailable,
+                      style: _bodyStyle(ext),
+                    ),
+                  ),
+                  if (isRetryable)
+                    TextButton(
+                      key: const Key('explanation_retry'),
+                      onPressed: onRequest,
+                      child: Text(l10n.retry),
+                    ),
+                ],
+              ),
             ),
           },
         ],

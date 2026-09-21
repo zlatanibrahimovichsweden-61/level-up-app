@@ -478,6 +478,77 @@ void main() {
         ),
       ],
     );
+
+    // The contract's failure UX for the poll cap: "stop and show a 'try again'
+    // affordance. Re-tapping simply re-issues the GET; the server side is
+    // idempotent, so a retry never causes a duplicate generation."
+    blocTest<QuizBloc, QuizState>(
+      'after giving up, asking again RE-ISSUES the GET',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.getExplanation(any()),
+        ).thenAnswer((_) async => const ExplanationGenerating());
+      },
+      seed: () => QuizInProgress(
+        graded().copyWith(
+          explanations: {'q1': const ExplanationFailed(explanationTimeoutCode)},
+        ),
+      ),
+      act: (bloc) => bloc.add(const ExplanationRequested()),
+      wait: const Duration(milliseconds: 50),
+      verify: (_) => verify(() => repo.getExplanation('q1')).called(
+        // Ten polls: the retry restarted the cycle rather than being swallowed
+        // by the "already asked" guard.
+        10,
+      ),
+    );
+
+    // Phase 1's rule, which this must not undo: the contract says outright do
+    // not retry on this code, and nothing the student taps clears it.
+    blocTest<QuizBloc, QuizState>(
+      'account_pending_deletion is NOT re-issued, however often it is asked',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.getExplanation(any()),
+        ).thenAnswer((_) async => const ExplanationGenerating());
+      },
+      seed: () => QuizInProgress(
+        graded().copyWith(
+          explanations: {
+            'q1': const ExplanationFailed('account_pending_deletion'),
+          },
+        ),
+      ),
+      act: (bloc) => bloc
+        ..add(const ExplanationRequested())
+        ..add(const ExplanationRequested()),
+      wait: const Duration(milliseconds: 50),
+      expect: () => <QuizState>[],
+      verify: (_) => verifyNever(() => repo.getExplanation(any())),
+    );
+
+    // Not fixed by asking again, so it must not offer to.
+    blocTest<QuizBloc, QuizState>(
+      'subscription_required is not re-issued either',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.getExplanation(any()),
+        ).thenAnswer((_) async => const ExplanationGenerating());
+      },
+      seed: () => QuizInProgress(
+        graded().copyWith(
+          explanations: {
+            'q1': const ExplanationFailed('subscription_required'),
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const ExplanationRequested()),
+      expect: () => <QuizState>[],
+      verify: (_) => verifyNever(() => repo.getExplanation(any())),
+    );
   });
 
   group('finish', () {

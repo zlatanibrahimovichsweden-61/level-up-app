@@ -38,4 +38,32 @@ class ExplanationFailed extends ExplanationState {
   const ExplanationFailed(this.code);
 
   final String code;
+
+  /// Whether the panel offers a "try again", and whether the Bloc will honour
+  /// one. Only two codes qualify, and the list is an ALLOWLIST on purpose:
+  /// default-deny means a code added later cannot quietly acquire a retry
+  /// button, which is the mistake adr-114 already cost this app once.
+  ///
+  /// - [explanationTimeoutCode] — the poll cap. The contract is explicit that
+  ///   this is the failure UX: "after roughly 10 polls (~20s), stop and show a
+  ///   'try again' affordance. Re-tapping simply re-issues the GET; the server
+  ///   side is idempotent, so a retry never causes a duplicate generation."
+  /// - `rate_limited` — the `429`. The contract says do NOT treat it as a
+  ///   generation failure: "the explanation is unaffected and the same GET
+  ///   succeeds after the window."
+  ///
+  /// Everything else is terminal for this question, and deliberately:
+  /// `insufficient_scope` means no explanation is available to this caller at
+  /// all ("no popup, no error toast"); `subscription_required` is not fixed by
+  /// asking again; and `account_pending_deletion` must never show a retry —
+  /// the contract says outright do not retry, and nothing the student taps
+  /// here clears it.
+  bool get isRetryable =>
+      code == explanationTimeoutCode || code == 'rate_limited';
 }
+
+/// Not an error-codes.md code — the client's own name for giving up after the
+/// contract's poll cap. There is deliberately no terminal failure status on the
+/// wire: a generation that fails keeps answering `202`, so the cap IS the
+/// failure.
+const explanationTimeoutCode = 'explanation_timeout';

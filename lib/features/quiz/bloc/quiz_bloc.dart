@@ -185,8 +185,22 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
   ) {
     if (state case QuizInProgress(:final session) when session.isGraded) {
       // Already fetched, or already running — asking twice must not restart a
-      // generation the server is charging for.
-      if (session.explanation is! ExplanationIdle) return;
+      // generation the server is charging for. The one exception is a failure
+      // the contract says to offer again: the poll cap and the 429. Re-issuing
+      // the same GET is safe because the server side is idempotent, so a retry
+      // never causes a duplicate generation.
+      //
+      // Exhaustive over the four states, no `_`: a fifth added later must fail
+      // to compile here rather than being silently swallowed into "block",
+      // exactly as the `emit` switch below refuses a wildcard.
+      if (switch (session.explanation) {
+        ExplanationIdle() => false,
+        ExplanationFailed(:final isRetryable) => !isRetryable,
+        ExplanationPending() => true,
+        ExplanationLoaded() => true,
+      }) {
+        return;
+      }
       if (session.grade?.explanationAvailable != true) return;
 
       final questionId = session.question.id;
@@ -282,7 +296,7 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
     add(
       ExplanationUpdated(
         questionId,
-        const ExplanationFailed('explanation_timeout'),
+        const ExplanationFailed(explanationTimeoutCode),
       ),
     );
   }

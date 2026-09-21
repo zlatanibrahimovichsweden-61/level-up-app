@@ -178,9 +178,19 @@ class _UniversityDetailScreenState
                     ),
                     const SizedBox(height: 16),
 
-                    // 3 — Academic Year. ACTIVE years only: the contract says a
-                    // `soon` year answers `validation_failed`, so it is never
-                    // offered rather than offered-and-rejected.
+                    // 3 — Academic Year. EVERY year is offered; only `active`
+                    // ones are selectable. The contract is explicit that this
+                    // is the required shape: "Years carry status
+                    // `active|soon` — `soon` years are shown but not
+                    // selectable at registration" (`openapi.yaml:751`).
+                    //
+                    // Hiding them, which this screen used to do, loses the one
+                    // thing the student needs to know: a year that is missing
+                    // is indistinguishable from a faculty that does not offer
+                    // it, so they cannot tell "not yet" from "not here". A
+                    // `soon` id still answers `validation_failed` on submit
+                    // (`:2330`), which is why it is disabled rather than
+                    // merely discouraged.
                     ReferenceDropdown(
                       fieldKey: 'field-studyYearId',
                       label: l10n.studyYearLabel,
@@ -190,17 +200,18 @@ class _UniversityDetailScreenState
                       options: AsyncData([
                         for (final year
                             in selectedFaculty?.years ?? const <StudyYearRef>[])
-                          if (year.status == _activeYear)
-                            (
-                              id: year.id,
-                              label: l10n.studyYearNumber(year.yearNumber),
-                              leading: null,
-                              // Only `active` years reach here at all today.
-                              // Surfacing `soon` rows as disabled is the
-                              // capability's first real use, and it needs copy
-                              // and a treatment from the designer first.
-                              enabled: true,
-                            ),
+                          (
+                            id: year.id,
+                            label: l10n.studyYearNumber(year.yearNumber),
+                            leading: null,
+                            // The capability Phase 1 added, in its first real
+                            // use. The row carries no extra wording: the
+                            // disabled treatment is the existing `ext.hint`
+                            // colour the field already uses for its other
+                            // unavailable states, and a "coming soon" suffix
+                            // would be new copy nobody has approved.
+                            enabled: year.status == _activeYear,
+                          ),
                       ]),
                       errorText: errorFor(RegFields.studyYearId),
                       onSelected: (id) =>
@@ -293,7 +304,10 @@ class _UniversityDetailScreenState
     );
   }
 
-  /// The contract's selectable year status; `soon` years are hidden.
+  /// The contract's selectable year status. `soon` years are SHOWN, disabled —
+  /// `openapi.yaml:751`. [StudyYearRef.status] is a `String` rather than an
+  /// enum because the contract keeps it open; only `active` enables a row, so
+  /// an unknown third status disables rather than crashes.
   static const _activeYear = 'active';
 
   /// 201 → `/home`; a token/phone failure → restart at `/login`.

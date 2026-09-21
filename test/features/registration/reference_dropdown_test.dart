@@ -14,8 +14,10 @@ import 'package:level_up_app/l10n/app_localizations.dart';
 /// student can see their faculty offers it, and `POST /auth/register` answers
 /// `validation_failed` if they pick it.
 ///
-/// Phase 1 ships the capability only. The year picker still hides `soon` rows;
-/// showing them needs copy and a visual treatment from the designer.
+/// Phase 1 shipped the capability; Phase 2 wired the university year picker to
+/// it, so `soon` years are now offered disabled rather than hidden. The
+/// picker's own behaviour is covered in `university_detail_screen_test.dart` —
+/// this file covers the widget in isolation.
 void main() {
   PickerOption option(String id, {bool enabled = true}) =>
       (id: id, label: id.toUpperCase(), leading: null, enabled: enabled);
