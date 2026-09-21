@@ -441,13 +441,13 @@ List<String> contractRequiredFields(String yaml, List<String> path) {
 /// `,`, `)` or `}` — so `json['hasFlashcards']` inside a hand-written parser
 /// does not count either. A field is modelled when the constructor takes it.
 ///
-/// ⚠️ **Scope is the FILE, not the class.** [dart] is a whole file's source and
-/// nothing here parses class bodies, so a field of the same name on ANY other
-/// class in the same file satisfies the match. The models in this repo share a
-/// file per feature and repeat names like `id`, `name` and `track` across them,
-/// so the masking is real rather than theoretical — see the limitations list in
-/// `contract_models_test.dart` for what that does and does not cost. Making the
-/// detection class-scoped is future hardening, deliberately not done here.
+/// ⚠️ **Scope is whatever source you hand it.** Pass a whole FILE and a field
+/// of the same name on any other class in it satisfies the match; the models
+/// here share a file per feature and repeat `id`, `name` and `track` across
+/// them, so that masking is real rather than theoretical. Use
+/// [dartClassBody] to narrow the source to one class first —
+/// `contract_models_test.dart` does, and its bindings name the class for
+/// exactly this reason.
 ///
 /// Built by concatenating RAW strings rather than interpolating into one: in an
 /// ordinary Dart string `'\b'` is a backspace character and `'\s'` is a plain
@@ -457,3 +457,48 @@ List<String> contractRequiredFields(String yaml, List<String> path) {
 bool dartDeclaresField(String dart, String field) => RegExp(
   r'\b' + RegExp.escape(field) + r'\s*[,)}]',
 ).hasMatch(stripComments(dart));
+
+/// The body of `class [className]` in [dart], braces included, or `null` when
+/// the file declares no such class.
+///
+/// Exists so [dartDeclaresField] can be scoped to ONE class instead of a whole
+/// file. Returning `null` rather than falling back to the whole source is the
+/// point: a binding naming a class that has been renamed or moved must FAIL
+/// loudly, not silently widen back to file scope and start passing for the
+/// reason the scoping was added to prevent.
+///
+/// Matching is by brace balance from the class's opening `{`, which is enough
+/// for this codebase and deliberately not a Dart parser: these are freezed
+/// models whose fields are constructor parameters, and Dart has no nested class
+/// declarations, so the first balanced block after the name IS the class body.
+/// Comments are stripped FIRST, so a `{` or `}` inside a doc comment cannot
+/// unbalance the count. String literals are not parsed — a model field whose
+/// DEFAULT value is a string containing a lone brace would break it, which no
+/// model here has and which would fail loudly (wrong body, missing field)
+/// rather than quietly.
+///
+/// `class X`, `abstract class X`, `sealed class X` and `class X with _$X` all
+/// match; `enum`, `mixin` and `extension` deliberately do not, because none of
+/// them declares constructor parameters a contract field could bind to.
+String? dartClassBody(String dart, String className) {
+  final source = stripComments(dart);
+  final head = RegExp(
+    r'\bclass\s+' + RegExp.escape(className) + r'\b',
+  ).firstMatch(source);
+  if (head == null) return null;
+
+  final open = source.indexOf('{', head.end);
+  if (open < 0) return null;
+
+  var depth = 0;
+  for (var i = open; i < source.length; i++) {
+    if (source[i] == '{') depth++;
+    if (source[i] == '}') {
+      depth--;
+      if (depth == 0) return source.substring(open, i + 1);
+    }
+  }
+  // Unbalanced source: report "no such class" rather than a truncated body,
+  // so the caller fails instead of asserting against half a class.
+  return null;
+}

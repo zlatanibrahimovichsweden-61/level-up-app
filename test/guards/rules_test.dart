@@ -399,4 +399,98 @@ components:
       );
     });
   });
+
+  group('Dart class scoping', () {
+    /// Two freezed models in one file, each with an `id` — the exact shape that
+    /// made file-scoped detection maskable across this repo's model files.
+    const twoModels = '''
+@freezed
+abstract class Alpha with _\$Alpha {
+  const factory Alpha({required String id, required String alphaOnly}) = _Alpha;
+}
+
+@freezed
+abstract class Beta with _\$Beta {
+  const factory Beta({required String id, required String betaOnly}) = _Beta;
+}
+''';
+
+    test('returns only the named class body', () {
+      final alpha = dartClassBody(twoModels, 'Alpha')!;
+
+      expect(alpha, contains('alphaOnly'));
+      expect(alpha, isNot(contains('betaOnly')));
+    });
+
+    test('🔴 THE POINT — a sibling class no longer answers for this one', () {
+      // File-scoped, both of these were true. That is the masking: `Beta`'s
+      // parameter satisfying a binding that names `Alpha`.
+      expect(
+        dartDeclaresField(twoModels, 'betaOnly'),
+        isTrue,
+        reason: 'file scope still sees it — this is what we are narrowing',
+      );
+      expect(
+        dartDeclaresField(dartClassBody(twoModels, 'Alpha')!, 'betaOnly'),
+        isFalse,
+        reason: 'class scope must not',
+      );
+    });
+
+    test('the field each class DOES declare still resolves', () {
+      // Narrowing must not overshoot into false positives: the guard failing on
+      // a correctly-modelled field would get it switched off.
+      expect(
+        dartDeclaresField(dartClassBody(twoModels, 'Alpha')!, 'id'),
+        isTrue,
+      );
+      expect(
+        dartDeclaresField(dartClassBody(twoModels, 'Beta')!, 'betaOnly'),
+        isTrue,
+      );
+    });
+
+    test('an unknown class is null, NOT the whole file', () {
+      // The fail-loud contract. Falling back to the file here would silently
+      // restore file scope for a binding whose model was renamed.
+      expect(dartClassBody(twoModels, 'Gamma'), isNull);
+    });
+
+    test('a brace inside a doc comment does not unbalance the body', () {
+      const withComment = '''
+/// Shaped like {id, name} on the wire.
+abstract class Alpha with _\$Alpha {
+  const factory Alpha({required String id}) = _Alpha;
+}
+abstract class Beta with _\$Beta {
+  const factory Beta({required String betaOnly}) = _Beta;
+}
+''';
+      final alpha = dartClassBody(withComment, 'Alpha')!;
+
+      expect(dartDeclaresField(alpha, 'id'), isTrue);
+      expect(dartDeclaresField(alpha, 'betaOnly'), isFalse);
+    });
+
+    test('`sealed` and `abstract` classes are found', () {
+      expect(dartClassBody('sealed class S { const S(); }', 'S'), isNotNull);
+      expect(dartClassBody('abstract class A { const A(); }', 'A'), isNotNull);
+    });
+
+    test('a prefix name does not match — `Profile` is not `ProfileSchool`', () {
+      // `\\b` on the trailing side matters: two bindings in the real table are
+      // `ProfileSchool` and `ProfilePoints`, and a prefix match would hand the
+      // wrong body to whichever came first in the file.
+      const src = 'class ProfileSchool { const ProfileSchool({this.stage}); }';
+
+      expect(dartClassBody(src, 'ProfileSchool'), isNotNull);
+      expect(dartClassBody(src, 'Profile'), isNull);
+    });
+
+    test('an enum is not a class', () {
+      // Enums declare no constructor parameters, so a contract field can never
+      // bind to one; matching them would only produce confusing bodies.
+      expect(dartClassBody('enum Grade { gotIt, again }', 'Grade'), isNull);
+    });
+  });
 }

@@ -12,6 +12,23 @@ import '../repository/reference_repository.dart';
 /// family key caches independently. `AsyncValue` maps directly onto the
 /// loading / data(empty) / error(→ offline) states the consuming screens render
 /// through the shared `StateWidget`.
+///
+/// 🔴 **Every provider here sets `retry: _noRetry`, and none may be added
+/// without it.** Riverpod 3 retries a failed provider build automatically —
+/// `ProviderContainer.defaultRetry` is ten retries at 200 ms doubling to a
+/// 6.4 s ceiling, and it gives up only on a Dart `Error`, which an
+/// `AppException` is not. The schedule is 200 · 400 · 800 · 1600 · 3200 ·
+/// 6400 · 6400 · 6400 · 6400 · 6400 ms, so one failed picker is **eleven
+/// requests — one initial plus ten retries — over about thirty-eight
+/// seconds**, and the registration screens mount four of these at once.
+///
+/// The user-visible half is worse than the traffic. While a retry is pending
+/// `triggerRetry` returns `AsyncLoading(error: …, retrying: true)` rather than
+/// `AsyncError` — so `ReferenceDropdown`'s `AsyncError` arm never matches and
+/// the field shows its SPINNER instead of the offline message and its Retry
+/// button. Every one of these pickers already has a working
+/// `onRetry: () => ref.invalidate(…)` wired at the call site; auto-retry was
+/// the only thing keeping it out of reach.
 
 /// Filter tuple for the cities picker. A record → structural equality, so the
 /// family caches one entry per (country, governorate) pair.
@@ -31,12 +48,14 @@ typedef SchoolsQuery = ({
 /// `GET /reference/countries`.
 final countriesProvider = FutureProvider<List<Country>>(
   (ref) => ref.watch(referenceRepositoryProvider).getCountries(),
+  retry: _noRetry,
 );
 
 /// `GET /reference/countries/{code}/governorates` — keyed by country code.
 final governoratesProvider = FutureProvider.family<List<NamedRef>, String>(
   (ref, countryCode) =>
       ref.watch(referenceRepositoryProvider).getGovernorates(countryCode),
+  retry: _noRetry,
 );
 
 /// `GET /reference/cities` — keyed by [CitiesQuery].
@@ -47,6 +66,7 @@ final citiesProvider = FutureProvider.family<List<NamedRef>, CitiesQuery>(
         countryCode: query.countryCode,
         governorateId: query.governorateId,
       ),
+  retry: _noRetry,
 );
 
 /// `GET /reference/schools` — cursor-paginated, keyed by [SchoolsQuery].
@@ -61,16 +81,19 @@ final schoolsProvider =
             cursor: query.cursor,
             limit: query.limit,
           ),
+      retry: _noRetry,
     );
 
 /// `GET /reference/education-systems`.
 final educationSystemsProvider = FutureProvider<List<EducationSystemRef>>(
   (ref) => ref.watch(referenceRepositoryProvider).getEducationSystems(),
+  retry: _noRetry,
 );
 
 /// `GET /reference/universities` — nested university → faculty → year tree.
 final universitiesProvider = FutureProvider<List<UniversityRef>>(
   (ref) => ref.watch(referenceRepositoryProvider).getUniversities(),
+  retry: _noRetry,
 );
 
 /// `GET /reference/avatars`.
@@ -88,9 +111,10 @@ final universitiesProvider = FutureProvider<List<UniversityRef>>(
 /// error view was so hard to see: while Riverpod is retrying, the state stays
 /// `AsyncLoading` carrying the error rather than becoming `AsyncError`.
 ///
-/// ⚠️ The other six providers in this file have the SAME defect and are
-/// deliberately left alone here — they belong to the registration wizard, not
-/// to this pass. See the Phase 1 report.
+/// The other six providers in this file carried the same defect and were left
+/// alone by that pass because they belong to the registration wizard. They all
+/// set `retry: _noRetry` now — see the file-level note above for the count that
+/// applies to each of them.
 final avatarsProvider = FutureProvider<List<Avatar>>(
   (ref) => ref.watch(referenceRepositoryProvider).getAvatars(),
   retry: _noRetry,

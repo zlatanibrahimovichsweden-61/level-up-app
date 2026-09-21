@@ -219,4 +219,46 @@ void main() {
       ).called(2);
     });
   });
+
+  group('no automatic retry', () {
+    test('a failed FIRST search settles on AsyncError', () async {
+      // `build` performs the first search, so a failure here is a failed BUILD
+      // — the case Riverpod 3 retries on its own, ten times at 200 ms doubling
+      // to 6.4 s. Two things break if it does. The sheet's `AsyncError` arm
+      // (`school_picker_field.dart:218`) never matches, because a pending retry
+      // leaves the state `AsyncLoading` CARRYING the error, so the student
+      // watches a spinner instead of the failure and its Retry. And the search
+      // re-runs against a `q` they have already typed past.
+      //
+      // `isLoading` is asserted next to the type because that is precisely what
+      // separates the two: remove `retry: _noRetry` and this state is
+      // `AsyncLoading`, failing both expectations and the call count.
+      when(
+        () => repo.searchSchools(
+          q: any(named: 'q'),
+          governorateId: any(named: 'governorateId'),
+          cityId: any(named: 'cityId'),
+          cursor: null,
+          limit: any(named: 'limit'),
+        ),
+      ).thenThrow(const OfflineException());
+
+      final c = container();
+      await pumpEventQueue();
+
+      final state = c.read(schoolSearchProvider(_filter));
+      expect(state, isA<AsyncError<SchoolSearchResults>>());
+      expect(state.isLoading, isFalse, reason: 'no retry may be pending');
+      expect(state.error, isA<OfflineException>());
+      verify(
+        () => repo.searchSchools(
+          q: any(named: 'q'),
+          governorateId: any(named: 'governorateId'),
+          cityId: any(named: 'cityId'),
+          cursor: null,
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+    });
+  });
 }

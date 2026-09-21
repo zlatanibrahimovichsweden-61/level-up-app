@@ -41,15 +41,19 @@ import 'rules.dart';
 ///   no UI consumed it.
 /// - *Not the response-to-schema link.* Nothing verifies that `GET /me` really
 ///   returns `StudentProfile`; that binding is asserted here by a human.
-/// - *File scope, not class scope.* [dartDeclaresField] searches the whole FILE
-///   for the parameter — nothing parses class bodies — so a same-named field on
-///   ANOTHER class in the same file satisfies the check. Of the 42 field names
-///   asserted below, 12 are maskable that way (`id`, `name`, `track`,
-///   `questionCounter` and the rest that repeat across the models sharing a
-///   file). None is currently answered by the wrong class, and a NEWLY required
-///   contract field on a bound schema — the case this guard exists for — is
-///   still caught. Class-scoped detection is a future hardening item and was
-///   deliberately left out of the pass that wrote this list.
+/// - *Still a regex, not a type system.* Scope is now one class (see below),
+///   but within it the check is textual: a name in the right position counts.
+///
+/// **Scope is the CLASS, not the file — since Phase 3.** Each binding names its
+/// [dartClass] and [dartClassBody] narrows the source to that class before
+/// [dartDeclaresField] looks. Previously the search covered the whole file, so
+/// a same-named field on ANY other class in it satisfied the check: of the 47
+/// field names asserted below, **12 were maskable that way** — `NamedRef`'s
+/// `id`/`nameAr`/`nameEn` were answerable by five classes sharing
+/// `reference_models.dart`, and `lectures[]`'s `id`/`name` by four sharing
+/// `subject_tree.dart`. None was actually answered by the wrong class when the
+/// scoping landed, which is why this was hardening rather than a bug fix; the
+/// masking was a loaded gun, not a wound.
 void main() {
   late String contract;
 
@@ -57,70 +61,87 @@ void main() {
     contract = File('contract/openapi.yaml').readAsStringSync();
   });
 
-  /// Schema path in the contract → the Dart file that decodes it.
+  /// Schema path in the contract → the Dart CLASS that decodes it.
   ///
   /// The path is spelled in YAML terms (`properties` included) because that is
   /// how the document nests `required`; see [contractRequiredFields].
-  const bindings = <({String label, List<String> path, String dart})>[
+  ///
+  /// [dartClass] is asserted by a human, like [dart] and [path]: nothing links
+  /// a contract schema to a Dart class. Naming it is what keeps the check
+  /// inside one class — without it, `NamedRef`'s three required fields were
+  /// satisfiable by any of the five classes sharing `reference_models.dart`.
+  const bindings = <({String label, List<String> path, String dart, String dartClass})>[
     (
       label: 'StudentProfile (GET /me, PATCH /me)',
       path: ['StudentProfile'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'StudentProfile',
     ),
     (
       label: 'StudentProfile.school',
       path: ['StudentProfile', 'properties', 'school'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'ProfileSchool',
     ),
     (
       label: 'StudentProfile.geography',
       path: ['StudentProfile', 'properties', 'geography'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'ProfileGeography',
     ),
     (
       label: 'StudentProfile.points',
       path: ['StudentProfile', 'properties', 'points'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'ProfilePoints',
     ),
     (
       label: 'StudentProfile.privacy',
       path: ['StudentProfile', 'properties', 'privacy'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'ProfilePrivacy',
     ),
     (
       label: 'StudentProfile.pendingDeletion (adr-114)',
       path: ['StudentProfile', 'properties', 'pendingDeletion'],
       dart: 'lib/features/profile/models/student_profile.dart',
+      dartClass: 'PendingDeletion',
     ),
     (
       label: 'EntitlementState',
       path: ['EntitlementState'],
       dart: 'lib/features/profile/models/entitlement_state.dart',
+      dartClass: 'EntitlementState',
     ),
     (
       label: 'UniversitySubjectTree',
       path: ['UniversitySubjectTree'],
       dart: 'lib/features/catalog/models/subject_tree.dart',
+      dartClass: 'UniversitySubjectTree',
     ),
     (
       label: 'UniversitySubjectTree.lectures[] — the hasFlashcards miss',
       path: ['UniversitySubjectTree', 'properties', 'lectures', 'items'],
       dart: 'lib/features/catalog/models/subject_tree.dart',
+      dartClass: 'Lecture',
     ),
     (
       label: 'SchoolSubjectTree',
       path: ['SchoolSubjectTree'],
       dart: 'lib/features/catalog/models/subject_tree.dart',
+      dartClass: 'SchoolSubjectTree',
     ),
     (
       label: 'AnswerResult (submitAnswer)',
       path: ['AnswerResult'],
       dart: 'lib/features/quiz/models/answer_result.dart',
+      dartClass: 'AnswerResult',
     ),
     (
       label: 'NamedRef',
       path: ['NamedRef'],
       dart: 'lib/features/registration/models/reference_models.dart',
+      dartClass: 'NamedRef',
     ),
     (
       // Two of its five required fields are nullable (`imageUrl`, `selfGrade`),
@@ -130,6 +151,7 @@ void main() {
       label: 'FlashcardCard (getFlashcardsForLecture)',
       path: ['FlashcardCard'],
       dart: 'lib/features/flashcards/models/flashcard.dart',
+      dartClass: 'FlashcardCard',
     ),
   ];
 
@@ -146,9 +168,24 @@ void main() {
       final required = contractRequiredFields(contract, b.path);
       final dart = File(b.dart).readAsStringSync();
 
+      // Narrow to the ONE class before looking for fields. A binding naming a
+      // class the file no longer declares fails here rather than silently
+      // widening back to file scope — which would restore the masking this
+      // scoping exists to remove.
+      final body = dartClassBody(dart, b.dartClass);
+      expect(
+        body,
+        isNotNull,
+        reason:
+            '${b.dart} declares no `class ${b.dartClass}`. Either the model was '
+            'renamed or moved — update this binding — or it was deleted, which '
+            'is a contract question for docs/seif_fight.md. Do NOT widen this '
+            'back to the whole file.',
+      );
+
       final missing = [
         for (final field in required)
-          if (!dartDeclaresField(dart, field)) field,
+          if (!dartDeclaresField(body!, field)) field,
       ];
 
       expect(

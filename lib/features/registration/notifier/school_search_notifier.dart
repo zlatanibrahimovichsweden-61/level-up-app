@@ -147,4 +147,16 @@ class SchoolSearchNotifier extends AsyncNotifier<SchoolSearchResults> {
 final schoolSearchProvider = AsyncNotifierProvider.autoDispose
     .family<SchoolSearchNotifier, SchoolSearchResults, SchoolFilter>(
       SchoolSearchNotifier.new,
+      // `build` above performs the first search, so a failed one is a failed
+      // BUILD — which Riverpod 3 retries on its own, ten times at 200 ms
+      // doubling to 6.4 s. Two things go wrong. The sheet's `AsyncError` arm
+      // (`school_picker_field.dart:218`) never matches, because a pending retry
+      // leaves the state `AsyncLoading` CARRYING the error, so the student sees
+      // the spinner instead of the failure and its Retry. And the search runs
+      // against a `q` they have already typed past, eleven times, while they
+      // wait. Retry here is `refresh()`, which the sheet already calls.
+      retry: _noRetry,
     );
+
+/// Returning `null` tells Riverpod not to schedule a retry.
+Duration? _noRetry(int retryCount, Object error) => null;
