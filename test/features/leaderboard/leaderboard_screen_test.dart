@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
+import 'package:level_up_app/core/router/app_router.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/widgets/circle_back_button.dart';
@@ -76,25 +77,39 @@ void main() {
     addTearDown(container.dispose);
     container.read(authControllerProvider.notifier).markAuthenticated();
 
-    // Mounted DIRECTLY, not through the router: `/leaderboard` serves
-    // LeaderboardPlaceholderScreen while `GET /leaderboard` is
-    // `x-stability: draft` (D-008). Every assertion below is about the board
-    // itself, so it survives the gating; the one test that was genuinely about
-    // the shell branch is skipped rather than weakened. Restore the nav-tap
-    // mount when the route goes back.
+    // Mounted through the REAL router (restored 2026-09-22 when D-008 closed
+    // and `/leaderboard` went back to serving LeaderboardScreen), so every
+    // assertion below is made against the board as it actually sits inside the
+    // shell — with the nav bar present and the branch selected.
+    //
+    // Navigated with `go` rather than by tapping the tab because the tab's
+    // label is localized and four tests below run in Arabic. The tab TAP is
+    // covered where it belongs, in `main_shell_test.dart`.
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: MaterialApp(
+        child: MaterialApp.router(
           locale: Locale(locale),
           theme: AppTheme.light,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const LeaderboardScreen(),
+          routerConfig: container.read(routerProvider),
         ),
       ),
     );
     await tester.pumpAndSettle();
+    container.read(routerProvider).go('/leaderboard');
+    await tester.pumpAndSettle();
+    // Asserted on every mount, not once: this is what keeps D-008 closed. If
+    // `/leaderboard` is ever pointed back at a placeholder, all 17 cases in
+    // this file go red here rather than passing against a screen nobody can
+    // reach — which is exactly how the board stayed green for two weeks while
+    // being unreachable.
+    expect(
+      find.byType(LeaderboardScreen),
+      findsOneWidget,
+      reason: '/leaderboard must serve the real board',
+    );
     return tester;
   }
 
@@ -222,12 +237,9 @@ void main() {
       reason: 'back lands on Home and the nav bar follows',
     );
     expect(find.byType(MainShell), findsOneWidget);
-    // SKIPPED, not deleted — D-008. The board is not a shell branch while
-    // `GET /leaderboard` is `x-stability: draft`: `/leaderboard` serves
-    // LeaderboardPlaceholderScreen, so there is no MainShell to assert on.
-    // `testWidgets` takes a bool skip, hence the reason lives here.
-    // Un-skip in the same commit that restores the route.
-  }, skip: true);
+    // Un-skipped 2026-09-22, in the same change that restored the route — this
+    // test was D-008's marker and the suite's single skipped test.
+  });
 
   testWidgets('share is present but inert — there is no sharing surface', (
     tester,

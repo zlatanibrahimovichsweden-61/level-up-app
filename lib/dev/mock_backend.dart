@@ -220,6 +220,80 @@ class MockBackendInterceptor extends Interceptor {
       });
     }
 
+    // ---- leaderboard ------------------------------------------------------
+    // `GET /leaderboard` — `x-stability: stable` at the 3.22.0-m1 pin
+    // (`openapi.yaml:2007`), route deployed on staging (probed 2026-09-22, it
+    // answers 401 rather than the 404 an absent route gives) and decoding
+    // verified there through the real repository. This harness stands in for
+    // the DATA, not for the endpoint: the one staging test account is alone on
+    // its board, so a one-row page is all a real server can show and none of
+    // the podium, the paging or the self-row highlight is reachable.
+    //
+    // `GET /leaderboard/me` is deliberately NOT served, because the app
+    // deliberately does not call it (D-008; `openapi.yaml:2050` forbids a
+    // synthetic self-rank row). A route here would invite one.
+    //
+    // Strict where the server is strict, per this file's own rule:
+    //   * `scope` is REQUIRED and track-checked — a university scope on a
+    //     school account is `400 validation_failed` on field `scope`, which is
+    //     what the server answers and what `scopesFor` exists to prevent.
+    //   * `limit` is VALIDATED, NOT CLAMPED (3.7.0-m1) — outside 1..100 is a
+    //     400 on field `limit`, never a quiet reduction to 100.
+    //   * `cursor` is opaque and scope-bound; an unknown one is `400
+    //     validation_failed` on field `cursor`, so the notifier's
+    //     expired-cursor -> page-one recovery is reachable on a device.
+    if (method == 'GET' && path == '/leaderboard') {
+      final scope = query['scope'] as String?;
+      final allowed = _isUniversity
+          ? const ['global', 'cohort']
+          : const ['system', 'governorate'];
+      if (scope == null || !allowed.contains(scope)) {
+        return _validationFailed(handler, options, {
+          'scope': ['Must be valid for the caller\'s track.'],
+        });
+      }
+      final rawLimit = query['limit'];
+      final limit = rawLimit == null
+          ? 20
+          : int.tryParse(rawLimit.toString()) ?? -1;
+      if (limit < 1 || limit > 100) {
+        return _validationFailed(handler, options, {
+          'limit': ['Must be between 1 and 100.'],
+        });
+      }
+
+      // The whole board, dense-ranked. Built fresh per request so the caller's
+      // row carries the LIVE `_totalPoints` and moves up the board when a quiz
+      // is finished — the same thing Home does, on a surface where it is far
+      // more visible.
+      final board = _leaderboard(
+        isUniversity: _isUniversity,
+        selfPoints: _totalPoints,
+      );
+
+      final cursor = query['cursor'] as String?;
+      var start = 0;
+      if (cursor != null) {
+        final parsed = _decodeMockCursor(cursor, scope);
+        if (parsed == null) {
+          return _validationFailed(handler, options, {
+            'cursor': ['Altered, expired, or issued for another scope.'],
+          });
+        }
+        start = parsed;
+      }
+      if (start >= board.length) start = board.length;
+      final end = (start + limit).clamp(0, board.length);
+      final page = board.sublist(start, end);
+      final hasMore = end < board.length;
+
+      return _ok(handler, options, 200, <String, dynamic>{
+        'items': page,
+        'nextCursor': hasMore ? _encodeMockCursor(end, scope) : null,
+        'hasMore': hasMore,
+      });
+    }
+
     // ---- mistakes ---------------------------------------------------------
     // Day 10's two operations, both `stable` at the 3.13.0-m1 pin.
     //
@@ -1511,6 +1585,119 @@ final _avatars = <dynamic>[
       'url': 'https://picsum.photos/seed/levelup$i/200',
     },
 ];
+
+/// The mock board's peers, highest first. Names are Arabic for the same reason
+/// the catalog's are (adr-018): the content language is what a real board
+/// returns, and it is the only way the RTL row layout gets exercised on device.
+///
+/// Twenty-two peers plus the caller is deliberate: at the notifier's
+/// `_pageSize` of 20 that is two pages, so `hasMore`, `nextCursor` and the
+/// append spinner are all reachable by scrolling — none of which a one-row
+/// staging board can show.
+const _boardPeers = <(String, int)>[
+  ('مريم عبد الرحمن', 2140),
+  ('يوسف الشناوي', 2020),
+  ('حبيبة مصطفى', 1890),
+  ('عمر خالد', 1720),
+  ('سلمى الحديدي', 1610),
+  ('كريم فتحي', 1540),
+  ('نور الهدى سامي', 1495),
+  ('آدم بركات', 1380),
+  ('جنى الشريف', 1310),
+  ('زياد منصور', 1205),
+  ('ملك عادل', 1160),
+  ('حمزة الديب', 1095),
+  ('ريم العطار', 1040),
+  ('طه إسماعيل', 980),
+  ('ليلى مجدي', 925),
+  ('أنس القاضي', 870),
+  ('تالة حسن', 815),
+  ('مازن رضا', 760),
+  ('لمى أبو زيد', 705),
+  ('سيف الدين طارق', 650),
+  ('هنا وليد', 590),
+  ('بلال عصام', 15),
+];
+
+/// One page-able board, dense-ranked, caller included.
+///
+/// Built per request rather than held as a constant so the caller's row carries
+/// the LIVE total and CLIMBS when a quiz is finished on device — the board
+/// re-sorts, the rank falls, and the highlighted row moves. That is the whole
+/// point of putting the caller mid-board: the self-row sits between two
+/// ordinary rows where its treatment is visible, and it does not stay put.
+///
+/// Dense ranking with no gaps is the contract's rule (`openapi.yaml:2758`),
+/// and it is applied here rather than using the list index, so a points tie
+/// renders the way the server would render it.
+List<Map<String, dynamic>> _leaderboard({
+  required bool isUniversity,
+  required int selfPoints,
+}) {
+  final rows =
+      <(String, int, bool, int)>[
+        for (final (i, (name, points)) in _boardPeers.indexed)
+          (name, points, false, i + 1),
+        (
+          isUniversity ? 'طالب جامعي تجريبي' : 'طالب تجريبي',
+          selfPoints,
+          true,
+          0,
+        ),
+      ]..sort((a, b) {
+        final byPoints = b.$2.compareTo(a.$2);
+        // Stable tie-break so a tie with the caller does not reorder between
+        // two requests and make the page seam look like a server fault.
+        return byPoints != 0 ? byPoints : a.$1.compareTo(b.$1);
+      });
+
+  final out = <Map<String, dynamic>>[];
+  var rank = 0;
+  int? lastPoints;
+  for (final (index, (name, points, isMe, seed)) in rows.indexed) {
+    if (points != lastPoints) {
+      rank = index + 1;
+      lastPoints = points;
+    }
+    out.add(<String, dynamic>{
+      'rank': rank,
+      'studentId': isMe
+          ? '0197b2f3-9999-7cc3-9b4e-000000000001'
+          : '0197b2f3-7777-7cc3-9b4e-${seed.toString().padLeft(12, '0')}',
+      'name': name,
+      'avatarUrl': isMe
+          ? 'https://picsum.photos/seed/levelup1/200'
+          : 'https://picsum.photos/seed/board$seed/200',
+      'points': points,
+      'isMe': isMe,
+    });
+  }
+  return out;
+}
+
+/// The mock's stand-in for the server's signed, expiring cursor.
+///
+/// It is base64 on purpose — NOT because the real token is (it is encrypted and
+/// signed, `openapi.yaml:2057`), but so that a hand-altered one fails to decode
+/// here exactly as an altered real one fails to verify there. The app must not
+/// care either way: it echoes the string back unchanged, and the only thing it
+/// is allowed to do with a rejection is ask for page one.
+String _encodeMockCursor(int offset, String scope) =>
+    base64Url.encode(utf8.encode('$scope:$offset'));
+
+/// Returns the offset, or null when the cursor is malformed or was issued for
+/// a different scope — both of which the contract answers with the same
+/// `400 validation_failed` on field `cursor`, and both of which have the same
+/// remedy.
+int? _decodeMockCursor(String cursor, String scope) {
+  try {
+    final parts = utf8.decode(base64Url.decode(cursor)).split(':');
+    if (parts.length != 2 || parts.first != scope) return null;
+    return int.tryParse(parts.last);
+  } on Object {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // StudentProfile

@@ -417,6 +417,52 @@ this decision, and un-skipping it is part of un-gating, not a tidy-up.
 skipped test and the screen test's mount go back together, and the board gets a device pass
 before it is called done.
 
+#### CLOSED, 2026-09-22 — the audit ran, the route is back
+
+**Status: D-008 is closed.** The condition set out directly above was met in full.
+
+**The audit** is `docs/D008_LEADERBOARD_AUDIT.md`. Verdict: the board **passes** all six
+behavioural changes — four actively (top-200 bound, signed/expiring cursor, `scoreHidden`
+exclusion, short pages), two N/A because `getMyRank` is deliberately not called (`403
+score_hidden`, `404 not_ranked`). The two this entry singled out as the quiet-failure risks
+are both already correct: `3.7.0-m1`'s short page is handled by `isEmpty => items.isEmpty &&
+!hasMore` with a short-page walk in `build()`, and `3.9.0-m1`'s `404 not_ranked` cannot be
+reached because the operation is never called. **Nothing in `lib/features/leaderboard/` was
+changed to pass this audit** — it was already right, which is what the Correction of
+2026-09-10 predicted when it established the board had been built against 3.7.0-m1 or later.
+
+**The server.** The board has now met one. `GET /leaderboard` decoded through the real
+repository against staging `0f97f289` on 2026-09-22 —
+`.ai/audits/current/smoke-staging-2026-09-22.md`. Both leaderboard routes answer `401`
+unauthenticated rather than the `404` an absent route gives, so both are deployed. The
+sentence "the board has never met a real server" is withdrawn. **It remains a one-account,
+one-scope, one-row board**: pagination, the 200-row bound and the privacy filtering are still
+BUILD-level only.
+
+**What went back, together, as this entry required.** The route
+(`app_router.dart` — `LeaderboardScreen`, one builder line plus its import); the skipped
+shell-branch test (un-skipped — the suite now reports **0 skipped**); and the screen test's
+mount (re-pointed at the real router). `LeaderboardPlaceholderScreen` was deleted and replaced
+with a note, which is what Learn (Day 5) and Account (Day 8) each did on their way out of
+`tab_placeholder.dart`.
+
+**One thing this entry asked for that is deliberately NOT claimed: the device pass.** It is
+still owed. Un-gating makes it possible on a committed tree for the first time — every previous
+device sighting of this board ran on a local edit that was reverted the same session
+(`DEVICE_VERIFICATION_2026-09-20.md:31`).
+
+**One finding, not fixed.** `LeaderboardNotifier`'s comment at the short-page give-up claims
+the UI shows an empty state; it does not, and the test at `leaderboard_notifier_test.dart:69`
+proves the opposite is intended. The *behaviour* is right and deliberate — inventing
+`hasMore: false` would be inventing an answer the server withheld — but the state has no UI,
+so a pathological server (ten consecutive empty pages claiming more) renders a blank scroll
+area with no message and no recovery. Left alone because fixing it needs an ARB key pair in
+both languages, which is a copy decision. Recorded as F-1 in the audit.
+
+**Endpoint coverage: 21/21 → 22/22 stable.** `getLeaderboard` joins the consumed set.
+`getMyRank` stays unconsumed **by decision, not by gate** — it is `stable` and deployed, and
+the contract's "do not add a synthetic self-rank row" is why the app does not call it.
+
 ---
 
 ## Elevation — the design system's third layer

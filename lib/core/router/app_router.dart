@@ -15,6 +15,7 @@ import '../../features/catalog/screens/lessons_screen.dart';
 import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
 import '../../features/home/screens/home_screen.dart';
+import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/mistakes/screens/mistakes_overview_screen.dart';
 import '../../features/mistakes/screens/mistakes_subject_screen.dart';
 import '../../features/mistakes/screens/mistakes_tree_screens.dart';
@@ -149,25 +150,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              // The real LeaderboardScreen is built and tested; this branch
-              // still serves the placeholder.
+              // UN-GATED 2026-09-22. D-008 is closed: `GET /leaderboard` is
+              // `x-stability: stable` at the pin 768e67d (3.22.0-m1,
+              // `contract/openapi.yaml:2007`), and the audit that the gate was
+              // actually waiting on — the board against the six behavioural
+              // changes it predates — is `docs/D008_LEADERBOARD_AUDIT.md`.
               //
-              // This comment used to say `GET /leaderboard` is
-              // "`x-stability: draft` AT OUR PIN", and that was TRUE when it
-              // was written: the pin was 184d6ec (3.0.0-m1), where the
-              // operation really is `draft`. It went stale on 2026-09-12, when
-              // the pin moved to 2dca3c5 — by which point the operation was
-              // already `stable`. At the current pin 768e67d (3.22.0-m1) it is
-              // `stable` at `contract/openapi.yaml:2007`.
-              //
-              // So the contract-stability half of the gate is CLEARED. What
-              // remains is D-008's MIDDLE step, and only that: audit the board
-              // against the behavioural changes it predates, then swap the
-              // builder. The swap is one line; the audit is not. D-008 + its
-              // 2026-09-10 Correction.
+              // Un-gating was never a revert, which is why the stability flip
+              // on 2026-09-12 did not by itself reopen this route.
               GoRoute(
                 path: '/leaderboard',
-                builder: (_, _) => const LeaderboardPlaceholderScreen(),
+                builder: (_, _) => const LeaderboardScreen(),
               ),
             ],
           ),

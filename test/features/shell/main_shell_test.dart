@@ -7,6 +7,9 @@ import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/home/screens/home_screen.dart';
+import 'package:level_up_app/features/leaderboard/models/leaderboard_models.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
+import 'package:level_up_app/features/leaderboard/screens/leaderboard_screen.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/features/profile/screens/profile_screen.dart';
 import 'package:level_up_app/features/shell/main_shell.dart';
@@ -14,6 +17,7 @@ import 'package:level_up_app/features/shell/screens/tab_placeholder.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../leaderboard/leaderboard_fixtures.dart';
 import '../profile/profile_fixtures.dart';
 
 /// The nav shell, driven through the REAL router: a signed-in student lands on
@@ -23,9 +27,15 @@ class _MockStorage extends Mock implements SecureStorage {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockLeaderboardRepository extends Mock
+    implements LeaderboardRepository {}
+
 void main() {
   late _MockStorage storage;
   late _MockProfileRepository repo;
+  late _MockLeaderboardRepository board;
+
+  setUpAll(() => registerFallbackValue(LeaderboardScope.system));
 
   setUp(() {
     storage = _MockStorage();
@@ -35,6 +45,19 @@ void main() {
     repo = _MockProfileRepository();
     when(repo.getMe).thenAnswer((_) async => schoolProfile());
     when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+
+    // The Leaderboard branch is a real screen since 2026-09-22, so the shell
+    // can no longer switch to it without a board behind it. A complete
+    // five-row board: this file is about the SHELL, and the board's own states
+    // are exercised in `leaderboard_screen_test.dart`.
+    board = _MockLeaderboardRepository();
+    when(
+      () => board.getLeaderboard(
+        scope: any(named: 'scope'),
+        cursor: any(named: 'cursor'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => boardPage(ranks: const [1, 2, 3, 4, 5]));
   });
 
   Future<ProviderContainer> pumpApp(WidgetTester tester) async {
@@ -42,6 +65,7 @@ void main() {
       overrides: [
         secureStorageProvider.overrideWithValue(storage),
         profileRepositoryProvider.overrideWithValue(repo),
+        leaderboardRepositoryProvider.overrideWithValue(board),
         isOnlineProvider.overrideWith((ref) => Stream.value(true)),
       ],
     );
@@ -94,26 +118,34 @@ void main() {
     expect(shell.navigationShell.currentIndex, 0);
   });
 
-  testWidgets('the two unbuilt tabs are coming-soon placeholders', (
+  testWidgets('Message is the last coming-soon placeholder', (tester) async {
+    await pumpApp(tester);
+
+    // Learn left this list in Day 5 (real SubjectsScreen), Account in Day 8
+    // (real ProfileScreen) and Leaderboard on 2026-09-22 (D-008 closed —
+    // `docs/D008_LEADERBOARD_AUDIT.md`). Message is what remains, and unlike
+    // the other three its screen was never built: no endpoint exists for it.
+    await tester.tap(find.text('Message').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MessagePlaceholderScreen), findsOneWidget);
+    expect(find.text('Coming soon'), findsOneWidget);
+  });
+
+  testWidgets('the Leaderboard tab is the real board, not a placeholder', (
     tester,
   ) async {
     await pumpApp(tester);
 
-    // Learn left this list in Day 5 (real SubjectsScreen) and Account left it
-    // in Day 8 (real ProfileScreen) — Leaderboard and Message are what remain,
-    // and both are blocked on draft/absent endpoints. Leaderboard's screen IS
-    // built (`lib/features/leaderboard/`, tested separately); it is held here
-    // because `GET /leaderboard` is `x-stability: draft` — D-008.
-    for (final (label, type) in <(String, Type)>[
-      ('Leaderboard', LeaderboardPlaceholderScreen),
-      ('Message', MessagePlaceholderScreen),
-    ]) {
-      await tester.tap(find.text(label).last);
-      await tester.pumpAndSettle();
+    await tester.tap(find.text('Leaderboard').last);
+    await tester.pumpAndSettle();
 
-      expect(find.byType(type), findsOneWidget, reason: '$label tab');
-      expect(find.text('Coming soon'), findsOneWidget);
-    }
+    // This is the tab TAP — the board's own test navigates with `go`, because
+    // four of its cases run in Arabic where this label is المتصدرون.
+    expect(find.byType(LeaderboardScreen), findsOneWidget);
+    expect(find.text('Coming soon'), findsNothing);
+    // The board's own heading, deliberately a different key from the tab label.
+    expect(find.text('Leaderboard'), findsWidgets);
   });
 
   testWidgets('the Account tab is the real Profile hub, not a placeholder', (
@@ -139,7 +171,7 @@ void main() {
 
     await tester.tap(find.text('Leaderboard').last);
     await tester.pumpAndSettle();
-    expect(find.byType(LeaderboardPlaceholderScreen), findsOneWidget);
+    expect(find.byType(LeaderboardScreen), findsOneWidget);
 
     await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();

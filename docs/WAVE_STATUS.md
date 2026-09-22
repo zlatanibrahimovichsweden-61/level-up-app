@@ -1,6 +1,6 @@
 # Wave Status — the single source of project truth
 
-**Last updated:** 2026-09-12 (Day 10 Mistakes SHIPPED — re-vendor to 3.13.0-m1, models/repository/notifiers, overview + tree screens, entry point live; `validate.ps1` 943 passed / 0 failed / 1 skipped; previous: 2026-09-12 — Day 10 brief written, flow blocked on the re-vendor; 2026-09-10 — leaderboard gated behind its placeholder, D-008; earlier:
+**Last updated:** 2026-09-22 (Leaderboard UN-GATED — D-008 closed: audit ran, `GET /leaderboard` verified against real staging, `/leaderboard` serves the real board; `validate.ps1` 1429 passed / 0 failed / **0 skipped** — the suite has no skipped test for the first time since 2026-09-10; previous: 2026-09-12 — Day 10 Mistakes SHIPPED — re-vendor to 3.13.0-m1, models/repository/notifiers, overview + tree screens, entry point live; `validate.ps1` 943 passed / 0 failed / 1 skipped; previous: 2026-09-12 — Day 10 brief written, flow blocked on the re-vendor; 2026-09-10 — leaderboard gated behind its placeholder, D-008; earlier:
 2026-09-08 — Day 8-9, quiz review shipped, zero endpoints; 2026-09-05 — documentation
 reconciliation to contract v3.0.0-m1, Phase 3B)
 **Branch:** `merged` — `dev` + `main` joined on 2026-08-22 (`99b5cba`); both are kept
@@ -56,7 +56,7 @@ repository's history and it is why the ladder exists.
 | **4** | Documentation + audit protocol | ✅ COMPLETE (2026-08-22) | the docs commit that carries this file | documentation only | — |
 | **Docs 09-05** | Documentation reconciliation to contract 3.0.0-m1 (Phase 3B) | ✅ COMPLETE (2026-09-05) | uncommitted — see the dated section below | documentation only; `validate.ps1` 862 passed / 0 failed | review-only pass — see the dated section below |
 | **Day 8-9** | Quiz Review screen (`162:2377`) — session-scoped, **zero endpoints** | ✅ COMPLETE (2026-09-08) | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 911 passed / 0 failed | not yet reviewed |
-| **Leaderboard** | Board built (13 files, 25 tests) — **held behind its placeholder**, D-008 | ⚠️ **BUILT, NOT REACHABLE** (2026-09-08 built · 2026-09-10 gated) | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 909 passed / 0 failed (1 skipped) | not yet reviewed |
+| **Leaderboard** | Board live on `/leaderboard` — D-008 CLOSED (`docs/D008_LEADERBOARD_AUDIT.md`) | ✅ **SHIPPED** (2026-09-08 built · 2026-09-10 gated · 2026-09-22 audited + un-gated) | `GET /leaderboard` (`stable`, `openapi.yaml:2007`); `getMyRank` stays unconsumed by decision | **API VERIFIED** — decoded against staging `0f97f289` 2026-09-22; `validate.ps1` 1429 passed / 0 failed / 0 skipped. **Device pass still owed** | not yet reviewed |
 | **Day 10** | Mistakes / "My Fault" — overview + both tree shapes, `docs/day10_mistakes_brief.md` | ✅ **COMPLETE (2026-09-12)** — the gate passed: `contract/` re-vendored to `2dca3c5` (3.13.0-m1), so both operations now exist at our own pin. Read-only; the replay quiz is deliberately NOT built | uncommitted — see the dated section below | BUILD VERIFIED; `validate.ps1` 943 passed / 0 failed (1 skipped) | not yet reviewed |
 | **Final** | Whole-project Fable review | ⏳ NOT STARTED | — | — | — |
 
@@ -127,8 +127,9 @@ particular is a widget-test claim only — memory records it as dead on device 2
 re-confirmed.
 
 **Not done, deliberately:** the replay quiz (`404:6853` / `404:7234`), which is what makes the
-leaves inert; the account-deletion cancel screen; un-gating the leaderboard (D-008 — its own
-decision, its own commit, unaffected by this work); flashcards; favourites; quiz history.
+leaves inert; the account-deletion cancel screen; flashcards; favourites; quiz history.
+(Un-gating the leaderboard was on this list until 2026-09-22, when D-008 closed — it did
+get its own decision and its own commit, as written.)
 
 **Still owed by others:** the designer's ruling on the count caption's measured **2.68:1** on its
 own card (#71, found by measurement during this build), on the Arabic count wording (#59), and on
@@ -137,7 +138,48 @@ whether the Cairo/Inter mix was intentional (#68); a capture pass over the dark 
 
 ---
 
-## Leaderboard gated behind its placeholder, 2026-09-10
+## Leaderboard UN-GATED — D-008 closed, 2026-09-22
+
+**What changed.** `/leaderboard` serves `LeaderboardScreen`. The gate D-008 put up on
+2026-09-10 is closed, and the section below is **superseded** — kept because it records the
+sequence.
+
+**What actually closed it, and what did not.** Not the stability flip: `getLeaderboard` became
+`stable` on 2026-09-05 and the placeholder stayed up for seventeen more days, correctly, because
+un-gating was never a revert. What closed it is the audit the Correction of 2026-09-10 asked for
+— `docs/D008_LEADERBOARD_AUDIT.md` — against the six behavioural changes the board predates.
+**Verdict: the board passes, and no file under `lib/features/leaderboard/` was changed to make it
+pass.** Four changes are actively honoured; two are N/A because `getMyRank` is deliberately not
+called.
+
+**The board has met a real server.** `GET /leaderboard` decoded through the real repository
+against staging `0f97f289` on 2026-09-22 — one row, `hasMore: false`, `isMe` true on it
+(`.ai/audits/current/smoke-staging-2026-09-22.md`). Both leaderboard routes answer `401`
+unauthenticated, not the `404` an absent route gives, so both are deployed. **Endpoint coverage
+21/21 → 22/22 stable.**
+
+**Verification level: API, and that is the ceiling here.** One account, one scope, a one-row
+board. Pagination, the 200-row bound, short pages, `governorate`, both university scopes and the
+privacy filtering were NOT exercised against a server and remain BUILD-level. **The device pass
+D-008 asks for is still owed** — every previous device sighting of this board ran on a local edit
+that was reverted the same session (`DEVICE_VERIFICATION_2026-09-20.md:31`).
+
+**The suite has no skipped test for the first time since 2026-09-10.** `validate.ps1` — format
+PASS, analyze PASS (0 issues), **1429 passed / 0 failed / 0 skipped**, OVERALL PASS. The count
+moved 1427 → 1429 for accounted reasons: the shell's placeholder test splits back into two (one
+for Message, one asserting the Leaderboard tab is the real board), and the skipped shell-branch
+test rejoins the passed column.
+
+**Carried forward unchanged, so un-gating does not imply they closed:** the share button is
+visible and inert (no sharing surface in the contract, and a board carries minors' names and
+scores); there is no realtime (`contract/realtime.md:9` — hub "not drafted"); the podium shows no
+`level` (the contract carries none on this endpoint and one was not invented); and
+`403 account_pending_deletion` still cannot route to a cancel screen that does not exist. One
+audit finding (F-1) is recorded and deliberately not fixed — it needs a copy decision.
+
+---
+
+## Leaderboard gated behind its placeholder, 2026-09-10 — SUPERSEDED by the section above
 
 **What this corrects.** A complete leaderboard entered the tree on 2026-09-08 — 13 files under
 `lib/features/leaderboard/`, 25 tests — and was wired live on the shell's second branch. This file

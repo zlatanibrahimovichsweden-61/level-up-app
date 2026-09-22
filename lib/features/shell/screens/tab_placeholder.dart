@@ -4,11 +4,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 
-/// The shared body of the four not-yet-built tabs.
+/// The shared body of the not-yet-built tabs. **One is left: Message.**
 ///
 /// Each tab gets its own screen class (below) rather than one parameterised
 /// route, so that replacing a placeholder with the real screen is a one-line
-/// router change and the diff shows exactly which tab was built.
+/// router change and the diff shows exactly which tab was built. Learn (Day 5),
+/// Account (Day 8) and Leaderboard (2026-09-22) have each left this file that
+/// way.
 class TabPlaceholder extends StatelessWidget {
   const TabPlaceholder({super.key, required this.title});
 
@@ -38,30 +40,13 @@ class TabPlaceholder extends StatelessWidget {
   }
 }
 
-/// `/leaderboard` — real data is `GET /leaderboard` and `GET /leaderboard/me`.
-/// Both are **`x-stability: stable`** at the current pin 768e67d (3.22.0-m1),
-/// at `openapi.yaml:2007` and `:2112`. The board itself is fully built and
-/// tested under `lib/features/leaderboard/` — it is held behind this
-/// placeholder, not unwritten.
-///
-/// This doc used to say both operations were `draft` at the pinned contract.
-/// That was true at the old pin 184d6ec (3.0.0-m1) and went stale at the
-/// 2026-09-12 re-vendor. **Stability is no longer the gate.** What remains is
-/// D-008's audit step: un-gating is NOT a plain revert, because the board
-/// predates six behavioural changes (top-200 bound, signed/expiring cursor,
-/// short pages while `hasMore` is true, `scoreHidden` exclusion, `403` on
-/// self-rank, `404 not_ranked`). Audit against them first — D-008, Correction
-/// of 2026-09-10.
-///
-/// No live updates either way: `contract/realtime.md:9` lists the `leaderboard`
-/// hub as "not drafted".
-class LeaderboardPlaceholderScreen extends StatelessWidget {
-  const LeaderboardPlaceholderScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) =>
-      TabPlaceholder(title: AppLocalizations.of(context).navLeaderboard);
-}
+// The Leaderboard tab's placeholder was removed on 2026-09-22 —
+// `/leaderboard` now serves the real LeaderboardScreen (see app_router.dart).
+// It was held by D-008 from 2026-09-10, not by anything missing from the
+// board; what closed the gate is `docs/D008_LEADERBOARD_AUDIT.md`, not the
+// stability flip. Sharing and live updates remain gaps: there is no sharing
+// surface in the contract, and `contract/realtime.md:9` lists the
+// `leaderboard` hub as "not drafted".
 
 // The Learn tab's placeholder was removed in Day 5 — `/learn` now serves the
 // real SubjectsScreen (see app_router.dart).
