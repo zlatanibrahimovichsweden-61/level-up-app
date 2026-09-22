@@ -28,6 +28,8 @@ import 'package:level_up_app/features/auth/models/token_pair.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
 import 'package:level_up_app/features/catalog/models/subject_tree.dart';
 import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/leaderboard/models/leaderboard_models.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 import 'package:level_up_app/features/profile/models/profile_update.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/features/quiz/models/quiz_mode.dart';
@@ -106,6 +108,16 @@ String shapeOf(Object? d) {
 void say(String s) => print(s);
 
 void report(String label, Object? value) => say('  $label: $value');
+
+/// Leaderboard ranks are dense and ordered. Reported, not asserted: a page may
+/// legally shift between calls at a seam (live sets), so a strict assert here
+/// would fail on correct server behaviour.
+bool _ascending(List<int> xs) {
+  for (var i = 1; i < xs.length; i++) {
+    if (xs[i] <= xs[i - 1]) return false;
+  }
+  return true;
+}
 
 void main() {
   setUpAll(() {
@@ -493,6 +505,61 @@ void main() {
       profileRepo.getEntitlements,
     );
     if (ents != null) report('items', ents.length);
+
+    // -- leaderboard ----------------------------------------------------
+    // Placed BEFORE the catalog deliberately: every catalog branch below can
+    // early-return (staging has seeded no subjects for this cohort since at
+    // least 2026-09-04), and the board does not depend on the catalog at all.
+    // Behind the catalog it would never have run.
+    //
+    // The scope is derived the same way the screen derives it —
+    // LeaderboardScope.scopesFor(me).first — so this exercises the real
+    // track/country rule rather than a hand-picked value the app would never
+    // send. `/leaderboard/me` is NOT called: D-008 and the contract's
+    // "do not add a synthetic self-rank row" both stand (openapi.yaml:2050).
+    say('\n--- GET /leaderboard ---');
+    final scopes = LeaderboardScope.scopesFor(me);
+    report('scopes for this account', scopes.map((s) => s.wire).toList());
+    final board = await typed(
+      'GET /leaderboard',
+      () => container
+          .read(leaderboardRepositoryProvider)
+          .getLeaderboard(scope: scopes.first, limit: 20),
+    );
+    if (board != null) {
+      report('decode', 'OK — CursorPage<LeaderboardEntry>');
+      report('scope', scopes.first.wire);
+      report('rows', board.items.length);
+      report('hasMore', board.hasMore);
+      report('nextCursor', board.nextCursor == null ? 'null' : 'present');
+      // A short page while hasMore is true is LEGAL (3.7.0-m1) — assert the
+      // contract's invariants, never "rows > 0".
+      for (final e in board.items) {
+        expect(e.rank, greaterThanOrEqualTo(1), reason: 'rank is 1-based');
+      }
+      final ranks = board.items.map((e) => e.rank).toList();
+      report('ranks ascending', '${ranks.length < 2 || _ascending(ranks)}');
+      report('isMe rows', board.items.where((e) => e.isMe).length);
+      if (board.hasMore && board.nextCursor != null) {
+        say('\n--- GET /leaderboard (page 2, echoed cursor) ---');
+        final p2 = await typed(
+          'GET /leaderboard page2',
+          () => container
+              .read(leaderboardRepositoryProvider)
+              .getLeaderboard(
+                scope: scopes.first,
+                cursor: board.nextCursor,
+                limit: 20,
+              ),
+        );
+        if (p2 != null) {
+          report(
+            'decode',
+            'OK — ${p2.items.length} rows, hasMore ${p2.hasMore}',
+          );
+        }
+      }
+    }
 
     // -- catalog --------------------------------------------------------
     final catalog = container.read(catalogRepositoryProvider);
