@@ -80,8 +80,48 @@ dev_dependencies:
   riverpod_generator: ^4.0.4
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
+  # Generates every Android mipmap / iOS appiconset size from the single
+  # master in assets/launcher_icon/. Regenerate with:
+  #   dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.4
   # hive_ce_generator removed with its runtime packages — it generated nothing
   # (no Hive adapters exist anywhere in the tree).
+
+# App launcher icon — generated, never hand-edited.
+#
+# Source of truth: assets/launcher_icon/app_icon.svg, the designer's square
+# icon frame (Figma "Frame 1000003080"), vendored unmodified. The two PNG
+# masters beside it are rendered from that vector at 1024x1024 — nothing is
+# upscaled from the 82px export.
+#
+#   app_icon.png             opaque, square-cornered. iOS forbids alpha and
+#                            masks its own corners, so the frame's rx=14
+#                            corners are flattened onto its own white.
+#   app_icon_foreground.png  ink only, no background. Scaled so the artwork's
+#                            minimal enclosing circle matches Android's 66dp-
+#                            of-108dp safe circle, so no launcher mask can
+#                            clip "LEARN - GROW - ACHIEVE".
+#
+# These masters are NOT listed under flutter: assets: on purpose — they are
+# build-time inputs, not runtime assets, and must not ship in the bundle.
+#
+# Regenerate after any of them changes:  dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/launcher_icon/app_icon.png"
+
+  android: "ic_launcher"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/launcher_icon/app_icon_foreground.png"
+  # The foreground master is already scaled to Android's safe circle, so the
+  # package's default 16% inset would pad it a second time and leave the
+  # lockup floating small in the middle of the tile.
+  adaptive_icon_foreground_inset: 0
+  min_sdk_android: 24
+
+  ios: true
+  # Belt-and-braces: the master is already alpha-free, but App Store Connect
+  # rejects any transparency in the 1024 marketing icon.
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
