@@ -92,10 +92,11 @@ dev_dependencies:
 # Source of truth: assets/launcher_icon/app_icon.svg, the designer's square
 # icon frame (Figma "Frame 1000003080"), vendored unmodified. The two PNG
 # masters beside it are rendered from that vector at 1024x1024 — nothing is
-# upscaled from the 82px export.
+# upscaled from a PNG export. Current source: the designer's 2026-09-24 re-export
+# (732x732 canvas, same artwork as the first 82x82 delivery).
 #
 #   app_icon.png             opaque, square-cornered. iOS forbids alpha and
-#                            masks its own corners, so the frame's rx=14
+#                            masks its own corners, so the frame's rounded
 #                            corners are flattened onto its own white.
 #   app_icon_foreground.png  ink only, no background. Scaled so the artwork's
 #                            minimal enclosing circle matches Android's 66dp-
