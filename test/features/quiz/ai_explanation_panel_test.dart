@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/quiz/models/explanation_state.dart';
 import 'package:level_up_app/features/quiz/widgets/ai_explanation_panel.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
+import 'package:level_up_app/features/quiz/widgets/ai_education_glyph.dart';
 
 /// The AI EXPLANATION panel's failure affordance.
 ///
@@ -16,11 +18,15 @@ import 'package:level_up_app/l10n/app_localizations.dart';
 void main() {
   /// Pumps the panel in one state. The tap-through case builds its own so it
   /// can count requests; everything else only looks at what is rendered.
-  Future<void> pumpPanel(WidgetTester tester, ExplanationState state) async {
+  Future<void> pumpPanel(
+    WidgetTester tester,
+    ExplanationState state, {
+    ThemeData? theme,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('en'),
-        theme: AppTheme.light,
+        theme: theme ?? AppTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -102,12 +108,20 @@ void main() {
       expect(retry, findsNothing);
     });
 
-    testWidgets('for subscription_required — asking again fixes nothing', (
-      tester,
-    ) async {
-      await pumpPanel(tester, const ExplanationFailed('subscription_required'));
+    // API→UI Wave 12 (owner ruling): the screen opens the contract's popup,
+    // and the panel keeps the button the contract renders from
+    // `explanationAvailable`. No "try again", and no "not available" either:
+    // the popup has just said an explanation exists.
+    testWidgets('for subscription_required — the popup explains, the '
+        'button stays', (tester) async {
+      await pumpPanel(tester, const ExplanationSubscriptionRequired());
 
       expect(retry, findsNothing);
+      expect(find.text('Show explanation'), findsOneWidget);
+      expect(
+        find.text('No explanation is available for this question.'),
+        findsNothing,
+      );
     });
 
     testWidgets('for a code nobody has classified yet — default deny', (
@@ -128,6 +142,60 @@ void main() {
 
       expect(retry, findsNothing);
       expect(find.text('Mitochondria make ATP.'), findsOneWidget);
+    });
+  });
+
+  // --------------------------------------------------- API→UI Wave 12 -----
+  group('Wave 12: the header (159:1811 / 337:9271)', () {
+    final glyph = find.byWidgetPredicate(
+      (w) =>
+          w is SvgPicture &&
+          w.bytesLoader is SvgAssetLoader &&
+          (w.bytesLoader as SvgAssetLoader).assetName ==
+              'assets/icons/ai_education.svg',
+    );
+
+    // W12-3. It was Material's `Icons.school_outlined`. #98 (owner ruling
+    // 2026-09-27): drawn at the frame's scale in its 26.55 box, 8.089 before
+    // the title; boxed into the square it drew at 1.062x.
+    testWidgets('light: the frame\'s ai-education glyph at the frame\'s scale, '
+        '#384F47', (tester) async {
+      await pumpPanel(tester, const ExplanationIdle());
+
+      final svg = tester.widget<SvgPicture>(glyph);
+      expect(svg.height, AiEducationGlyph.drawnHeight);
+      expect(svg.width, isNull);
+      final box = tester.getRect(find.byType(AiEducationGlyph));
+      expect(box.size, const Size.square(26.55));
+      expect(
+        tester.getRect(find.text('AI EXPLANATION')).left - box.right,
+        moreOrLessEquals(8.089, epsilon: 0.01),
+      );
+      expect(
+        svg.colorFilter,
+        const ColorFilter.mode(Color(0xFF384F47), BlendMode.srcIn),
+      );
+      // The title beside it names the panel; the glyph must not add an image.
+      expect(svg.excludeFromSemantics, isTrue);
+      expect(find.byIcon(Icons.school_outlined), findsNothing);
+      expect(
+        tester.widget<Text>(find.text('AI EXPLANATION')).style!.color,
+        const Color(0xFF384F47),
+      );
+    });
+
+    // W12-4. Dark took the lavender primary; `337:9271` draws #FCFBF9.
+    testWidgets('dark: the glyph and the title are #FCFBF9', (tester) async {
+      await pumpPanel(tester, const ExplanationIdle(), theme: AppTheme.dark);
+
+      expect(
+        tester.widget<SvgPicture>(glyph).colorFilter,
+        const ColorFilter.mode(Color(0xFFFCFBF9), BlendMode.srcIn),
+      );
+      expect(
+        tester.widget<Text>(find.text('AI EXPLANATION')).style!.color,
+        const Color(0xFFFCFBF9),
+      );
     });
   });
 }

@@ -190,11 +190,15 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       // the same GET is safe because the server side is idempotent, so a retry
       // never causes a duplicate generation.
       //
-      // Exhaustive over the four states, no `_`: a fifth added later must fail
+      // Exhaustive over the five states, no `_`: a sixth added later must fail
       // to compile here rather than being silently swallowed into "block",
       // exactly as the `emit` switch below refuses a wildcard.
       if (switch (session.explanation) {
         ExplanationIdle() => false,
+        // Asks the server again: the student may have subscribed on the
+        // website since the popup. Nothing is generated for an unsubscribed
+        // caller, so there is no generation to double up.
+        ExplanationSubscriptionRequired() => false,
         ExplanationFailed(:final isRetryable) => !isRetryable,
         ExplanationPending() => true,
         ExplanationLoaded() => true,
@@ -282,8 +286,16 @@ class QuizBloc extends Bloc<QuizEvent, QuizState> {
       } on AppException catch (error) {
         if (isClosed || _pollingFor != questionId) return;
         // Includes the 403 the contract calls expected. Rendered as "not
-        // available", never as a failed quiz.
-        add(ExplanationUpdated(questionId, ExplanationFailed(error.code)));
+        // available", never as a failed quiz - except the subscription 403,
+        // whose own UX is the contract's popup.
+        add(
+          ExplanationUpdated(
+            questionId,
+            error.code == 'subscription_required'
+                ? const ExplanationSubscriptionRequired()
+                : ExplanationFailed(error.code),
+          ),
+        );
         return;
       } on Object {
         // F-7-01: same terminal-state guarantee for the poll loop.

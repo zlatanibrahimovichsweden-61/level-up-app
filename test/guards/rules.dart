@@ -502,3 +502,49 @@ String? dartClassBody(String dart, String className) {
   // so the caller fails instead of asserting against half a class.
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// RULE: never pick a mirror-image glyph by condition (the RTL double flip).
+// ---------------------------------------------------------------------------
+
+/// Each Material glyph paired with its mirror image. Every one of these
+/// carries `matchTextDirection: true`, so [Icon] already flips it in RTL.
+const _mirrorGlyphs = <String, String>{
+  'chevron_left': 'chevron_right',
+  'arrow_back': 'arrow_forward',
+  'arrow_back_ios': 'arrow_forward_ios',
+  'arrow_back_ios_new': 'arrow_forward_ios',
+  'arrow_left': 'arrow_right',
+  'keyboard_arrow_left': 'keyboard_arrow_right',
+  'navigate_before': 'navigate_next',
+  'first_page': 'last_page',
+};
+
+String _baseGlyph(String name) =>
+    name.replaceFirst(RegExp(r'_(rounded|outlined|sharp)$'), '');
+
+bool _areMirrors(String a, String b) {
+  final x = _baseGlyph(a);
+  final y = _baseGlyph(b);
+  return _mirrorGlyphs[x] == y || _mirrorGlyphs[y] == x;
+}
+
+/// Conditionals that choose between a glyph and its mirror image:
+/// `cond ? Icons.chevron_left : Icons.chevron_right`.
+///
+/// This is the shape of the bug API→UI Wave 07 fixed. `forwardChevron()`
+/// returned `chevron_left` in RTL; [Icon] mirrored it back, because the glyph
+/// carries `matchTextDirection: true`, and every drill-in chevron in the app
+/// pointed right in Arabic. A widget test caught it only once one was written.
+/// The whole class of mistake is a conditional between mirror glyphs, whatever
+/// the condition, so that is what this matches. The fix is always the LTR
+/// glyph, unconditionally.
+List<String> mirroredGlyphSwaps(List<Source> sources) {
+  final ternary = RegExp(r'\?\s*Icons\.(\w+)\s*:\s*Icons\.(\w+)');
+  return [
+    for (final s in sources)
+      for (final m in ternary.allMatches(stripComments(s.text)))
+        if (_areMirrors(m[1]!, m[2]!))
+          '${s.path}: Icons.${m[1]} / Icons.${m[2]}',
+  ];
+}

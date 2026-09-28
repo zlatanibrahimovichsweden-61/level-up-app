@@ -151,6 +151,12 @@ Ranked, with `file:line`. Full detail in `.ai/audits/current/responsive.md`.
 | 9 | `core/widgets/circle_back_button.dart:40` + 4 more | 48dp hit box around the 35dp paint |
 | 10 | 8 sites | `tooltip:` / `label:` / `Semantics` |
 | 11 | `quiz/screens/quiz_result_screen.dart:284` | Wrap in `Flexible` |
+| 12 | `catalog/widgets/tree_list_row.dart` (the `progress != null` row) | Wrap the caption in `Flexible`. **Narrow widths only**: fine at 375 and 411 dp up to 2.0× in `en` and `ar`; overflows at 320 dp 2.0× (`en`, 17 px) and at 250 dp from 1.3× |
+
+Item 12 was added on 2026-09-25 (API→UI Wave 08), measured with the app's own fonts (`loadAppFonts`) on
+the Lectures list. An earlier note put it at **7 and 20 px at 1.3×** on a 375 dp phone. Those numbers reproduce
+exactly with the TEST font, which draws every glyph a full em wide, and vanish with the real fonts. They were a
+test-font artefact.
 
 ---
 

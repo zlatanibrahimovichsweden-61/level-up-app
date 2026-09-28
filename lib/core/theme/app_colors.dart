@@ -44,6 +44,29 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.quizOptionFill,
     required this.quizOptionBorder,
     required this.quizDivider,
+    required this.quizSetupSubject,
+    required this.quizSetupScope,
+    required this.limitSheetTitle,
+    required this.limitSheetClose,
+    required this.quizHeaderGlyph,
+    required this.quizHeaderRule,
+    required this.quizProgressFill,
+    required this.quizProgressCounter,
+    required this.quizQuestionText,
+    required this.aiPanelTitle,
+    required this.quizResultTitle,
+    required this.quizResultSubtitle,
+    required this.resultRingFillFrom,
+    required this.resultRingFillTo,
+    required this.resultPercentText,
+    required this.resultBucketLabel,
+    required this.resultRewardsTitle,
+    required this.resultStarGlyph,
+    required this.resultPointsValue,
+    required this.resultPointsUnit,
+    required this.quizReviewTitle,
+    required this.reviewFilterIdleLabel,
+    required this.reviewRowLabel,
     required this.quizCorrectFill,
     required this.quizCorrectBorder,
     required this.quizWrongFill,
@@ -59,6 +82,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.mistakesRowBorder,
     required this.mistakesRowFill,
     required this.mistakesBadgeFill,
+    required this.mistakesCardChevron,
+    required this.mistakesRowChevron,
     required this.navBarFill,
     required this.navAccent,
     required this.navCentreIdleFill,
@@ -74,30 +99,41 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.profileStatValue,
     required this.destructive,
     required this.dialogNote,
+    required this.profileDialogClose,
     required this.podiumAccent,
     required this.podiumOnAccent,
     required this.podiumFirstRing,
     required this.podiumSecondRing,
     required this.podiumThirdRing,
     required this.podiumBadgeIdle,
+    required this.podiumSecondBadgeBorder,
+    required this.podiumThirdBadgeFill,
     required this.backChipSurfaceFill,
     required this.registrationBackChipFill,
     required this.languagePillFill,
+    required this.brandLogo,
     required this.homeBellFill,
     required this.dailyTasksFill,
     required this.dailyTasksBorder,
     required this.topStudentFill,
-    required this.topStudentTopBorder,
+    required this.topStudentBorder,
+    required this.topStudentName,
+    required this.topStudentPoints,
     required this.continueLearningFillSchool,
     required this.continueLearningFillUniversity,
     required this.subjectSearchFill,
     required this.subjectSearchTopBorder,
     required this.subjectCardFill,
+    required this.subjectCardTitle,
+    required this.subjectCardChevron,
+    required this.subjectCardProgress,
     required this.mistakesPillFill,
     required this.mistakesPillAccent,
     required this.treeRowFill,
     required this.treeRowBorder,
     required this.treeRowBadgeFill,
+    required this.treeRowChevron,
+    required this.treeRowProgress,
     required this.pillTrackFill,
     required this.pillTrackSelectedFill,
     required this.pillTrackLabel,
@@ -121,6 +157,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.scopeIdleLabel,
     required this.scopeSelectedFill,
     required this.leaderboardRowFill,
+    required this.leaderboardRowText,
     required this.profileHeaderFill,
     required this.profileEditChipFill,
     required this.profileStatFill,
@@ -137,6 +174,9 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.otpCardGlow,
     required this.otpDigitFill,
     required this.otpDigitBorder,
+    required this.otpTimerContent,
+    required this.otpErrorText,
+    required this.otpDigitErrorBorder,
     required this.trackCardFill,
     required this.trackCardArtShadow,
     required this.backlight,
@@ -225,13 +265,16 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // --- Catalog tokens (Figma Learn/Subjects 337:5702) -----------------------
   //
-  // Same situation as the Home tokens above: only a DARK Learn frame exists, so
-  // the dark values are Figma-verbatim and the light values reuse an approved
-  // light token rather than an invented hex.
+  // Both canvases have a Subjects frame: light `134:3837` (school) and
+  // `308:4521` (university, identical), dark `337:5702`. This note used to say
+  // only the dark one existed, so the light values here reused approved light
+  // tokens. API→UI Wave 07 read the light frames (2026-09-25).
 
-  /// Unfilled track of the per-subject progress bar. Figma dark `#ECECEC` — a
-  /// LIGHT track on a dark card, the inverse of [progressTrack] on Home. Kept
-  /// separate so correcting one bar never silently restyles the other.
+  /// Unfilled track of the per-subject progress bar: `#ECECEC` on both
+  /// canvases (`135:630` light, `337:5744` dark). Light carried `#D1D1D1`
+  /// ([fieldBorder]) until Wave 07. The inverse of [progressTrack] on Home in
+  /// dark; kept separate so correcting one bar never silently restyles the
+  /// other.
   final Color catalogTrack;
 
   // --- Onboarding + success tokens ------------------------------------------
@@ -326,9 +369,123 @@ class AppColors extends ThemeExtension<AppColors> {
   /// mean inventing a dark value.
   final Color quizOptionBorder;
 
-  /// The rule under the setup screen's scope header. Figma light `#CCD5D2`;
-  /// dark reuses [progressTrack], the approved dark hairline.
+  /// The rule under the setup screen's scope header. Figma light `#CCD5D2`
+  /// (`146:2287`); dark `rgba(204,213,210,0.2)` (`337:6268`). Dark used to
+  /// reuse [progressTrack], from before the dark frame was read (API→UI
+  /// Wave 11). Its width is `AppElevation.quizSetupDividerWidth`.
   final Color quizDivider;
+
+  /// The subject line over the setup screen's scope ("Biology"). Figma light
+  /// `#4B675E` (`146:2289`), dark `#FCFBF9` (`337:6270`).
+  final Color quizSetupSubject;
+
+  /// The setup screen's scope name ("Cell Membrane"). Figma light `#384F47`
+  /// (`146:2291`), dark `#FCFBF9` (`337:6272`). Its own token rather than
+  /// `colorScheme.primary`: equal in light, but the dark primary is the
+  /// lavender accent and the dark frame draws the scope in `#FCFBF9`.
+  final Color quizSetupScope;
+
+  /// The limit card's title. Figma `#EF4444` (`207:5904`). There is no dark
+  /// Limitation frame (docs/DESIGN_ISSUES.md #74), so dark keeps the light
+  /// value, as [quizOptionBorder] does; splitting it would mean inventing one.
+  final Color limitSheetTitle;
+
+  /// The limit card's ✕. Figma light `#3F3F3F`, the SVG stroke of
+  /// `akar-icons:cross` in `207:5904`. No dark frame (#74), and `#3F3F3F`
+  /// would all but vanish on the dark card, so dark takes `#FCFBF9`, the
+  /// dark [textPrimary] the Profile dialog's ✕ already uses: a choice between
+  /// two existing values, not a new one.
+  final Color limitSheetClose;
+
+  /// The quiz header's ✕, the frame's own 30 dp cross. Figma light
+  /// `#384F47` (`159:1227`, SVG stroke), dark `#FCFBF9` (`337:9205`). It was
+  /// the app bar's foreground, [textPrimary]: `#0E0E0E` in light (API→UI
+  /// Wave 12).
+  final Color quizHeaderGlyph;
+
+  /// The rule under the quiz header. Figma `rgba(124,58,237,0.1)` at 1.18 on
+  /// both canvases (`159:1224`, `337:9202`). Not [quizDivider]: the setup
+  /// screen's header rule is a different grey-green on the frame before.
+  final Color quizHeaderRule;
+
+  /// The quiz progress bar's fill. Figma `#AE87E7` on both canvases (`308:5266`,
+  /// `348:7711`). It was `colorScheme.primary`, which is the green `#384F47`
+  /// in light.
+  final Color quizProgressFill;
+
+  /// The quiz header's `n/total` counter. Figma `#7070A0` on both canvases
+  /// (`308:5268`, `348:7713`). It was [mutedText], `#B3B3B3`.
+  final Color quizProgressCounter;
+
+  /// The quiz question's text. Figma light `#384F47` (`159:1259`), dark
+  /// `#FCFBF9` (`348:7666`). It was [textPrimary]: `#0E0E0E` in light.
+  final Color quizQuestionText;
+
+  /// The AI EXPLANATION panel's header: its glyph and its title. Figma light
+  /// `#384F47` (`159:1824`, the SVG stroke of `159:1839`), dark `#FCFBF9`
+  /// (`337:9277`, `337:9272`). It was `colorScheme.primary`: right in light,
+  /// the lavender accent in dark.
+  final Color aiPanelTitle;
+
+  /// The result header's "Quiz Complete!". Figma light `#384F47` (`159:2248`),
+  /// dark `#FCFBF9` (`337:6662`). It was [textPrimary]: `#0E0E0E` in light
+  /// (API→UI Wave 13).
+  final Color quizResultTitle;
+
+  /// The result header's "Subject — Scope" line. Figma light `#4B675E`
+  /// (`159:2250`), dark `#EEEEEE` (`337:6663`). It was [textSecondary].
+  final Color quizResultSubtitle;
+
+  /// The score ring's radial gradient, inner stop (offset 0.1439): `#AE87E7`
+  /// on both canvases (the `159:2240` / `337:6650` SVG exports). The ring was
+  /// `colorScheme.primary`, the green `#384F47` in light.
+  final Color resultRingFillFrom;
+
+  /// The score ring's radial gradient, outer stop (offset 1): `#7070A0` on
+  /// both canvases, same exports as [resultRingFillFrom].
+  final Color resultRingFillTo;
+
+  /// The ring's percentage figure. Figma light `#3D3D3D` (`159:2239`), dark
+  /// `#FCFBF9` (`337:6654`). It was [textPrimary]: `#0E0E0E` in light.
+  final Color resultPercentText;
+
+  /// A result bucket's "Correct" / "Wrong" label. Figma light `#384F47`
+  /// (`159:2295`), dark `#FCFBF9` (`337:6672`). It was [textPrimary].
+  final Color resultBucketLabel;
+
+  /// "REWARDS EARNED". Figma `#AE87E7` on both canvases (`159:2258`,
+  /// `337:6683`). It was [quizExplanationBody], `#7070A0`.
+  final Color resultRewardsTitle;
+
+  /// The rewards star, the frame's own glyph. `#7070A0` on both canvases (the
+  /// `159:2331` / `337:6686` SVG exports, fill and stroke). It was
+  /// `colorScheme.primary` on Material's `Icons.star`.
+  final Color resultStarGlyph;
+
+  /// The rewards line's "+N" run. Figma `#AE87E7` on both canvases
+  /// (`159:2335`, `337:6689`). The one-run line was `colorScheme.primary`.
+  final Color resultPointsValue;
+
+  /// The rewards line's "Points" run. Figma light `#010101` (`159:2337`), dark
+  /// `#FCFBF9` (`337:6690`).
+  final Color resultPointsUnit;
+
+  /// The review header's "Quiz Review". Figma light `#000000` (`162:2411`),
+  /// dark `#FCFBF9` (`337:6823`). It was [textPrimary], `#0E0E0E` in light,
+  /// under the shared `TitledChrome` (API→UI Wave 14).
+  final Color quizReviewTitle;
+
+  /// An idle review filter chip's label ("Correct", "Wrong"). Figma light
+  /// `#384F47` (`162:2783`, `162:2785`), dark `#FCFBF9` (`337:6831`). It was
+  /// [textPrimary], `#0E0E0E` in light. The selected chip keeps
+  /// [quizReviewFilterLabel].
+  final Color reviewFilterIdleLabel;
+
+  /// A review row's "QUESTION n". Figma light `#4B675E` (`162:2492`). Dark is
+  /// `#FCFBF9`, the question's own cream, NOT the frame's lavender `#AE87E7`
+  /// (`337:6714`): on the dark row fills that measures about 3:1, under the
+  /// 4.5:1 a 12-pt label needs (owner ruling 2026-09-27, DESIGN_ISSUES #54).
+  final Color reviewRowLabel;
 
   /// The revealed correct option. Figma `#BFFFC3` fill, `#00D33C` border; its
   /// badge is [successBadge], the same `#22C55E` the OTP screen already uses.
@@ -448,8 +605,9 @@ class AppColors extends ThemeExtension<AppColors> {
   /// share a token. The row is delineated by [mistakesRowBorder].
   final Color mistakesRowFill;
 
-  /// Foreground on both Mistakes surfaces: card title, row name, badge numeral
-  /// and both chevrons.
+  /// Foreground on both Mistakes surfaces: card title, row name and badge
+  /// numeral. The two chevrons have their own tokens since API→UI Waves 15
+  /// and 16: [mistakesCardChevron] and [mistakesRowChevron].
   ///
   /// Light `#384F47` (card title `404:6329`; the row-name frame `404:6648`
   /// says `#000000`, mapped to this per docs/DESIGN_ISSUES.md #57 and #68).
@@ -491,11 +649,24 @@ class AppColors extends ThemeExtension<AppColors> {
   /// step; the frame also gives it one effect whose type a view seat did not
   /// expose (docs/DESIGN_ISSUES.md #70). The numeral on it measures 14.24:1.
   ///
-  /// Light: the light frames' disc colour was never read, so this carries the
-  /// value the badge has always shipped with there - light [cardFill],
-  /// `#FDFDFD` - rather than a new unmeasured one. Light rendering does not
-  /// change.
+  /// Light `#F4E6FF`, the lavender of the catalog's disc, read off `404:6644`
+  /// in API→UI Wave 16. Until then the light disc had never been read and
+  /// carried light [cardFill], `#FDFDFD`, the value the badge always shipped
+  /// with.
   final Color mistakesBadgeFill;
+
+  /// The Mistakes overview card's chevron, the frame's `weui:arrow-filled`.
+  /// Figma light `#517066` (`404:6533`, the SVG's fill), dark `#FCFBF9`
+  /// (`404:7651`). It was [mistakesContent], the title's `#384F47`, in light
+  /// (API→UI Wave 15).
+  final Color mistakesCardChevron;
+
+  /// The Mistakes tree row's chevron. The frame draws a 1.33 stroke in
+  /// `#4B675E` light (`404:6654`, the row icon's SVG) and `#FCFBF9` dark
+  /// (`404:7778`). It was [mistakesContent], the name's `#384F47`, in light
+  /// (API→UI Wave 16). Numerically the catalog's [treeRowChevron], and kept
+  /// apart so the two drill-downs cannot restyle each other.
+  final Color mistakesRowChevron;
 
   // --- Bottom-nav tokens (Figma 59:1264 light · 348:6686 dark) --------------
   //
@@ -621,6 +792,13 @@ class AppColors extends ThemeExtension<AppColors> {
   /// does not restyle a dialog's warning copy.
   final Color dialogNote;
 
+  /// The Profile dialogs' ✕ (Logout, Go to Uni). Figma light `#3F3F3F`, the
+  /// SVG stroke of `akar-icons:cross` (`180:4707`, `180:4540`); dark `#FCFBF9`
+  /// (`337:7786`, `337:7670`). The light ✕ used to take [textPrimary]
+  /// (`#0E0E0E`); API→UI Wave 19. The same two values as [limitSheetClose],
+  /// kept separate because that card has no dark frame and this one does.
+  final Color profileDialogClose;
+
   // --- Elevation ------------------------------------------------------------
   //
   // `elevationShadow` lived here and is GONE, deleted 2026-09-20 by the edit
@@ -655,9 +833,12 @@ class AppColors extends ThemeExtension<AppColors> {
   // colours and the badge that is defensible on its own terms — see the note on
   // [podiumFirstRing] — but it is an assumption, not a reading.
 
-  /// The board's selection colour: the active segment of the scope switcher
-  /// (`158:840`) and the fill behind the caller's own row (`134:3554`). The
-  /// frame uses ONE value for both, which is why this is one token.
+  /// The fill behind the caller's own board row: `#DBB0FF` in both frames
+  /// (`134:3554` light, `337:5638` dark), read on the Wave 06 device walk
+  /// (W06-3). It carried `#D8B0FF` from a 2026-09-08 reading until then. The
+  /// scope switcher's selected segment has had its own token,
+  /// [scopeSelectedFill], since 2026-09-20; in light the two now hold the same
+  /// value, in dark they do not.
   ///
   /// **Identical in both palettes, deliberately** — same reasoning as
   /// [successBadge] and [dialogNote]: "this row is you" is a semantic
@@ -685,9 +866,20 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Third place's avatar ring (`134:3468`, 2px inner). See [podiumFirstRing].
   final Color podiumThirdRing;
 
-  /// Fill of the rank badge for second and third place (`134:3426`) — the
-  /// winner's badge takes [podiumFirstRing] instead.
+  /// Fill of the SECOND place rank badge (`134:3426` / `337:5582`). The
+  /// winner's badge takes [podiumFirstRing]; third place's takes
+  /// [podiumThirdBadgeFill]. Until Wave 06 this filled the third badge too.
   final Color podiumBadgeIdle;
+
+  /// The second place rank badge's 1px stroke, `#DC4A22` in both frames
+  /// (`134:3426` / `337:5582`). It is NOT [podiumSecondRing] (`#FF8228`, the
+  /// avatar's ring) — the badge was drawn a deeper orange.
+  final Color podiumSecondBadgeBorder;
+
+  /// Fill of the THIRD place rank badge, `#FCFBF9` in both frames (`134:3423`
+  /// / `337:5579`). Its stroke is `#DEDEDE`, the same value as
+  /// [podiumThirdRing], which it reuses.
+  final Color podiumThirdBadgeFill;
 
   // --- Elevation-pass surfaces (edit1.md section 8.1, read 2026-09-16/17) ---
   //
@@ -716,6 +908,15 @@ class AppColors extends ThemeExtension<AppColors> {
   /// paint [background], which is why it vanished into the page in dark.
   final Color languagePillFill;
 
+  /// The brand bird on Login — light `82:849` fills its three paths `#040404`,
+  /// dark `337:15678` fills the same paths `#FCFBF9` (both read from the
+  /// frames' SVG exports, 2026-09-24). The app ships ONE asset
+  /// (`bird_logo.svg`, `#040404`) and tints it with this, so the dark canvas
+  /// no longer draws a near-black bird on `#232428` (device walk, Wave 01).
+  /// Its own token rather than [textPrimary]: equal in dark, but light
+  /// [textPrimary] is `#0E0E0E`, not the logo's `#040404`.
+  final Color brandLogo;
+
   /// The Home header bell chip. `59:1466` / `337:5330`.
   final Color homeBellFill;
 
@@ -731,9 +932,21 @@ class AppColors extends ThemeExtension<AppColors> {
   /// light, which is why it is not [cardFill].
   final Color topStudentFill;
 
-  /// Top Student's TOP-only hairline — a 10%-alpha violet, the same on both
-  /// canvases. `59:2090` / `337:5460`.
-  final Color topStudentTopBorder;
+  /// Top Student's hairline — round all four sides and between the rows — a
+  /// 10%-alpha violet, the same on both canvases. `59:2090` / `337:5460`, both
+  /// `border-[1.208px]` all round (built top-only until W05-2).
+  final Color topStudentBorder;
+
+  /// A Top Student row's name. Light `#384F47` (`59:2096`), dark `#FCFBF9`
+  /// (`337:5466`). Its own token: the light value is the brand green, not
+  /// [textPrimary].
+  final Color topStudentName;
+
+  /// A Top Student row's points. Light orange `#E67E22` (`59:2098`), dark
+  /// lavender `#AE87E7` (`337:5468`). Numerically equal to [link] on both
+  /// canvases and kept separate: a score is not a link, and restyling links
+  /// must not restyle the board.
+  final Color topStudentPoints;
 
   /// Home "Continue Learning", school track.
   final Color continueLearningFillSchool;
@@ -755,6 +968,21 @@ class AppColors extends ThemeExtension<AppColors> {
   /// §7.9.4).
   final Color subjectCardFill;
 
+  /// The subject card's name. Light `#384F47` (`135:625`, and `404:6983` on
+  /// the university frame), dark `#FCFBF9` (`337:5739`). Read in API→UI Wave
+  /// 07; the card had drawn it in [textPrimary], near-black in light.
+  final Color subjectCardTitle;
+
+  /// The subject card's drill-in chevron, the `weui:arrow-filled` SVG's own
+  /// fill: light `#517066` (`135:626`, `404:6984`), dark `#FCFBF9`
+  /// (`337:5740`). A lighter green than the title, in the frame. Wave 07.
+  final Color subjectCardChevron;
+
+  /// The subject card's progress fill: `#AE87E7` on both canvases and both
+  /// tracks (`135:631`, `404:6989`, `337:5745`). Until Wave 07 the card used
+  /// the theme primary, which is green `#384F47` in light.
+  final Color subjectCardProgress;
+
   /// The Mistakes pill in the Subjects header. `404:7421`.
   final Color mistakesPillFill;
 
@@ -771,6 +999,20 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// The index disc inside a drill-down row. `337:5926`.
   final Color treeRowBadgeFill;
+
+  /// The catalog row's drill-in chevron, the frame's own STROKE: light
+  /// `#4B675E` (`135:1078`, the row's hairline green), dark `#FCFBF9`
+  /// (`337:5938`). Read in API→UI Wave 08; the row had drawn it in
+  /// [textPrimary], near-black in light. The Mistakes row keeps its content
+  /// colour.
+  final Color treeRowChevron;
+
+  /// The catalog row's progress fill AND its caption: `#AE87E7` on both
+  /// canvases (bar `135:1075` / `337:5936`, caption `135:1077` / `337:5937`;
+  /// the Lectures rows `309:5724` / `349:15647` agree). Until API→UI Wave 08
+  /// the row used the theme primary, green `#384F47` in light. Kept apart from
+  /// [subjectCardProgress] so correcting one bar never restyles the other.
+  final Color treeRowProgress;
 
   /// The segmented pill track (quiz-type tabs, Settings language) — ONE Figma
   /// component, two consumers. `180:5337` / `337:8177`.
@@ -932,10 +1174,10 @@ class AppColors extends ThemeExtension<AppColors> {
   /// for `158:840` at `#DBB0FF`. Three units of red apart, which is why it
   /// survived two readings - and why it is worth pinning rather than eyeing.
   ///
-  /// [podiumAccent] is deliberately NOT moved with it. The caller's own board
-  /// row (`134:3554`) was not re-read here, and the two tokens are only
-  /// near-identical by accident: this one genuinely differs per canvas, that
-  /// one is semantic and identical on both.
+  /// [podiumAccent] was deliberately NOT moved with it then, because the
+  /// caller's own board row (`134:3554`) had not been re-read. The Wave 06
+  /// walk read it at `#DBB0FF` too, and moved it. The two stay separate
+  /// tokens: this one differs per canvas, that one is `#DBB0FF` on both.
   ///
   /// ⚠️ The selected LABEL on this fill fails AA badly - [podiumOnAccent]
   /// measures **1.74:1** here in light and **2.02:1** in dark, worse than the
@@ -946,6 +1188,15 @@ class AppColors extends ThemeExtension<AppColors> {
 
   /// A leaderboard row. `134:3538` / `337:5630`.
   final Color leaderboardRowFill;
+
+  /// Rank, name AND points on an ordinary board row: ONE colour per canvas.
+  /// Light `#4F4F4F`, the file's "Gray 2" (`134:3541` / `134:3544` /
+  /// `134:3539`); dark `#FCFBF9` (`337:5633` / `337:5636` / `337:5631`).
+  /// First read on the Wave 06 device walk (W06-2). Until then the row used
+  /// [textPrimary], with [textSecondary] on the points; the frame draws the
+  /// points no quieter than the name. The caller's own row keeps
+  /// [podiumOnAccent].
+  final Color leaderboardRowText;
 
   /// The Profile header card. `169:4609` / `337:7455`.
   final Color profileHeaderFill;
@@ -1013,6 +1264,20 @@ class AppColors extends ThemeExtension<AppColors> {
   /// changes (`AppElevation.otpDigitBorderWidth`).
   final Color otpDigitBorder;
 
+  /// The resend-timer pill's glyph AND digits. Light `#384F47` (`82:1316`'s
+  /// digits; the stopwatch export's stroke), dark `#FCFBF9` (`337:19503`'s
+  /// digits and its glyph export). Not `colorScheme.primary`: that is lavender
+  /// on the dark canvas, where the frame draws both in cream.
+  final Color otpTimerContent;
+
+  /// The OTP card's error line — `#FF465C` on both canvases (`82:1447`,
+  /// `337:19294`). Not `colorScheme.error`, which is the M3 seed's red.
+  final Color otpErrorText;
+
+  /// A digit box's stroke in the `Type= wrong` variant — `#EB001B` at 50% on
+  /// both canvases (`82:1442`, `337:19287`), drawn at the resting width.
+  final Color otpDigitErrorBorder;
+
   /// The sign-up track card. `125:862` / `337:15981`. Dark was opaque
   /// [background]; the frame is a 20% wash under Glass.
   final Color trackCardFill;
@@ -1057,9 +1322,7 @@ class AppColors extends ThemeExtension<AppColors> {
     bellRing: Color(0xFF4B675E), // Figma 59:1466 — same in both canvases
     bellGlyph: Color(0xFF4B675E), // Figma 59:1466
     bellUnreadDot: Color(0xFFE67E22), // Figma 59:1466
-    catalogTrack: Color(
-      0xFFD1D1D1,
-    ), // = light fieldBorder (no light Learn frame)
+    catalogTrack: Color(0xFFECECEC), // Figma 135:630
     sheetFill: Color(0x33FCFBF9), // rgba(252,251,249,0.2) — Figma 459:43873
     // No such node in the light frame 81:92 — see the field's doc comment.
     onboardingIllustrationMask: null,
@@ -1069,6 +1332,29 @@ class AppColors extends ThemeExtension<AppColors> {
     quizOptionFill: Color(0xFFFCFBF9), // Figma 308:5153
     quizOptionBorder: Color(0xFF4B675E), // Figma 308:5153
     quizDivider: Color(0xFFCCD5D2), // Figma 146:2287
+    quizSetupSubject: Color(0xFF4B675E), // Figma 146:2289
+    quizSetupScope: Color(0xFF384F47), // Figma 146:2291
+    limitSheetTitle: Color(0xFFEF4444), // Figma 207:5904
+    limitSheetClose: Color(0xFF3F3F3F), // Figma 207:5904 (SVG stroke)
+    quizHeaderGlyph: Color(0xFF384F47), // Figma 159:1227 (SVG stroke)
+    quizHeaderRule: Color.fromRGBO(124, 58, 237, 0.1), // Figma 159:1224
+    quizProgressFill: Color(0xFFAE87E7), // Figma 308:5266
+    quizProgressCounter: Color(0xFF7070A0), // Figma 308:5268
+    quizQuestionText: Color(0xFF384F47), // Figma 159:1259
+    aiPanelTitle: Color(0xFF384F47), // Figma 159:1824
+    quizResultTitle: Color(0xFF384F47), // Figma 159:2248
+    quizResultSubtitle: Color(0xFF4B675E), // Figma 159:2250
+    resultRingFillFrom: Color(0xFFAE87E7), // Figma 159:2240 (SVG stop 0.1439)
+    resultRingFillTo: Color(0xFF7070A0), // Figma 159:2240 (SVG stop 1)
+    resultPercentText: Color(0xFF3D3D3D), // Figma 159:2239
+    resultBucketLabel: Color(0xFF384F47), // Figma 159:2295
+    resultRewardsTitle: Color(0xFFAE87E7), // Figma 159:2258
+    resultStarGlyph: Color(0xFF7070A0), // Figma 159:2331 (SVG)
+    resultPointsValue: Color(0xFFAE87E7), // Figma 159:2335
+    resultPointsUnit: Color(0xFF010101), // Figma 159:2337
+    quizReviewTitle: Color(0xFF000000), // Figma 162:2411
+    reviewFilterIdleLabel: Color(0xFF384F47), // Figma 162:2783
+    reviewRowLabel: Color(0xFF4B675E), // Figma 162:2492
     quizCorrectFill: Color(0xFFBFFFC3), // Figma 308:5166
     quizCorrectBorder: Color(0xFF00D33C), // Figma 308:5166
     quizWrongFill: Color(0x4DFFC0C0), // rgba(255,192,192,.3) — Figma 308:5158
@@ -1083,9 +1369,9 @@ class AppColors extends ThemeExtension<AppColors> {
     mistakesCount: Color(0xFFEF4444), // Figma 404:6338
     mistakesRowBorder: Color(0xFF4B675E), // Figma 404:6642
     mistakesRowFill: Color(0xFFEAD5D5), // Figma 404:6642
-    // The light disc was never read: the value the badge always shipped
-    // with (= light cardFill). See the field doc.
-    mistakesBadgeFill: Color(0xFFFDFDFD),
+    mistakesBadgeFill: Color(0xFFF4E6FF), // Figma 404:6644
+    mistakesCardChevron: Color(0xFF517066), // Figma 404:6533 (SVG fill)
+    mistakesRowChevron: Color(0xFF4B675E), // Figma 404:6654 (SVG stroke)
     navBarFill: Color(0xFFFCFBF9), // Figma 59:1264
     navAccent: Color(0xFF4B675E), // Figma 59:1264 — NOT Brand.greenPrimary
     navCentreIdleFill: Color(0xFFF3F1F8), // Figma 59:1003
@@ -1102,31 +1388,42 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to dark ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444), // Figma 176:1191
     dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
-    podiumAccent: Color(0xFFD8B0FF), // Figma 158:840 / 134:3554
+    profileDialogClose: Color(0xFF3F3F3F), // Figma 180:4707 (SVG stroke)
+    podiumAccent: Color(0xFFDBB0FF), // Figma 134:3554
     podiumOnAccent: Color(0xFFFCFBF9), // Figma 158:841
     podiumFirstRing: Color(0xFFFFCA28), // Figma 134:3418 border / 134:3429
     podiumSecondRing: Color(0xFFFF8228), // Figma 134:3497 border
     podiumThirdRing: Color(0xFFDEDEDE), // Figma 134:3468 border
     podiumBadgeIdle: Color(0xFFF4F4F4), // Figma 134:3426
+    podiumSecondBadgeBorder: Color(0xFFDC4A22), // Figma 134:3426 stroke
+    podiumThirdBadgeFill: Color(0xFFFCFBF9), // Figma 134:3423
     // --- Elevation pass (edit1.md section 8.1) ---
     backChipSurfaceFill: Color(0xFFFCFBF9), // Figma 90:208
     registrationBackChipFill: Color(0xFFFCFBF9), // Figma 337:19690 twin
     languagePillFill: Color(0xFFFCFBF9), // Figma 82:1093
+    brandLogo: Color(0xFF040404), // Figma 82:849 (SVG export fill)
     homeBellFill: Color(0xFFFCFBF9), // Figma 59:1466
     dailyTasksFill: Color(0xFFFCFBF9), // Figma 308:4305
     dailyTasksBorder: Color(0xFF4B675E), // Figma 308:4305
     topStudentFill: Color(0xFFFFFFFF), // Figma 59:2090 — pure white
-    topStudentTopBorder: Color.fromRGBO(124, 58, 237, 0.1), // Figma 59:2090
+    topStudentBorder: Color.fromRGBO(124, 58, 237, 0.1), // Figma 59:2090
+    topStudentName: Color(0xFF384F47), // Figma 59:2096
+    topStudentPoints: Color(0xFFE67E22), // Figma 59:2098
     continueLearningFillSchool: Color(0xFFF3E5FF), // school Home
     continueLearningFillUniversity: Color(0xFFDBB0FF), // university Home
     subjectSearchFill: Color(0xFFFCFBF9), // Figma 135:610
     subjectSearchTopBorder: Color(0xFFF3F4F6), // Figma 135:610
     subjectCardFill: Color(0xFFFFFFFF), // Figma 135:618 — pure white
+    subjectCardTitle: Color(0xFF384F47), // Figma 135:625
+    subjectCardChevron: Color(0xFF517066), // Figma 135:626 (SVG fill)
+    subjectCardProgress: Color(0xFFAE87E7), // Figma 135:631
     mistakesPillFill: Color(0xFFFCFBF9), // light Subjects header
     mistakesPillAccent: Color(0xFFEF4444), // Figma 404:7421 — same in both
     treeRowFill: Color(0xFFFCFBF9), // catalog Button rows
     treeRowBorder: Color(0xFF4B675E), // catalog Button rows
     treeRowBadgeFill: Color(0xFFF4E6FF), // catalog row disc
+    treeRowChevron: Color(0xFF4B675E), // Figma 135:1078 (SVG stroke)
+    treeRowProgress: Color(0xFFAE87E7), // Figma 135:1075
     pillTrackFill: Color(0xFFECECEC), // Figma 180:5337
     pillTrackSelectedFill: Brand.purplePrimary, // #AE87E7 — same in both
     pillTrackLabel: Color(0xFF384F47), // Figma 180:5339
@@ -1152,6 +1449,7 @@ class AppColors extends ThemeExtension<AppColors> {
     scopeIdleLabel: Color(0xFF384F47), // Figma 158:843
     scopeSelectedFill: Color(0xFFDBB0FF), // Figma 158:840 — see field doc
     leaderboardRowFill: Color(0xFFFFFFFF), // Figma 134:3538
+    leaderboardRowText: Color(0xFF4F4F4F), // Figma 134:3544 (Gray 2)
     profileHeaderFill: Color(0xFFFCFBF9), // Figma 169:4609
     profileEditChipFill: Color(0xFFFCFBF9), // pencil chip in 166:4416
     profileStatFill: Color(0xFFFCFBF9), // Figma 661:8571
@@ -1168,6 +1466,9 @@ class AppColors extends ThemeExtension<AppColors> {
     otpCardGlow: null, // no glow in the light frame
     otpDigitFill: Color(0xFFFDFDFD), // Rectangle 104-107
     otpDigitBorder: Color(0xFFD1D1D1), // Rectangle 104-107 — same in both
+    otpTimerContent: Color(0xFF384F47), // Figma 82:1316
+    otpErrorText: Color(0xFFFF465C), // Figma 82:1447
+    otpDigitErrorBorder: Color(0x80EB001B), // Figma 82:1442 rgba(235,0,27,0.5)
     trackCardFill: Color(0xFFFCFBF9), // Figma 125:862
     trackCardArtShadow: Color.fromRGBO(0, 0, 0, 0.25), // 125:862
     backlight: Brand.purplePrimary, // #AE87E7 — B1..B16, dark frames only
@@ -1206,7 +1507,30 @@ class AppColors extends ThemeExtension<AppColors> {
     quizOptionBorder: Color(
       0xFF4B675E,
     ), // Figma — kept in both, like the border above
-    quizDivider: Color(0xFF2E2D32), // = dark progressTrack (no dark frame)
+    quizDivider: Color(0x33CCD5D2), // Figma 337:6268, rgba(204,213,210,.2)
+    quizSetupSubject: Color(0xFFFCFBF9), // Figma 337:6270
+    quizSetupScope: Color(0xFFFCFBF9), // Figma 337:6272
+    limitSheetTitle: Color(0xFFEF4444), // no dark frame (#74): kept
+    limitSheetClose: Color(0xFFFCFBF9), // no dark frame (#74): = textPrimary
+    quizHeaderGlyph: Color(0xFFFCFBF9), // Figma 337:9205 (SVG stroke)
+    quizHeaderRule: Color.fromRGBO(124, 58, 237, 0.1), // Figma 337:9202
+    quizProgressFill: Color(0xFFAE87E7), // Figma 348:7711
+    quizProgressCounter: Color(0xFF7070A0), // Figma 348:7713
+    quizQuestionText: Color(0xFFFCFBF9), // Figma 348:7666
+    aiPanelTitle: Color(0xFFFCFBF9), // Figma 337:9277
+    quizResultTitle: Color(0xFFFCFBF9), // Figma 337:6662
+    quizResultSubtitle: Color(0xFFEEEEEE), // Figma 337:6663
+    resultRingFillFrom: Color(0xFFAE87E7), // Figma 337:6650 (SVG stop 0.1439)
+    resultRingFillTo: Color(0xFF7070A0), // Figma 337:6650 (SVG stop 1)
+    resultPercentText: Color(0xFFFCFBF9), // Figma 337:6654
+    resultBucketLabel: Color(0xFFFCFBF9), // Figma 337:6672
+    resultRewardsTitle: Color(0xFFAE87E7), // Figma 337:6683
+    resultStarGlyph: Color(0xFF7070A0), // Figma 337:6686 (SVG)
+    resultPointsValue: Color(0xFFAE87E7), // Figma 337:6689
+    resultPointsUnit: Color(0xFFFCFBF9), // Figma 337:6690
+    quizReviewTitle: Color(0xFFFCFBF9), // Figma 337:6823
+    reviewFilterIdleLabel: Color(0xFFFCFBF9), // Figma 337:6831
+    reviewRowLabel: Color(0xFFFCFBF9), // not 337:6714's #AE87E7 — owner, #54
     // The five semantic tokens below are IDENTICAL to light on purpose: a
     // correct answer must not read purple and a wrong one must not read green.
     quizCorrectFill: Color(0xFFBFFFC3),
@@ -1231,6 +1555,8 @@ class AppColors extends ThemeExtension<AppColors> {
     mistakesRowBorder: Color(0xFFFCFBF9), // Figma 404:7765 (stroke)
     mistakesRowFill: Color(0xFF27282C), // Figma 404:7765 (fill)
     mistakesBadgeFill: Color(0x3327282C), // #27282C @ 20% — Figma 404:7767
+    mistakesCardChevron: Color(0xFFFCFBF9), // Figma 404:7651
+    mistakesRowChevron: Color(0xFFFCFBF9), // Figma 404:7778 (stroke)
     navBarFill: Color(0xFF212226), // Figma 348:6686 — NOT the #232428 page fill
     navAccent: Color(0xFFAE87E7), // Figma 348:6686
     navCentreIdleFill: Color(0xFF3E3E3E), // Figma 348:6686
@@ -1247,36 +1573,48 @@ class AppColors extends ThemeExtension<AppColors> {
     // Identical to light ON PURPOSE — see the field doc.
     destructive: Color(0xFFEF4444),
     dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
+    profileDialogClose: Color(0xFFFCFBF9), // Figma 337:7786 (SVG stroke)
     // Same in both palettes. The first four are semantic (selection, medal
-    // order) and must not flip with the theme; the last two are light values
-    // carried across because `337:5528` has not been measured yet.
-    podiumAccent: Color(0xFFD8B0FF),
+    // order) and must not flip with the theme. podiumThirdRing is a light
+    // value carried across (`337:5563` not read); the three badge values were
+    // read off `337:5577` on 2026-09-25 and match light.
+    podiumAccent: Color(0xFFDBB0FF), // Figma 337:5638
     podiumOnAccent: Color(0xFFFCFBF9),
     podiumFirstRing: Color(0xFFFFCA28),
     podiumSecondRing: Color(0xFFFF8228),
     podiumThirdRing: Color(0xFFDEDEDE),
-    podiumBadgeIdle: Color(0xFFF4F4F4),
+    podiumBadgeIdle: Color(0xFFF4F4F4), // Figma 337:5582
+    podiumSecondBadgeBorder: Color(0xFFDC4A22), // Figma 337:5582 stroke
+    podiumThirdBadgeFill: Color(0xFFFCFBF9), // Figma 337:5579
     // --- Elevation pass (edit1.md section 8.1) ---
     // Most of these are a neutral at 20% alpha: the dark canvas elevates with
     // a translucent wash under Glass, not with an opaque card.
     backChipSurfaceFill: Color(0x3327282C), // #27282C @20% — Figma 404:7424
     registrationBackChipFill: Color(0x33333439), // #333439 @20% — 337:19690
     languagePillFill: Color(0x33232428), // #232428 @20% — Figma 340:19734
+    brandLogo: Color(0xFFFCFBF9), // Figma 337:15678 (SVG export fill)
     homeBellFill: Color(0x33232428), // #232428 @20% — Figma 337:5330
     dailyTasksFill: Color(0x33242329), // #242329 @20% — Figma 337:5357
     dailyTasksBorder: null, // Figma 337:5357 — the dark stroke is hidden
     topStudentFill: Color(0x3326272B), // #26272B @20% — Figma 337:5460
-    topStudentTopBorder: Color.fromRGBO(124, 58, 237, 0.1), // Figma 337:5460
+    topStudentBorder: Color.fromRGBO(124, 58, 237, 0.1), // Figma 337:5460
+    topStudentName: Color(0xFFFCFBF9), // Figma 337:5466
+    topStudentPoints: Color(0xFFAE87E7), // Figma 337:5468
     continueLearningFillSchool: Color(0xFFC4A8E3), // school Home, dark
     continueLearningFillUniversity: Color(0xFFDBB0FF), // same as light
     subjectSearchFill: Color(0x33232428), // #232428 @20% — Figma 337:5724
     subjectSearchTopBorder: null, // no top hairline in the dark frame
     subjectCardFill: Color(0xFF27282C), // Figma 337:5732 — opaque
+    subjectCardTitle: Color(0xFFFCFBF9), // Figma 337:5739
+    subjectCardChevron: Color(0xFFFCFBF9), // Figma 337:5740 (SVG fill)
+    subjectCardProgress: Color(0xFFAE87E7), // Figma 337:5745
     mistakesPillFill: Color(0x33565656), // #565656 @20% — Figma 404:7421
     mistakesPillAccent: Color(0xFFEF4444), // Figma 404:7421
     treeRowFill: Color(0xFF27282C), // Figma 337:5926
     treeRowBorder: Color(0xFFFCFBF9), // Figma 337:5926
     treeRowBadgeFill: Color(0x3327282C), // #27282C @20% — Figma 337:5926
+    treeRowChevron: Color(0xFFFCFBF9), // Figma 337:5938 (SVG stroke)
+    treeRowProgress: Color(0xFFAE87E7), // Figma 337:5936
     pillTrackFill: Color(0xFF232429), // Figma 337:8177
     pillTrackSelectedFill: Brand.purplePrimary, // #AE87E7 — same in both
     pillTrackLabel: Color(0xFFFCFBF9), // Figma 337:11091
@@ -1302,6 +1640,7 @@ class AppColors extends ThemeExtension<AppColors> {
     scopeIdleLabel: Color(0xFFFCFBF9), // Figma 337:5619
     scopeSelectedFill: Color(0xFFC4A8E3), // Figma 337:5615 segment
     leaderboardRowFill: Color(0x33232428), // #232428 @20% — Figma 337:5630
+    leaderboardRowText: Color(0xFFFCFBF9), // Figma 337:5636
     profileHeaderFill: Color(0x3327282C), // #27282C @20% — Figma 337:7455
     profileEditChipFill: Color(0x33232428), // #232428 @20% — Figma 337:7466
     profileStatFill: Color(0xFF27282C), // Figma 661:8579 — opaque
@@ -1318,6 +1657,9 @@ class AppColors extends ThemeExtension<AppColors> {
     otpCardGlow: Color.fromRGBO(174, 135, 231, 0.25), // Figma 337:19501
     otpDigitFill: Color(0x33232428), // #232428 @20% — Rectangle 104-107
     otpDigitBorder: Color(0xFFD1D1D1), // same in both canvases
+    otpTimerContent: Color(0xFFFCFBF9), // Figma 337:19503
+    otpErrorText: Color(0xFFFF465C), // Figma 337:19294
+    otpDigitErrorBorder: Color(0x80EB001B), // Figma 337:19287
     trackCardFill: Color(0x33232428), // #232428 @20% — Figma 337:15981
     // The same black on both canvases — `337:15981` draws the identical
     // layer, which is unusual enough in this wave to be worth the comment.
@@ -1354,6 +1696,29 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? quizOptionFill,
     Color? quizOptionBorder,
     Color? quizDivider,
+    Color? quizSetupSubject,
+    Color? quizSetupScope,
+    Color? limitSheetTitle,
+    Color? limitSheetClose,
+    Color? quizHeaderGlyph,
+    Color? quizHeaderRule,
+    Color? quizProgressFill,
+    Color? quizProgressCounter,
+    Color? quizQuestionText,
+    Color? aiPanelTitle,
+    Color? quizResultTitle,
+    Color? quizResultSubtitle,
+    Color? resultRingFillFrom,
+    Color? resultRingFillTo,
+    Color? resultPercentText,
+    Color? resultBucketLabel,
+    Color? resultRewardsTitle,
+    Color? resultStarGlyph,
+    Color? resultPointsValue,
+    Color? resultPointsUnit,
+    Color? quizReviewTitle,
+    Color? reviewFilterIdleLabel,
+    Color? reviewRowLabel,
     Color? quizCorrectFill,
     Color? quizCorrectBorder,
     Color? quizWrongFill,
@@ -1369,6 +1734,8 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? mistakesRowBorder,
     Color? mistakesRowFill,
     Color? mistakesBadgeFill,
+    Color? mistakesCardChevron,
+    Color? mistakesRowChevron,
     Color? navBarFill,
     Color? navAccent,
     Color? navCentreIdleFill,
@@ -1384,30 +1751,41 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? profileStatValue,
     Color? destructive,
     Color? dialogNote,
+    Color? profileDialogClose,
     Color? podiumAccent,
     Color? podiumOnAccent,
     Color? podiumFirstRing,
     Color? podiumSecondRing,
     Color? podiumThirdRing,
     Color? podiumBadgeIdle,
+    Color? podiumSecondBadgeBorder,
+    Color? podiumThirdBadgeFill,
     Color? backChipSurfaceFill,
     Color? registrationBackChipFill,
     Color? languagePillFill,
+    Color? brandLogo,
     Color? homeBellFill,
     Color? dailyTasksFill,
     Color? dailyTasksBorder,
     Color? topStudentFill,
-    Color? topStudentTopBorder,
+    Color? topStudentBorder,
+    Color? topStudentName,
+    Color? topStudentPoints,
     Color? continueLearningFillSchool,
     Color? continueLearningFillUniversity,
     Color? subjectSearchFill,
     Color? subjectSearchTopBorder,
     Color? subjectCardFill,
+    Color? subjectCardTitle,
+    Color? subjectCardChevron,
+    Color? subjectCardProgress,
     Color? mistakesPillFill,
     Color? mistakesPillAccent,
     Color? treeRowFill,
     Color? treeRowBorder,
     Color? treeRowBadgeFill,
+    Color? treeRowChevron,
+    Color? treeRowProgress,
     Color? pillTrackFill,
     Color? pillTrackSelectedFill,
     Color? pillTrackLabel,
@@ -1431,6 +1809,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? scopeIdleLabel,
     Color? scopeSelectedFill,
     Color? leaderboardRowFill,
+    Color? leaderboardRowText,
     Color? profileHeaderFill,
     Color? profileEditChipFill,
     Color? profileStatFill,
@@ -1447,6 +1826,9 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? otpCardGlow,
     Color? otpDigitFill,
     Color? otpDigitBorder,
+    Color? otpTimerContent,
+    Color? otpErrorText,
+    Color? otpDigitErrorBorder,
     Color? trackCardFill,
     Color? trackCardArtShadow,
     Color? backlight,
@@ -1483,6 +1865,30 @@ class AppColors extends ThemeExtension<AppColors> {
       quizOptionFill: quizOptionFill ?? this.quizOptionFill,
       quizOptionBorder: quizOptionBorder ?? this.quizOptionBorder,
       quizDivider: quizDivider ?? this.quizDivider,
+      quizSetupSubject: quizSetupSubject ?? this.quizSetupSubject,
+      quizSetupScope: quizSetupScope ?? this.quizSetupScope,
+      limitSheetTitle: limitSheetTitle ?? this.limitSheetTitle,
+      limitSheetClose: limitSheetClose ?? this.limitSheetClose,
+      quizHeaderGlyph: quizHeaderGlyph ?? this.quizHeaderGlyph,
+      quizHeaderRule: quizHeaderRule ?? this.quizHeaderRule,
+      quizProgressFill: quizProgressFill ?? this.quizProgressFill,
+      quizProgressCounter: quizProgressCounter ?? this.quizProgressCounter,
+      quizQuestionText: quizQuestionText ?? this.quizQuestionText,
+      aiPanelTitle: aiPanelTitle ?? this.aiPanelTitle,
+      quizResultTitle: quizResultTitle ?? this.quizResultTitle,
+      quizResultSubtitle: quizResultSubtitle ?? this.quizResultSubtitle,
+      resultRingFillFrom: resultRingFillFrom ?? this.resultRingFillFrom,
+      resultRingFillTo: resultRingFillTo ?? this.resultRingFillTo,
+      resultPercentText: resultPercentText ?? this.resultPercentText,
+      resultBucketLabel: resultBucketLabel ?? this.resultBucketLabel,
+      resultRewardsTitle: resultRewardsTitle ?? this.resultRewardsTitle,
+      resultStarGlyph: resultStarGlyph ?? this.resultStarGlyph,
+      resultPointsValue: resultPointsValue ?? this.resultPointsValue,
+      resultPointsUnit: resultPointsUnit ?? this.resultPointsUnit,
+      quizReviewTitle: quizReviewTitle ?? this.quizReviewTitle,
+      reviewFilterIdleLabel:
+          reviewFilterIdleLabel ?? this.reviewFilterIdleLabel,
+      reviewRowLabel: reviewRowLabel ?? this.reviewRowLabel,
       quizCorrectFill: quizCorrectFill ?? this.quizCorrectFill,
       quizCorrectBorder: quizCorrectBorder ?? this.quizCorrectBorder,
       quizWrongFill: quizWrongFill ?? this.quizWrongFill,
@@ -1499,6 +1905,8 @@ class AppColors extends ThemeExtension<AppColors> {
       mistakesRowBorder: mistakesRowBorder ?? this.mistakesRowBorder,
       mistakesRowFill: mistakesRowFill ?? this.mistakesRowFill,
       mistakesBadgeFill: mistakesBadgeFill ?? this.mistakesBadgeFill,
+      mistakesCardChevron: mistakesCardChevron ?? this.mistakesCardChevron,
+      mistakesRowChevron: mistakesRowChevron ?? this.mistakesRowChevron,
       navBarFill: navBarFill ?? this.navBarFill,
       navAccent: navAccent ?? this.navAccent,
       navCentreIdleFill: navCentreIdleFill ?? this.navCentreIdleFill,
@@ -1516,23 +1924,30 @@ class AppColors extends ThemeExtension<AppColors> {
       profileStatValue: profileStatValue ?? this.profileStatValue,
       destructive: destructive ?? this.destructive,
       dialogNote: dialogNote ?? this.dialogNote,
+      profileDialogClose: profileDialogClose ?? this.profileDialogClose,
       podiumAccent: podiumAccent ?? this.podiumAccent,
       podiumOnAccent: podiumOnAccent ?? this.podiumOnAccent,
       podiumFirstRing: podiumFirstRing ?? this.podiumFirstRing,
       podiumSecondRing: podiumSecondRing ?? this.podiumSecondRing,
       podiumThirdRing: podiumThirdRing ?? this.podiumThirdRing,
       podiumBadgeIdle: podiumBadgeIdle ?? this.podiumBadgeIdle,
+      podiumSecondBadgeBorder:
+          podiumSecondBadgeBorder ?? this.podiumSecondBadgeBorder,
+      podiumThirdBadgeFill: podiumThirdBadgeFill ?? this.podiumThirdBadgeFill,
       backChipSurfaceFill: backChipSurfaceFill ?? this.backChipSurfaceFill,
       registrationBackChipFill:
           registrationBackChipFill ?? this.registrationBackChipFill,
       languagePillFill: languagePillFill ?? this.languagePillFill,
+      brandLogo: brandLogo ?? this.brandLogo,
       homeBellFill: homeBellFill ?? this.homeBellFill,
       dailyTasksFill: dailyTasksFill ?? this.dailyTasksFill,
       // As with languagePillBorder above, `??` cannot CLEAR these light-only
       // borders — dark takes its nulls from the palette, not from a copyWith.
       dailyTasksBorder: dailyTasksBorder ?? this.dailyTasksBorder,
       topStudentFill: topStudentFill ?? this.topStudentFill,
-      topStudentTopBorder: topStudentTopBorder ?? this.topStudentTopBorder,
+      topStudentBorder: topStudentBorder ?? this.topStudentBorder,
+      topStudentName: topStudentName ?? this.topStudentName,
+      topStudentPoints: topStudentPoints ?? this.topStudentPoints,
       continueLearningFillSchool:
           continueLearningFillSchool ?? this.continueLearningFillSchool,
       continueLearningFillUniversity:
@@ -1541,11 +1956,16 @@ class AppColors extends ThemeExtension<AppColors> {
       subjectSearchTopBorder:
           subjectSearchTopBorder ?? this.subjectSearchTopBorder,
       subjectCardFill: subjectCardFill ?? this.subjectCardFill,
+      subjectCardTitle: subjectCardTitle ?? this.subjectCardTitle,
+      subjectCardChevron: subjectCardChevron ?? this.subjectCardChevron,
+      subjectCardProgress: subjectCardProgress ?? this.subjectCardProgress,
       mistakesPillFill: mistakesPillFill ?? this.mistakesPillFill,
       mistakesPillAccent: mistakesPillAccent ?? this.mistakesPillAccent,
       treeRowFill: treeRowFill ?? this.treeRowFill,
       treeRowBorder: treeRowBorder ?? this.treeRowBorder,
       treeRowBadgeFill: treeRowBadgeFill ?? this.treeRowBadgeFill,
+      treeRowChevron: treeRowChevron ?? this.treeRowChevron,
+      treeRowProgress: treeRowProgress ?? this.treeRowProgress,
       pillTrackFill: pillTrackFill ?? this.pillTrackFill,
       pillTrackSelectedFill:
           pillTrackSelectedFill ?? this.pillTrackSelectedFill,
@@ -1573,6 +1993,7 @@ class AppColors extends ThemeExtension<AppColors> {
       scopeIdleLabel: scopeIdleLabel ?? this.scopeIdleLabel,
       scopeSelectedFill: scopeSelectedFill ?? this.scopeSelectedFill,
       leaderboardRowFill: leaderboardRowFill ?? this.leaderboardRowFill,
+      leaderboardRowText: leaderboardRowText ?? this.leaderboardRowText,
       profileHeaderFill: profileHeaderFill ?? this.profileHeaderFill,
       profileEditChipFill: profileEditChipFill ?? this.profileEditChipFill,
       profileStatFill: profileStatFill ?? this.profileStatFill,
@@ -1592,6 +2013,9 @@ class AppColors extends ThemeExtension<AppColors> {
       otpCardGlow: otpCardGlow ?? this.otpCardGlow,
       otpDigitFill: otpDigitFill ?? this.otpDigitFill,
       otpDigitBorder: otpDigitBorder ?? this.otpDigitBorder,
+      otpTimerContent: otpTimerContent ?? this.otpTimerContent,
+      otpErrorText: otpErrorText ?? this.otpErrorText,
+      otpDigitErrorBorder: otpDigitErrorBorder ?? this.otpDigitErrorBorder,
       trackCardFill: trackCardFill ?? this.trackCardFill,
       trackCardArtShadow: trackCardArtShadow ?? this.trackCardArtShadow,
       backlight: backlight ?? this.backlight,
@@ -1647,6 +2071,81 @@ class AppColors extends ThemeExtension<AppColors> {
         t,
       )!,
       quizDivider: Color.lerp(quizDivider, other.quizDivider, t)!,
+      quizSetupSubject: Color.lerp(
+        quizSetupSubject,
+        other.quizSetupSubject,
+        t,
+      )!,
+      quizSetupScope: Color.lerp(quizSetupScope, other.quizSetupScope, t)!,
+      limitSheetTitle: Color.lerp(limitSheetTitle, other.limitSheetTitle, t)!,
+      limitSheetClose: Color.lerp(limitSheetClose, other.limitSheetClose, t)!,
+      quizHeaderGlyph: Color.lerp(quizHeaderGlyph, other.quizHeaderGlyph, t)!,
+      quizHeaderRule: Color.lerp(quizHeaderRule, other.quizHeaderRule, t)!,
+      quizProgressFill: Color.lerp(
+        quizProgressFill,
+        other.quizProgressFill,
+        t,
+      )!,
+      quizProgressCounter: Color.lerp(
+        quizProgressCounter,
+        other.quizProgressCounter,
+        t,
+      )!,
+      quizQuestionText: Color.lerp(
+        quizQuestionText,
+        other.quizQuestionText,
+        t,
+      )!,
+      aiPanelTitle: Color.lerp(aiPanelTitle, other.aiPanelTitle, t)!,
+      quizResultTitle: Color.lerp(quizResultTitle, other.quizResultTitle, t)!,
+      quizResultSubtitle: Color.lerp(
+        quizResultSubtitle,
+        other.quizResultSubtitle,
+        t,
+      )!,
+      resultRingFillFrom: Color.lerp(
+        resultRingFillFrom,
+        other.resultRingFillFrom,
+        t,
+      )!,
+      resultRingFillTo: Color.lerp(
+        resultRingFillTo,
+        other.resultRingFillTo,
+        t,
+      )!,
+      resultPercentText: Color.lerp(
+        resultPercentText,
+        other.resultPercentText,
+        t,
+      )!,
+      resultBucketLabel: Color.lerp(
+        resultBucketLabel,
+        other.resultBucketLabel,
+        t,
+      )!,
+      resultRewardsTitle: Color.lerp(
+        resultRewardsTitle,
+        other.resultRewardsTitle,
+        t,
+      )!,
+      resultStarGlyph: Color.lerp(resultStarGlyph, other.resultStarGlyph, t)!,
+      resultPointsValue: Color.lerp(
+        resultPointsValue,
+        other.resultPointsValue,
+        t,
+      )!,
+      resultPointsUnit: Color.lerp(
+        resultPointsUnit,
+        other.resultPointsUnit,
+        t,
+      )!,
+      quizReviewTitle: Color.lerp(quizReviewTitle, other.quizReviewTitle, t)!,
+      reviewFilterIdleLabel: Color.lerp(
+        reviewFilterIdleLabel,
+        other.reviewFilterIdleLabel,
+        t,
+      )!,
+      reviewRowLabel: Color.lerp(reviewRowLabel, other.reviewRowLabel, t)!,
       // Same as successBadge: identical endpoints, so these stay put across a
       // theme animation.
       quizCorrectFill: Color.lerp(quizCorrectFill, other.quizCorrectFill, t)!,
@@ -1694,6 +2193,16 @@ class AppColors extends ThemeExtension<AppColors> {
       mistakesBadgeFill: Color.lerp(
         mistakesBadgeFill,
         other.mistakesBadgeFill,
+        t,
+      )!,
+      mistakesCardChevron: Color.lerp(
+        mistakesCardChevron,
+        other.mistakesCardChevron,
+        t,
+      )!,
+      mistakesRowChevron: Color.lerp(
+        mistakesRowChevron,
+        other.mistakesRowChevron,
         t,
       )!,
       navBarFill: Color.lerp(navBarFill, other.navBarFill, t)!,
@@ -1752,6 +2261,11 @@ class AppColors extends ThemeExtension<AppColors> {
       // animation, which is the exemption made visible (as with successBadge).
       destructive: Color.lerp(destructive, other.destructive, t)!,
       dialogNote: Color.lerp(dialogNote, other.dialogNote, t)!,
+      profileDialogClose: Color.lerp(
+        profileDialogClose,
+        other.profileDialogClose,
+        t,
+      )!,
       // Black → cream is the widest travel of any token here, so a theme
       // animation passes through a mid grey. Correct: the shadow fades out as
       // the canvas darkens and fades back in as a rim light.
@@ -1767,6 +2281,16 @@ class AppColors extends ThemeExtension<AppColors> {
       )!,
       podiumThirdRing: Color.lerp(podiumThirdRing, other.podiumThirdRing, t)!,
       podiumBadgeIdle: Color.lerp(podiumBadgeIdle, other.podiumBadgeIdle, t)!,
+      podiumSecondBadgeBorder: Color.lerp(
+        podiumSecondBadgeBorder,
+        other.podiumSecondBadgeBorder,
+        t,
+      )!,
+      podiumThirdBadgeFill: Color.lerp(
+        podiumThirdBadgeFill,
+        other.podiumThirdBadgeFill,
+        t,
+      )!,
       backChipSurfaceFill: Color.lerp(
         backChipSurfaceFill,
         other.backChipSurfaceFill,
@@ -1782,15 +2306,22 @@ class AppColors extends ThemeExtension<AppColors> {
         other.languagePillFill,
         t,
       )!,
+      brandLogo: Color.lerp(brandLogo, other.brandLogo, t)!,
       homeBellFill: Color.lerp(homeBellFill, other.homeBellFill, t)!,
       dailyTasksFill: Color.lerp(dailyTasksFill, other.dailyTasksFill, t)!,
       // Nullable, like languagePillBorder: Color.lerp fades a light-only
       // border out to transparent, which is what a vanishing stroke should do.
       dailyTasksBorder: Color.lerp(dailyTasksBorder, other.dailyTasksBorder, t),
       topStudentFill: Color.lerp(topStudentFill, other.topStudentFill, t)!,
-      topStudentTopBorder: Color.lerp(
-        topStudentTopBorder,
-        other.topStudentTopBorder,
+      topStudentBorder: Color.lerp(
+        topStudentBorder,
+        other.topStudentBorder,
+        t,
+      )!,
+      topStudentName: Color.lerp(topStudentName, other.topStudentName, t)!,
+      topStudentPoints: Color.lerp(
+        topStudentPoints,
+        other.topStudentPoints,
         t,
       )!,
       continueLearningFillSchool: Color.lerp(
@@ -1814,6 +2345,21 @@ class AppColors extends ThemeExtension<AppColors> {
         t,
       ),
       subjectCardFill: Color.lerp(subjectCardFill, other.subjectCardFill, t)!,
+      subjectCardTitle: Color.lerp(
+        subjectCardTitle,
+        other.subjectCardTitle,
+        t,
+      )!,
+      subjectCardChevron: Color.lerp(
+        subjectCardChevron,
+        other.subjectCardChevron,
+        t,
+      )!,
+      subjectCardProgress: Color.lerp(
+        subjectCardProgress,
+        other.subjectCardProgress,
+        t,
+      )!,
       mistakesPillFill: Color.lerp(
         mistakesPillFill,
         other.mistakesPillFill,
@@ -1831,6 +2377,8 @@ class AppColors extends ThemeExtension<AppColors> {
         other.treeRowBadgeFill,
         t,
       )!,
+      treeRowChevron: Color.lerp(treeRowChevron, other.treeRowChevron, t)!,
+      treeRowProgress: Color.lerp(treeRowProgress, other.treeRowProgress, t)!,
       pillTrackFill: Color.lerp(pillTrackFill, other.pillTrackFill, t)!,
       pillTrackSelectedFill: Color.lerp(
         pillTrackSelectedFill,
@@ -1922,6 +2470,11 @@ class AppColors extends ThemeExtension<AppColors> {
         other.leaderboardRowFill,
         t,
       )!,
+      leaderboardRowText: Color.lerp(
+        leaderboardRowText,
+        other.leaderboardRowText,
+        t,
+      )!,
       profileHeaderFill: Color.lerp(
         profileHeaderFill,
         other.profileHeaderFill,
@@ -1975,6 +2528,13 @@ class AppColors extends ThemeExtension<AppColors> {
       otpCardGlow: Color.lerp(otpCardGlow, other.otpCardGlow, t),
       otpDigitFill: Color.lerp(otpDigitFill, other.otpDigitFill, t)!,
       otpDigitBorder: Color.lerp(otpDigitBorder, other.otpDigitBorder, t)!,
+      otpTimerContent: Color.lerp(otpTimerContent, other.otpTimerContent, t)!,
+      otpErrorText: Color.lerp(otpErrorText, other.otpErrorText, t)!,
+      otpDigitErrorBorder: Color.lerp(
+        otpDigitErrorBorder,
+        other.otpDigitErrorBorder,
+        t,
+      )!,
       trackCardFill: Color.lerp(trackCardFill, other.trackCardFill, t)!,
       trackCardArtShadow: Color.lerp(
         trackCardArtShadow,

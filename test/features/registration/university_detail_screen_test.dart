@@ -4,12 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/repository/reference_repository.dart';
 import 'package:level_up_app/features/registration/screens/university_detail_screen.dart';
+import 'package:level_up_app/features/registration/widgets/city_field.dart';
+import 'package:level_up_app/features/registration/widgets/registration_chrome.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -130,6 +133,59 @@ void main() {
       expect(find.byKey(const Key('field-countryCode')), findsNothing);
       expect(find.text('Country'), findsNothing);
       verifyNever(reference.getCountries);
+    });
+
+    // Wave 04, W04-1: `125:2336` / `337:10373` space every block 25 apart,
+    // box to box (untrimmed text). The build had 8 / 28 / 16 / 28.
+    testWidgets('vertical rhythm: 25 between every block', (tester) async {
+      await pump(tester);
+
+      Rect rect(Finder f) => tester.getRect(f);
+      final cta = find.widgetWithText(FilledButton, 'Start learning');
+      await tester.ensureVisible(cta);
+      await tester.pumpAndSettle();
+
+      expect(
+        rect(find.text('University Registration').last).top -
+            rect(find.byType(RegistrationHeader)).bottom,
+        closeTo(25, 0.001),
+        reason: 'header row → title',
+      );
+      expect(
+        rect(find.text('Date of Birth')).top -
+            rect(find.text('Egypt University students')).bottom,
+        closeTo(25, 0.001),
+        reason: 'subtitle → first field block',
+      );
+      for (final (above, label) in [
+        ('field-universityId', 'Faculty'),
+        ('field-facultyId', 'Academic Year'),
+        ('field-studyYearId', 'Governorate'),
+        ('field-governorateId', 'City'),
+      ]) {
+        expect(
+          rect(find.text(label)).top - rect(find.byKey(Key(above))).bottom,
+          closeTo(25, 0.001),
+          reason: '$above → $label',
+        );
+      }
+      expect(
+        rect(cta).top - rect(find.byType(CityField)).bottom,
+        closeTo(25, 0.001),
+        reason: 'last field block → Start learning',
+      );
+    });
+
+    // W04-2: `125:2361` is `#7C7C7C`, `bodyMuted` per DESIGN_ISSUES #24.
+    testWidgets('the subtitle is muted grey, not textSecondary', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final subtitle = tester.widget<Text>(
+        find.text('Egypt University students'),
+      );
+      expect(subtitle.style?.color, AppColors.light.bodyMuted);
     });
   });
 

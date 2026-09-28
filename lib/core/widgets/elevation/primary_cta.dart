@@ -14,9 +14,15 @@ enum CtaTone {
   /// glow.
   primary,
 
-  /// The filled destructive button — a confirmation dialog's "Logout". Same
-  /// shadow as [primary], no glow: the frame draws none.
+  /// The filled destructive button — the Logout dialog's red "No"
+  /// (`Frame 1000003068`). Same shadow as [primary], no glow: the frame draws
+  /// none.
   destructive,
+
+  /// A filled brand button the frame draws with [primary]'s shadow and WITHOUT
+  /// the dark glow: the Logout dialog's "Yes" (`Frame 427319502` in `180:4704`
+  /// and `337:7783`, edit2 #12). API→UI Wave 19.
+  shadowOnly,
 
   /// The outlined secondary button (onboarding, login). Its own shadow token.
   outline,

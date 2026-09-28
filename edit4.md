@@ -233,7 +233,7 @@ read (§7.3).
 | List `Auto Layout Vertical` 362×496 | both | light `133:3117` child, dark twin | — | `drop-shadow(0.02 0.02 1.6 rgba(0,0,0,0.25))` on the list, i.e. on the rows' alpha | — |
 | Row `Rectangle 6424` 362×48, r12 | Light | `134:3538` | `#FFFFFF` | (list shadow) | — |
 | | Dark | `337:5630` (and `337:5622`, `337:5646` …) | `#232428` @20% | (list shadow) | **G5** on the rectangle + **G10** (splay **0.31**, else G5) on the wrapping `Group 20185…` (`337:5629`) |
-| Caller's own row | both | `134:3554` | `#D8B0FF` / `#DBB0FF` (see #19) | (list shadow) | **none** (no group Glass on the highlighted row) |
+| Caller's own row | both | `134:3554` | `#DBB0FF` (read 2026-09-25 on `134:3554` and `337:5638`, W06-3; was `#D8B0FF` / `#DBB0FF`, see #19) | (list shadow) | **none** (no group Glass on the highlighted row) |
 
 The dark frame's 9th row is opaque `#232428` without Glass (CSS). Treat it as unverified, probably a
 designer slip, and record it; do not build a special case.

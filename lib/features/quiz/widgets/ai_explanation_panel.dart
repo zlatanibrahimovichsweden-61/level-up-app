@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/explanation_state.dart';
+import 'ai_education_glyph.dart';
 
 /// The AI EXPLANATION panel · Figma `159:1811`.
 ///
@@ -71,24 +72,27 @@ class AiExplanationPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.school_outlined,
-                size: 26.55,
-                color: theme.colorScheme.primary,
-              ),
+              // The frame's own `tdesign:ai-education` (`159:1839`), the
+              // glyph the review rows already ship. It was Material's
+              // `Icons.school_outlined` (API→UI Wave 12). The title beside it
+              // names the panel.
+              AiEducationGlyph(color: ext.aiPanelTitle),
               const SizedBox(width: 8.089),
               Expanded(
                 child: Text(
                   l10n.aiExplanation,
-                  style: AppType.h4.copyWith(color: theme.colorScheme.primary),
+                  style: AppType.h4.copyWith(color: ext.aiPanelTitle),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12.134),
           switch (state) {
-            // Collapsed until asked — exhaustive, no `default:`.
-            ExplanationIdle() => Align(
+            // Collapsed until asked — exhaustive, no `default:`. A
+            // subscription 403 comes back to the button: the screen has shown
+            // the contract's popup, and the contract renders this affordance
+            // from `explanationAvailable` alone (API→UI Wave 12).
+            ExplanationIdle() || ExplanationSubscriptionRequired() => Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton(
                 onPressed: onRequest,

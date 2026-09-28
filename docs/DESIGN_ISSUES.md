@@ -107,6 +107,13 @@ Faculty is disabled until a University is chosen, Academic Year until a Faculty 
 clears everything below it. **Designer: please confirm or send a reordered frame.**
 `lib/features/registration/screens/university_detail_screen.dart` (class doc explains the deviation).
 
+**Addendum 2026-09-24 (API→UI Wave 04). The light frame already has the cascade order.**
+`125:2336` (light, read for the first time) draws **University name → Faculty → Academic Year →
+City**, the same order the build uses. Only the dark frame `337:10373` draws Faculty first and
+University last. So the question is no longer "reorder the design". It is: **please make the dark
+frame match the light one.** Nothing to build either way. The build's order is not a deviation from
+the light frame.
+
 ## 5. 🟠 OTP boxes: 4 vs 6
 **Where:** OTP screens (`82:1171` etc.). **What:** design draws **4** code boxes; the contract's
 `otp/verify.code` is **exactly 6 digits**. **Fix:** designer updates the OTP UI to 6 boxes.
@@ -138,6 +145,15 @@ thing, which is correct per the contract but reads oddly — this may want a sin
 **Where:** `lib/features/auth/screens/login_screen.dart:37–39` (`TODO(legal)`).
 **What:** User Agreement / Privacy Policy / Cookie Policy point at `levelup.example/...`.
 **Fix we need:** product/legal supply the real URLs.
+
+**Addendum 2026-09-24 (API→UI Wave 01) — the WORDING differs too, and is also legal's call.**
+Figma `82:1086` (read verbatim via `get_design_context`): *"By Continue to join or sign in, you
+agree to Level Up's User Agreement, Privacy Policy, and Cookie Policy."* — the three document names
+in `#E67E22`, Inter Regular 14, the rest `#384F47`. The app ships `legalPrefix` =
+*"By continuing, you agree to our"* (`app_en.arb:36`; AR `app_ar.arb:19`) followed by the same three
+names. The frame's sentence is ungrammatical ("By Continue") and names the brand; the shipped one
+is grammatical and does not. **Not changed:** consent copy for minors is not the build's to reword
+in either direction. **Fix we need:** product/legal approve one sentence (EN + AR) alongside the URLs.
 
 ## 10. ✅ RESOLVED (Day 8) — the theme toggle landed in Settings
 **What:** a full **dark** theme existed in Figma and in `AppColors` from Day 0, but no screen had a
@@ -261,6 +277,12 @@ copy-paste of the Subjects frame.
 **Built as:** search is on **Subjects only** (which is also what the Day-5 brief scopes it to).
 **Fix we need:** designer confirms whether these three screens should really have search; if yes,
 supply the correct placeholder for each level and we will wire the same client-side filter.
+**Update 2026-09-25 (API→UI Wave 09):** the LIGHT Chapters frame `135:1270` reads **"Search Chapters"**,
+the right copy for that level. The dark `337:6047` still reads "Search Subjects". The question stands, since
+search is still not built below Subjects.
+**Update 2026-09-25 (API→UI Wave 10):** the LIGHT Lessons frame `135:1485` ALSO reads "Search Chapters", and the
+dark `337:6143` reads "Search Subjects". So the light placeholder is a copy-paste too, not per-level copy: no level
+below Subjects has confirmed search copy.
 
 ## 15. 🟡 Subject-card caption is 8.56dp
 **Where:** Subjects `337:5748` — the "216 / 480 questions" caption, `Cairo SemiBold 8.558px` on a
@@ -364,6 +386,14 @@ deliberate. Both look like the light frame's values pasted onto the dark canvas.
 **Fix we need:** confirm. If cream really was deliberate, it is a one-line change here — but then
 Login should change too, and that is a separate decision we did not take on your behalf.
 
+**Addendum 2026-09-24 (API→UI Wave 01 re-walk) — the premise needs re-reading.** This entry reads
+the dark Login's secondary button as translucent, but that describes the BUILD. The dark Login FRAME
+draws it cream too: `get_design_context` on `337:15652` gives `337:15730` = `bg #FCFBF9`, label
+`#0E0E0E`, border `#384F47` 0.5 — the same inversion as `337:15650`. So both dark frames agree on a
+cream-filled secondary CTA, which weakens "a paste, not an intent". Measured on a Pixel 8 the build's
+dark button is the canvas `#232428` with a border. **Still not changed** — the question stays the
+owner's/designer's, now with two frames of evidence for cream.
+
 ## 22. 🟡 That button's border is purple in the frame, green in the token
 **Where:** `337:15650` border `#ae87e7`; `ext.secondaryButtonBorder` is `Brand.greenPrimary` in
 **both** themes, sourced from dark Login `337:15652`. Same copy-paste family as #21.
@@ -390,6 +420,18 @@ disagreement should not fork the palette.
 
 **Fix we need:** confirm one muted grey. If the two really are meant to differ, tell us which
 surfaces get which and we will split the token — but three tokens for 9/255 is how a palette rots.
+
+**Addendum 2026-09-24 (API→UI Wave 03, School registration).** The School Registration subtitle
+(`125:536`) is `#7C7C7C` too, so it now uses `bodyMuted` like the success subtitle. It had been
+`textSecondary` (`#2C2C2C`), 80/255 too dark. One new data point for the designer: the **dark**
+frame's subtitle (`337:5291`) is `#D6D6D6`. `bodyMuted`'s dark value is `#ECECEC` (the tagline),
+22/255 lighter. So the dark subtitle is now slightly lighter than drawn. Before this change it was
+`#DCDCDC`, 6/255 off. If muted subtitles should be `#D6D6D6` in dark, `bodyMuted` dark moves, not a
+new token. The other wizard subtitles (Sign-up identity, track, University) still use
+`textSecondary`. University is Wave 04. Identity and track have no wave of their own.
+**Wave 04 (same day):** University registration's subtitle (`125:2361`) is `#7C7C7C` too and now
+uses `bodyMuted`. Its dark frame (`337:10395`) draws `#DEDEDE`, a third dark value next to School's
+`#D6D6D6` and the tagline's `#ECECEC`. Sign-up identity and track still use `textSecondary`.
 
 ## 25. 🟡 No dark OTP-success frame exists
 **Where:** `155:786` and `82:1596` are both light; there is no dark variant in the file. Same
@@ -843,7 +885,10 @@ Still a fallback: **`backChipGlyph`'s dark value** (cream). The chevron's own co
 the elevation read.
 
 The OTP screens have **no** back chip in Figma — the build added one — so it keeps the standard
-variant, there being no evidence for the registration one.
+variant, there being no evidence for the registration one. What the input frame (`82:1171`) DOES draw
+top-end is the language pill (`82:1254`, the same position as the success frame's `155:809`); the build
+showed it only after success until API→UI Wave 02 (2026-09-24). Now: back chip at start (build's own),
+pill at end, on the input view; pill alone after success.
 
 ### The cards' elevation, and the art shadow coming BACK — 2026-09-20, edit5 #32 and #54
 
@@ -1374,7 +1419,7 @@ Mode) and a screenshot at 100% zoom.
 | Pill fill | `AppColors.cardFill` | approved raised-surface token, not a read hex |
 | Pill shadow | ~~`elevationShadow` @ 0.25, 0.5/0.5/4 outer~~ → **`AppElevation.otpTimerInsetShadows`** | **read 2026-09-20** — and it is an **inner** shadow, not a drop. Light `332:3391`: black 25%, (0, −1), blur 4. Dark `337:19503`: `rgba(198,198,198,0.25)`, (−0.5, 0.5), blur 1.2. The two canvases share nothing about it |
 | Glyph tint | `colorScheme.primary` | **read** — the export's stroke is `#384F47`, the light primary and the colour of the "Resend OTP" label beneath it; `app_colors_test.dart` pins the two together |
-| Digit tint | `AppColors.textSecondary` | approved token; the frame gives no value — **designer: same green as the glyph, or the dark grey?** |
+| Digit tint | ~~`AppColors.textSecondary`~~ → **`AppColors.otpTimerContent`** | **read 2026-09-24** — `82:1316`'s digits are `#384F47` (the glyph's green) and `337:19503`'s are `#FCFBF9`; the dark glyph export is stroked cream as well, so the glyph moved off `colorScheme.primary` (lavender in dark) onto the same token. Digits are Montserrat Medium 12 → `AppType.labelMedium` (12/16, 500; the app's font) |
 
 **The separator is a dot, on purpose.** The frame draws `00.21`, not `00:21`. Built verbatim
 (`resendTimer` = `{minutes}.{seconds}` in both ARBs, digits zero-padded) because changing it is a
@@ -1422,18 +1467,35 @@ gives **35** between the subtitle block and the card (the build had 32), and `Fr
 (`308:5108`) gives **26** between the card and the resend block (the build had 16). That frame also
 confirms the screen's **24** left gutter, which the build already had.
 
-**The inline error message has no Figma slot.** The light component set ships one variant and it is
-the correct-state one; no frame draws an error line inside or outside the card. It keeps the place
-the build already gave it — between the digits and the button — rather than being moved somewhere
-Figma also does not draw it. Recorded, not decided.
+~~**The inline error message has no Figma slot.**~~ **Wrong — corrected 2026-09-24 (API→UI Wave 02).**
+Both component sets carry a `Type= wrong` variant: light `82:1170` → `82:1439`, dark `337:19271` →
+`337:19284` (read with `get_design_context`). It draws the error, and the build now follows it:
+
+| | Frame (`wrong`) | Build before | Build now |
+|---|---|---|---|
+| Cell fill | resting (`#FDFDFD` / `#232428` 20%) | error red at 6% | resting (`otpDigitFill`) |
+| Cell stroke | `#EB001B` @ 50%, resting width (1.17333 / 0.5) | `colorScheme.error` (M3 seed red) at 1.5 | `otpDigitErrorBorder` at `otpDigitBorderWidth` |
+| Error line | Inter Medium 10 `#FF465C`, start-aligned, no icon | bodyMedium 14 `colorScheme.error`, centred, with icon | `AppType.labelSmall` + `otpErrorText`, start, no icon |
+| Gaps | digits → line 13, line → Verify 20 | 16 / 20 | 13 / 20 |
+
+Every OTP failure (expired, throttled, network, generic) uses this one line; only `otp_invalid` also
+turns the cells red. **Copy not changed:** the frame reads "This is incorrect Code, try again"; the ARB
+keeps its grammatical "This is an incorrect code, try again" (the #26 rule — a design typo does not
+become copy). **For the designer:** 10 px error text is small for students — confirm it is intended.
+
+**Type sizes the handoff scale does not carry (not changed, same class as Login's title):** OTP title
+Bold 25 (built `h1` 24), subtitle Regular 18 (built `bodyLarge` 16), "Resend OTP" Bold 18 (built
+`buttonMedium` 14/600), success title Bold 22 / subtitle Regular 20 (built `h1` / `bodyLarge`), and the
+CTAs' Bold 20 / SemiBold 22 labels (shared `PrimaryCta`, `buttonLarge` 16/600). The scale runs 28 → 10
+and says not to add sizes, so which step each maps to is the designer's call.
 
 **The digit cells take the frame's surface and keep the build's box.** Light `#FDFDFD` with a
 **1.17333** `#D1D1D1` hairline; dark `#232428` at **20%** with a **0.5** hairline of the same grey
 and **G19** (frost 56 · refraction 0.80 · depth 100 · angle −45 · intensity 0.80 · dispersion 0.65 ·
 splay 0.50). Geometry stays 6 × 48 × 56 at r16 against Figma's 4 × 66 × 61.01 at r11.73, because the
 contract mandates six digits (#5) and six boxes at the frame's width do not fit a 334-wide card.
-The focused (1.5 primary) and error (1.5 error + 6% tint) states are the app's own; Figma draws
-neither.
+The focused state (1.5 primary) is the app's own; Figma draws no focused cell. (The error state is
+drawn after all — see the correction above.)
 
 #### 🟡 The blinking caret is gone, and it was the owner's call
 
@@ -1516,6 +1578,22 @@ ruling on the title *"Subscription Required"* / *"الاشتراك مطلوب"* 
 pointing anywhere, which we read as allowed, but that is product's call; (4) the reset moment may be
 stated at week granularity (*"resets next week"* — the contract now says so) but **not** as a weekday:
 Monday 00:00 Africa/Cairo is adr-091 §3 and is not on the wire.
+
+**Update 2026-09-26 (API→UI Wave 11, owner ruling):** the sheet is now the frame's **centred card**, not a
+bottom sheet. `limitation` (`207:5904`) is a 345-wide card at radius 22 with a 23 dp ✕ (`akar-icons:cross`,
+stroke `#3F3F3F`) before a `#EF4444` title; the build follows it (✕ at the start edge, 18 dp side insets,
+35 dp title row) and keeps "Not now" under the body. Two frame values are NOT taken: the title's Inter 600/22
+(the type scale has no 22, so it is the app's dialog title, h2) and the card's 59 dp top / 16 dp bottom, which
+were drawn around the benefits card and the CTA this entry removes; the build uses the Profile dialog's rhythm
+(`180:4445`). Asks (1)–(4) above stand.
+
+**Update 2026-09-26 (API→UI Wave 12, owner ruling):** the same card now also carries the contract's popup for
+`GET /questions/{id}/explanation` `403 subscription_required`. Its body is the contract's approved copy,
+verbatim: *"AI explanations are available with a Level Up subscription. Subscribe to get step-by-step
+explanations and more learning features."* It says "subscribe", which ask (2) above would not allow for the
+quiz-creation bodies. The owner ruled it compatible with purchase-silent: the contract mandates it, and the card
+still has no price, link or buy button (D-015). AR (owner-approved): *"شروحات الذكاء الاصطناعي متاحة مع اشتراك
+Level Up. اشترك لتحصل على شروحات خطوة بخطوة ومزايا تعليمية أخرى."*
 
 ---
 
@@ -1744,6 +1822,12 @@ was **read off `337:6715`**, not chosen — which is also what refutes the premi
 
 **Fix we need:** a ruling on the wrong-row hairline at 1.04:1, and on whether the two read-but-
 unadopted values above should ship as drawn.
+
+**Update 2026-09-27 (API→UI Wave 14, owner ruling).** The "QUESTION n" label now has its own token,
+`reviewRowLabel`: light takes the frame's `#4B675E` (`162:2492`), and **dark keeps cream**, not
+`337:6714`'s lavender. On the dark row composites `#AE87E7` measures about **3.0:1** (correct row) and
+**3.3:1** (wrong row), under the 4.5:1 a 12-pt label needs. The selected dark chip label stays `#232428`
+as above. The wrong-row hairline question is unchanged and still open.
 
 > ⚠ **The same fault is already shipped on the quiz page, and was left alone.**
 > `question_option_tile.dart:119-120` paints the option label with `textPrimary` on
@@ -1999,7 +2083,7 @@ cream-on-mint in dark.
 contrast, and record the figure — per `AGENT_WORKFLOW.md` §"Theme discipline", document the
 uncertainty rather than invent a value.
 
-## 64. 🟡 RTL variants exist; their node IDs are not yet mapped
+## 64. ✅ MAPPED 2026-09-27 (API→UI Wave 18) — RTL variants exist; their node IDs are not yet mapped
 
 > **Updated 2026-09-12.** The 19-result layer search (see #63) proves a **complete 6-frame RTL
 > family**. What is missing is only the node-ID → screen mapping — clicking, not research.
@@ -2014,6 +2098,29 @@ ground — light `#FCFBF9`, dark `#232428`, RTL mirrored/Arabic.
 `forwardChevron(context)`, no hardcoded `TextDirection` — because that is how every other list in
 this app works and because reproducing a half-done RTL frame would ship a bug. Precedent: **#58**,
 where the RTL review frame turned out to be half-mirrored and the build correctly ignored it.
+
+> **Mapped 2026-09-27 (API→UI Wave 18).** A read-only plugin query over the Figma MCP listed every
+> `Learn(My Fault)` phone frame on the `design` page (`57:36`), each identified by what it draws (its
+> header title and its rows), not by its position. All 18:
+>
+> | Group | Overview | Units / Lectures | Chapters | Lessons |
+> | --- | --- | --- | --- | --- |
+> | School, light | `404:6292` | `404:6539` | `404:6677` | `404:6762` |
+> | School, dark | `404:7428` | `404:7669` | `404:7894` | none: see below |
+> | School, RTL | `549:19213` | `549:19284` | `549:19337` | `549:19390` |
+> | University, light | `404:7110` | `404:7181` | — | — |
+> | University, dark | `404:8623` | `404:8686` | — | — |
+> | University, RTL | `565:18246` | `549:28773` | — | — |
+>
+> - **No dark frame draws Lessons.** `404:7990`, the dark frame in the Lessons slot, draws a Chapters
+>   list: the title "Cell Biology Chapter" and four rows ("Cell Biology", then "Genetics" three times,
+>   numbered 1, 2, 2, 2). Its list rhythm is the family's (25 under the header, rows 16 apart), and its
+>   rows are the dark Chapters rows (#68, #70). The dark Lessons screen is checked against those.
+> - **The RTL family is half-done, as this entry guessed.** Its headers mirror (the back chip on the
+>   right, Arabic titles such as "دروس بنية الخلية"), but its rows do not: on all four RTL row frames
+>   (`549:19284`, `549:19337`, `549:19390`, `549:28773`) every row keeps its badge 17 from the LEFT
+>   and its chevron at the right, with English names and counts (`549:19390`'s render measures the
+>   light row's numbers exactly). The build keeps its mirrored rows.
 
 ## 65. 🟡 The Mistakes frames' placeholder counts do not reconcile across levels
 
@@ -2075,6 +2182,29 @@ late on the day it is built.
 > the shipped `#384F47` is used, per #57).
 >
 > **Still open for the designer:** whether the Cairo/Inter mix was deliberate.
+>
+> **Update 2026-09-27 (API→UI Wave 15), overview card only:** the mapped styles are unchanged, but the two lines
+> now sit at the frame's line CENTRES, 34.16 and 61.78 below the card's top (from `404:6325`'s insets and the two
+> leadings above), instead of in a centred block, which had put the title 3.7 high. On a real-font render the
+> title's ink starts 0.2 and the count's 0.6 from the frame's.
+>
+> **Update 2026-09-27 (API→UI Wave 16), tree rows:** the same treatment on the Mistakes rows (`404:6642`). The name's
+> line is centred 28.0 and the count's 46.5 below the row's top, with the badge and chevron at 37.0; the build had
+> 29, 54 and 40 (a centred 46-dp text block, plus a 4-dp spacer the frame does not draw), in an 80-dp row. In the
+> scale's lines (24 and 18) the two centres are closer than the lines, so the count is lifted 2.5 into the name's
+> trailing space. On a real-font render the name's ink starts 0.3 and the count's 1.0 from the frame's; the row is 78.
+> The badge numeral is `#000000` in the frame too (`404:6645`) and takes the content colour like the name.
+> **Frame inconsistency, not built:** the dark Units row (`404:7765`) and the dark Lectures frame's first row
+> (`404:8707`) centre their text block instead (name ~30.4, count ~51.5), while every light row, the dark Lectures
+> frame's second row (`404:8723`) and the Chapters frame (`404:6677`) put it at 28.0 / 46.5. The build follows the
+> majority in both palettes.
+>
+> **Update 2026-09-27 (API→UI Wave 17), Chapters:** the light Chapters rows (`404:6697`, `404:6708`) are the Units
+> row exactly (on the 1× render the name's ink starts 21 below the row's top, the count's 42, and the chevron's ink
+> ends 22 from the row's end). The dark Chapters frame (`404:7894`) repeats the inconsistency on both rows. The first
+> (`404:7915`) centres its text block (name ink top 24, count 47). The second (`404:7931`) keeps the name at the light
+> position but wraps the count in a "Group 2" with a 2.574 top pad (count ink top 45 against 42). Not built: the build
+> keeps one geometry in both palettes.
 
 **Where:** measured off the Properties panel, 2026-09-12 (signed-in view seat).
 
@@ -2202,6 +2332,10 @@ be read rather than having the light values reused.
 > **Still unread, and not guessed:** the badge disc's single **effect** (its popover would not
 > open on a view seat, so its type and values are unknown and nothing is built for it), and
 > whether the light disc really is `#FDFDFD`.
+>
+> **Update 2026-09-27 (API→UI Wave 16):** the light disc HAS now been read: `get_design_context` on `404:6642` gives
+> its disc (`404:6644`) the fill `#F4E6FF`, the catalog disc's lavender. `mistakesBadgeFill` light is now `#F4E6FF`;
+> the dark value is unchanged. The effect is still unread.
 >
 > **Separate, and unchanged by this correction:** the dark rows draw chevrons toward the replay
 > Quiz page; the built leaves stay inert because the replay quiz is deferred (owner ruling
@@ -2659,6 +2793,8 @@ it. Properties panel, 2026-09-20: **`#DBB0FF`**, together with `Fill (181px) × 
 **`podiumAccent` was deliberately left at `#D8B0FF`**: the caller's own board row `134:3554`
 was not re-read, and moving a token on the strength of a sibling's reading is exactly the
 class of thing this register exists to stop.
+**Resolved 2026-09-25 (API→UI Wave 06 walk, W06-3):** `134:3554` and the dark `337:5638` both read
+**`#DBB0FF`**, so `podiumAccent` now carries `#DBB0FF` on both canvases. See `docs/KNOWN_BUGS.md` BUG-008.
 
 **Three values `edit4.md` §13 listed as UNREAD are read.** None needed its documented fallback,
 and one fallback would have been wrong:
@@ -3120,6 +3256,13 @@ So this is not an unread value, it is an absent frame. **`limitSheetScrim` stays
 **Fix we need (designer):** a dark Limitation notification frame, or a ruling
 that the dark sheet takes another dark scrim already in the file (the avatar
 sheets are 30% at σ 13.4/14.7; the dialogs are 60% at σ ~10).
+
+**Update 2026-09-26 (API→UI Wave 11):** the sheet became a centred card (#51). Still no dark frame, so on the
+dark canvas: the scrim stays `null` (framework barrier), the card takes the dark page fill `#232428` like the
+Profile dialog, the title keeps the light `#EF4444` (`limitSheetTitle`, one value in both palettes, as
+`quizOptionBorder`), and the ✕ takes `#FCFBF9` (`limitSheetClose`), the dark `textPrimary` the Profile dialog's
+✕ already uses. The frame's `#3F3F3F` would all but vanish on `#232428`. That is a choice between two existing
+values; a dark frame would replace all four.
 
 Related: the sheet's benefits card and "Upgrade To Premium" CTA are deliberately **not built** — the
 app is purchase-silent (adr-049 §3, D-007, issue #51).
@@ -4006,7 +4149,16 @@ comparison is now on the record instead of being described.
 
 ---
 
-## 88. 🟡 Question bodies render their markup as literal text
+## 88. ✅ RESOLVED 2026-09-27 — Question bodies render their markup as literal text
+
+> ✅ **RESOLVED 2026-09-27 (API→UI Wave 14, owner ruling "both screens").** The contract answers the
+> question this entry asked: `QuizQuestion.text` is "Plain text; only <u>…</u> markup allowed."
+> (`openapi.yaml:2703`, and the format note at `:105`: no other HTML or Markdown is ever sent). The
+> subset is stated, so there is nothing to ask Seif, and the mock's tags are valid content.
+> `QuestionStemText` (`lib/features/quiz/widgets/question_stem_text.dart`) draws `<u>…</u>` as an
+> underline on the quiz page and on review; the tags are never drawn and TalkBack never reads them;
+> each stem takes its own text direction (KNOWN_BUGS BUG-014, DECISIONS D-017). The original finding
+> is kept below.
 
 > **Classification:** **contract clarification**. Not a design question, not a build defect
 > until the contract says so, and explicitly NOT a renderer change made on an assumption.
@@ -4026,6 +4178,379 @@ whether the real bank contains any.
 **Fix we need:** someone to check the contract. If the body is plain text this entry closes and the
 fixture should lose its tags; if it is markup, the renderer has a gap and it is a `seif_fight.md`
 question about which subset is allowed.
+
+## 89. 🟡 The language pill's tap target is the frame's 36.1 dp — below the 48 dp guideline
+
+> **Classification:** pre-existing finding → **owner decision**, same class as #80 / `D-013`
+> (a Figma-mandated control height under the 48 dp minimum). Found by API→UI Wave 01, 2026-09-24.
+> Not fixed there: the pill is shared by Onboarding, Login, OTP and Sign-up, so widening its hit
+> area is a cross-screen change the owner has not asked for.
+
+**Where:** `lib/core/widgets/language_pill.dart:28` — `_height = 36.10`, the whole widget is the
+tappable area.
+
+**What:** Figma `82:1093` ("Button / Light") is **78.13 × 36.10** (read via `get_metadata`,
+2026-09-24). The build matches the frame exactly, so the visible pill is right; only its hit area is
+short of 48 dp.
+
+**Fix we need:** the owner to say whether a transparent hit-area extension (visual unchanged) may be
+added to shared controls like this pill and the 35 dp back chip (#80), or whether they stay at frame
+size.
+
+## 90. 🟡 Registration field blocks: what the frames draw vs the shared field widgets
+
+> **Classification:** pre-existing finding. Found by API→UI Wave 03 (School registration), 2026-09-24,
+> from `125:511` (light, first read) and `337:5269` (dark). **Not changed in Wave 03:** everything
+> below lives in the shared field widgets (`FieldLabel`, `FieldShell`, `ReferenceDropdown`), which
+> University registration (Wave 04), Sign-up identity and Edit Profile also use. What Wave 03 did change
+> is screen-local: the 25 dp block rhythm and the subtitle grey (#24 addendum).
+
+**The frame's field block** (`Component 4` / `Component 19_ dark`, each block 92 tall): label, then
+a **10** gap, then the 60 × r20 box. Blocks are 25 apart.
+
+| Element | Frame | Build | Class |
+| --- | --- | --- | --- |
+| Label → box gap | **10** (auto-layout) | 8 | frame-proven; shared widgets → owner call (fix once, for both tracks, in Wave 04?) |
+| Label type | Inter Medium 18 / 1.2 | `labelLarge` 14/18 w600 | type scale: the handoff names Label/Large for "Form labels"; Login kept it (Wave 01) |
+| Label colour | `#1B1B1B` light / `#FCFBF9` dark | `textSecondary` `#2C2C2C` / `#DCDCDC` | near; same call as the type |
+| Value text | 18 Regular, `#696969` light (every value, selected or not) / `#FCFBF9` dark | `bodyLarge` 16, `textPrimary` | type scale (no 18/400 style); light colour ambiguous: the frame greys selected values too |
+| Chevron | custom 13.48 × 8.09, `#2A2A2A` (BGray) | Material `keyboard_arrow_down`, `hint` `#696969` | shared widget; light only (see dark below) |
+| Content inset | 10 (light) / 16 (dark) | 14 | the two canvases disagree; not changed |
+
+**Dark-frame inconsistencies (`337:5269`), for the designer.** Governorate, City, Education System
+and Grade have no chevron. The Country chevron is `#2A2A2A` on the dark canvas, so it can't be seen.
+Education System shows "Cairo". School Name's value is `#696969` while every other dark value is cream.
+The CTA's blurred glow layer is still labelled "Send OTP". None of this was built; the light frame
+is the reference for these.
+
+**Fix we need:** the owner to say whether the label → box gap (and, with the designer, the label and
+value type) changes in the shared widgets, which would also move University registration, Sign-up identity and
+Edit Profile.
+
+**Addendum, Wave 04 (University registration, `125:2336` / `337:10373`).** Both University frames use
+the same block: labels are 22 tall with the box at 32, so the label → box gap is **10**. Blocks are
+**25** apart, the same as School. That makes the 10 dp gap frame-proven on both tracks, and it is
+still unbuilt pending the owner's call. New disagreement: the **light University** frame colours the
+title **and** every field label `#384F47` (brand green), while the light School frame uses black
+(`#000`) and `#1B1B1B` for the same elements. Both build as `textPrimary` / `textSecondary`, and
+that is not changed until the designer says which frame is right. The dark University fields
+(`rgba(39,40,44,.2)`, no stroke) also differ from dark School (`rgba(35,36,40,.2)` + 0.03 cream).
+That is Glass territory, so it wasn't read further. The dark CTA's blurred layer is labelled
+"Send OTP" here too.
+
+> #91 is held for the app-icon session's entry.
+
+## 92. 🟡 The school Leaderboard toggle reads "NOW | Last Month", but the contract has scopes, not time periods
+
+> **Classification:** design ↔ contract divergence, pre-existing, **built the contract's way**. Flagged
+> by the 2026-09-24 COMPARE (`figma_ui_comparison.md` §6) and logged by API→UI Wave 06 (2026-09-25).
+> That wave also read the university frame for the first time.
+
+**What the frames draw:**
+
+| Frame | Toggle |
+| --- | --- |
+| school light `133:3117` (`158:841`, `158:843`) | **NOW · Last Month** |
+| school dark `337:5528` (`337:5617`, `337:5619`) | **NOW · Last Month** |
+| university light `134:3626` | **Global · Cohort** |
+
+**What the contract has:** `GET /leaderboard` takes a required `scope`
+(`openapi.yaml:2123`): school `system | governorate`, university `cohort | global`, anything else
+`400 validation_failed`. It also takes `cursor` and `limit`, and nothing else. There is no time
+parameter and no historical board, so "Last Month" has nothing to call.
+
+**What is built:** one scope switcher on both tracks (`scope_toggle.dart`): school
+`System | Governorate`, university `Global | Cohort`. A school student outside Egypt gets no toggle,
+because there is no `governorate` board for them. The university frame shows the designer already drew
+this control as a scope switcher for one track, so the school frame reads as an older draft of the same
+control.
+
+**Fix we need:** the designer to redraw the school toggle as `System | Governorate`. If the product does
+want a board by time period, that is a contract request to Seif (`docs/seif_fight.md`), not a client
+change. The app must not approximate one.
+
+## 93. 🟠 Dark podium: the rank numerals are cream on pale badges (1.06:1 and 1.00:1), as the frame draws them
+
+> **Classification:** frame defect → **designer decision**, built as drawn (the #86 precedent). Found by
+> API→UI Wave 06's frame re-read (2026-09-25); first seen on the Wave 05 device walk.
+
+**The badges, read as vectors** (`Ranks`: light `134:3421`, dark `337:5577`):
+
+| Place | Fill | Stroke | Numeral light | Numeral dark | Dark contrast |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `#FFCA28` | black light · `#FCFBF9` dark | black | `#FCFBF9` | **1.48:1** |
+| 2 | `#F4F4F4` | `#DC4A22` | black | `#FCFBF9` | **1.06:1** |
+| 3 | `#FCFBF9` | `#DEDEDE` | black | `#FCFBF9` | **1.00:1** |
+
+Light measures 12.6–18.7:1 with the build's `textPrimary`. In dark the frame keeps the pale badges and
+flips only the numeral to cream, so places 2 and 3 carry no readable number and place 1 barely does.
+
+**Changed in Wave 06, because the frame is explicit:** until then every badge took one near-black stroke,
+and place 3 used place 2's `#F4F4F4` fill. Each place now takes its own fill and stroke in both
+canvases (`podium.dart`; tokens `podiumSecondBadgeBorder` `#DC4A22` and `podiumThirdBadgeFill`
+`#FCFBF9`; place 3's stroke reuses `podiumThirdRing` `#DEDEDE`). **Not changed:** the numeral colour.
+It stays `textPrimary`, which is the frame's value on both canvases.
+
+**Also recorded:** both frames set the numerals in NATS Regular 20. NATS is not an app font and a
+20/400 style is not in the type scale, so the build keeps `AppType.captionSmall` (10/14). No size was
+chosen.
+
+**Fix we need:** a designer ruling on the dark numeral colour. No colour is proposed. The light frame's
+own dark numeral on the same fills is the in-file precedent, as in #86.
+
+## 94. 🟡 Lectures: the revision tabs draw a radio circle where Normal draws a chevron, and the contract takes one lecture
+
+> **Classification:** product / designer question. Built as the Normal frame. Found by API→UI Wave 08's frame
+> re-read (2026-09-25).
+
+**Where:** the university Lectures screen has four frames. All four are named "Learn(Lecture) for school
+student".
+
+| Frame | Canvas | Selected tab | Tab order | Row trailing |
+| --- | --- | --- | --- | --- |
+| `180:5354` | light | Normal | Normal · Midterm · Final · Flashcard · Practice | chevron, 28, stroke `#4B675E` |
+| `180:5208` | light | Midterm | Normal · Flashcard · Midterm · Final · Practice | empty circle `Group 37220`, 20, stroke `#384F47` |
+| `349:15962` | dark | Normal | Normal · Flashcard · Midterm · Final · Practice | chevron, stroke `#FCFBF9` |
+| `337:11059` | dark | Midterm | Normal · Flashcard · Midterm · Final · Practice | empty circle, stroke `#FCFBF9` |
+
+**What:** on Midterm, every row ends in an empty circle. It is the same `Group 37220` the track-selection cards
+use as a radio (#40). A radio reads as "pick lectures", which would mean several lectures in one revision quiz.
+The contract has no such request. `POST /quizzes` takes one `lectureId` (required on `mode: normal`) and a
+`quizType` (`contract/openapi.yaml:1499-1500`). There is no list of lectures to send. No frame shows a filled
+circle or a control that submits a selection.
+
+**Built as:** the Normal frame on every tab. Each row has a chevron, and a tap opens quiz setup for that one
+lecture with the selected quiz type. No selection state was invented.
+
+**Fix we need:**
+1. **Designer:** what does the circle mean? If it is a multi-select, the selected state and the control that
+   starts the quiz need drawing.
+2. **Seif**, only if it is a multi-select: a multi-lecture scope for the revision quiz types.
+
+**Also corrected by the same read:** COMPARE (§11) said there is no dark Lectures frame. There are two,
+`349:15962` and `337:11059`. Their rows match the build: `#27282C` fill, a cream hairline and chevron, and an
+`#AE87E7` bar on `#2E2D32`. The tab order differs between frames; the build keeps the server's `quizTypes`
+order (#18). `349:15962`'s search placeholder reads "Search Subjects" (#17).
+
+---
+
+## 95. 🟡 The quiz header's AI "sparkle-cap" icon is not built
+
+> **Classification:** designer question, owner ruling. Found by API→UI Wave 12's frame re-read (2026-09-26).
+
+**Where:** the quiz header, `295:3103` (`tdesign:ai-education`, 26.55) in `159:845`, `159:1431` and `159:1852`;
+drawn lit (a filled rounded square, `#AE87E7` radius 6 at 35 in dark `337:9213`) in `159:1695` and `337:9182`,
+the two frames with the AI panel open.
+
+**What:** the frames suggest a toggle for the explanation panel, but nothing specifies what it does. It is also
+drawn on an unanswered question (`159:845`). The contract allows the explanation affordance only after grading:
+*"Render the affordance from `AnswerResult.explanationAvailable`, and call this endpoint only when it is `true`
+… When it is `false`, do not render the affordance."*
+
+**Built as:** nothing in the header (owner ruling 2026-09-26). The panel's own "Show explanation" button is the
+affordance, and it appears exactly when the contract allows. Before grading the icon would break the contract;
+after grading it would duplicate that button. The bookmark and share icons beside it stay out too (seif_fight
+S11). Pinned by `quiz_screen_test.dart` ("the header carries no AI icon, before or after grading").
+
+**Fix we need:** the designer says what the icon does. If it is the panel's toggle, it should appear only once
+the answer is graded and `explanationAvailable` is true.
+
+---
+
+## 96. 🟡 The question photo is shown whole, not cropped into the frame's 360 × 189 box
+
+> **Classification:** deliberate divergence, owner ruling. Found by API→UI Wave 12's frame re-read (2026-09-26).
+
+**Where:** `216:2973` "Quiz page with photo" (`216:3013`, `Rectangle 6425`), and `159:1852`.
+
+**What:** the frame draws the image in a fixed 360 × 189 box, radius 17, 0.5 `#4B675E` hairline, with the sample
+picture cropped to fill it. `QuizQuestion.imageUrl` is a full image of any shape (`openapi.yaml`, "Full image
+(DO Spaces CDN, WebP)"), and the frame's sample is a labelled diagram. Cropped to a fixed box, a tall or wide
+diagram loses labels.
+
+**Built as:** the frame's position and chrome, the image's own shape. The image sits above the question card
+(it used to sit below it), 22 over the card, the card 22 over the options, radius 17 with the card's hairline.
+The image fills the width at its own aspect ratio (owner ruling 2026-09-26). The loading and failed states hold
+the frame's 189 dp box. There is no dark photo frame, so dark takes the card's dark hairline.
+
+**Fix we need:** the designer confirms whole-image, or specifies a fixed box and what happens to images that do
+not fit it.
+
+---
+
+## 97. 🟡 The result ring's figure is 64 ExtraBold; the type scale stops at 28
+
+> **Classification:** type-scale gap, owner ruling. Found by API→UI Wave 13's frame re-read (2026-09-26).
+
+**Where:** the quiz result, `159:2239` "50%" (light) / `337:6654` (dark), inside the 192 ring.
+
+**What:** the frames set the figure in Inter ExtraBold 64 (`#3D3D3D` light, `#FCFBF9` dark). The designer's type
+scale tops out at `displayLarge`, 28 Bold, and the project rule is that no size is set outside the scale. At 28 the
+figure fills about a third of the ring's width where the frame's fills about three quarters.
+
+**Built as:** `AppType.displayLarge` in the frame's colours (owner ruling 2026-09-26: keep the scale, log it). The
+same screen has four smaller off-scale sizes, each on the nearest scale style: the bucket numbers (Cairo Bold 22 →
+`h2` 20), the rewards runs (19.45 → `h2` 20 bold and `bodyLarge` 16 regular), the title (22 → `h2`) and the CTA
+label (22 → the button theme's 16).
+
+**Fix we need:** the designer adds a display size for the ring (and says whether the other four should move), or
+confirms the scale's sizes here.
+
+---
+
+## 98. ✅ FIXED 2026-09-27 on the panel and the CTA (owner ruling; DEVICE-VERIFIED 2026-09-27; review open) — The ai-education glyph draws about 9% large on the quiz panel and the result CTA
+
+> **Classification:** build defect, cross-screen → **owner decision**. Found by API→UI Wave 14's frame re-read
+> (2026-09-27), at SOURCE; not measured on the device. Not fixed there: the two sites are Waves 12 and 13.
+>
+> **OWNER RULING 2026-09-27: fix** (option a; the owner's reply "15-6 c, 100 a, 14-10 b, 98 a, 99 b", 2026-09-27). Both sites are sized by the
+> drawing's height, as on review, after their own frames' boxes (`159:1695`, the result CTA in `159:1964`) are
+> re-read.
+>
+> **Applied 2026-09-27 (owner `fix`), with the premise corrected by that re-read.** All five instances (the panel
+> `159:1839` and dark `337:9272`, the CTA `159:2348` and dark `348:7871`, review `162:2589`) hold the same group in
+> their 26.55 box: **22.12 × 21.01** at (2.215, 2.289), not "26.18 × 24.41, 0.18 in" (the number this entry and
+> Wave 14 used). The asset's geometry is that group at 1:1: 22.12 × 21.01 from (2.031, 2.287) of its 27 × 25 viewBox.
+> So the frames draw the asset at scale 1.0; the square-boxed sites drew it at **1.062×**, not 9% large. The square
+> box also laid out 28.67 wide, so the panel title and the CTA label sat 2.12 further out than the frames' 8.089 and
+> 10. Both sites now use `AiEducationGlyph` (`lib/features/quiz/widgets/ai_education_glyph.dart`): the 26.55 box, the
+> asset 27 × 25 at (0.184, 0.002) in it; the title and the label sit on the frames' gaps. Golden `ai_panel_dark.png`
+> regenerated (the glyph and the title only). **Review is not changed:** `quiz_review_screen.dart` sizes the glyph by
+> a height of 24.41, which by the same reading draws it at 0.976×; that is a walked screen and waits for the owner.
+
+**Where:** `lib/features/quiz/widgets/ai_explanation_panel.dart:80` and
+`lib/features/quiz/screens/quiz_result_screen.dart:171`, both `SvgPicture.asset('assets/icons/ai_education.svg',
+width: 26.55, height: 26.55, fit: BoxFit.contain)`.
+
+**What:** in the review frame the glyph is a 26.55 Iconify box whose drawing is **26.18 × 24.41** (`162:2589`, from
+the group's insets). `vector_graphics` 1.2.2, under `flutter_svg`, derives the width from the height whenever a
+height is given and ignores the width passed with it (`vector_graphics.dart:473`). Both calls therefore draw the
+27 × 25 asset at **28.67 × 26.55**: about 9% larger than the drawing and 2.1 wider than the box. The review row
+(Wave 14) now sizes the glyph by the drawing's height, 24.41, and a test pins it.
+
+**Fix we need:** the owner's go-ahead to size the other two the same way. Their own frames' boxes (`159:1695`,
+the result CTA in `159:1964`) should be re-read first to confirm the same insets.
+
+## 99. ✅ CLOSED 2026-09-27 (owner ruling) — The catalog header's title is Inter SemiBold 22 `#000000` in the frame; the build draws `h2` 20/700 `#0E0E0E`
+
+> **Classification:** build ↔ frame drift, cross-screen → **owner decision**. Found by API→UI Wave 15's frame
+> re-read (2026-09-27), at SOURCE and on a real-font render. Not changed there: `CatalogHeader` is shared by
+> Subjects, Units, Chapters, Lessons and the Mistakes screens, and four of them have been walked at 100%.
+>
+> ✅ **OWNER RULING 2026-09-27: keep `#0E0E0E`** (option b; the owner's reply "15-6 c, 100 a, 14-10 b, 98 a, 99 b", 2026-09-27). Every catalog
+> header keeps `ext.textPrimary`; no token is added and no screen is re-walked. Size and weight stay on #57's ruling.
+> The review header keeps its own `quizReviewTitle` (`#000000`, Wave 14), so the two headers differ by 6/255 in
+> light, accepted.
+
+**Where:** `lib/features/catalog/widgets/catalog_scaffold.dart:84`, `AppType.h2.copyWith(color: ext.textPrimary)`.
+Frame: "Mistakes" `404:6480` in `404:6292`. The dark instance (`404:7598`) is cream, like the build.
+
+| | Frame | Build |
+| --- | --- | --- |
+| Size | 22 | 20 |
+| Weight | 600 SemiBold | 700 Bold |
+| Light colour | `#000000` | `#0E0E0E` (`textPrimary`) |
+| Dark colour | `#FCFBF9` | `#FCFBF9` |
+| Word "Mistakes", ink | 93 wide, cap top 9.6 below the header box | 84 wide, cap top 9.7 below it |
+
+**What is actually open:** the size and weight follow **#57**'s ruling for the review title (the scale has no 22;
+nearest by role is `h2`). The colour is the real difference: Wave 14 gave the review header the frame's `#000000`
+through its own token (`quizReviewTitle`), while every catalog header still draws `#0E0E0E`.
+
+**Fix we need:** the owner's call. Either give every catalog header the frame's black (one token, five screens, each
+re-walked), or accept `#0E0E0E` and close this.
+
+## 100. ✅ FIXED 2026-09-27 (owner ruling; DEVICE-VERIFIED 2026-09-27) — The tree row's chevron ends 12 from the row's edge in every row frame; the catalog rows inset it 17
+
+> **Classification:** build ↔ frame drift, cross-screen → **owner decision**. Found by API→UI Wave 16's frame
+> re-read (2026-09-27), at SOURCE and on a real-font render. Fixed on the Mistakes rows only; the catalog rows are
+> walked screens (Waves 08–10) and share the widget.
+>
+> **OWNER RULING 2026-09-27: fix** (option a; the owner's reply "15-6 c, 100 a, 14-10 b, 98 a, 99 b", 2026-09-27). The catalog palette takes the
+> Mistakes rows' end inset (11.5 + the 0.5 border), so the chevron ends 12 from the row's edge; the catalog Units,
+> Chapters, Lessons and Lectures screens are re-walked after.
+>
+> **Applied 2026-09-27 (owner `fix`):** `_catalogPadding` in `tree_list_row.dart`, end 11.5 + 0.5, top and bottom
+> unchanged. Re-read first on every catalog row frame, light and dark (`135:1064`, `135:1302`, `308:4769`,
+> `309:5656`; `337:5926`, `348:7457`, `348:7527`, `349:16001`): the container 17 from the start, 334 wide, ending 12
+> from the end; the chevron ending there; the text column 242 wide from 69 (the build's was 237); the caption 12.66
+> before the chevron. Pinned by the "#100" group in `tree_list_row_test.dart`. The Lectures frames' circle variant
+> (`309:5714`, #94) ends 12 from the edge too. **Device-verified 2026-09-27** on all four catalog list screens,
+> light and dark, English and Arabic (`device_walk_results.md`, "Fix batch").
+
+**Where:** `lib/features/catalog/widgets/tree_list_row.dart`, the catalog palette's `EdgeInsetsDirectional.all(16.5)`.
+Frames: the catalog Chapters row `135:1302` and the Mistakes rows `404:6642`, `404:6697`, `404:8707` all draw the
+row's content in one container 17 from the start and 334 wide inside a 363 row, so it ends **12** from the row's end,
+and the 28-dp chevron ends there. The build pads 16.5 plus the 0.5 border on both sides, so the chevron ends **17**
+from the edge, 5 dp too far in, and the name has 5 dp less width.
+
+**Fixed in Wave 16 for the Mistakes palette** (`_mistakesPadding`, end 11.5 + 0.5). **Not changed** on the catalog
+Units, Chapters, Lessons and Lectures rows.
+
+**Fix we need:** the owner's call. Either give the catalog palette the same end inset (one line; the four catalog
+list screens re-walked), or accept 17 there and close this.
+
+## 101. 🟡 The Profile stat cards differ by frame: light draws Rank "HERO", dark and RTL draw Badges
+
+> **Classification:** frame ↔ frame disagreement → **OWNER RULING 2026-09-27: keep Points only** (API→UI Wave 19).
+> No card is added; the designer reconciles the frames. Noted under `seif_fight.md` S25.
+
+**Where:** `lib/features/profile/screens/profile_screen.dart`, `_Loaded`: one `ProfileStatCard`, Points.
+Frames: light `166:4416` / `309:7940` draw Solved Questions (full width), Points and **Rank "HERO"**; dark `337:7433` /
+`349:12919` draw Solved Questions, Points and **Badges 8**; RTL `549:21052` / `549:26384` draw all three in ONE row:
+عدد الاسئلة 300, النقاط 2,450, الشارات 8.
+
+**What is real:** `badges` is a required integer on `StudentProfile` (`openapi.yaml:2478`), so a Badges card could be
+filled; Solved Questions (S24) and Rank (S25) have no source.
+
+**Fix we need:** the designer: one stat block for every canvas and language. Until then the build shows Points only.
+
+## 102. ✅ BUILT 2026-09-27 (API→UI Wave 19) — The Logout dialog draws No and Yes; the build had one red confirm
+
+> **Classification:** build ↔ frame drift (the wave's item 1), plus the button order in Arabic → **OWNER RULING
+> 2026-09-27: mirror** it.
+
+**Where:** `lib/features/profile/widgets/profile_confirm_dialog.dart` (the `cancelLabel` pair) and `_confirmLogout`
+in `profile_screen.dart`. Frames, every Logout card (`180:4704`, `309:9472`, `337:7783`, `349:10855`, `549:21401`,
+`565:13497`): the ✕, then a 315-wide row 15 in, **No** 155 × 60 `#EF4444` and **Yes** 155 × 60 `#384F47` light /
+`#AE87E7` dark (both tracks), 5 apart, radius 20, the shadow and no glow; the card 345 × 239, ending 15 under the
+row. The build drew Go to Uni's shape: the ✕ and one full-width red "Logout".
+
+**Built:** the pair as drawn. No and the ✕ dismiss, Yes signs out (keys `logout_no`, `logout_confirm`); the copy
+"No" / "Yes" and "لا" / "نعم" (the RTL frames' words). Yes takes the new `CtaTone.shadowOnly` (edit2 #12: neither
+pair button glows). **Arabic:** the RTL frames keep No on the LEFT, the half-mirrored RTL family of #58 and #64; by the
+owner's ruling the build mirrors it, so No sits at the reading start, on the right. `edit2.md` #12 still describes the
+single-button build; it predates this.
+
+**Also on these dialogs, frame-proven, same wave:** the ✕ is the frame's cross (the limit card's asset) in `#3F3F3F`
+in light (it was `textPrimary` `#0E0E0E`; token `profileDialogClose`), with a 48 × 48 target centred on the frame's
+23-dp box (it was 35 × 35); the card is 345 on the 402 frame (was 344); Go to Uni's button is 284 wide and centred
+(was 309 at 18); the Logout card ends 15 under its pair, Go to Uni's 20 under its button. Pinned by the "Wave 19"
+group in `profile_screen_test.dart` and the `confirm_dialog_*` goldens (two new: `_pair`).
+
+**Not changed:** the text follows the type scale (title `h2`, body `bodyLarge`, buttons `buttonLarge`; the frame: 22,
+20 Medium, 22), so the vertical rhythm is the app's dialog rhythm, not the frame's y values. The ✕ box is centred on
+the title row (centre 37.5); the frame's box sits 1 dp higher (25–48 in a 20–55 bar).
+
+## 103. 🟡 The dark university Logout frame's scrim is 30%; the dark school frame's is 60%
+
+> **Classification:** frame ↔ frame disagreement → **OWNER RULING 2026-09-27: 60% on both tracks** (a likely copy slip).
+> Found by API→UI Wave 19's frame read.
+
+**Where:** `lib/core/theme/app_elevation.dart`, `AppElevation.dark.logoutDialogScrim` (`#313131` at 60%, sigma
+9.95), one token for both tracks. Frames: dark school `337:7677` draws `#313131` at 60% with a 19.9 background blur;
+dark university `349:10749` draws 30% with the same blur (the light frames' opacity, the dark blur); Go to Uni's dark
+frame `337:7561` 60%.
+
+**Fix we need:** the designer: confirm 60% for both tracks, or give the university frame its own value on purpose.
+
+## 104. 🟡 The Profile menu labels are Inter Medium 18 in the frame; the build draws `h3` (18 / 600)
+
+> **Classification:** record only (API→UI Wave 19's frame lens). The type scale has no 18 / 500 style; the scale wins,
+> nearest by role (#57), as for the registration labels (Inter Medium 18 → `labelLarge`, #90's table).
+
+**Where:** `lib/features/profile/widgets/profile_menu_row.dart`, the label `AppType.h3`. Frame: every Profile row
+label (`170:4796` and siblings), Inter Medium 18, line 21.
 
 ---
 
@@ -4076,7 +4601,7 @@ this repo should be changed on the strength of it.
 
 | # | Kind | Question | Next action |
 | --- | --- | --- | --- |
-| **#88** | contract clarification | Question bodies render `<u>…</u>` as literal text. Is `Question.body` plain text, or does the contract allow markup? | **Read `contract/openapi.yaml` at the current pin** (`contract/SOURCE.md` says which). If plain text, the mock fixture loses its tags and this closes. If markup, it is a `docs/seif_fight.md` question about which subset. **Do not change `mcq_renderer.dart` on an assumption.** |
+| **#88** | contract clarification | Question bodies render `<u>…</u>` as literal text. Is `Question.body` plain text, or does the contract allow markup? | **Resolved 2026-09-27:** the contract allows `<u>…</u>` and nothing else (`openapi.yaml:2703`). Built in API→UI Wave 14 as `QuestionStemText`, on the quiz page and on review. |
 
 ## Closed by the 2026-09-20 device pass
 

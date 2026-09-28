@@ -18,6 +18,7 @@ import '../models/quiz_setup_args.dart';
 import '../notifier/quiz_setup_notifier.dart';
 import '../widgets/limit_sheet.dart';
 import '../widgets/quiz_error_copy.dart';
+import 'quiz_screen.dart' show QuizScreenArgs;
 
 /// `/quiz/setup` · Figma `135:1622` (school) / `309:5771` (university).
 ///
@@ -56,6 +57,7 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
+    final elevation = Theme.of(context).extension<AppElevation>()!;
     final offline = ref.watch(isOnlineProvider).value == false;
     final creation = ref.watch(quizSetupProvider);
 
@@ -71,11 +73,12 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
             children: [
               if (offline) const OfflineBanner(),
 
-              // Scope header — 146:2287. The frame also shows the SUBJECT above
-              // the scope name ("Biology" / "Cell Membrane"), but no quiz
-              // endpoint returns a subject: `Quiz` carries only `scopeName`, and
-              // plumbing it from the catalog would mean changing the Learn stack.
-              // Scope alone, flagged in docs/DESIGN_ISSUES.md.
+              // Scope header — light 146:2287, dark 337:6268: the subject
+              // ("Biology") over the scope ("Cell Membrane"). No quiz endpoint
+              // returns a subject, so the Learn stack hands over the name from
+              // the subjects list the student tapped through. On a cold deep
+              // link there is no list and no name, and the scope stands alone.
+              // API→UI Wave 11; the subject used to be dropped.
               Container(
                 width: double.infinity,
                 padding: const EdgeInsetsDirectional.fromSTEB(
@@ -86,16 +89,29 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                 ),
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: ext.quizDivider, width: 1.18),
+                    bottom: BorderSide(
+                      color: ext.quizDivider,
+                      width: elevation.quizSetupDividerWidth,
+                    ),
                   ),
                 ),
-                child: Text(
-                  // Server copy, already in the content language (adr-018) —
-                  // rendered verbatim, never looked up in the ARB.
-                  widget.args.scopeName,
-                  style: AppType.h2.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                // Both lines are server copy, already in the content language
+                // (adr-018): rendered verbatim, never looked up in the ARB.
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (widget.args.subjectName case final subject?)
+                      Text(
+                        subject,
+                        style: AppType.captionRegular.copyWith(
+                          color: ext.quizSetupSubject,
+                        ),
+                      ),
+                    Text(
+                      widget.args.scopeName,
+                      style: AppType.h2.copyWith(color: ext.quizSetupScope),
+                    ),
+                  ],
                 ),
               ),
 
@@ -188,10 +204,22 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
   void _onCreationChanged(AsyncValue<Quiz?>? previous, AsyncValue<Quiz?> next) {
     if (!mounted) return;
 
+    // Only a SETTLED result acts. Riverpod keeps the previous error on the
+    // loading state (`AsyncLoading` copies it forward), so a second Start
+    // after a 403 went loading-with-that-403 and then error-with-a-new-one,
+    // and each opened a card: two, stacked (W11-6, device-found in the API→UI
+    // Wave 11 walk).
+    if (next.isLoading) return;
+
     if (next.value case final quiz?) {
       // Reset first: coming back to setup must not re-push the same session.
       ref.read(quizSetupProvider.notifier).reset();
-      context.push('/quiz/${quiz.id}', extra: quiz);
+      // The subject rides along for the result's "Subject — Scope" line;
+      // display only, it was never part of the request (API→UI Wave 13).
+      context.push(
+        '/quiz/${quiz.id}',
+        extra: QuizScreenArgs(quiz: quiz, subjectName: widget.args.subjectName),
+      );
       return;
     }
 

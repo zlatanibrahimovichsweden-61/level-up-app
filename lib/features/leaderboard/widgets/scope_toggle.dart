@@ -13,7 +13,7 @@ import '../models/leaderboard_models.dart';
 /// `NOW | Last Month`, which are **not** — the contract has no time dimension at
 /// all and no historical board exists. Both boards are therefore built as the
 /// university one: a scope switcher. The school segments are its two scopes,
-/// `System | Governorate`.
+/// `System | Governorate` (`docs/DESIGN_ISSUES.md` #92).
 ///
 /// [scopes] comes from [LeaderboardScope.scopesFor], so the control can only
 /// ever offer a scope the caller's track and country allow — a school student

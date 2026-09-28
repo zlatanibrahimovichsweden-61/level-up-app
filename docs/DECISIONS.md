@@ -17,7 +17,7 @@
 ## Quiz feature
 
 ### D-001 · Quiz screens render `scopeName` only, no subject name
-**Feature:** Quiz (Day 7) · **Date:** 2026-07-30 · **Status:** Accepted · **Raised by:** Claude Code during Day 7 planning
+**Feature:** Quiz (Day 7) · **Date:** 2026-07-30 · **Status:** Superseded in part (2026-09-26, see the update at the end) · **Raised by:** Claude Code during Day 7 planning
 
 **Context.** `docs/day7_quiz_brief.md` specified the setup and results screens as
 "**subject** — scope name", matching the Figma frames (`135:1622`, `159:1964`), which read
@@ -53,6 +53,13 @@ the Learn-stack plumbing. Do not fold that work into a quiz ticket.
 **Tracked as** `seif_fight.md` **S19** · **Implemented** — verified in
 `quiz_setup_screen.dart` / `quiz_result_screen.dart`: both title from `scopeName` alone, and the
 result screen receives it forwarded from the `Quiz` in the route's `extra`.
+
+**Update 2026-09-26 (API→UI Waves 11 and 13, owner rulings).** The "separate follow-up" happened. The Learn stack
+reads the subject from the subjects list it already holds (`cachedSubjectName`) and hands it to setup in
+`QuizSetupArgs.subjectName` (Wave 11: "Biology" over "Cell Membrane"). Setup passes it on in `QuizScreenArgs`, and
+the quiz passes it to `QuizResultArgs` (Wave 13: "Biology — Cell Structure"). Display only: `POST /quizzes` never
+sees it, and `Quiz` / `QuizSummary` gain no field the contract lacks. On a cold deep link to setup there is no
+subject and both screens show the scope alone. S19's ask (the field on the schemas) still stands.
 
 ---
 
@@ -801,3 +808,208 @@ button it replaced is the honest state.
   48, with the 35 dp pill and the back chip centred inside it.
 
 **Revisit when:** edit2 next touches `catalog_scaffold.dart`.
+
+---
+
+### D-014 · Home's Top Student block shows the board the Leaderboard tab opens on, and "See All" opens that tab
+
+**Feature:** Home (API→UI Wave 05) · **Date:** 2026-09-24 · **Status:** Accepted
+**Raised by:** the build, which the wave plan told to stop and ask; **decided by** the owner
+
+**Context.** Figma draws a "Top Student" block on Home: three rows (medal, avatar, name, points)
+and a "See All" link (`59:2086` school, `125:2373` university, `337:5456` dark). It had rendered as
+"Coming soon" since Day 4 with the comment "no endpoint yet". That stopped being true when D-008
+closed on 2026-09-22: `GET /leaderboard` is stable, deployed and decoded. But the operation's
+`scope` is **required**, depends on the track (school `system` | `governorate`, university `cohort`
+| `global`) and has no server default. The frame draws no scope, and it gives "See All" no
+destination.
+
+**Options (scope).** (1) The tab's default, `LeaderboardScope.scopesFor(me).first`: school
+`system`, university `global`. (2) The narrowest board: school `governorate` (Egypt only), university
+`cohort`. (3) Keep the block "Coming soon" until the designer says.
+**Options (See All).** Open the Leaderboard tab, or leave it inert like the other "See All" links.
+
+**Decision.** Scope (1) and "See All" opens the tab, both the owner's choice. The block shows the
+first three rows of `leaderboardProvider(LeaderboardScope.defaultFor(me))`, the SAME provider
+instance the tab opens on.
+
+**Consequences.**
+
+- One request serves Home and the tab, and the tab opens already loaded. Pinned by
+  `top_student_section_test.dart` ("ONE request serves Home and the Leaderboard tab").
+- `LeaderboardScope.defaultFor` is the single definition, and both surfaces call it.
+- The block's error rules are the tab's: `board_failure.dart` holds the copy and retry rules both
+  use, so a `429` or `account_pending_deletion` withholds Retry in both places.
+- Rows are not tappable (there is no student profile screen) and the caller's own row gets no "You"
+  treatment (the frame draws none).
+- When `/me` reports new points (after a quiz), the block refetches the board, so it never shows a
+  total the level card above it has already replaced.
+
+**Revisit when:** the designer specifies which board the block shows, or draws a destination for
+its rows.
+
+### D-015 · The explanation `subscription_required` popup is built, with the contract's copy verbatim
+
+**Feature:** Quiz (API→UI Wave 12) · **Date:** 2026-09-26 · **Status:** Accepted
+**Raised by:** COMPARE §19 and the wave plan, which said to stop and ask; **decided by** the owner
+
+**Context.** `GET /questions/{questionId}/explanation` answers `403 subscription_required` to a student
+without a base subscription for the question's track. The contract: *"Show this popup, using this approved copy
+verbatim: 'AI explanations are available with a Level Up subscription. Subscribe to get step-by-step
+explanations and more learning features.'"* Arabic comes from the app's own localisation of the code. The app
+showed the generic *"No explanation is available for this question."* The copy says "subscribe", and the app is
+purchase-silent (adr-049 §3). DESIGN_ISSUES #51 had asked that no limit-card body mention subscribing.
+
+**Options.** (1) Build the popup verbatim. (2) Keep the generic line and log a divergence from the contract.
+
+**Decision.** (1), the owner's choice, with the Arabic draft approved as shown: *"شروحات الذكاء الاصطناعي متاحة
+مع اشتراك Level Up. اشترك لتحصل على شروحات خطوة بخطوة ومزايا تعليمية أخرى."*
+
+**Consequences.**
+
+- The popup is the limit card (`LimitSheet.showExplanation`): title "Subscription Required", the contract copy,
+  the ✕ and "Not now". No price, link or buy button.
+- The Bloc keeps the result as its own `ExplanationSubscriptionRequired` state. The screen opens the popup on the
+  transition into it, once per tap, and not again when the student pages back to the question.
+- The panel keeps its "Show explanation" button, which the contract renders from `explanationAvailable` alone,
+  and a further tap asks the server again: the student may have subscribed on the website since.
+- Every other explanation 403 is unchanged: `insufficient_scope` and `account_pending_deletion` still read
+  "not available", with no retry.
+
+**Revisit when:** product or Seif changes the approved copy, or the designer draws the popup.
+
+### D-016 · The result screen: the ring fills anticlockwise in both languages, and "Back to Learn" is gone
+
+**Feature:** Quiz result (API→UI Wave 13) · **Date:** 2026-09-26 · **Status:** Accepted
+**Raised by:** the Wave 13 frame re-read and baseline walk; **decided by** the owner
+
+**Context.** The result frames (`159:1964`, dark `337:6628`, and the two university copies) draw the score ring
+filling **anticlockwise** from 12 o'clock: at 50% the left half is lit. The app used Material's clockwise
+`CircularProgressIndicator`. There is no Arabic result frame, and the app's linear progress bars do mirror in RTL.
+Separately, the app drew a "Back to Learn" text link under "Review Questions"; none of the four frames has it, and
+the back chip and system Back already leave for Learn.
+
+**Options.** Ring: (1) as drawn, anticlockwise in both languages; (2) anticlockwise in English, mirrored in Arabic.
+Link: (1) remove it; (2) keep it and log the divergence.
+
+**Decision.** Ring (1): a dial is not text, and this invents nothing beyond the frame. Link (1). Also ruled with
+these: the ring's figure keeps the scale's 28 (DESIGN_ISSUES #97), and the shared back chip's semantics are fixed
+for every screen now (KNOWN_BUGS BUG-013).
+
+**Consequences.**
+- The ring is a painter (`ResultRingPainter`) drawing the frame's SVG export: track, stroke 9.846, round caps, and
+  the export's radial gradient `#AE87E7` → `#7070A0`. Its sweep is negative (anticlockwise) under both
+  directionalities; a test pins the Arabic case.
+- The result has one CTA. Leaving is the back chip or system Back, both to `/learn`.
+
+**Revisit when:** the designer draws an Arabic result frame, or asks for a second exit.
+
+### D-017 · Question text: `<u>…</u>` is drawn as an underline, and each stem takes its own text direction
+
+**Feature:** Quiz page and quiz review (API→UI Wave 14) · **Date:** 2026-09-27 · **Status:** Accepted
+**Raised by:** the Wave 13 re-walk and Wave 14's compare; **decided by** the owner ("both screens")
+
+**Context.** `QuizQuestion.text` is "Plain text; only <u>…</u> markup allowed." (`openapi.yaml:2703`). Both screens
+that show a stem drew the tags as text, and TalkBack read them out (DESIGN_ISSUES #88 had asked whether markup was
+allowed at all). The content language need not be the UI's (adr-018): on the Wave 13 re-walk an Arabic stem,
+truncated in the English app, put the ellipsis before "السؤال" and cut its end mid-word, because it was laid out as
+an LTR paragraph.
+
+**Options.** (1) One shared widget, used by the quiz page and review. (2) Review only, the quiz page later. (3)
+Leave #88 open.
+
+**Decision.** (1). `QuestionStemText` parses exactly `<u>` and `</u>`; anything else that looks like a tag is text,
+because the contract says nothing else is sent. Malformed input degrades as a browser would (an unclosed `<u>`
+underlines to the end; a stray `</u>` is dropped; `<u>` does not nest). The paragraph takes the direction of the
+stem's first strong character, falling back to the app's; **alignment stays the app's start**, so a stem that fits
+sits where the plain `Text` put it.
+
+**Consequences.**
+- The quiz page (Wave 12's screen) changed by one widget; its layout is otherwise untouched.
+- An Arabic stem in the English app is an RTL paragraph set from the left; an English stem in the Arabic app is LTR
+  set from the right. Only truncation and edge punctuation look different.
+- Any future rich-text field (options, explanations) is NOT covered: the contract allows markup on the stem only.
+
+**Revisit when:** the contract widens the markup subset or allows it on another field.
+
+**Update 2026-09-27 (W14-10, owner ruling):** an underlined run holding Arabic letters is underlined by hand, at
+Tajawal Regular's declared position and thickness, because Tajawal Medium and Bold declare a line the letters hide
+(KNOWN_BUGS BUG-014). A run without Arabic keeps the engine's underline.
+
+### D-018 · The Mistakes overview card grows with its text; the frame's 89 is a floor
+
+**Feature:** Mistakes overview (API→UI Wave 15) · **Date:** 2026-09-27 · **Status:** Accepted
+**Raised by:** KNOWN_BUGS BUG-002 and the Wave 15 plan ("no overflow AR 1.3 / 2.0"); **decided in** Wave 15, open to
+the owner at the walk
+
+**Context.** The frame draws a 173 × 89 card (`404:6322`). At a raised system text scale its two lines outgrow it:
+an Arabic card overflowed from 1.3 on the device, and every card at 2.0 (BUG-002). KNOWN_BUGS left "what gives way"
+open: the title truncating, the card growing, or the caption moving.
+
+**Options.** (1) The card grows, and a row takes its taller card. (2) Clamp the text scale (`docs/RESPONSIVE.md`
+Rule 4): app-wide, unapplied, and its bound, 1.3, is where Arabic already broke. (3) Truncate or move the caption:
+truncating cannot save height (one line at 2.0 is 48 tall), and moving it is a layout no frame draws.
+
+**Decision.** (1), the only in-screen option that invents nothing. The grid is a list of two-card rows
+(`IntrinsicHeight`), because a `GridView` cell gives every card one height. The frame's paddings stay fixed, and 89
+is the card's minimum height.
+
+**Consequences.**
+- English at the default scale is the frame's 89. On a real-font render Arabic cards measure 90–91 at 1.0: the
+  Tajawal fallback lays a line out taller than the scale's (the Wave 14 walk's observation).
+- At 1.3 the cards measure 101–103, at 2.0 131–132, with no overflow.
+- The Subjects grid (`subject_card.dart`) is not changed, and it still overflows (BUG-002's other half).
+
+**Revisit when:** the designer draws an Arabic or text-scaled Mistakes frame, or the RESPONSIVE clamp is applied.
+
+### D-019 · Arabic lines that mix fonts are fixed app-wide, in their own wave, not screen by screen
+
+**Feature:** app-wide type (found on the Mistakes screens, API→UI Waves 14–17) · **Date:** 2026-09-27 · **Status:**
+Accepted, not built · **Raised by:** the Wave 14, 15 and 16 walks (W15-6, W16-6); **decided by** the owner (option c)
+
+**Context.** A two-word Arabic name makes its line taller than the scale's: the Mistakes overview card is 93 dp
+instead of 89 in English (96 in Arabic), and the Mistakes tree rows 82 instead of 78 (85 in Arabic), with the text
+up to 4 dp below the frame's. A throwaway real-font probe on the Wave 16 walk isolated the trigger: one-word Arabic and
+English names give the frame's 78, a two-word Arabic name does not. The likely mechanism (inferred) is the space
+between the words drawn in Inter, the primary font, inside a Tajawal line. The Wave 14 walk saw taller Arabic lines
+on the quiz review rows too. Nothing overflows. The frames draw English names only.
+
+**Options.** (a) Accept it. (b) Pin the lines to the scale's line height on the Mistakes screens only. (c) Fix the
+mixed-font line height across the app, in its own wave.
+
+**Decision.** (c). It is one app-wide font-metrics behaviour, so a per-screen pin would hide it on some screens and
+not others.
+
+**Consequences.**
+- W15-6 and W16-6 stay as they are until that wave; the Mistakes screens are not pinned.
+- The wave does not exist yet: its place in the list is set only by the owner's `FORMULATE`.
+- D-018's "Arabic cards measure 90–91" is this behaviour; that wave re-measures it.
+- W14-10 (the Arabic underline) is a separate ruling: the app draws the underline itself (KNOWN_BUGS BUG-014).
+
+**Revisit when:** the wave is formulated, or the designer supplies an Arabic frame with its own line heights.
+
+### D-020 · The profile's session boundary is the provider's lifetime (autoDispose), not an invalidation
+
+**Feature:** Profile / session (API→UI Wave 19) · **Date:** 2026-09-27 · **Status:** Accepted, built · **Raised by:**
+Wave 19's reproduction of the stale profile (KNOWN_BUGS BUG-015); **decided by** the owner
+
+**Context.** Logging out invalidates `meProvider` while Home and Profile still watch it, so Riverpod rebuilds it with
+no token and carries the result into the next session. Riverpod 3 keeps a provider's previous value through every
+rebuild; only disposing the element drops it.
+
+**Options.** (a) Make `meProvider` autoDispose: the shell unmounting at sign-out drops it. Costs: every test harness
+that passes through Home holds it (`holdProfile`), and the notifier tracks its own disposal. (b) Re-invalidate the
+session scope at sign-in (`markAuthenticated`): a smaller change, but a probe showed the second student's Home
+painting the first student's name while the new `/me` loaded, and the first profile stays readable in memory while
+signed out.
+
+**Decision.** (a).
+
+**Consequences.**
+- `meProvider` lives while a screen watches it. Home is always mounted in the shell, so tab switches stay free.
+- Harnesses call `holdProfile(container)`; a test that proves the drop must not.
+- The sign-out invalidation stays: one token-less rebuild in the frame before the shell unmounts.
+- The other session providers were not changed in this wave (BUG-015, "Not changed").
+
+**Revisit when:** another session provider shows the same stale state, or the app gains a session id to key
+providers by.

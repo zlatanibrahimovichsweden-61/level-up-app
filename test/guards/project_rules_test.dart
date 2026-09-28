@@ -299,4 +299,19 @@ void main() {
           'or a leftover: ${drift.extraInAr.join(', ')}',
     );
   });
+
+  // -------------------------------------------------------------------------
+  test('no glyph is swapped for its mirror image', () {
+    // Material's chevrons and arrows carry `matchTextDirection: true`: `Icon`
+    // flips them in RTL by itself. Swapping the glyph for RTL as well flips it
+    // back, and that shipped. Every drill-in chevron pointed right in Arabic
+    // until API→UI Wave 07 (device-proven on a tablet, 2026-09-20).
+    expect(
+      mirroredGlyphSwaps(sources),
+      isEmpty,
+      reason:
+          'Use the LTR glyph unconditionally and let Icon mirror it. A '
+          'conditional between mirror glyphs double-flips in RTL.',
+    );
+  });
 }

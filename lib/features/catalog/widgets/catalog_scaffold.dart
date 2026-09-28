@@ -48,8 +48,16 @@ class CatalogScaffold extends StatelessWidget {
 ///
 /// The frame draws a back chevron on every screen including Subjects, but
 /// Subjects is a TAB ROOT — there is nothing to pop, so a chevron there would be
-/// a dead control. It is therefore rendered only when the branch's Navigator can
-/// actually pop. Flagged to the designer (DESIGN_ISSUES #14).
+/// a dead control. It is therefore rendered only when THIS route has a route
+/// below it to go back to. Flagged to the designer (DESIGN_ISSUES #14).
+///
+/// That is `ModalRoute.canPopOf`, not `GoRouter.canPop()`. The router's answer
+/// is for the whole app, root navigator first, and reading it in build never
+/// rebuilds anything: `InheritedGoRouter` does not notify. So a Subjects root
+/// rebuilt while Settings sat on the root navigator (a theme change is enough)
+/// drew a chip, kept it after Settings closed, and the chip popped nothing.
+/// `canPopOf` is scoped to this route in its own branch navigator and rebuilds
+/// the header when that changes. API→UI Wave 08, KNOWN_BUGS BUG-010.
 class CatalogHeader extends StatelessWidget {
   const CatalogHeader({super.key, required this.title, this.action});
 
@@ -59,7 +67,7 @@ class CatalogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
-    final canPop = GoRouter.of(context).canPop();
+    final canPop = ModalRoute.canPopOf(context) ?? false;
 
     return SizedBox(
       height: 35,
@@ -93,16 +101,16 @@ class CatalogHeader extends StatelessWidget {
   }
 }
 
-/// Back-pointing chevron, mirrored for RTL. Material's arrow icons do not flip
-/// themselves, and a back arrow pointing the wrong way in Arabic is a real bug,
-/// not a cosmetic one.
-IconData backChevron(BuildContext context) =>
-    Directionality.of(context) == TextDirection.rtl
-    ? Icons.arrow_forward_ios
-    : Icons.arrow_back_ios_new;
+/// Back-pointing chevron. ALWAYS the LTR glyph: Material's chevrons and
+/// arrows carry `matchTextDirection: true`, so [Icon] mirrors them in RTL by
+/// itself.
+///
+/// Both helpers used to swap the glyph for RTL as well. The two flips
+/// cancelled, and every drill-in chevron pointed right in Arabic
+/// (device-proven 2026-09-20, fixed in API→UI Wave 07). The guard
+/// `no glyph is swapped for its mirror image` keeps it from coming back.
+const IconData backChevron = Icons.arrow_back_ios_new;
 
-/// Forward-pointing chevron ("drill into this row"), mirrored for RTL.
-IconData forwardChevron(BuildContext context) =>
-    Directionality.of(context) == TextDirection.rtl
-    ? Icons.chevron_left
-    : Icons.chevron_right;
+/// Forward-pointing chevron ("drill into this row"). The LTR glyph, for the
+/// same reason as [backChevron]; [Icon] turns it to point left in Arabic.
+const IconData forwardChevron = Icons.chevron_right;

@@ -89,5 +89,32 @@ void main() {
         );
       });
     }
+
+    // Logout's No / Yes (`180:4757`, API→UI Wave 19): red No and the brand
+    // Yes, both with the shadow and neither with the glow.
+    testWidgets('confirm dialog · $canvas · the Logout pair', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(375, 420));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        goldenApp(
+          brightness: brightness,
+          child: const ProfileConfirmDialog(
+            title: 'Log out',
+            body: 'Are you sure you want to log out of your account?',
+            cancelLabel: 'No',
+            confirmLabel: 'Yes',
+            tone: ProfileConfirmTone.destructive,
+            confirmEnabled: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ProfileConfirmDialog),
+        matchesGoldenFile('confirm_dialog_${canvas}_pair.png'),
+      );
+    });
   }
 }

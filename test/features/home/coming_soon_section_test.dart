@@ -139,56 +139,8 @@ void main() {
     });
   });
 
-  // -------------------------------------------------------------------------
-  group('Top Student · 59:2090 / 337:5460', () {
-    for (final brightness in Brightness.values) {
-      final canvas = brightness.name;
-
-      testWidgets('$canvas · a TOP-only hairline, the same width in both', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          host(
-            ComingSoonSurface.topStudent,
-            Track.school,
-            brightness: brightness,
-          ),
-        );
-
-        final s = surfaceOf(tester);
-        expect(s.color, colours(brightness).topStudentFill);
-        expect(radiusOf(s), 16.374941);
-        expect(s.side, isNull, reason: 'the frame draws no full border');
-        expect(s.topSide?.color, colours(brightness).topStudentTopBorder);
-        // 1.20791 on BOTH canvases — unlike every other border in this file.
-        expect(s.topSide?.width, 1.20791);
-      });
-    }
-
-    testWidgets('the UNIVERSITY Top Student has no back-light at all', (
-      tester,
-    ) async {
-      // `349:16788` sits under no glass surface, so there is nothing for it to
-      // light — recorded as not built (edit3.md #44, DESIGN_ISSUES #78).
-      await tester.pumpWidget(
-        host(
-          ComingSoonSurface.topStudent,
-          Track.university,
-          brightness: Brightness.dark,
-        ),
-      );
-      expect(surfaceOf(tester).backlights, isEmpty);
-
-      await tester.pumpWidget(
-        host(
-          ComingSoonSurface.topStudent,
-          Track.school,
-          brightness: Brightness.dark,
-        ),
-      );
-      expect(surfaceOf(tester).backlights, hasLength(1));
-    });
-  });
+  // Top Student's surface moved to `top_student_section_test.dart` with the
+  // block itself (API→UI Wave 05).
 
   // -------------------------------------------------------------------------
   group('Continue Learning', () {
@@ -296,13 +248,12 @@ void main() {
       );
     });
 
-    testWidgets('the other three surfaces still use mutedText', (tester) async {
+    testWidgets('the other two surfaces still use mutedText', (tester) async {
       // Unchanged by the #79 fix. They are near-white in light and a dark wash
       // in dark, which is what that grey was chosen against; where it still
       // fails in light it fails exactly as it did before this wave.
       for (final surface in [
         ComingSoonSurface.dailyTasks,
-        ComingSoonSurface.topStudent,
         ComingSoonSurface.plain,
       ]) {
         await tester.pumpWidget(
@@ -356,6 +307,33 @@ void main() {
         greaterThan(96),
         reason: '$surface: header + the 96 box',
       );
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // W05-1 (Wave 05 walk): every frame draws "See All" in the title's colour —
+  // `59:2089` black in light, #FCFBF9 in `337:5456` — not `mutedText`.
+  group('header', () {
+    for (final brightness in Brightness.values) {
+      testWidgets('${brightness.name} · See All wears the title colour', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          host(
+            ComingSoonSurface.dailyTasks,
+            Track.school,
+            brightness: brightness,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final seeAll = tester.widget<Text>(find.text('See All'));
+        expect(seeAll.style?.color, colours(brightness).textPrimary);
+        expect(
+          seeAll.style?.color,
+          tester.widget<Text>(find.text('Daily Tasks')).style?.color,
+        );
+      });
     }
   });
 }

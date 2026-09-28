@@ -45,8 +45,11 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
   final _parentPhoneController = TextEditingController();
   final _referralController = TextEditingController();
 
-  String? _nameErrorKey;
-  String? _parentPhoneErrorKey;
+  // Flags, not messages: the copy is looked up in `build`, so an error already
+  // on screen follows a language toggle (same defect as Login's W01-2, which
+  // stored the resolved string and stayed in the old language).
+  bool _showNameError = false;
+  bool _showParentPhoneError = false;
 
   @override
   void initState() {
@@ -70,17 +73,14 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
   }
 
   void _continue() {
-    final l10n = AppLocalizations.of(context);
     final name = _nameController.text.trim();
     final parentPhone = Phone.tryParse(_parentPhoneController.text);
 
     setState(() {
-      _nameErrorKey = (name.isEmpty || name.length > 100)
-          ? l10n.invalidName
-          : null;
-      _parentPhoneErrorKey = parentPhone == null ? l10n.invalidPhone : null;
+      _showNameError = name.isEmpty || name.length > 100;
+      _showParentPhoneError = parentPhone == null;
     });
-    if (_nameErrorKey != null || _parentPhoneErrorKey != null) return;
+    if (_showNameError || _showParentPhoneError) return;
 
     FocusScope.of(context).unfocus();
     final referral = _referralController.text.trim();
@@ -162,7 +162,7 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       keyboardType: TextInputType.name,
                       maxLength: 100,
                     ),
-                    if (_nameErrorKey != null) InlineFieldError(_nameErrorKey!),
+                    if (_showNameError) InlineFieldError(l10n.invalidName),
                     const SizedBox(height: 16),
                     // Phone — read-only, proven at the OTP step, never submitted.
                     FieldLabel(l10n.phoneLabel),
@@ -176,8 +176,8 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       controller: _parentPhoneController,
                       hint: l10n.phoneHint,
                     ),
-                    if (_parentPhoneErrorKey != null)
-                      InlineFieldError(_parentPhoneErrorKey!),
+                    if (_showParentPhoneError)
+                      InlineFieldError(l10n.invalidPhone),
                     const SizedBox(height: 16),
                     // Referral — optional, collected but NOT submitted (#1).
                     FieldLabel(l10n.referralCodeOptional),
@@ -266,6 +266,9 @@ class _DialCodePhoneField extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             Phone.egyptDialCode,
+            // LTR for the same bidi reason as the login chip: a leading `+`
+            // otherwise paints as `20+` in Arabic.
+            textDirection: TextDirection.ltr,
             style: AppType.h4.copyWith(color: ext.textPrimary),
           ),
           Icon(Icons.arrow_drop_down, color: ext.hint),

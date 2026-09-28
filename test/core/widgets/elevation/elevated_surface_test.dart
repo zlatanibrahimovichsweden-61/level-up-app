@@ -68,8 +68,8 @@ void main() {
             ),
             color: AppColors.light.topStudentFill,
             topSide: BorderSide(
-              color: AppColors.light.topStudentTopBorder,
-              width: AppElevation.light.topStudentTopBorderWidth,
+              color: AppColors.light.topStudentBorder,
+              width: AppElevation.light.topStudentBorderWidth,
             ),
             child: const SizedBox.expand(),
           ),

@@ -1,16 +1,40 @@
 # Vendored API contract — pinned copy
 
 Source: https://github.com/seifhamdii-collab/level-up-contract
-Pinned commit: 768e67d ("Mirror contract from level-up-backend@ac7ecd80d62bf731a50a0a0f03fe6b37ec86ef03")
-Vendored: 2026-09-20
-Previous pin: 2dca3c5 ("Mirror contract from level-up-backend@1274492577864943e53ed39c93e95c1f4beccd23", v3.13.0-m1), vendored 2026-09-12
+Pinned commit: ea83099 ("Mirror contract from level-up-backend@03dd474ac89d4198892898d30faa024d965062b9")
+Vendored: 2026-09-24
+Previous pin: 768e67d ("Mirror contract from level-up-backend@ac7ecd80d62bf731a50a0a0f03fe6b37ec86ef03", v3.22.0-m1), vendored 2026-09-20
 
-info.version at this pin: 3.22.0-m1
+info.version at this pin: 3.23.0-m1
 
-Operation census at this pin, counted from source (operation blocks at indent 6 — NOT
-`grep -c "x-stability: stable"`, which returns 34 because line 3 is header prose; the draft grep
-returns 16 because line 30 and line 1333 are both prose): **33 stable · 14 draft · 47 total**.
-The previous pin was **29 stable · 13 draft · 42 total**.
+Operation census at this pin, counted by parsing `paths` with a YAML parser (never
+`grep -c "x-stability: …"` — header and description prose inflate both counts):
+**33 stable · 16 draft · 49 total**. Of the 33 stable, 3 are `x-consumers: [web]` and are
+forbidden to the app, leaving **30 stable operations the app may build against**.
+The previous pin (768e67d) was **33 stable · 14 draft · 47 total**.
+
+## Delta from 3.22.0-m1 — one mobile-visible commit (2026-09-24 re-vendor)
+
+Upstream moved three commits past 768e67d (`bc27953`, `200073c`, `ea83099`). The first two touch
+**only** the admin files (`openapi-admin.yaml`, `error-codes-admin.md`,
+`contract-changelog-admin.md`), which are deliberately not vendored. Only `ea83099` touches the
+mobile contract:
+
+| Version | Commit | Change | Breaking |
+| --- | --- | --- | --- |
+| 3.23.0-m1 | ea83099 | `GET /me/terms-acceptance` (`getTermsAcceptance`) and `POST /me/terms-acceptance` (`acceptTerms`) added — **both `draft`**, mobile-only (no `x-consumers`). Inert in every environment until the server configures a Terms version: `currentVersion: null`, every accept is `400 validation_failed`. Records the student's own acceptance — **not** parent consent | no |
+
+Files changed: `openapi.yaml` (+62/−1: one new path, two operations, version line) and
+`contract-changelog.md` (+9). `error-codes.md` and `realtime.md` are byte-identical to the previous
+pin. No existing operation, schema, field, response, error code, `x-stability` value or
+`x-behaviour-changed` stamp changed. **No new operation is buildable** — the delta adds two drafts.
+
+⚠️ **Line-number drift.** The new path is inserted after old line 913, so every `openapi.yaml:NNN`
+citation in `lib/`/`test/` comments that points past ~913 is now off by **+61**. The citations
+were already a mix of pins (`184d6ec`, 3.13.0-m1, 768e67d); treat them as approximate.
+
+The notes below are the 3.13.0-m1 → 3.22.0-m1 delta, kept for history; they were written at the
+768e67d pin and its counts are that pin's.
 
 Four operations became `stable` across this delta, and **only one of them is the app's to build**:
 `registerFcmToken` (mobile). The other three are `x-consumers: [web]` — `redeemSubscriptionCode`,

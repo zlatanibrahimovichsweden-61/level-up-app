@@ -337,7 +337,7 @@ void main() {
   });
 
   group('the /quiz/setup hand-off', () {
-    testWidgets('carries lectureId, name and the DEFAULT quiz type', (
+    testWidgets('carries lectureId, name, subject and the DEFAULT quiz type', (
       tester,
     ) async {
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
@@ -351,6 +351,8 @@ void main() {
       );
       expect(screen.args.lectureId, 'lec-2');
       expect(screen.args.scopeName, 'Lower Limb');
+      // From the subjects list the student tapped through (API→UI Wave 11).
+      expect(screen.args.subjectName, 'Biology');
       expect(screen.args.quizType, QuizType.normal);
       // School's field stays null — the two are mutually exclusive in the
       // contract's POST /quizzes.

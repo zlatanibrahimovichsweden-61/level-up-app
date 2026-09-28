@@ -20,8 +20,10 @@ import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 
 import '../profile/profile_fixtures.dart';
+import '../leaderboard/leaderboard_fixtures.dart';
 
 class MockCatalogRepository extends Mock implements CatalogRepository {}
 
@@ -61,6 +63,9 @@ Future<ProviderContainer> pumpCatalogApp(
     overrides: [
       secureStorageProvider.overrideWithValue(storage),
       profileRepositoryProvider.overrideWithValue(profile),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       catalogRepositoryProvider.overrideWithValue(catalog),
       // The Mistakes flow is entered FROM the Subjects header, so its tests
       // boot through this same harness rather than a second one. Left
@@ -72,6 +77,8 @@ Future<ProviderContainer> pumpCatalogApp(
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  holdProfile(container);
 
   // Signed in — exactly what the OTP `authenticated` fork does.
   container.read(authControllerProvider.notifier).markAuthenticated();

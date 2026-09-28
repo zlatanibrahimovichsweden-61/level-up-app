@@ -3,8 +3,10 @@
 /// notifier and Home screen tests so they all agree on one payload.
 library;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:level_up_app/features/profile/models/entitlement_state.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
+import 'package:level_up_app/features/profile/notifier/me_notifier.dart';
 
 Map<String, dynamic> namedRefJson(String id) => <String, dynamic>{
   'id': id,
@@ -109,3 +111,16 @@ const baseEntitlement = EntitlementState(
   active: true,
   inGrace: false,
 );
+
+/// Holds `meProvider` for the life of [container], for harnesses that pass
+/// through Home, Profile or Settings without testing a sign-out.
+///
+/// `meProvider` is autoDispose since API→UI Wave 19 (BUG-015), and it trips
+/// the same teardown trap as the boards ([holdBoards]): the binding unmounts
+/// the tree after the flutter vsync is gone, so Riverpod schedules the dispose
+/// on a zero-length `Timer` that the binding reports as pending. A
+/// container-level listener keeps it alive; `container.dispose()` releases it.
+/// A test that proves the sign-out DROPS the profile must not call this.
+void holdProfile(ProviderContainer container) {
+  container.listen(meProvider, (_, _) {});
+}

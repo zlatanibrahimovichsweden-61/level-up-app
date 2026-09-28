@@ -94,7 +94,7 @@ class _PodiumPlace extends StatelessWidget {
   /// a board legitimately starts somewhere other than 1.
   final int place;
 
-  /// `134:3429` / `134:3426` — 30 square with a 1px border, both places.
+  /// `134:3429` / `134:3426` / `134:3423` — 30 square with a 1px border.
   static const _badgeSize = 30.0;
   static const _badgeBorder = 1.0;
 
@@ -145,7 +145,7 @@ class _PodiumPlace extends StatelessWidget {
             ),
             Positioned(
               bottom: -_badgeSize / 3,
-              child: _RankBadge(rank: entry.rank, isWinner: _isWinner),
+              child: _RankBadge(rank: entry.rank, place: place),
             ),
           ],
         ),
@@ -170,18 +170,42 @@ class _PodiumPlace extends StatelessWidget {
   }
 }
 
-/// The small numbered disc on the avatar's lower edge — `134:3429` (winner,
-/// gold) and `134:3426` (second and third, neutral). Both are 30 square with a
-/// 1px black hairline; only the fill changes.
+/// The small numbered disc on the avatar's lower edge. Each PLACE has its own
+/// fill and 1px stroke, the same in both frames (`Ranks`, `134:3421` /
+/// `337:5577`):
+///
+/// | place | node | fill | stroke |
+/// | --- | --- | --- | --- |
+/// | 1 | `134:3429` | `#FFCA28` | black light · `#FCFBF9` dark |
+/// | 2 | `134:3426` | `#F4F4F4` | `#DC4A22` |
+/// | 3 | `134:3423` | `#FCFBF9` | `#DEDEDE` |
+///
+/// The winner's stroke follows the canvas, so it is [AppColors.textPrimary]
+/// (`#000000` is not a palette token and must not become one; `textPrimary` is
+/// 14/255 from it on light and exactly the dark value). Until Wave 06 every
+/// badge took that stroke and 2 and 3 shared one fill.
+///
+/// The numeral is black in light and `#FCFBF9` in dark in the frames — which
+/// is [AppColors.textPrimary] on both, and which makes the dark numerals on
+/// the pale 2 and 3 badges unreadable. That is the frame's value, recorded for
+/// the designer as DESIGN_ISSUES #93, and it is built as drawn.
 class _RankBadge extends StatelessWidget {
-  const _RankBadge({required this.rank, required this.isWinner});
+  const _RankBadge({required this.rank, required this.place});
 
+  /// What the badge says — the entry's rank, which may repeat on a tie.
   final int rank;
-  final bool isWinner;
+
+  /// Which podium slot it sits on (1–3), which sets its colours.
+  final int place;
 
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
+    final (fill, stroke) = switch (place) {
+      1 => (ext.podiumFirstRing, ext.textPrimary),
+      2 => (ext.podiumBadgeIdle, ext.podiumSecondBadgeBorder),
+      _ => (ext.podiumThirdBadgeFill, ext.podiumThirdRing),
+    };
 
     return Container(
       width: _PodiumPlace._badgeSize,
@@ -189,14 +213,8 @@ class _RankBadge extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isWinner ? ext.podiumFirstRing : ext.podiumBadgeIdle,
-        // The frame's hairline is `#000000`, which is not a palette token and
-        // must not become one — [textPrimary] is the file's approved near-black
-        // and is 14/255 away from it on the light canvas.
-        border: Border.all(
-          color: ext.textPrimary,
-          width: _PodiumPlace._badgeBorder,
-        ),
+        color: fill,
+        border: Border.all(color: stroke, width: _PodiumPlace._badgeBorder),
       ),
       child: Text(
         '$rank',

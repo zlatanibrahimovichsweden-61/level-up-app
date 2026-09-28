@@ -187,6 +187,9 @@
   "resultSkipped": "متروكة",
   "rewardsEarned": "النقاط المكتسبة",
   "pointsAwarded": "+{points} نقطة",
+  "pointsAwardedValue": "+{points}",
+  "pointsAwardedUnit": "نقطة",
+  "quizResultSubtitle": "{subject} — {scope}",
   "reviewQuestions": "مراجعة الأسئلة",
   "backToLearn": "العودة إلى التعلّم",
 
@@ -200,6 +203,7 @@
   "weeklyLimitBody": "استخدمت كل أسئلتك لهذا الأسبوع.",
   "subscriptionRequiredTitle": "الاشتراك مطلوب",
   "subscriptionRequiredBody": "هذا الدرس يحتاج إلى اشتراك فعّال.",
+  "explanationSubscriptionRequired": "شروحات الذكاء الاصطناعي متاحة مع اشتراك Level Up. اشترك لتحصل على شروحات خطوة بخطوة ومزايا تعليمية أخرى.",
   "notNow": "ليس الآن",
 
   "errorNotEnoughQuestions": "لا يحتوي هذا الدرس على أسئلة كافية لهذا العدد. جرّب اختبارًا أقصر.",
@@ -225,7 +229,8 @@
   "dialogClose": "إغلاق",
   "logoutTitle": "تسجيل الخروج",
   "logoutBody": "هل أنت متأكد أنك تريد تسجيل الخروج؟",
-  "logoutConfirm": "تسجيل الخروج",
+  "logoutNo": "لا",
+  "logoutYes": "نعم",
   "goToUniTitle": "التحويل إلى الجامعة",
   "goToUniBody": "هل أنت متأكد أنك تريد التحويل إلى مسار الجامعة؟",
   "goToUniWarning": "لا يمكنك الرجوع مرة أخرى.",

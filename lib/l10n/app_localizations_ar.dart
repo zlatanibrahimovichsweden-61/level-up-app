@@ -598,6 +598,19 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String pointsAwardedValue(int points) {
+    return '+$points';
+  }
+
+  @override
+  String get pointsAwardedUnit => 'نقطة';
+
+  @override
+  String quizResultSubtitle(String subject, String scope) {
+    return '$subject — $scope';
+  }
+
+  @override
   String get reviewQuestions => 'مراجعة الأسئلة';
 
   @override
@@ -633,6 +646,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get subscriptionRequiredBody => 'هذا الدرس يحتاج إلى اشتراك فعّال.';
+
+  @override
+  String get explanationSubscriptionRequired =>
+      'شروحات الذكاء الاصطناعي متاحة مع اشتراك Level Up. اشترك لتحصل على شروحات خطوة بخطوة ومزايا تعليمية أخرى.';
 
   @override
   String get notNow => 'ليس الآن';
@@ -703,7 +720,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get logoutBody => 'هل أنت متأكد أنك تريد تسجيل الخروج؟';
 
   @override
-  String get logoutConfirm => 'تسجيل الخروج';
+  String get logoutNo => 'لا';
+
+  @override
+  String get logoutYes => 'نعم';
 
   @override
   String get goToUniTitle => 'التحويل إلى الجامعة';

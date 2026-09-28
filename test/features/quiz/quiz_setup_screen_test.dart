@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
@@ -82,14 +83,16 @@ void main() {
       expect(find.textContaining('remaining'), findsNothing);
     });
 
-    testWidgets('the subject line is absent — no endpoint returns one', (
+    testWidgets('without a subject (a cold deep link) the scope stands alone', (
       tester,
     ) async {
       await openSetup(tester);
 
-      // Only the scope name titles the screen; the frame's "Biology" eyebrow
-      // has nothing behind it (Quiz carries scopeName alone).
+      // The subject comes from the subjects list the student tapped through,
+      // never from a quiz endpoint. With no list there is no name, and the
+      // screen invents none.
       expect(find.text('Biology'), findsNothing);
+      expect(find.text('Cell Membrane'), findsOneWidget);
     });
 
     testWidgets('30 is preselected, and tapping another length moves it', (
@@ -211,6 +214,35 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(QuizScreen), findsOneWidget);
+    });
+
+    testWidgets('Start hands the subject on to the quiz, display only '
+        '(API→UI Wave 13)', (tester) async {
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.createQuiz(
+          scope: any(named: 'scope'),
+          length: any(named: 'length'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenAnswer((_) async => quizFor());
+
+      await openSetup(
+        tester,
+        quiz: quiz,
+        args: const QuizSetupArgs.lesson(
+          lessonId: 'lesson-9',
+          scopeName: 'Cell Membrane',
+          subjectName: 'Biology',
+        ),
+      );
+      await tester.tap(find.text('Start learning'));
+      await tester.pumpAndSettle();
+
+      // Display only: `POST /quizzes` is built from the scope's ids (the
+      // repository tests pin the body); the name rides the navigation.
+      final screen = tester.widget<QuizScreen>(find.byType(QuizScreen));
+      expect(screen.subjectName, 'Biology');
     });
   });
 
@@ -528,6 +560,303 @@ void main() {
           matching: find.byType(PrimaryCta),
         ),
         findsNothing,
+      );
+    });
+  });
+
+  // ------------------------------------------------ API→UI Wave 11 -----
+  group('Wave 11: the header matches both frames', () {
+    const withSubject = QuizSetupArgs.lesson(
+      lessonId: 'lesson-9',
+      scopeName: 'Cell Membrane',
+      subjectName: 'Biology',
+    );
+
+    TextStyle style(WidgetTester tester, String text) =>
+        tester.widget<Text>(find.text(text)).style!;
+
+    BorderSide rule(WidgetTester tester) {
+      final header = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Cell Membrane'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      return ((header.decoration! as BoxDecoration).border! as Border).bottom;
+    }
+
+    testWidgets('the subject sits above the scope, as in 135:1622', (
+      tester,
+    ) async {
+      await openSetup(tester, args: withSubject);
+
+      expect(find.text('Biology'), findsOneWidget);
+      expect(
+        tester.getRect(find.text('Biology')).bottom,
+        lessThanOrEqualTo(tester.getRect(find.text('Cell Membrane')).top),
+      );
+      // `146:2289`: Inter Regular 12, #4B675E. The scope `146:2291` is #384F47.
+      expect(style(tester, 'Biology').color, const Color(0xFF4B675E));
+      expect(style(tester, 'Biology').fontSize, 12);
+      expect(style(tester, 'Biology').fontWeight, FontWeight.w400);
+      expect(style(tester, 'Cell Membrane').color, const Color(0xFF384F47));
+    });
+
+    testWidgets('dark: subject and scope are both #FCFBF9, not the accent', (
+      tester,
+    ) async {
+      await openSetup(tester, args: withSubject, theme: AppTheme.dark);
+
+      // `337:6270` and `337:6272`. The scope used to take the primary, which
+      // is lavender in dark.
+      expect(style(tester, 'Cell Membrane').color, const Color(0xFFFCFBF9));
+      expect(style(tester, 'Biology').color, const Color(0xFFFCFBF9));
+    });
+
+    testWidgets('the rule under the header: light 1.18 #CCD5D2', (
+      tester,
+    ) async {
+      await openSetup(tester);
+
+      expect(rule(tester).color, const Color(0xFFCCD5D2));
+      expect(rule(tester).width, 1.18);
+    });
+
+    testWidgets('the rule under the header: dark 0.5 at 20% #CCD5D2', (
+      tester,
+    ) async {
+      await openSetup(tester, theme: AppTheme.dark);
+
+      // `337:6268`: rgba(204,213,210,0.2) at 0.5. It used to borrow the dark
+      // progress track at the light width, from before the dark frame was read.
+      expect(rule(tester).color, const Color(0x33CCD5D2));
+      expect(rule(tester).width, 0.5);
+    });
+
+    testWidgets('Arabic keeps the subject above the scope', (tester) async {
+      await openSetup(
+        tester,
+        args: const QuizSetupArgs.lesson(
+          lessonId: 'lesson-9',
+          scopeName: 'غشاء الخلية',
+          subjectName: 'الأحياء',
+        ),
+        locale: 'ar',
+      );
+
+      expect(
+        tester.getRect(find.text('الأحياء')).bottom,
+        lessThanOrEqualTo(tester.getRect(find.text('غشاء الخلية')).top),
+      );
+      // Both start at the right edge in RTL.
+      expect(
+        tester.getRect(find.text('الأحياء')).right,
+        moreOrLessEquals(tester.getRect(find.text('غشاء الخلية')).right),
+      );
+    });
+  });
+
+  group('Wave 11: the limit card (199:2335)', () {
+    Future<void> openLimit(
+      WidgetTester tester, {
+      String locale = 'en',
+      ThemeData? theme,
+    }) async {
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.createQuiz(
+          scope: any(named: 'scope'),
+          length: any(named: 'length'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenThrow(
+        const ApiException(status: 403, code: 'weekly_question_limit_reached'),
+      );
+      await openSetup(tester, quiz: quiz, locale: locale, theme: theme);
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsOneWidget);
+    }
+
+    Finder close() => find.byKey(const Key('limit_sheet_close'));
+
+    /// The frame's own `akar-icons:cross` (`207:5904`), by asset.
+    Finder cross() => find.descendant(
+      of: close(),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is SvgPicture &&
+            w.bytesLoader is SvgAssetLoader &&
+            (w.bytesLoader as SvgAssetLoader).assetName ==
+                'assets/icons/close_cross.svg',
+      ),
+    );
+
+    /// The card itself: the dialog's own Material.
+    Rect card(WidgetTester tester) => tester.getRect(
+      find
+          .descendant(of: find.byType(Dialog), matching: find.byType(Material))
+          .first,
+    );
+
+    testWidgets('it is a centred card, not a bottom sheet', (tester) async {
+      await openLimit(tester);
+
+      final dialog = find.descendant(
+        of: find.byType(LimitSheet),
+        matching: find.byType(Dialog),
+      );
+      expect(dialog, findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+
+      final card = tester.widget<Dialog>(dialog);
+      expect(
+        card.shape,
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      );
+      // 345 wide on the 402 frame.
+      expect(
+        card.insetPadding,
+        const EdgeInsets.symmetric(horizontal: 28.5, vertical: 24),
+      );
+      expect(card.backgroundColor, const Color(0xFFFCFBF9));
+    });
+
+    testWidgets('the title is #EF4444 with a 23 dp #3F3F3F ✕ before it', (
+      tester,
+    ) async {
+      await openLimit(tester);
+
+      expect(
+        tester.widget<Text>(find.text('Free Usage Reached')).style!.color,
+        const Color(0xFFEF4444),
+      );
+      final glyph = tester.widget<SvgPicture>(cross());
+      expect(glyph.width, 23);
+      expect(glyph.height, 23);
+      expect(
+        glyph.colorFilter,
+        const ColorFilter.mode(Color(0xFF3F3F3F), BlendMode.srcIn),
+      );
+      expect(
+        tester.getRect(close()).right,
+        lessThanOrEqualTo(tester.getRect(find.text('Free Usage Reached')).left),
+      );
+    });
+
+    // W11-5: the ✕ used to sit 7.6 dp inboard. `IconButton`'s padded 48 dp
+    // target centred the 23 dp glyph 6.5 dp in from the frame's box.
+    testWidgets('the ✕ lands on the frame\'s box, with a full 48 dp target', (
+      tester,
+    ) async {
+      await openLimit(tester);
+
+      final box = tester.getRect(cross());
+      final target = tester.getRect(close());
+      // Android's minimum touch target, kept.
+      expect(target.size, const Size(48, 48));
+      expect(target.center, box.center);
+      // `207:5904`: the 23 dp box at 6 inside a row inset 18 → 24 from the
+      // card's edge, centred on the 35 dp title row 20 below the top.
+      expect(box.size, const Size(23, 23));
+      expect(box.left - card(tester).left, 24);
+      expect(box.center.dy - card(tester).top, 37.5);
+    });
+
+    testWidgets('Arabic mirrors the ✕: 24 from the right edge', (tester) async {
+      await openLimit(tester, locale: 'ar');
+
+      expect(card(tester).right - tester.getRect(cross()).right, 24);
+      expect(tester.getRect(close()).size, const Size(48, 48));
+    });
+
+    // W11-6: a second 403 from the error state stacked two cards on device.
+    testWidgets('a second 403 opens ONE card, not two', (tester) async {
+      await openLimit(tester);
+      await tester.tap(close());
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsNothing);
+
+      // Start again, from the error the first 403 left behind.
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsOneWidget);
+
+      // One tap clears it: nothing is stacked underneath.
+      await tester.tap(close());
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsNothing);
+      expect(find.text('Select Quiz Size'), findsOneWidget);
+    });
+
+    testWidgets('the ✕ is labelled and dismisses the card', (tester) async {
+      await openLimit(tester);
+
+      expect(find.byTooltip('Close'), findsOneWidget);
+      await tester.tap(close());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LimitSheet), findsNothing);
+      // Back on setup, free to pick another length or leave.
+      expect(find.text('Select Quiz Size'), findsOneWidget);
+    });
+
+    // W11-7: the SVG glyph wraps itself in `Semantics(image: true)`, the flag
+    // merged into the button, and TalkBack read the ✕ as an ImageView (device,
+    // the Wave 11 re-walk). `isImage: false` is the regression guard.
+    testWidgets('TalkBack reads the ✕ as a button, not an image', (
+      tester,
+    ) async {
+      await openLimit(tester);
+
+      expect(
+        tester.getSemantics(close()),
+        isSemantics(
+          tooltip: 'Close',
+          isButton: true,
+          isImage: false,
+          hasTapAction: true,
+        ),
+      );
+    });
+
+    testWidgets('"Not now" still dismisses it', (tester) async {
+      await openLimit(tester);
+
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsNothing);
+    });
+
+    testWidgets('Arabic puts the ✕ on the right, before the title', (
+      tester,
+    ) async {
+      await openLimit(tester, locale: 'ar');
+
+      expect(find.byTooltip('إغلاق'), findsOneWidget);
+      expect(
+        tester.getRect(close()).left,
+        greaterThanOrEqualTo(
+          tester.getRect(find.text('انتهت أسئلتك المجانية')).right,
+        ),
+      );
+    });
+
+    testWidgets('dark: the page-fill card and a light ✕', (tester) async {
+      await openLimit(tester, theme: AppTheme.dark);
+
+      final card = tester.widget<Dialog>(
+        find.descendant(
+          of: find.byType(LimitSheet),
+          matching: find.byType(Dialog),
+        ),
+      );
+      expect(card.backgroundColor, const Color(0xFF232428));
+      expect(
+        tester.widget<SvgPicture>(cross()).colorFilter,
+        const ColorFilter.mode(Color(0xFFFCFBF9), BlendMode.srcIn),
       );
     });
   });

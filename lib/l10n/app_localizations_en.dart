@@ -595,6 +595,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String pointsAwardedValue(int points) {
+    return '+$points';
+  }
+
+  @override
+  String get pointsAwardedUnit => 'Points';
+
+  @override
+  String quizResultSubtitle(String subject, String scope) {
+    return '$subject — $scope';
+  }
+
+  @override
   String get reviewQuestions => 'Review Questions';
 
   @override
@@ -632,6 +645,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get subscriptionRequiredBody =>
       'This lesson needs an active subscription.';
+
+  @override
+  String get explanationSubscriptionRequired =>
+      'AI explanations are available with a Level Up subscription. Subscribe to get step-by-step explanations and more learning features.';
 
   @override
   String get notNow => 'Not now';
@@ -705,7 +722,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logoutBody => 'Are you sure you want to log out?';
 
   @override
-  String get logoutConfirm => 'Logout';
+  String get logoutNo => 'No';
+
+  @override
+  String get logoutYes => 'Yes';
 
   @override
   String get goToUniTitle => 'Go to Uni';

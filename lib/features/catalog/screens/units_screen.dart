@@ -23,7 +23,9 @@ class UnitsView extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
       itemCount: units.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      // 16: the frames' 78 dp rows on a 94 dp pitch (`135:815`, dark
+      // `337:5894`). API→UI Wave 08; this was 12.
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final unit = units[index];
         return TreeListRow(

@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
+import 'package:level_up_app/core/providers/locale_provider.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/circle_back_button.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/core/widgets/language_pill.dart';
 import 'package:level_up_app/features/auth/models/auth_result.dart';
 import 'package:level_up_app/features/auth/models/device_info.dart';
@@ -217,7 +220,79 @@ void main() {
     // No AppBar in the success branch: "back" to the OTP input is meaningless
     // once tokens are stored, and the frame (155:786) draws none.
     expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(CircleBackButton), findsNothing);
     // …but the frame's language pill (155:809) is present.
     expect(find.byType(LanguagePill), findsOneWidget);
+
+    // `332:3400`: the text block ends 15 above the fixed 267 group's bottom,
+    // then the frame's 60 — the subtitle sits 75 above Continue (built 60).
+    final subtitleBottom = tester
+        .getRect(
+          find.text(
+            'Congratulations! You have been successfully authenticated',
+          ),
+        )
+        .bottom;
+    final ctaTop = tester
+        .getRect(find.widgetWithText(FilledButton, 'Continue'))
+        .top;
+    expect(ctaTop - subtitleBottom, 75);
+  });
+
+  // W02-6: the frame's gaps are glyph-to-glyph (its text is trimmed); these
+  // are the box-to-box values the Pixel 8 walk measured them to be.
+  testWidgets('input view rhythm: header 39 · title 3 · subtitle 28.8 · card', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(makeContainer()));
+
+    final headerBottom = [
+      tester.getRect(find.byType(CircleBackButton)).bottom,
+      tester.getRect(find.byType(LanguagePill)).bottom,
+    ].reduce((a, b) => a > b ? a : b);
+    final title = tester.getRect(find.text('Check OTP code'));
+    final subtitle = tester.getRect(
+      find.text(
+        'We have sent a verification code to your phone. '
+        'Enter the 6-digit code.',
+      ),
+    );
+    final card = tester.getRect(
+      find.ancestor(
+        of: find.byType(Pinput),
+        matching: find.byType(ElevatedSurface),
+      ),
+    );
+
+    expect(
+      title.top - headerBottom,
+      closeTo(39, 0.001),
+      reason: 'scroll padding 8 + 31',
+    );
+    expect(subtitle.top - title.bottom, closeTo(3, 0.001));
+    expect(card.top - subtitle.bottom, closeTo(28.8, 0.001));
+  });
+
+  // Wave 02 (2026-09-24): `82:1171` draws the language pill top-end on the
+  // INPUT view, where the success frame also has it; the build showed it only
+  // after verification. The back chip is the build's own addition and stays.
+  testWidgets('input view: back chip at start AND the language pill at end', (
+    tester,
+  ) async {
+    final container = makeContainer();
+    await tester.pumpWidget(_harness(container));
+
+    expect(find.byType(CircleBackButton), findsOneWidget);
+    expect(find.byType(LanguagePill), findsOneWidget);
+    expect(
+      tester.getCenter(find.byType(CircleBackButton)).dx,
+      lessThan(tester.getCenter(find.byType(LanguagePill)).dx),
+      reason: 'LTR: chip at start (left), pill at end (right)',
+    );
+
+    final before = container.read(localeProvider);
+    await tester.tap(find.byType(LanguagePill));
+    await tester.pump();
+    expect(container.read(localeProvider), isNot(before));
   });
 }

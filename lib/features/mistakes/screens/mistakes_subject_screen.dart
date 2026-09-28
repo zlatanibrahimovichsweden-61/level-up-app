@@ -110,6 +110,14 @@ class MistakesSubjectScreen extends ConsumerWidget {
   };
 }
 
+// The frames' list starts 25 under the header (`404:6599` ends at 99.44, the
+// first row `404:6642` starts at 124.44) and its rows are 16 apart (the second
+// starts at 218.44), in the school `404:6539` and the university `404:7181`.
+// `CatalogScaffold` leaves 16 under every header, so the lists add the rest.
+// They had 4 and 12 (API→UI Wave 16).
+const _belowHeader = 25.0 - 16;
+const _rowGap = 16.0;
+
 /// The subject's display name, read from the ALREADY-LOADED overview.
 ///
 /// The tree payload contains no subject name — only the track, a count and its
@@ -155,9 +163,9 @@ class MistakesUnitsView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return ListView.separated(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       itemCount: units.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: _rowGap),
       itemBuilder: (context, index) {
         final unit = units[index];
         return TreeListRow(
@@ -194,9 +202,9 @@ class MistakesLecturesView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return ListView.separated(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       itemCount: lectures.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: _rowGap),
       itemBuilder: (context, index) {
         final lecture = lectures[index];
         return TreeListRow(

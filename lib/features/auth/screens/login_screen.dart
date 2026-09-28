@@ -36,7 +36,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
 
   /// Client-side phone-format error (separate from server/offline errors).
-  String? _phoneErrorKey;
+  /// A flag, not a message: the copy is looked up in `build`, so it follows
+  /// a language toggle while it is on screen.
+  bool _showPhoneError = false;
 
   // TODO(legal): real legal URLs are TBD — these are placeholders flagged to
   // product/legal. Wired through url_launcher so the links work once finalized.
@@ -90,22 +92,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// surfaces the same inline error either way.
   /// See docs/DESIGN_ISSUES.md #8 — the designer still owes us the intended copy.
   Future<void> _submit() async {
-    final l10n = AppLocalizations.of(context);
     final phone = Phone.tryParse(_phoneController.text);
     if (phone == null) {
-      setState(() => _phoneErrorKey = l10n.invalidPhone);
+      setState(() => _showPhoneError = true);
       return;
     }
     // Don't fire a doomed request while known-offline (the button is also
     // disabled; this guards the keyboard-submit path too).
     if (ref.read(isOnlineProvider).value == false) return;
-    setState(() => _phoneErrorKey = null);
+    setState(() => _showPhoneError = false);
     FocusScope.of(context).unfocus();
 
     final result = await ref.read(loginProvider.notifier).sendOtp(phone.e164);
     if (result == null || !mounted) return; // failure → state holds the error
-    context.push(
-      '/otp',
+    // `go` to the nested route, not `push('/otp')`: a push left the router's
+    // location at `/login`, so the signed-in redirect off `/login` fired the
+    // moment verify succeeded and took the OTP success view with it (BUG-005).
+    // Nested, the stack is still Login → OTP, so the back chip still pops.
+    context.go(
+      '/login/otp',
       extra: OtpArgs(
         phone: phone.e164,
         resendAfterSeconds: result.resendAfterSeconds,
@@ -148,44 +153,62 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onTap: () => ref.read(localeProvider.notifier).toggle(),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // The brand bird · Figma 82:849. Rendered at its own aspect
-                    // ratio (152.901 × 132.854 in the export) rather than forced
-                    // square, so it is not stretched.
+                    // Vertical rhythm is the frame's (82:819 / 337:15652): pill
+                    // bottom 100.98 → bird 119.15, bird → title gap 3, title
+                    // box bottom 299 → subtitle 367, then the form's 25 dp
+                    // auto-layout gaps. It used to be 16/16/8/28, which packed
+                    // the whole block ~125 dp high and left the bottom empty
+                    // (device walk, Wave 01, W01-5).
+                    const SizedBox(height: 18),
+                    // The brand bird · Figma 82:849 (light) / 337:15678 (dark),
+                    // at the frame's own size, 152.901 × 132.854 — it was drawn
+                    // at 88 dp tall with no reason recorded (W01-4). ONE asset,
+                    // tinted per canvas: the export is `#040404`, and the dark
+                    // frame fills the same paths `#FCFBF9` (W01-1).
                     SvgPicture.asset(
                       'assets/images/bird_logo.svg',
-                      height: 88,
+                      height: 132.854,
+                      colorFilter: ColorFilter.mode(
+                        ext.brandLogo,
+                        BlendMode.srcIn,
+                      ),
                       semanticsLabel: l10n.appTitle,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 3),
                     Text(
                       l10n.welcomeBack,
                       textAlign: TextAlign.center,
                       style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 68),
+                    // Figma 82:886: Inter Bold 20 / 1.3, `#0E0E0E` light and
+                    // `#FCFBF9` dark, start-aligned with the form — exactly
+                    // `h2` + `textPrimary`. It was `bodyLarge` centred (W01-3).
                     Text(
                       l10n.loginSubtitle,
-                      textAlign: TextAlign.center,
-                      style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
+                      textAlign: TextAlign.start,
+                      style: AppType.h2.copyWith(color: ext.textPrimary),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 25),
                     Text(
                       l10n.phoneLabel,
                       style: AppType.labelLarge.copyWith(
                         color: ext.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     _PhoneField(
                       controller: _phoneController,
                       hint: l10n.phoneHint,
                       enabled: !isSubmitting,
                       onSubmitted: (_) => _submit(),
                     ),
-                    if (_phoneErrorKey != null) ...[
+                    // Resolved HERE, per build, so a language toggle re-labels
+                    // an error already on screen (W01-2: it used to store the
+                    // resolved string and stayed English after switching).
+                    if (_showPhoneError) ...[
                       const SizedBox(height: 8),
-                      _InlineMessage(text: _phoneErrorKey!, color: cs.error),
+                      _InlineMessage(text: l10n.invalidPhone, color: cs.error),
                     ],
                     // Server / offline error from the request itself.
                     if (loginState.hasError) ...[
@@ -198,7 +221,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : Icons.error_outline,
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 25),
                     PrimaryCta(
                       enabled: !(isSubmitting || offline),
                       child: FilledButton(
@@ -215,7 +238,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : Text(l10n.sendOtp, style: AppType.buttonLarge),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 25),
                     Text(
                       l10n.orDivider,
                       textAlign: TextAlign.center,
@@ -223,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: ext.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 25),
                     PrimaryCta(
                       tone: CtaTone.outline,
                       enabled: !(isSubmitting || offline),
@@ -248,7 +271,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     _LegalLine(
                       onOpen: _openUrl,
                       userAgreementUrl: _userAgreementUrl,
@@ -297,6 +320,11 @@ class _PhoneField extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             Phone.egyptDialCode, // +20 (Figma shows +02 — a design typo)
+            // A leading `+` is bidi class ES: it only joins a number when it
+            // sits BETWEEN two, so under an Arabic Directionality it takes the
+            // paragraph direction and paints `20+`. Dial codes read LTR in
+            // every locale, like the number field beside it.
+            textDirection: TextDirection.ltr,
             style: AppType.h4.copyWith(color: ext.textPrimary),
           ),
           Icon(Icons.arrow_drop_down, color: ext.hint),

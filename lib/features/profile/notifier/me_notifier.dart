@@ -8,25 +8,47 @@ import '../repository/profile_repository.dart';
 /// `GET /me` — the signed-in student's profile, and the single source Home
 /// renders from.
 ///
-/// A plain (non-autoDispose) [AsyncNotifier] so the profile survives tab
-/// switches inside the nav shell: leaving Home for Leaderboard and coming back
-/// must not re-fetch and re-flash a skeleton.
+/// **autoDispose, and that is the session boundary** (API→UI Wave 19, owner
+/// ruling 2026-09-27, KNOWN_BUGS BUG-015). Inside the nav shell Home is always
+/// mounted and watches this, so tab switches never re-fetch or re-flash a
+/// skeleton. A sign-out unmounts the shell, and the last listener leaving is
+/// what drops the profile. As a plain provider it was dropped only by
+/// [invalidateSessionScope], which runs while Home still watches, so Riverpod
+/// rebuilt it on the next frame with no token and carried the result into the
+/// next session: the previous student on the mock, a 401 on staging. A refetch
+/// at the next sign-in would not have been enough either: Riverpod 3 keeps a
+/// provider's previous value through every rebuild, so the new student's Home
+/// would show the old one's name until their own `/me` landed.
 ///
 /// Nothing here computes anything. `points`, `level` and `badges` are
 /// server-authoritative — this notifier hands the payload through untouched.
 class MeNotifier extends AsyncNotifier<StudentProfile> {
+  /// Set when the provider is torn down, so a Retry still in flight does not
+  /// write to a dead notifier (the guard `autoDispose notifiers that await
+  /// track their own disposal`).
+  bool _disposed = false;
+
   @override
-  Future<StudentProfile> build() =>
-      ref.watch(profileRepositoryProvider).getMe();
+  Future<StudentProfile> build() {
+    // Re-armed on EVERY build. Riverpod 3 keeps this instance across rebuilds
+    // and runs the dispose callbacks on each one, and this provider is
+    // rebuilt in use (a finished quiz and a saved edit invalidate it). Left
+    // set, the next Retry would sit on its skeleton forever.
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+    return ref.watch(profileRepositoryProvider).getMe();
+  }
 
   /// User-tapped retry / pull-to-refresh. Never auto-retried on failure: a
   /// silent retry loop on a dead network is how you drain a student's battery
   /// and their data bundle.
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getMe(),
     );
+    if (_disposed) return;
+    state = next;
   }
 }
 
@@ -36,10 +58,11 @@ class MeNotifier extends AsyncNotifier<StudentProfile> {
 /// `AsyncError` — so the screen would sit on its skeleton instead of showing
 /// the error/offline view, and would keep hammering `/me` on a dead network.
 /// The project rule is explicit: retry is a user-tapped button, never silent.
-final meProvider = AsyncNotifierProvider<MeNotifier, StudentProfile>(
-  MeNotifier.new,
-  retry: _noRetry,
-);
+final meProvider =
+    AsyncNotifierProvider.autoDispose<MeNotifier, StudentProfile>(
+      MeNotifier.new,
+      retry: _noRetry,
+    );
 
 /// Returning `null` tells Riverpod not to schedule a retry.
 Duration? _noRetry(int retryCount, Object error) => null;

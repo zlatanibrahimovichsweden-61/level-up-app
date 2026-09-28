@@ -137,8 +137,20 @@ class MockBackendInterceptor extends Interceptor {
     if (method == 'POST' && path == '/auth/otp/verify') {
       final code = body['code'] as String? ?? '';
       final phone = body['phone'] as String? ?? '+201001234567';
+      // The wrong-code path — `400 otp_invalid` per the contract's verifyOtp —
+      // so the OTP error state (`82:1439` / `337:19284`) can be walked.
+      if (code == _kInvalidCode) {
+        return _problem(
+          handler,
+          options,
+          400,
+          'otp_invalid',
+          'The code is incorrect.',
+        );
+      }
       // The two magic codes land you straight on /home with a full session, one
-      // per track; every other 6-digit code forks to registration so the wizard
+      // per track; `999999` is the wrong code (above); every other 6-digit
+      // code forks to registration so the wizard
       // can be walked.
       if (code == _kAuthenticatedCode || code == _kUniversityCode) {
         _track = code == _kUniversityCode ? 'university' : 'school';
@@ -915,6 +927,9 @@ const _kAuthenticatedCode = '000000';
 /// Same, but as a UNIVERSITY student — the whole session (Home's Learning Tools
 /// section, the Learn tab's lecture trees) follows from this one code.
 const _kUniversityCode = '111111';
+
+/// Enter this at the OTP screen to get `400 otp_invalid` — the wrong-code state.
+const _kInvalidCode = '999999';
 
 /// The mock's real launch countries. The rows beyond these in [_countries]
 /// exist only to make v1.1's new `/reference/*` failures reachable from the

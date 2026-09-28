@@ -11,6 +11,7 @@ import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/leaderboard/models/leaderboard_models.dart';
 import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 import 'package:level_up_app/features/leaderboard/screens/leaderboard_screen.dart';
+import 'package:level_up_app/features/leaderboard/widgets/leaderboard_row.dart';
 import 'package:level_up_app/features/leaderboard/widgets/scope_toggle.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
@@ -194,6 +195,19 @@ void main() {
       expect(find.text('You'), findsNothing);
       expect(find.text('Student 4'), findsOneWidget);
     });
+  });
+
+  testWidgets('the rows sit 8 apart, the frame\'s auto layout', (tester) async {
+    // `134:3536` stacks its 48-high rows at y 0 / 56 / 112. The build had 10
+    // until the Wave 06 device walk measured it (W06-4).
+    givenBoard(ranks: const [1, 2, 3, 4, 5, 6]);
+    await openLeaderboard(tester, me: schoolProfile());
+
+    final rows = find.byType(LeaderboardRow);
+    final first = tester.getRect(rows.at(0));
+    final second = tester.getRect(rows.at(1));
+    expect(first.height, 48);
+    expect(second.top - first.bottom, 8);
   });
 
   testWidgets('the podium shows points and never invents a level', (

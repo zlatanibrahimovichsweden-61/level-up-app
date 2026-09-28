@@ -14,6 +14,7 @@ import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/notifier/me_notifier.dart';
 import '../bloc/quiz_bloc.dart';
+import '../models/explanation_state.dart';
 import '../models/quiz.dart';
 import '../models/quiz_review_args.dart';
 import '../models/quiz_summary.dart';
@@ -45,10 +46,16 @@ class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({
     super.key,
     required this.quiz,
+    this.subjectName,
     this.renderer = const McqRenderer(),
   });
 
   final Quiz quiz;
+
+  /// Display only, never sent: the subject the Learn stack handed to setup,
+  /// carried on to the result's "Subject — Scope" line (API→UI Wave 13). Null
+  /// when setup had none, and the result then shows the scope alone.
+  final String? subjectName;
 
   /// Injectable so the seam is real rather than nominal — and so a test can
   /// prove the shell does not depend on the MCQ renderer.
@@ -85,20 +92,35 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       create: (_) =>
           QuizBloc(repository: ref.read(quizRepositoryProvider))
             ..add(QuizStarted(widget.quiz)),
-      child: _QuizView(renderer: widget.renderer),
+      child: _QuizView(
+        renderer: widget.renderer,
+        subjectName: widget.subjectName,
+      ),
     );
   }
 }
 
 class _QuizView extends ConsumerWidget {
-  const _QuizView({required this.renderer});
+  const _QuizView({required this.renderer, this.subjectName});
 
   final QuestionRenderer renderer;
+  final String? subjectName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
+    return BlocListener<QuizBloc, QuizState>(
+      // The contract's popup for an AI explanation the student is not
+      // subscribed to. On the one transition into that state, so once per tap,
+      // and not again when the student pages back to the question.
+      listenWhen: _explanationJustLocked,
+      listener: (context, _) => LimitSheet.showExplanation(context),
+      child: _consumer(context, ref, l10n),
+    );
+  }
+
+  Widget _consumer(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     return BlocConsumer<QuizBloc, QuizState>(
       listener: (context, state) => _onStateChanged(context, ref, state),
       builder: (context, state) {
@@ -124,32 +146,28 @@ class _QuizView extends ConsumerWidget {
             }
           },
           child: Scaffold(
-            appBar: AppBar(
-              // Close, not back — the frame draws an X, because leaving ends
-              // the session rather than stepping back through it.
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () async {
-                  if (await _confirmExit(context, l10n) && context.mounted) {
-                    context.pop();
-                  }
-                },
-              ),
-              title: Text(l10n.quizTitle),
-              // The frame's bookmark (295:3139) and share (159:1731) icons are
-              // deliberately absent: all three favourite endpoints are `draft`
-              // and there is no sharing story or endpoint at all. `isFavorite`
-              // is parsed into the model regardless. seif_fight S11.
-              bottom: _ProgressBar(session: session),
-            ),
             body: SafeArea(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _Header(
+                    session: session,
+                    // Close, not back — the frame draws an X, because leaving
+                    // ends the session rather than stepping back through it.
+                    onClose: () async {
+                      if (await _confirmExit(context, l10n) &&
+                          context.mounted) {
+                        context.pop();
+                      }
+                    },
+                  ),
                   Expanded(
                     child: SingleChildScrollView(
+                      // 25 under the header's rule: `159:1254` sits at
+                      // 178.18 under a header ending at 153.18.
                       padding: const EdgeInsetsDirectional.fromSTEB(
                         20,
-                        20,
+                        25,
                         20,
                         20,
                       ),
@@ -236,6 +254,7 @@ class _QuizView extends ConsumerWidget {
           extra: QuizResultArgs(
             summary: summary,
             scopeName: scopeName,
+            subjectName: subjectName,
             // Narrowed here, at the last point the session is in hand. The
             // result screen never sees the session itself.
             review: QuizReviewArgs(
@@ -253,6 +272,16 @@ class _QuizView extends ConsumerWidget {
         break;
     }
   }
+
+  /// Pending → subscription-required on the question on screen: the tap that
+  /// asked was just answered `403 subscription_required`. Comparing the SAME
+  /// question is what keeps paging back to it from reopening the popup.
+  static bool _explanationJustLocked(QuizState previous, QuizState current) =>
+      previous is QuizActive &&
+      current is QuizActive &&
+      previous.session.question.id == current.session.question.id &&
+      previous.session.explanation is ExplanationPending &&
+      current.session.explanation is ExplanationSubscriptionRequired;
 
   Future<bool> _confirmExit(BuildContext context, AppLocalizations l10n) async {
     // No Figma frame draws this dialog, so it takes the app's own dialog
@@ -281,44 +310,168 @@ class _QuizView extends ConsumerWidget {
   }
 }
 
-/// Thin progress bar + `n/total` counter · Figma `308:5256`.
-class _ProgressBar extends StatelessWidget implements PreferredSizeWidget {
+/// The session header · Figma `159:1224` (light) / `337:9202` (dark).
+///
+/// Its own container rather than an `AppBar`, so it can be the frame's: the ✕
+/// box 16 in and 16 down, the title centred on it, the progress row 12 under
+/// it, and a 1.18 rule closing the header at 89.18. The app bar put the ✕ 3 dp
+/// off both ways and the card 8 dp high, and drew no rule (API→UI Wave 12).
+///
+/// The frame's three trailing icons are deliberately absent. Bookmark
+/// (`295:3108`) and share (`295:3110`): all three favourite endpoints are
+/// `draft` and there is no sharing story or endpoint at all; `isFavorite` is
+/// parsed into the model regardless (seif_fight S11). The AI "sparkle-cap"
+/// (`295:3103`): owner ruling 2026-09-26 — the frame shows it before the
+/// question is answered, which the contract forbids, and after grading it
+/// would only duplicate the panel's "Show explanation" (DESIGN_ISSUES #95).
+class _Header extends StatelessWidget {
+  const _Header({required this.session, required this.onClose});
+
+  final QuizSession session;
+  final VoidCallback onClose;
+
+  /// The frame's ✕ box (`159:1227`).
+  static const _glyph = 30.0;
+
+  /// Android's minimum touch target, kept, and centred on the ✕ box.
+  static const _target = 48.0;
+
+  /// How far the target reaches past the box on each side: 9.
+  static const _overhang = (_target - _glyph) / 2;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppColors>()!;
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      key: const Key('quiz_header'),
+      // The frame's 16, less the target's overhang, so the box lands 16 in and
+      // 16 down. The same at the end, which keeps the title on the screen's
+      // centre line. 12 at the bottom: Container adds the rule's 1.18 to its
+      // padding, and 12 + 1.18 is the frame's 13.18.
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        16 - _overhang,
+        16 - _overhang,
+        16 - _overhang,
+        12,
+      ),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: ext.quizHeaderRule, width: 1.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: _target,
+            child: Stack(
+              alignment: AlignmentDirectional.center,
+              children: [
+                Padding(
+                  // Clear of the ✕ target on BOTH sides, so the title stays
+                  // centred and a long one ellipsises instead of running
+                  // under it.
+                  padding: const EdgeInsets.symmetric(horizontal: _target),
+                  child: Text(
+                    l10n.quizTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    // The frame sets Inter 600/22; the type scale has no 22,
+                    // so this is the app's screen title (h2), as on every
+                    // other title bar.
+                    style: AppType.h2.copyWith(color: ext.textPrimary),
+                  ),
+                ),
+                PositionedDirectional(
+                  start: 0,
+                  child: IconButton(
+                    key: const Key('quiz_close'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: _target,
+                      height: _target,
+                    ),
+                    // Framework-localised ("Close" / "إغلاق"), the name
+                    // Material's own CloseButton carries.
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).closeButtonTooltip,
+                    onPressed: onClose,
+                    // The frame's own cross: 15 dp of 1.67 stroke, round
+                    // caps. `Icons.close` was 14 dp of a heavier, square
+                    // stroke, in #0E0E0E.
+                    icon: SvgPicture.asset(
+                      'assets/icons/quiz_close.svg',
+                      width: _glyph,
+                      height: _glyph,
+                      // The tooltip names the button. Without this the
+                      // glyph's own image semantics merge in and TalkBack
+                      // reads an ImageView (W11-7).
+                      excludeFromSemantics: true,
+                      colorFilter: ColorFilter.mode(
+                        ext.quizHeaderGlyph,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 12 under the box in the frame, less the target's overhang.
+          const SizedBox(height: 12 - _overhang),
+          _ProgressBar(session: session),
+        ],
+      ),
+    );
+  }
+}
+
+/// Thin progress bar + `n/total` counter · Figma `308:5264` / `348:7709`.
+class _ProgressBar extends StatelessWidget {
   const _ProgressBar({required this.session});
 
   final QuizSession session;
 
   @override
-  Size get preferredSize => const Size.fromHeight(30);
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final ext = theme.extension<AppColors>()!;
+    final ext = Theme.of(context).extension<AppColors>()!;
     final l10n = AppLocalizations.of(context);
 
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(52),
-              child: LinearProgressIndicator(
-                // Denominator is the questions DELIVERED — a short pool shows
-                // 1/7, not 1/10.
-                value: session.progress,
-                minHeight: 8,
-                backgroundColor: ext.progressTrack,
-                valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+      // 20 from both screen edges, the frame's 362-wide row: the header's own
+      // 7 plus 13.
+      padding: const EdgeInsets.symmetric(horizontal: 20 - 7),
+      child: SizedBox(
+        // The frame's row is its counter's 18 dp line; the bar is centred on
+        // it.
+        height: 18,
+        child: Row(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(52),
+                child: LinearProgressIndicator(
+                  // Denominator is the questions DELIVERED — a short pool
+                  // shows 1/7, not 1/10.
+                  value: session.progress,
+                  minHeight: 8,
+                  backgroundColor: ext.progressTrack,
+                  valueColor: AlwaysStoppedAnimation(ext.quizProgressFill),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            l10n.quizProgress(session.position, session.total),
-            style: AppType.captionSmall.copyWith(color: ext.mutedText),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Text(
+              l10n.quizProgress(session.position, session.total),
+              style: AppType.captionSmall.copyWith(
+                color: ext.quizProgressCounter,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -511,20 +664,39 @@ class _RetryRow extends StatelessWidget {
   }
 }
 
+/// What setup pushes `/quiz/:quizId` with: the created [quiz], plus the
+/// subject name setup was handed, which no quiz endpoint returns.
+///
+/// [subjectName] is display only. It exists so the result can draw the frame's
+/// "Subject — Scope" line (`159:2250`); `POST /quizzes` never sees it, and the
+/// `Quiz` model does not grow a field the contract does not have. A bare `Quiz`
+/// in `extra` still opens the screen, with no subject (API→UI Wave 13).
+@immutable
+class QuizScreenArgs {
+  const QuizScreenArgs({required this.quiz, this.subjectName});
+
+  final Quiz quiz;
+  final String? subjectName;
+}
+
 /// What `/quiz/:quizId/result` is pushed with.
 ///
 /// [scopeName] rides along because `QuizSummary` carries no scope of its own —
 /// the result screen would otherwise have nothing to title itself with.
+/// [subjectName] rides the same way from setup, and is null when setup had
+/// none (API→UI Wave 13).
 @immutable
 class QuizResultArgs {
   const QuizResultArgs({
     required this.summary,
     required this.scopeName,
+    this.subjectName,
     required this.review,
   });
 
   final QuizSummary summary;
   final String scopeName;
+  final String? subjectName;
 
   /// Handed straight on to `/quiz/:quizId/result/review` when the student taps
   /// Review Questions. Required, not nullable: the result screen is reachable

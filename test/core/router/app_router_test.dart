@@ -20,7 +20,7 @@ void main() {
 
     test('unauthenticated already on an auth route → stay', () {
       expect(authRedirect(const AuthUnauthenticated(), '/login'), isNull);
-      expect(authRedirect(const AuthUnauthenticated(), '/otp'), isNull);
+      expect(authRedirect(const AuthUnauthenticated(), '/login/otp'), isNull);
       expect(authRedirect(const AuthUnauthenticated(), '/register'), isNull);
     });
 
@@ -39,6 +39,12 @@ void main() {
           reason: '$route must be reachable pre-auth',
         );
       }
+    });
+
+    // BUG-005: verify flips auth WHILE the student is on the OTP page; the
+    // success view must survive that refresh.
+    test('authenticated on /login/otp → stay (the success view shows)', () {
+      expect(authRedirect(const AuthAuthenticated(), '/login/otp'), isNull);
     });
 
     test('authenticated sitting on /login → /home', () {

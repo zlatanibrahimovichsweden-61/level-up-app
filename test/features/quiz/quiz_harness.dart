@@ -20,8 +20,10 @@ import 'package:level_up_app/features/quiz/repository/quiz_repository.dart';
 import 'package:level_up_app/features/quiz/screens/screen_protection.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 
 import '../profile/profile_fixtures.dart';
+import '../leaderboard/leaderboard_fixtures.dart';
 
 class MockQuizRepository extends Mock implements QuizRepository {}
 
@@ -91,12 +93,17 @@ Future<QuizHarness> pumpQuizApp(
     overrides: [
       secureStorageProvider.overrideWithValue(storage),
       profileRepositoryProvider.overrideWithValue(profile),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       quizRepositoryProvider.overrideWithValue(repository),
       screenProtectionProvider.overrideWithValue(protection),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  holdProfile(container);
 
   container.read(authControllerProvider.notifier).markAuthenticated();
   final router = container.read(routerProvider);

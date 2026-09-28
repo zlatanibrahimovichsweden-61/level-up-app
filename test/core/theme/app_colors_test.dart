@@ -82,6 +82,31 @@ void main() {
     });
   });
 
+  // Wave 01 device walk: the Login bird drew #040404 on the dark canvas
+  // (#232428) because the app had one asset and no dark value. Both values are
+  // the fills of the frames' own SVG exports — light 82:849, dark 337:15678.
+  group('brandLogo', () {
+    test("light is the shipped SVG's own fill; dark is the dark frame's", () {
+      final svg = File('assets/images/bird_logo.svg').readAsStringSync();
+      expect(svg, contains('fill="#040404"'));
+      expect(AppColors.light.brandLogo, const Color(0xFF040404));
+      expect(AppColors.dark.brandLogo, const Color(0xFFFCFBF9));
+    });
+
+    test('is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+      expect(AppColors.light.copyWith(brandLogo: probe).brandLogo, probe);
+      expect(
+        AppColors.light.lerp(AppColors.dark, 1).brandLogo,
+        AppColors.dark.brandLogo,
+      );
+      expect(
+        AppColors.light.lerp(AppColors.dark, 0).brandLogo,
+        AppColors.light.brandLogo,
+      );
+    });
+  });
+
   // The Mistakes tokens once shipped with dark == light, on an observation of
   // the dark frames that was never measured and turned out to be wrong
   // (docs/DESIGN_ISSUES.md #70). Every value pinned here is read off a Figma
@@ -96,8 +121,9 @@ void main() {
       expect(light.mistakesContent, const Color(0xFF384F47)); // 404:6329
       expect(light.mistakesCount, const Color(0xFFEF4444)); // 404:6338
       expect(light.mistakesRowBorder, const Color(0xFF4B675E)); // 404:6642
-      // The light disc was never read; it keeps what the badge shipped with.
-      expect(light.mistakesBadgeFill, light.cardFill);
+      expect(light.mistakesBadgeFill, const Color(0xFFF4E6FF)); // 404:6644
+      expect(light.mistakesCardChevron, const Color(0xFF517066)); // 404:6533
+      expect(light.mistakesRowChevron, const Color(0xFF4B675E)); // 404:6654
     });
 
     test('dark is the 404:7428 family, not the light values', () {
@@ -109,6 +135,8 @@ void main() {
       expect(dark.mistakesCount, const Color(0xFFEF4444)); // 404:7884
       expect(dark.mistakesRowBorder, const Color(0xFFFCFBF9)); // 404:7765
       expect(dark.mistakesBadgeFill, const Color(0x3327282C)); // 404:7767
+      expect(dark.mistakesCardChevron, const Color(0xFFFCFBF9)); // 404:7651
+      expect(dark.mistakesRowChevron, const Color(0xFFFCFBF9)); // 404:7778
 
       // The specific regression: no pink ground in dark.
       expect(dark.mistakesCardFill, isNot(AppColors.light.mistakesCardFill));
@@ -185,10 +213,10 @@ void main() {
     });
   });
 
-  test('the OTP stopwatch export is stroked in the light primary', () {
+  test('the OTP stopwatch export is stroked in the light otpTimerContent', () {
     // DESIGN_ISSUES #49. The resend-timer pill tints the glyph with
-    // `colorScheme.primary` BECAUSE the designer's export is stroked #384F47 —
-    // the light primary, and the colour of the "Resend OTP" label under it.
+    // `otpTimerContent` BECAUSE the designer's export is stroked #384F47 —
+    // the light value, and the colour of the digits beside it (`82:1316`).
     // If a re-export changes that stroke, this fails instead of the glyph
     // quietly disagreeing with the palette.
     final svg = File('assets/icons/stopwatch.svg').readAsStringSync();
@@ -197,12 +225,42 @@ void main() {
       r'stroke="(#[0-9A-Fa-f]{6})"',
     ).allMatches(svg).map((m) => m.group(1)!.toUpperCase()).toSet();
 
-    expect(strokes, {'#384F47'}, reason: 'one stroke colour, the primary');
+    expect(strokes, {'#384F47'}, reason: 'one stroke colour');
     expect(
-      Brand.greenPrimary,
+      AppColors.light.otpTimerContent,
       const Color(0xFF384F47),
-      reason: 'light colorScheme.primary must match the export stroke',
+      reason: 'light otpTimerContent must match the export stroke',
     );
+  });
+
+  // Wave 02 (2026-09-24): three OTP values read with get_design_context.
+  group('OTP timer content and error state', () {
+    test('timer content: #384F47 light, cream dark (82:1316 / 337:19503)', () {
+      expect(AppColors.light.otpTimerContent, const Color(0xFF384F47));
+      expect(AppColors.dark.otpTimerContent, const Color(0xFFFCFBF9));
+    });
+
+    test('error line #FF465C and cell stroke #EB001B@50%, both canvases', () {
+      for (final c in [AppColors.light, AppColors.dark]) {
+        expect(c.otpErrorText, const Color(0xFFFF465C));
+        expect(c.otpDigitErrorBorder, const Color(0x80EB001B));
+      }
+    });
+
+    test('copyWith and lerp carry the three tokens', () {
+      const red = Color(0xFFFF0000);
+      final copy = AppColors.light.copyWith(
+        otpTimerContent: red,
+        otpErrorText: red,
+        otpDigitErrorBorder: red,
+      );
+      expect(copy.otpTimerContent, red);
+      expect(copy.otpErrorText, red);
+      expect(copy.otpDigitErrorBorder, red);
+
+      final end = AppColors.light.lerp(AppColors.dark, 1);
+      expect(end.otpTimerContent, AppColors.dark.otpTimerContent);
+    });
   });
 
   // The elevation pass (edit1.md section 8.1) added 48 surface tokens in one
@@ -307,7 +365,12 @@ void main() {
       // Semantic or medal-order values, the same rule as successBadge above.
       expect(light.mistakesPillAccent, dark.mistakesPillAccent);
       expect(light.otpDigitBorder, dark.otpDigitBorder);
-      expect(light.topStudentTopBorder, dark.topStudentTopBorder);
+      expect(light.topStudentBorder, dark.topStudentBorder);
+      expect(light.podiumSecondBadgeBorder, dark.podiumSecondBadgeBorder);
+      expect(light.subjectCardProgress, dark.subjectCardProgress);
+      expect(light.catalogTrack, dark.catalogTrack);
+      expect(light.treeRowProgress, dark.treeRowProgress);
+      expect(light.podiumThirdBadgeFill, dark.podiumThirdBadgeFill);
       expect(light.pillTrackSelectedFill, dark.pillTrackSelectedFill);
       expect(light.backlight, dark.backlight);
       expect(
@@ -447,10 +510,13 @@ void main() {
       // it survived two readings.
       expect(light.scopeSelectedFill, const Color(0xFFDBB0FF));
       expect(dark.scopeSelectedFill, const Color(0xFFC4A8E3));
-      // podiumAccent was deliberately NOT moved with it: 134:3554 was not
-      // re-read, and a sibling's reading is not evidence about this one.
-      expect(light.podiumAccent, const Color(0xFFD8B0FF));
-      expect(light.scopeSelectedFill, isNot(light.podiumAccent));
+      // podiumAccent was NOT moved with it on 2026-09-20: 134:3554 had not
+      // been re-read, and a sibling's reading is not evidence about this one.
+      // The Wave 06 walk read 134:3554 AND 337:5638 at #DBB0FF (W06-3).
+      expect(light.podiumAccent, const Color(0xFFDBB0FF));
+      expect(dark.podiumAccent, const Color(0xFFDBB0FF));
+      // Still two tokens: they agree in light and part in dark.
+      expect(dark.scopeSelectedFill, isNot(dark.podiumAccent));
     });
 
     test('the idle scope label is a dark GREEN, not textSecondary grey', () {

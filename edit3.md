@@ -99,8 +99,8 @@ bottom-right corners.
 |---|---|---|---|---|---|---|---|---|
 | Daily Tasks `Container` 362×200.03 | Light | `308:4305` | 15 | `#FCFBF9` | 0.302507 `#4B675E` (all sides) | — | — | — |
 | | Dark | `337:5357` / uni `349:16615` | 15 | `#242329` @20% | none (stroke hidden) | — | **G7** | school B2 `348:6952` 100×14 at (3, 0); uni B10 `349:16786` 133×21 at (13, 0) |
-| Top Student `Container` 362×204.79 | Light | `59:2090` | 16.374941 | `#FFFFFF` | **top only** 1.20791 `rgba(124,58,237,0.1)` | — | — | — |
-| | Dark | `337:5460` / uni `349:16690` | 16.374941 | `#26272B` @20% | top 1.20791 `rgba(124,58,237,0.1)` | — | **G9** | school B3 `348:6954` 100×14 at (3, 7.57); **uni: none** |
+| Top Student `Container` 362×204.79 | Light | `59:2090` | 16.374941 | `#FFFFFF` | **all four sides** 1.20791 `rgba(124,58,237,0.1)` (corrected 2026-09-25, W05-2: first read as top only) | — | — | — |
+| | Dark | `337:5460` / uni `349:16690` | 16.374941 | `#26272B` @20% | all four sides 1.20791 `rgba(124,58,237,0.1)` (corrected, W05-2) | — | **G9** | school B3 `348:6954` 100×14 at (3, 7.57); **uni: none** |
 | Continue Learning `Container` 362×136.39 | Light | school / uni | 13.7251 | school `#F3E5FF`; uni `#DBB0FF` | — | (0, 0.425436) blur 1.27631 black 25% **+** (0.423807, 0) blur 0.850872 spread −0.425436 black 25% | — | — |
 | | Dark | school / uni | 13.7251 | school `#C4A8E3`; uni `#DBB0FF` | — | same two black shadows | — | — |
 | Learning Tools (uni only) | — | — | — | — | — | — | — | — |
@@ -255,7 +255,7 @@ implement it. Record it for the designer as a probable leftover.
      - back-light `dailyTasksBacklightSchool` / `…University` by track.
    - `topStudent`:
      - shape r16.374941, `ext.topStudentFill`;
-     - `topSide: BorderSide(ext.topStudentTopBorder, elevation.topStudentTopBorderWidth)` in both
+     - `side: BorderSide(ext.topStudentBorder, elevation.topStudentBorderWidth)` in both (was `topSide`, corrected in W05-2)
        themes;
      - glass `elevation.topStudentGlass`;
      - back-light `topStudentBacklightSchool` on the school track only.

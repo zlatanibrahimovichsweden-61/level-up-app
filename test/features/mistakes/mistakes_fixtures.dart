@@ -170,6 +170,54 @@ Map<String, dynamic> emptyUniversityMistakesTreeJson() => <String, dynamic>{
   'lectures': <dynamic>[],
 };
 
+/// A school tree whose one chapter has FOUR lessons (API→UI Wave 18).
+///
+/// Every chapter in [schoolMistakesTreeJson] has one lesson, so no fixture had
+/// a gap between two lesson rows or a lesson with one mistake. The first
+/// lesson is the frame's own row (`404:6762`: "Genetics", 1), and the four
+/// counts walk the Arabic plural categories a lesson row can show: 1 `one`,
+/// 2 `two`, 3 `few`, 11 `many`.
+Map<String, dynamic> schoolMistakesTreeLessonsJson() => <String, dynamic>{
+  'track': 'school',
+  'mistakeCount': 17,
+  'units': <dynamic>[
+    <String, dynamic>{
+      'id': 'unit-1',
+      'name': 'Cell Biology',
+      'mistakeCount': 17,
+      'chapters': <dynamic>[
+        <String, dynamic>{
+          'id': 'chap-1',
+          'name': 'Cell Structure',
+          'mistakeCount': 17,
+          'lessons': <dynamic>[
+            <String, dynamic>{
+              'id': 'lesson-1',
+              'name': 'Genetics',
+              'mistakeCount': 1,
+            },
+            <String, dynamic>{
+              'id': 'lesson-2',
+              'name': 'Membranes',
+              'mistakeCount': 2,
+            },
+            <String, dynamic>{
+              'id': 'lesson-3',
+              'name': 'Organelles',
+              'mistakeCount': 3,
+            },
+            <String, dynamic>{
+              'id': 'lesson-4',
+              'name': 'Transport',
+              'mistakeCount': 11,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 // ---------------------------------------------------------------------------
 // Parsed forms
 //
@@ -199,3 +247,6 @@ SchoolMistakesTree emptySchoolMistakesTree() =>
 
 UniversityMistakesTree emptyUniversityMistakesTree() =>
     UniversityMistakesTree.fromJson(emptyUniversityMistakesTreeJson());
+
+SchoolMistakesTree schoolMistakesTreeLessons() =>
+    SchoolMistakesTree.fromJson(schoolMistakesTreeLessonsJson());

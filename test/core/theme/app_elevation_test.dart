@@ -266,8 +266,8 @@ void main() {
     });
 
     test('top student: same border width on both canvases', () {
-      expect(light.topStudentTopBorderWidth, 1.20791); // 59:2090
-      expect(dark.topStudentTopBorderWidth, 1.20791); // 337:5460
+      expect(light.topStudentBorderWidth, 1.20791); // 59:2090
+      expect(dark.topStudentBorderWidth, 1.20791); // 337:5460
       expect(dark.topStudentGlass!.frost, 34); // G9
       expect(dark.topStudentBacklightSchool!.offset, const Offset(3, 7.57));
       expect(
@@ -791,8 +791,9 @@ void main() {
       expect(
         // 84 until 2026-09-20, when edit4 added `quizPrevButtonRadius` (the
         // previous button's radius differs per canvas) and `reviewRowGlass`.
+        // 87 from API→UI Wave 11: `quizSetupDividerWidth` (1.18 / 0.5).
         light.props.length,
-        86,
+        87,
         reason:
             'a token was added or removed. Update props (and this count) so '
             'equality keeps covering every field.',

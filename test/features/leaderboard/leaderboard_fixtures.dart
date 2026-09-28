@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:level_up_app/features/leaderboard/models/leaderboard_models.dart';
+import 'package:level_up_app/features/leaderboard/notifier/leaderboard_notifier.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 import 'package:level_up_app/features/registration/models/reference_models.dart';
 
 /// One board row. [rank] doubles as the id seed so rows are distinguishable
@@ -31,6 +34,34 @@ CursorPage<LeaderboardEntry> boardPage({
     hasMore: hasMore,
     nextCursor: nextCursor,
   );
+}
+
+/// A board that answers at once with three rows — for harnesses that render
+/// Home only on the way to their own screen. Since API→UI Wave 05 Home's Top
+/// Student block reads `GET /leaderboard`; without this a harness would send a
+/// real request and leave its timer pending when the test ends.
+class QuietLeaderboardRepository implements LeaderboardRepository {
+  @override
+  Future<CursorPage<LeaderboardEntry>> getLeaderboard({
+    required LeaderboardScope scope,
+    String? cursor,
+    int? limit,
+  }) async => boardPage(ranks: const [1, 2, 3]);
+}
+
+/// Holds every board for the life of [container], for harnesses that pass
+/// through Home without testing it.
+///
+/// Home's Top Student block watches an `autoDispose` board. When the test
+/// binding tears the tree down, the flutter vsync is already gone, so Riverpod
+/// schedules that board's disposal on a zero-length `Timer` — which the binding
+/// then reports as pending ("A Timer is still pending even after the widget
+/// tree was disposed"). A container-level listener keeps the board alive, so
+/// no disposal is scheduled; `container.dispose()` in the tear-down releases it.
+void holdBoards(ProviderContainer container) {
+  for (final scope in LeaderboardScope.values) {
+    container.listen(leaderboardProvider(scope), (_, _) {});
+  }
 }
 
 /// A page carrying no rows while the server still says there is more.

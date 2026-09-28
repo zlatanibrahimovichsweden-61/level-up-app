@@ -1030,6 +1030,10 @@ gets it forwarded from the `Quiz` in the route's `extra`.
 **Ask:** add `subjectName` to `Quiz` and to `QuizSummary` (it is already on two sibling schemas), or
 confirm scope-only titling and the designer drops the subject line.
 
+**Update 2026-09-26:** built client-side meanwhile (API→UI Waves 11 and 13, owner rulings): the Learn stack's
+cached subjects list supplies the name, carried by navigation to setup and on to the result, display only. It is
+null on a cold deep link, which is why the ask stands (D-001 update).
+
 ---
 
 ## S20. 🟠 `PATCH /me` cannot edit school or geography — so one of the three options you offered the designer is unbuildable
@@ -1139,6 +1143,11 @@ code marker.**
 own so it can be changed without an app release), or is it design flavour text? If it is real it
 needs to be on `GET /me` next to `level`. Related and still open: **S3** — `level` has no threshold
 table, so we render level 8 with no way to say what reaches level 9.
+
+> **Note 2026-09-27 (API→UI Wave 19).** Only the light frames draw Rank here. The dark (`337:7433`, `349:12919`) and
+> RTL (`549:21052`, `549:26384`) Profile frames draw **Badges** in this slot, which `badges` on `GET /me` can fill.
+> The owner ruled to keep Points only until the designer reconciles the frames (DESIGN_ISSUES #101). The question
+> above stands for the light frames.
 
 ## S26. 🟠 Settings "Mode" draws three themes; the app has two
 

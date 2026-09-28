@@ -122,6 +122,17 @@ void main() {
       expect(suppressesRetry(pendingDeletion), isTrue);
     });
 
+    // API→UI Wave 12. The server closed the quiz (finished, or auto-finished
+    // after 24 h): the identical answer can only 409 again.
+    test('withholds Retry for quiz_already_finished too', () {
+      expect(
+        suppressesRetry(
+          const ApiException(status: 409, code: 'quiz_already_finished'),
+        ),
+        isTrue,
+      );
+    });
+
     test('leaves every other failure retryable', () {
       // Narrowness is the point. A helper that suppressed Retry broadly would
       // strand students on failures that DO recover.

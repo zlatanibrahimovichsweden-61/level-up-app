@@ -15,6 +15,14 @@ import 'elevation/elevated_surface.dart';
 /// (label → control → inline error) recur on every form screen. Every value
 /// comes from a theme token; nothing here holds a raw hex.
 
+/// How much a control that cannot be used right now is dimmed: a field still
+/// waiting on its dependency ([FieldShell.enabled] false) and a picker row the
+/// contract shows but refuses (a `soon` study year). One value for both, so
+/// "not available" reads the same wherever it appears. It is an opacity, not a
+/// colour, on purpose: the dark `hint` token equals dark `textPrimary`, so a
+/// colour-only treatment vanished there (Wave 04 walk, W04-4).
+const disabledControlOpacity = 0.6;
+
 /// The caption above a field.
 class FieldLabel extends StatelessWidget {
   const FieldLabel(this.text, {super.key});
@@ -94,7 +102,9 @@ class FieldShell extends StatelessWidget {
       ),
     );
 
-    final opaque = enabled ? surface : Opacity(opacity: 0.6, child: surface);
+    final opaque = enabled
+        ? surface
+        : Opacity(opacity: disabledControlOpacity, child: surface);
     if (onTap == null) return opaque;
 
     return Semantics(

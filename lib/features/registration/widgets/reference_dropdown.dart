@@ -25,8 +25,11 @@ import '../registration_error_copy.dart';
 ///
 /// The university year picker is the first caller to set it `false`: it now
 /// offers `soon` years disabled instead of dropping them, which is what
-/// `openapi.yaml:751` asks for. The disabled treatment is this field's own
-/// existing `ext.hint` colour — no new token, and no wording on the row.
+/// `openapi.yaml:751` asks for. A disabled row is dimmed to
+/// [disabledControlOpacity], the same treatment a gated field gets — no new
+/// token, and no wording on the row. It used to be the `ext.hint` colour,
+/// which is `textPrimary` in dark, so there the row looked selectable
+/// (Wave 04 walk, W04-4).
 typedef PickerOption = ({
   String id,
   String label,
@@ -195,7 +198,12 @@ class _Dropdown extends StatelessWidget {
         icon: Icon(Icons.keyboard_arrow_down, color: ext.hint),
         hint: Text(hint, style: AppType.bodyLarge.copyWith(color: ext.hint)),
         style: AppType.bodyLarge.copyWith(color: ext.textPrimary),
-        dropdownColor: ext.fieldFill,
+        // The field's own fill, composited onto the canvas so the menu is
+        // OPAQUE. Dark `fieldFill` is the Glass field's 20% `#232428`; used
+        // raw, the open menu showed the form through it (Wave 04 walk, W04-3).
+        // Light is unchanged: `#FDFDFD` is already opaque. No frame draws an
+        // open menu, so this derives from two tokens rather than adding one.
+        dropdownColor: Color.alphaBlend(ext.fieldFill, ext.background),
         borderRadius: BorderRadius.circular(20),
         items: [
           for (final row in rows)
@@ -205,26 +213,19 @@ class _Dropdown extends StatelessWidget {
               // item's tap handler but keeps it in the list, which is exactly
               // the "visible but refused" shape the contract needs.
               enabled: row.enabled,
-              child: Row(
-                children: [
-                  if (row.leading != null) ...[
-                    row.leading!,
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(
-                    child: Text(
-                      row.label,
-                      overflow: TextOverflow.ellipsis,
-                      // The field's own existing disabled colour — the same one
-                      // `disabledHint` and the cascade-gated state already use.
-                      // No new token, and no decision about what a disabled row
-                      // should eventually look like.
-                      style: row.enabled
-                          ? null
-                          : AppType.bodyLarge.copyWith(color: ext.hint),
+              child: _dimUnless(
+                row.enabled,
+                Row(
+                  children: [
+                    if (row.leading != null) ...[
+                      row.leading!,
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      child: Text(row.label, overflow: TextOverflow.ellipsis),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
@@ -244,6 +245,10 @@ class _Dropdown extends StatelessWidget {
     );
   }
 }
+
+/// A refused row at the gated field's own dimming; a selectable one untouched.
+Widget _dimUnless(bool enabled, Widget child) =>
+    enabled ? child : Opacity(opacity: disabledControlOpacity, child: child);
 
 /// A failed reference load, rendered in the field's own slot so one broken
 /// picker never blanks the whole form. Offline gets its own copy and icon —

@@ -25,8 +25,10 @@ import 'package:level_up_app/features/registration/models/reference_models.dart'
 import 'package:level_up_app/features/registration/repository/reference_repository.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 
 import 'profile_fixtures.dart';
+import '../leaderboard/leaderboard_fixtures.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -64,12 +66,17 @@ Future<ProviderContainer> pumpProfileScreen(
   final container = ProviderContainer(
     overrides: [
       profileRepositoryProvider.overrideWithValue(profile),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       secureStorageProvider.overrideWithValue(storage ?? signedInStorage()),
       if (auth != null) authRepositoryProvider.overrideWithValue(auth),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  holdProfile(container);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -92,22 +99,32 @@ Future<ProviderContainer> pumpProfileScreen(
 }
 
 /// Boots the real app, signed in, on the nav shell.
+///
+/// [keepProfile] false leaves `meProvider` to its widgets, so a sign-out can
+/// drop it (the Wave 19 re-login tests). Such a test must hold it itself
+/// before it ends, or the teardown trap on [holdProfile] fires.
 Future<ProviderContainer> pumpProfileApp(
   WidgetTester tester, {
   required MockProfileRepository profile,
   MockAuthRepository? auth,
   String locale = 'en',
   ThemeData? theme,
+  bool keepProfile = true,
 }) async {
   final container = ProviderContainer(
     overrides: [
       secureStorageProvider.overrideWithValue(signedInStorage()),
       profileRepositoryProvider.overrideWithValue(profile),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       if (auth != null) authRepositoryProvider.overrideWithValue(auth),
       isOnlineProvider.overrideWith((ref) => Stream.value(true)),
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  if (keepProfile) holdProfile(container);
 
   // Signed in — exactly what the OTP `authenticated` fork does.
   container.read(authControllerProvider.notifier).markAuthenticated();
@@ -146,6 +163,9 @@ Future<ProviderContainer> pumpEditProfile(
     overrides: [
       secureStorageProvider.overrideWithValue(signedInStorage()),
       profileRepositoryProvider.overrideWithValue(profile),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       referenceRepositoryProvider.overrideWithValue(
         reference ?? avatarReferenceRepo(),
       ),
@@ -153,6 +173,8 @@ Future<ProviderContainer> pumpEditProfile(
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  holdProfile(container);
 
   // The form is ~1000pt tall and the default test viewport is 600. Taller here
   // rather than scroll-and-tap on every assertion: what this file is proving is

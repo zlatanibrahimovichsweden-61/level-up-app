@@ -7,13 +7,17 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
+import 'package:level_up_app/features/quiz/models/quiz_question.dart';
 import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_review_screen.dart';
+import 'package:level_up_app/features/quiz/widgets/question_stem_text.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'quiz_fixtures.dart';
@@ -59,8 +63,9 @@ void main() {
       expect(find.text('Question q1?'), findsOneWidget);
 
       // 2 correct ticks, 2 wrong crosses, and the skipped row carries neither.
-      expect(find.byIcon(Icons.check), findsNWidgets(2));
-      // One ✕ per wrong row, plus the one inside the "Wrong" filter chip.
+      // Plus one of each inside the "Correct" and "Wrong" filter chips' discs
+      // (`162:2788`, `162:2792`).
+      expect(find.byIcon(Icons.check), findsNWidgets(3));
       expect(find.byIcon(Icons.close), findsNWidgets(3));
     });
 
@@ -110,8 +115,8 @@ void main() {
 
       expect(find.text('QUESTION 1'), findsOneWidget);
       expect(find.text('QUESTION 3'), findsOneWidget);
-      // No grade anywhere, so no ✓ and no ✕ except the filter chip's own.
-      expect(find.byIcon(Icons.check), findsNothing);
+      // No grade anywhere, so no ✓ and no ✕ except the filter chips' own.
+      expect(find.byIcon(Icons.check), findsOneWidget);
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
 
@@ -229,7 +234,9 @@ void main() {
 
       // Still its own token - the row does not borrow textPrimary.
       expect(body.style?.color, ext.quizReviewRowContent);
-      expect(label.style?.color, ext.quizReviewRowContent);
+      // The label has its own token since Wave 14 (`162:2492`); in dark it is
+      // the same cream by owner ruling, not the frame's lavender.
+      expect(label.style?.color, ext.reviewRowLabel);
 
       // What changed, stated as the design fact rather than as "it now
       // equals textPrimary" - the two being equal in dark is a
@@ -273,9 +280,12 @@ void main() {
 
       // q3 is wrong in the compact fixture; reviewRowWrongFill is 20% alpha
       // in dark, so it composites with the canvas and its foreground must
-      // too. Measured 9.11:1 on the composite.
+      // too. Measured 9.11:1 on the composite. Since Wave 14 it is the
+      // correct row's token: `162:2572` draws the wrong row's question in the
+      // same `#384F47` as `162:2510`, and dark is cream on both.
       final body = tester.widget<Text>(find.text('Question q3?'));
-      expect(body.style?.color, ext.textPrimary);
+      expect(body.style?.color, ext.quizReviewRowContent);
+      expect(body.style?.color, const Color(0xFFFCFBF9));
     });
 
     testWidgets('every dark row is translucent and glassed - none is left '
@@ -475,8 +485,8 @@ void main() {
       expect(find.text('Quiz Review'), findsOneWidget);
       expect(find.text('All (5)'), findsOneWidget);
       // The correctness signal does NOT flip with the canvas — same rows, same
-      // marks, in both themes. app_colors.dart:236.
-      expect(find.byIcon(Icons.check), findsNWidgets(2));
+      // marks, in both themes. app_colors.dart:236. (2 rows + the chip's.)
+      expect(find.byIcon(Icons.check), findsNWidgets(3));
     });
 
     testWidgets('Arabic + dark together', (tester) async {
@@ -488,7 +498,343 @@ void main() {
       );
 
       expect(find.text('مراجعة الاختبار'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsNWidgets(2));
+      expect(find.byIcon(Icons.check), findsNWidgets(3));
+    });
+  });
+
+  // ------------------------------------------------------------ Wave 14 -----
+  group('Wave 14: the frames (162:2377 · 337:6705)', () {
+    Finder rowOf(String question) => find
+        .ancestor(
+          of: find.text(question),
+          matching: find.byType(ElevatedSurface),
+        )
+        .first;
+    Finder pillOf(String label) => find
+        .ancestor(of: find.text(label), matching: find.byType(ElevatedSurface))
+        .first;
+    Finder inRow(Finder row, Finder matching) =>
+        find.descendant(of: row, matching: matching);
+    AppColors colors(WidgetTester tester) => Theme.of(
+      tester.element(find.byType(QuizReviewScreen)),
+    ).extension<AppColors>()!;
+    const header = Key('quiz_review_header');
+    const rowBadge = Key('review_row_badge');
+    const rowText = Key('review_row_text');
+    const chipBadge = Key('review_filter_badge');
+
+    testWidgets('header: 63 tall over the frame\'s rule, chip 21 in and '
+        'centred, title #000000', (tester) async {
+      await openReview(tester, args: compact());
+
+      final bar = tester.getRect(find.byKey(header));
+      expect(bar.height, closeTo(63, 0.01));
+      final box = tester.widget<Container>(find.byKey(header)).decoration!;
+      final rule = ((box as BoxDecoration).border! as Border).bottom;
+      expect(rule.color, colors(tester).quizHeaderRule);
+      expect(rule.width, 1.18);
+
+      final chip = tester.getRect(find.byKey(const Key('quiz_review_back')));
+      expect(chip.left - bar.left, closeTo(21, 0.01));
+      expect(chip.center.dy - bar.top, closeTo(32.09, 0.01));
+
+      final title = tester.widget<Text>(find.text('Quiz Review'));
+      expect(title.style?.color, colors(tester).quizReviewTitle);
+      expect(title.style?.color, const Color(0xFF000000));
+      expect(
+        tester.getCenter(find.text('Quiz Review')).dx,
+        closeTo(bar.center.dx, 0.01),
+      );
+    });
+
+    testWidgets('dark header: cream title over the same rule', (tester) async {
+      await openReview(tester, args: compact(), theme: AppTheme.dark);
+
+      final title = tester.widget<Text>(find.text('Quiz Review'));
+      expect(title.style?.color, const Color(0xFFFCFBF9));
+      final box = tester.widget<Container>(find.byKey(header)).decoration!;
+      expect(
+        ((box as BoxDecoration).border! as Border).bottom.color,
+        const Color.fromRGBO(124, 58, 237, 0.1),
+      );
+    });
+
+    testWidgets('chips: 25 under the rule, 8 apart, 14.18 over the first '
+        'row', (tester) async {
+      await openReview(tester, args: compact());
+
+      final bar = tester.getRect(find.byKey(header));
+      final all = tester.getRect(pillOf('All (5)'));
+      final correct = tester.getRect(pillOf('Correct'));
+      final wrong = tester.getRect(pillOf('Wrong'));
+      expect(all.top - bar.bottom, closeTo(25, 0.01));
+      expect(all.height, closeTo(32, 0.01));
+      expect(all.left, closeTo(20, 0.01));
+      expect(correct.left - all.right, closeTo(8, 0.01));
+      expect(wrong.left - correct.right, closeTo(8, 0.01));
+
+      final first = tester.getRect(rowOf('Question q1?'));
+      expect(first.top - all.bottom, closeTo(14.18, 0.01));
+    });
+
+    testWidgets('chips: "Correct" and "Wrong" lead with the frame\'s 16 '
+        'discs, 10 before the label', (tester) async {
+      await openReview(tester, args: compact());
+      final ext = colors(tester);
+
+      for (final (label, color, icon, size) in [
+        ('Correct', ext.successBadge, Icons.check, 8.0),
+        ('Wrong', ext.quizWrongBadge, Icons.close, 14.0),
+      ]) {
+        final disc = inRow(pillOf(label), find.byKey(chipBadge));
+        expect(tester.getSize(disc), const Size(16, 16), reason: label);
+        final deco =
+            tester.widget<Container>(disc).decoration! as BoxDecoration;
+        expect(deco.color, color, reason: label);
+        expect(deco.shape, BoxShape.circle, reason: label);
+
+        final glyph = tester.widget<Icon>(
+          find.descendant(of: disc, matching: find.byType(Icon)),
+        );
+        expect(glyph.icon, icon, reason: label);
+        expect(glyph.size, size, reason: label);
+        expect(glyph.color, const Color(0xFFFCFBF9), reason: label);
+
+        expect(
+          tester.getRect(find.text(label)).left - tester.getRect(disc).right,
+          closeTo(10, 0.01),
+          reason: label,
+        );
+      }
+      expect(inRow(pillOf('All (5)'), find.byKey(chipBadge)), findsNothing);
+    });
+
+    testWidgets('chips: an idle label is #384F47 in light, cream in dark', (
+      tester,
+    ) async {
+      await openReview(tester, args: compact());
+      var ext = colors(tester);
+
+      Color? colorOf(String label) =>
+          tester.widget<Text>(find.text(label)).style?.color;
+      expect(colorOf('Correct'), ext.reviewFilterIdleLabel);
+      expect(colorOf('Correct'), const Color(0xFF384F47));
+      expect(colorOf('All (5)'), ext.quizReviewFilterLabel);
+
+      await tester.tap(find.text('Correct'));
+      await tester.pumpAndSettle();
+      expect(colorOf('Correct'), ext.quizReviewFilterLabel);
+      expect(colorOf('All (5)'), const Color(0xFF384F47));
+
+      await openReview(tester, args: compact(), theme: AppTheme.dark);
+      ext = colors(tester);
+      expect(colorOf('Wrong'), ext.reviewFilterIdleLabel);
+      expect(colorOf('Wrong'), const Color(0xFFFCFBF9));
+    });
+
+    testWidgets('rows: 19 apart', (tester) async {
+      await openReview(tester, args: compact());
+
+      final one = tester.getRect(rowOf('Question q1?'));
+      final two = tester.getRect(rowOf('Question q2?'));
+      final three = tester.getRect(rowOf('Question q3?'));
+      expect(two.top - one.bottom, closeTo(19, 0.01));
+      expect(three.top - two.bottom, closeTo(19, 0.01));
+    });
+
+    testWidgets('rows: badge 9 in, text 3.5 after it and on to 5.82 from the '
+        'end; the badge ring is its own fill', (tester) async {
+      await openReview(tester, args: compact());
+
+      for (final n in [1, 3, 5]) {
+        final row = rowOf('Question q$n?');
+        final r = tester.getRect(row);
+        final badge = tester.getRect(inRow(row, find.byKey(rowBadge)));
+        final text = tester.getRect(inRow(row, find.byKey(rowText)));
+        expect(badge.left - r.left, closeTo(9, 0.01), reason: 'q$n');
+        expect(badge.size, const Size(28, 28), reason: 'q$n');
+        expect(badge.center.dy - r.top, closeTo(36.5, 0.01), reason: 'q$n');
+        expect(text.left - badge.right, closeTo(3.5, 0.01), reason: 'q$n');
+        expect(r.right - text.right, closeTo(5.82, 0.01), reason: 'q$n');
+      }
+
+      // Graded rows: `bg-[#22c55e] border-[#22c55e]` — no dark ring.
+      for (final n in [1, 3]) {
+        final deco =
+            tester
+                    .widget<Container>(
+                      inRow(rowOf('Question q$n?'), find.byKey(rowBadge)),
+                    )
+                    .decoration!
+                as BoxDecoration;
+        expect((deco.border! as Border).top.color, deco.color, reason: 'q$n');
+        expect((deco.border! as Border).top.width, 1.18, reason: 'q$n');
+      }
+    });
+
+    testWidgets('rows: the label and question sit on the frame\'s lines', (
+      tester,
+    ) async {
+      // `162:2500`: an 18 label box (its line 4.36 down), 7, a 25.6 line,
+      // centred in 73. On the scale's 16 and 24 lines the same centres are
+      // 16.56 and 37.0 from the row's top.
+      await openReview(tester, args: compact());
+
+      final r = tester.getRect(rowOf('Question q1?'));
+      final label = tester.getRect(find.text('QUESTION 1'));
+      final question = tester.getRect(find.text('Question q1?'));
+      expect(r.height, closeTo(73, 0.01));
+      expect(label.top - r.top, closeTo(16.56, 0.01));
+      expect(question.top - label.bottom, closeTo(4.44, 0.01));
+      expect(question.top - r.top, closeTo(37.0, 0.01));
+    });
+
+    testWidgets('light: "QUESTION n" #4B675E and the question #384F47 on '
+        'every row', (tester) async {
+      await openReview(tester, args: compact());
+      final ext = colors(tester);
+
+      // q1 correct, q3 wrong, q5 skipped: `162:2492` / `162:2587` and
+      // `162:2494` / `162:2588` do not change colour with the grade.
+      for (final n in [1, 3, 5]) {
+        final label = tester.widget<Text>(find.text('QUESTION $n'));
+        final body = tester.widget<Text>(find.text('Question q$n?'));
+        expect(label.style?.color, ext.reviewRowLabel, reason: 'q$n');
+        expect(label.style?.color, const Color(0xFF4B675E), reason: 'q$n');
+        expect(body.style?.color, ext.quizReviewRowContent, reason: 'q$n');
+        expect(body.style?.color, const Color(0xFF384F47), reason: 'q$n');
+      }
+    });
+
+    testWidgets('dark: label and question cream on every row; the label is '
+        'NOT the frame\'s lavender (owner ruling)', (tester) async {
+      await openReview(tester, args: compact(), theme: AppTheme.dark);
+
+      for (final n in [1, 3, 5]) {
+        final label = tester.widget<Text>(find.text('QUESTION $n'));
+        final body = tester.widget<Text>(find.text('Question q$n?'));
+        expect(label.style?.color, const Color(0xFFFCFBF9), reason: 'q$n');
+        expect(label.style?.color, isNot(const Color(0xFFAE87E7)));
+        expect(body.style?.color, const Color(0xFFFCFBF9), reason: 'q$n');
+      }
+    });
+
+    testWidgets('the AI glyph sits in the top-end corner, over the text '
+        'column, in the question\'s colour', (tester) async {
+      await openReview(tester, args: compact());
+
+      final row = rowOf('Question q3?');
+      final r = tester.getRect(row);
+      final glyph = inRow(row, find.byType(SvgPicture));
+      final g = tester.getRect(glyph);
+      // The drawing inside `162:2589`'s 26.55 box is 26.18 x 24.41, 0.18 in.
+      // Sized by height (the asset's 27 x 25 gives 26.36 wide); it used to
+      // draw 28.67 x 26.55.
+      expect(g.height, closeTo(24.41, 0.01));
+      expect(g.width, closeTo(24.41 * 27 / 25, 0.01));
+      expect(g.top - r.top, closeTo(10.83, 0.01));
+      expect(r.right - g.right, closeTo(10.64, 0.01));
+      // It takes no width from the text: the column still runs to 5.82.
+      final text = tester.getRect(inRow(row, find.byKey(rowText)));
+      expect(r.right - text.right, closeTo(5.82, 0.01));
+
+      expect(
+        tester.widget<SvgPicture>(glyph).colorFilter,
+        ColorFilter.mode(colors(tester).quizReviewRowContent, BlendMode.srcIn),
+      );
+    });
+
+    testWidgets('Arabic: badge, text and glyph mirror', (tester) async {
+      await openReview(tester, args: compact(), locale: 'ar');
+
+      final row = rowOf('Question q3?');
+      final r = tester.getRect(row);
+      final badge = tester.getRect(inRow(row, find.byKey(rowBadge)));
+      final text = tester.getRect(inRow(row, find.byKey(rowText)));
+      final g = tester.getRect(inRow(row, find.byType(SvgPicture)));
+      expect(r.right - badge.right, closeTo(9, 0.01));
+      expect(badge.left - text.right, closeTo(3.5, 0.01));
+      expect(text.left - r.left, closeTo(5.82, 0.01));
+      expect(g.left - r.left, closeTo(10.64, 0.01));
+    });
+
+    for (final scale in [1.30, 1.35]) {
+      testWidgets('text scale $scale: the row grows around its lines, it '
+          'never clips them', (tester) async {
+        // Android's largest standard font setting is 1.30; the 73 row used to
+        // have 13 px of slack, which 1.35 exhausted. The row is a minimum now:
+        // 10 + 4.56 + the label line + 4.44 + the question line + 10.
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await openReview(tester, args: compact());
+
+        expect(tester.takeException(), isNull);
+        for (final n in [1, 3, 5]) {
+          final r = tester.getRect(rowOf('Question q$n?'));
+          expect(r.height, closeTo(29 + 40 * scale, 0.01), reason: 'q$n');
+          expect(
+            tester.getRect(find.text('QUESTION $n')).top,
+            greaterThanOrEqualTo(r.top),
+          );
+          expect(
+            tester.getRect(find.text('Question q$n?')).bottom,
+            lessThanOrEqualTo(r.bottom),
+          );
+        }
+      });
+    }
+
+    testWidgets('a stem\'s <u>…</u> is an underline here too, and TalkBack '
+        'hears the words', (tester) async {
+      final handle = tester.ensureSemantics();
+      final question = QuizQuestion.fromJson({
+        ...questionJson('q1'),
+        'text': 'Which <u>organelle</u> makes ATP?',
+      });
+      await openReview(
+        tester,
+        args: QuizReviewArgs(
+          questions: [question],
+          grades: {'q1': answerResult(correct: false)},
+        ),
+      );
+
+      expect(find.text('Which organelle makes ATP?'), findsOneWidget);
+      expect(find.textContaining('<u>'), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('<u>|</u>')), findsNothing);
+      expect(find.byType(QuestionStemText), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('an Arabic stem truncates at its own end in the English app', (
+      tester,
+    ) async {
+      // Device-found on the Wave 13 re-walk (`walk13b/02`): the ellipsis sat
+      // before "السؤال" and the stem was cut mid-word at its end.
+      final question = QuizQuestion.fromJson({
+        ...questionJson('q1'),
+        'text':
+            'السؤال 1: أي من الخيارات التالية يصف <u>التركيب</u> بشكل صحيح؟ '
+            'أي من الخيارات التالية يصف التركيب بشكل صحيح؟',
+      });
+      await openReview(
+        tester,
+        args: QuizReviewArgs(
+          questions: [question],
+          grades: {'q1': answerResult(correct: false)},
+        ),
+      );
+
+      final p = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.byType(QuestionStemText),
+          matching: find.byType(RichText),
+        ),
+      );
+      expect(p.textDirection, TextDirection.rtl);
+      expect(p.textAlign, TextAlign.left);
+      expect(p.maxLines, 1);
+      expect(p.overflow, TextOverflow.ellipsis);
     });
   });
 }

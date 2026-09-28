@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/form_fields.dart';
 import 'package:level_up_app/features/registration/widgets/reference_dropdown.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 
@@ -25,13 +27,14 @@ void main() {
   Future<String?> pumpPicker(
     WidgetTester tester, {
     required List<PickerOption> rows,
+    ThemeData? theme,
   }) async {
     String? picked;
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
           locale: const Locale('en'),
-          theme: AppTheme.light,
+          theme: theme ?? AppTheme.light,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -149,6 +152,47 @@ void main() {
     expect(items, hasLength(2));
     expect(items[0].enabled, isTrue);
     expect(items[1].enabled, isFalse);
+  });
+
+  // Wave 04 walk, W04-3: dark `fieldFill` is 20% alpha, and the open menu
+  // showed the form through it on the Pixel 8.
+  group('the open menu is opaque', () {
+    for (final (name, theme, expected) in [
+      ('light', AppTheme.light, AppColors.light.fieldFill),
+      ('dark', AppTheme.dark, AppColors.dark.background),
+    ]) {
+      testWidgets(name, (tester) async {
+        await pumpPicker(tester, rows: [option('y1')], theme: theme);
+        final color = tester
+            .widget<DropdownButton<String>>(find.byType(DropdownButton<String>))
+            .dropdownColor!;
+        expect(color.a, 1.0, reason: 'a translucent menu shows the form');
+        expect(color, expected);
+      });
+    }
+  });
+
+  // W04-4: refused rows used `ext.hint`, which in dark IS `textPrimary`, so a
+  // `soon` year looked exactly like a selectable one.
+  testWidgets('a refused row is dimmed like a gated field; others are not', (
+    tester,
+  ) async {
+    await pumpPicker(
+      tester,
+      rows: [option('y1'), option('y2', enabled: false)],
+      theme: AppTheme.dark,
+    );
+    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.pumpAndSettle();
+
+    Finder dimmed(String label) => find.ancestor(
+      of: find.text(label).last,
+      matching: find.byWidgetPredicate(
+        (w) => w is Opacity && w.opacity == disabledControlOpacity,
+      ),
+    );
+    expect(dimmed('Y2'), findsOneWidget);
+    expect(dimmed('Y1'), findsNothing);
   });
 
   testWidgets('a disabled row can still be the CURRENT value', (tester) async {

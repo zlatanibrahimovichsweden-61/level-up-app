@@ -118,6 +118,29 @@ void main() {
     );
   });
 
+  group('meProvider · autoDispose (API→UI Wave 19)', () {
+    test('a Retry still lands after the profile was rebuilt in use', () async {
+      // A finished quiz and a saved edit invalidate meProvider while Home
+      // watches it. Riverpod 3 keeps the notifier across that rebuild and runs
+      // its dispose callbacks, so a disposal flag left set would swallow the
+      // next Retry and leave the screen on its skeleton.
+      when(repo.getMe).thenAnswer((_) async => schoolProfile());
+      final container = makeContainer();
+      container.listen(meProvider, (_, _) {});
+      await container.read(meProvider.future);
+
+      container.invalidate(meProvider);
+      await container.read(meProvider.future);
+
+      when(repo.getMe).thenAnswer((_) async => universityProfile());
+      await container.read(meProvider.notifier).refresh();
+
+      final state = container.read(meProvider);
+      expect(state, isA<AsyncData<StudentProfile>>());
+      expect(state.value!.name, 'Mona Adel');
+    });
+  });
+
   group('entitlementsProvider', () {
     test('success → the unwrapped item list', () async {
       when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);

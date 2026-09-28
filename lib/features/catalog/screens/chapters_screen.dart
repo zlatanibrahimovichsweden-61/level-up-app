@@ -11,7 +11,7 @@ import '../widgets/catalog_scaffold.dart';
 import '../widgets/catalog_states.dart';
 import '../widgets/tree_list_row.dart';
 
-/// Chapters — level 2 · Figma `337:6047`
+/// Chapters — level 2 · Figma `135:1270` (dark `337:6047`)
 /// (`/learn/subject/:subjectId/unit/:unitId`).
 ///
 /// Reads the CACHED tree. Watching `subjectTreeProvider(subjectId)` here is a
@@ -99,7 +99,9 @@ class _ChapterList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
       itemCount: chapters.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      // 16: the frames' 78 dp rows on a 94 dp pitch (`135:1270`, dark
+      // `337:6047`), the same rhythm as Units. API→UI Wave 09; this was 12.
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final chapter = chapters[index];
         return TreeListRow(

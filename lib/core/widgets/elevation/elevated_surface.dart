@@ -59,8 +59,8 @@ class ElevatedSurface extends StatelessWidget {
   /// A uniform hairline. Any width, including the design's 0.03.
   final BorderSide? side;
 
-  /// A top-only hairline — the light search field and the Top Student block
-  /// both draw one. Clipped to the shape, so it stops at the corner arcs.
+  /// A top-only hairline — the light search field draws one. Clipped to the
+  /// shape, so it stops at the corner arcs.
   final BorderSide? topSide;
 
   /// Outer and inset shadows together, in Figma's own order.

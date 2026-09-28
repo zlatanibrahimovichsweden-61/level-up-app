@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/features/auth/models/phone.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/screens/signup_identity_screen.dart';
 import 'package:level_up_app/features/registration/screens/signup_track_screen.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
+
+import '../../core/visual_order.dart';
 
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
@@ -147,6 +150,59 @@ void main() {
       expect(
         Directionality.of(tester.element(find.text('إنشاء حساب'))),
         TextDirection.rtl,
+      );
+    });
+
+    // Same defect as Login's W01-2 (Wave 01 walk): the errors were stored as
+    // resolved strings, so a language toggle left them in the old language.
+    testWidgets('on-screen field errors follow a language toggle', (
+      tester,
+    ) async {
+      // One container and ONE router across both pumps, so the screen's State
+      // (and the errors it is showing) survives the locale change — `_pump`
+      // builds a fresh router each call and would reset it.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(registrationControllerProvider.notifier).start(_args);
+      final router = _router('/register');
+      Widget app(Locale locale) => UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          locale: locale,
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+
+      await tester.pumpWidget(app(const Locale('en')));
+      await tester.pumpAndSettle();
+      await _tapContinue(tester);
+      expect(find.text('Please enter your name'), findsOneWidget);
+      expect(find.text('Please enter a valid phone number'), findsOneWidget);
+
+      await tester.pumpWidget(app(const Locale('ar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter your name'), findsNothing);
+      expect(find.text('من فضلك أدخل اسمك'), findsOneWidget);
+      expect(find.text('من فضلك أدخل رقم هاتف صحيح'), findsOneWidget);
+    });
+
+    // Same bidi defect as the login chip (device finding 2026-09-20): the
+    // Parent's Number dial chip painted `20+` under an Arabic Directionality.
+    testWidgets('the +20 dial code paints sign-first in Arabic', (
+      tester,
+    ) async {
+      await _pump(tester, '/register', locale: const Locale('ar'));
+
+      final chip = find.text(Phone.egyptDialCode);
+      expect(chip, findsOneWidget);
+      expect(
+        glyphLeft(tester, chip, 0),
+        lessThan(glyphLeft(tester, chip, 1)),
+        reason: '"+" must paint to the LEFT of "2" — `+20`, not `20+`',
       );
     });
 

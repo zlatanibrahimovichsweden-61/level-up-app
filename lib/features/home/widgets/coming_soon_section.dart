@@ -19,21 +19,21 @@ import '../../profile/models/student_profile.dart';
 /// [plain] is the pre-2026-09-17 box, and stays the answer for a section the
 /// frame gives no surface of its own — today only university Learning Tools,
 /// whose five tiles are recorded unbuilt (DESIGN_ISSUES #20).
-enum ComingSoonSurface { dailyTasks, continueLearning, topStudent, plain }
+///
+/// Top Student left this list in API→UI Wave 05: it is a real block now
+/// (`TopStudentSection`), and its surface moved with it.
+enum ComingSoonSurface { dailyTasks, continueLearning, plain }
 
-/// A Home section whose CONTENT has no endpoint yet — Daily Tasks (`337:5353`),
-/// Continue Learning (`337:5427`), Top Student (`337:5456`).
+/// A Home section whose CONTENT has no endpoint yet — Daily Tasks (`337:5353`)
+/// and Continue Learning (`337:5427`).
 ///
 /// The section header is real (it is in the frame and costs nothing); the body
 /// is an explicit "Coming soon" card. Deliberately NOT populated with the
-/// frame's sample rows: "Complete 2 Quizzes 1/2", "Physics 80%", "Sara 18,200"
-/// are the designer's mock values, and rendering them would put invented
-/// progress and invented leaderboard standings in front of a real student.
-/// Every one needs a draft or non-existent endpoint:
+/// frame's sample rows: "Complete 2 Quizzes 1/2" and "Physics 80%" are the
+/// designer's mock values, and rendering them would put invented progress in
+/// front of a real student. Both need a draft or non-existent endpoint:
 ///   - Daily Tasks       → no tasks endpoint in the contract at all
 ///   - Continue Learning → quiz history (draft)
-///   - Top Student       → `GET /leaderboard` (stable, but it is the
-///                         Leaderboard tab's data and out of Day 4's scope)
 ///
 /// `See All` is inert for the same reason — there is nothing to see all of yet.
 class ComingSoonSection extends StatelessWidget {
@@ -50,8 +50,8 @@ class ComingSoonSection extends StatelessWidget {
   final ComingSoonSurface surface;
 
   /// Picks the track's back-light, and Continue Learning's fill. The two
-  /// tracks' ellipses differ in both size and offset, and the university Top
-  /// Student has none at all, so this is a real branch, not a normalisation.
+  /// tracks' ellipses differ in both size and offset, so this is a real
+  /// branch, not a normalisation.
   final Track track;
 
   @override
@@ -75,7 +75,9 @@ class ComingSoonSection extends StatelessWidget {
             ),
             Text(
               l10n.seeAll,
-              style: AppType.bodyMedium.copyWith(color: ext.mutedText),
+              // The title's colour, as every frame draws it: `59:2089` black,
+              // `337:5456` #FCFBF9 (W05-1; it was `mutedText` #B3B3B3).
+              style: AppType.bodyMedium.copyWith(color: ext.textPrimary),
             ),
           ],
         ),
@@ -111,7 +113,7 @@ class ComingSoonSection extends StatelessWidget {
 /// Its own frames caption it `#2B2B2B` (6.78:1 there), which is what this
 /// returns. See DESIGN_ISSUES #79.
 ///
-/// The other three keep `mutedText`. They are near-white in light and a dark
+/// The other two keep `mutedText`. They are near-white in light and a dark
 /// wash in dark, which is what that grey was chosen against — and where it
 /// still fails (2.0x:1 in light) it fails exactly as it did before this wave,
 /// as part of `docs/RESPONSIVE.md`-adjacent work this edit does not own.
@@ -161,25 +163,6 @@ class _Surface extends StatelessWidget {
         }),
         child: _centred(child),
       ),
-      // `59:2090` / `337:5460`. The hairline is TOP ONLY and the same 1.20791
-      // on both canvases — unlike every other border in this file. The
-      // university frame has no back-light here (`349:16788` covers nothing,
-      // edit3.md #44), so the token is school-only and university resolves to
-      // an empty list.
-      ComingSoonSurface.topStudent => ElevatedSurface(
-        height: _height,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.374941),
-        ),
-        color: ext.topStudentFill,
-        topSide: _hairline(ext.topStudentTopBorder, e.topStudentTopBorderWidth),
-        glass: e.topStudentGlass,
-        backlights: _backlights(e.topStudentGlass, switch (track) {
-          Track.school => e.topStudentBacklightSchool,
-          Track.university => null,
-        }),
-        child: _centred(child),
-      ),
       // The one section that keeps its shadows on BOTH canvases: the card is
       // an opaque lilac, not a 20% wash, so the frame's two black shadows
       // still land on something (edit1.md R1). No Glass on either canvas.
@@ -208,7 +191,7 @@ class _Surface extends StatelessWidget {
   }
 
   /// `ElevatedSurface` centres nothing by itself; the plain box used
-  /// `Container.alignment` for this and the three new ones need the equivalent.
+  /// `Container.alignment` for this and the other two need the equivalent.
   static Widget _centred(Widget child) =>
       Align(alignment: AlignmentDirectional.center, child: child);
 

@@ -17,7 +17,6 @@ import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../registration/models/registration_args.dart';
 import '../../registration/notifier/registration_controller.dart';
-import '../../../core/network/exceptions.dart';
 import '../auth_error_copy.dart';
 import '../models/auth_outcome.dart';
 import '../models/otp_args.dart';
@@ -98,23 +97,25 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           children: [
             if (offline) const OfflineBanner(),
             // One header row, 24dp gutters to match `_InputView` below it.
-            // Before verification it carries the back chip; after it, the
-            // language pill from the success frame (155:809). Never both:
-            // once tokens are stored, "back" to the OTP input is meaningless.
+            // The language pill sits top-end on BOTH views — the input frame
+            // (`82:1254`) draws it exactly where the success frame (`155:809`)
+            // does; the build used to show it only after success. The back
+            // chip is the build's own addition (Figma draws none) and is
+            // dropped after success: once tokens are stored, "back" to the OTP
+            // input is meaningless.
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 0),
-              child: succeeded
-                  ? Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: LanguagePill(
-                        label: l10n.switchLanguage,
-                        onTap: () => ref.read(localeProvider.notifier).toggle(),
-                      ),
-                    )
-                  : Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: CircleBackButton(onPressed: () => context.pop()),
-                    ),
+              child: Row(
+                children: [
+                  if (!succeeded)
+                    CircleBackButton(onPressed: () => context.pop()),
+                  const Spacer(),
+                  LanguagePill(
+                    label: l10n.switchLanguage,
+                    onTap: () => ref.read(localeProvider.notifier).toggle(),
+                  ),
+                ],
+              ),
             ),
             Expanded(
               child: succeeded
@@ -183,13 +184,35 @@ class _InputView extends StatelessWidget {
   /// screenshot.
   static const _cardGap = 20.0;
 
-  /// `Frame 1000002976`'s gap (`308:5109`) — subtitle block to card. The build
-  /// had 32.
-  static const _gapTitleToCard = 35.0;
+  // The frame's text is TRIMMED to cap-height/baseline, so its gaps run from
+  // glyph to glyph; Flutter's line boxes add leading above the caps and below
+  // the baseline. The three gaps below are the frame's glyph-to-glyph values
+  // translated into box-to-box ones, and each was set from the Wave 02 device
+  // walk (Pixel 8, pixel rows of the screencap, measured from the language
+  // pill's top so the status-bar difference cancels), not from font metrics:
+  //
+  //   pill top → title caps        frame 81.3 · device 58.3 at 8  → 31
+  //   title baseline → subtitle    frame 15   · device 24.0 at 12 → 3
+  //   subtitle baseline → card     frame 35   · device 41.2 at 35 → 28.8
+
+  /// Header row to the title's box (on top of the scroll view's own 8).
+  static const _gapHeaderToTitle = 31.0;
+
+  /// Title box to subtitle box — the frame's 15 between trimmed glyphs.
+  static const _gapTitleToSubtitle = 3.0;
+
+  /// `Frame 1000002976`'s gap (`308:5109`) — subtitle block to card: 35
+  /// between the trimmed subtitle and the card, 28.8 from the line box.
+  static const _gapTitleToCard = 28.8;
 
   /// `Frame 1000002977`'s gap (`308:5108`) — card to the resend block. The
   /// build had 16.
   static const _gapCardToResend = 26.0;
+
+  /// The `Type= wrong` variant (`82:1439` / `337:19284`): the digit row ends
+  /// at 15 + 61.01 and the error line starts at 89. Its other side is the
+  /// card's own 20 to "Verify" (the line ends ~101, Verify starts at 121).
+  static const _gapDigitsToError = 13.0;
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +222,8 @@ class _InputView extends StatelessWidget {
     final elevation = theme.extension<AppElevation>()!;
 
     // The mapped inline message: otp_invalid uses the "incorrect code" copy and
-    // red boxes; other failures (expired/throttled/offline/generic) show below.
+    // red boxes; other failures (expired/throttled/offline/generic) use the
+    // same line without the red boxes.
     final hasError = state.error != null;
 
     return SingleChildScrollView(
@@ -207,13 +231,13 @@ class _InputView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: _gapHeaderToTitle),
           Text(
             l10n.checkOtpTitle,
             textAlign: TextAlign.center,
             style: AppType.h1.copyWith(color: ext.textPrimary),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: _gapTitleToSubtitle),
           Text(
             l10n.otpSubtitle,
             textAlign: TextAlign.center,
@@ -232,11 +256,10 @@ class _InputView extends StatelessWidget {
           // + 15 is the card's hug height of 171.01 to the hundredth, which
           // is the arithmetic that proves the child list is complete.
           //
-          // The inline error has NO slot in either frame: the light component
-          // set ships one variant and it is the correct-state one. It keeps
-          // the place the build already gives it, between the digits and the
-          // button, rather than being moved somewhere Figma also does not
-          // draw it. Recorded in docs/DESIGN_ISSUES.md #49.
+          // The error line DOES have a slot: both component sets carry a
+          // `Type= wrong` variant (`82:1439` light, `337:19284` dark) that
+          // puts it between the digits and the button. An earlier reading
+          // said otherwise; corrected in docs/DESIGN_ISSUES.md #49.
           ElevatedSurface(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(_cardRadius),
@@ -267,14 +290,16 @@ class _InputView extends StatelessWidget {
                     builder: (context, pin) => _DigitBox(state: pin),
                   ),
                 ),
+                // The frame's error line: Inter Medium 10 (`labelSmall`),
+                // start-aligned under the digits, no icon (`82:1447`). Every
+                // failure uses this one slot; only `otp_invalid` also turns
+                // the cells red.
                 if (hasError) ...[
-                  const SizedBox(height: 16),
-                  _InlineMessage(
-                    text: authErrorMessage(l10n, state.error),
-                    color: cs.error,
-                    icon: isOffline(state.error)
-                        ? Icons.wifi_off
-                        : Icons.error_outline,
+                  const SizedBox(height: _gapDigitsToError),
+                  Text(
+                    authErrorMessage(l10n, state.error),
+                    textAlign: TextAlign.start,
+                    style: AppType.labelSmall.copyWith(color: ext.otpErrorText),
                   ),
                 ],
                 const SizedBox(height: _cardGap),
@@ -333,12 +358,8 @@ class _DigitBox extends StatelessWidget {
   static const _height = 56.0;
   static const _radius = 16.0;
 
-  /// The focused and error strokes, both unchanged from the build. Figma
-  /// draws neither state, so these two are the app's own and stay that way.
-  static const _stateBorderWidth = 1.5;
-
-  /// The error tint over the cell, also unchanged.
-  static const _errorFillOpacity = 0.06;
+  /// The focused stroke — the app's own; Figma draws no focused cell.
+  static const _focusedBorderWidth = 1.5;
 
   @override
   Widget build(BuildContext context) {
@@ -348,15 +369,17 @@ class _DigitBox extends StatelessWidget {
     final elevation = theme.extension<AppElevation>()!;
 
     final (Color fill, Color border, double borderWidth) = switch (state.type) {
+      // `Type= wrong` (`82:1439` / `337:19284`): the resting fill and width,
+      // only the stroke turns red.
       PinItemStateType.error => (
-        cs.error.withValues(alpha: _errorFillOpacity),
-        cs.error,
-        _stateBorderWidth,
+        ext.otpDigitFill,
+        ext.otpDigitErrorBorder,
+        elevation.otpDigitBorderWidth,
       ),
       PinItemStateType.focused => (
         ext.otpDigitFill,
         cs.primary,
-        _stateBorderWidth,
+        _focusedBorderWidth,
       ),
       // `disabled` is unreachable here - the field is never disabled - and
       // `submitted` / `following` / `initial` are all the resting look.
@@ -459,11 +482,12 @@ class _ResendRow extends StatelessWidget {
 /// `AppElevation.otpTimerInsetShadows`; an inner shadow is a real inset here
 /// (edit1.md R7), not a second surface drawn on top.
 ///
-/// Unchanged and still unread: the glyph takes `colorScheme.primary` —
-/// `#384F47` in light, i.e. exactly the stroke the designer's own export
-/// carries, and the colour the "Resend OTP" label under it already wears —
-/// and the digits take [AppColors.textSecondary], for which the frame gives no
-/// value (issue #49). The 15×19 glyph box is read, not measured.
+/// **Content colour, read 2026-09-24:** glyph and digits share
+/// [AppColors.otpTimerContent] — `#384F47` in `82:1316`, `#FCFBF9` in
+/// `337:19503` (the dark glyph export is stroked cream too). They used to take
+/// `colorScheme.primary` (lavender in dark) and `textSecondary`. The digits are
+/// Medium 12 = `AppType.labelMedium`. The 15×19 glyph box is read, not
+/// measured.
 class _ResendTimerPill extends StatelessWidget {
   const _ResendTimerPill({required this.l10n, required this.secondsRemaining});
 
@@ -486,7 +510,6 @@ class _ResendTimerPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final ext = theme.extension<AppColors>()!;
     final elevation = theme.extension<AppElevation>()!;
     final minutes = (secondsRemaining ~/ 60).toString().padLeft(2, '0');
@@ -511,18 +534,21 @@ class _ResendTimerPill extends StatelessWidget {
             // The designer's export of the icon layer in Frame 427319517 — a
             // STROKE-drawn stopwatch at 1.6 with round caps. The file carries
             // the stroke as a literal `#384F47`; it is tinted here anyway so the
-            // dark canvas gets the dark accent instead of a fixed green
-            // (`app_colors_test.dart` pins the literal to the token).
+            // dark canvas gets the frame's cream (`app_colors_test.dart` pins
+            // the literal to the token's light value).
             SvgPicture.asset(
               'assets/icons/stopwatch.svg',
               width: _iconWidth,
               height: _iconHeight,
-              colorFilter: ColorFilter.mode(cs.primary, BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(
+                ext.otpTimerContent,
+                BlendMode.srcIn,
+              ),
             ),
             const SizedBox(width: _gap),
             Text(
               l10n.resendTimer(minutes, seconds),
-              style: AppType.bodyMedium.copyWith(color: ext.textSecondary),
+              style: AppType.labelMedium.copyWith(color: ext.otpTimerContent),
             ),
           ],
         ),
@@ -576,7 +602,9 @@ class _SuccessView extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
           ),
-          const SizedBox(height: 60),
+          // `332:3400`: gap 60 after a fixed 267-high group whose text block
+          // ends at 252, so the subtitle sits 75 above Continue, not 60.
+          const SizedBox(height: 75),
           // edit5 §7.11a. Always enabled: the only way onto this view is a
           // stored session, so there is no state in which "Continue" is dead.
           PrimaryCta(
@@ -623,33 +651,6 @@ class _SuccessBadge extends StatelessWidget {
         height: 148,
         semanticsLabel: AppLocalizations.of(context).otpSuccessTitle,
       ),
-    );
-  }
-}
-
-class _InlineMessage extends StatelessWidget {
-  const _InlineMessage({required this.text, required this.color, this.icon});
-  final String text;
-  final Color color;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 6),
-        ],
-        Flexible(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: AppType.bodyMedium.copyWith(color: color),
-          ),
-        ),
-      ],
     );
   }
 }

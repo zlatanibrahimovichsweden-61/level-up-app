@@ -44,6 +44,14 @@ class SchoolDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
+  /// The frame's one vertical rhythm (`125:511` / `337:5269`), box to box —
+  /// its text is NOT trimmed here (title 29 = 22 x 1.3, subtitle 26):
+  /// header row bottom 100.98 → title 126; subtitle bottom 189 → fields 214;
+  /// `Component 4`'s own auto-layout gap between field blocks; fields bottom
+  /// 891 → Start learning 916. All 25. The build used 8 / 28 / 16 / 28
+  /// (Wave 03, W03-1).
+  static const _gap = 25.0;
+
   /// The chosen school row, kept locally so the field can show its NAME while
   /// the draft carries only the opaque id that gets submitted.
   NamedRef? _selectedSchool;
@@ -106,19 +114,20 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const RegistrationHeader(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: _gap),
                     Text(
                       l10n.schoolRegistrationTitle,
                       style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
+                    // `125:536` is `#7C7C7C` — the muted grey DESIGN_ISSUES
+                    // #24 folds into `bodyMuted`, not the near-black
+                    // `textSecondary` (`#2C2C2C`) it was (W03-2).
                     Text(
                       l10n.schoolRegistrationSubtitle,
-                      style: AppType.bodyLarge.copyWith(
-                        color: ext.textSecondary,
-                      ),
+                      style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: _gap),
 
                     // TODO(design): dateOfBirth not in Figma —
                     // see docs/DESIGN_ISSUES.md #2. Contract-required.
@@ -128,7 +137,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       onChanged: (date) =>
                           _edit(() => controller.setDateOfBirth(date)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 1 — Country (frame order starts here). Drives the whole
                     // geography branch via the row's own requiresGovernorate.
@@ -155,7 +164,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                         _clearSchool();
                       }),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 2 — Governorate. EGYPT ONLY: forbidden elsewhere, so the
                     // field is not merely disabled, it is absent.
@@ -176,7 +185,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           setState(() => _selectedSchool = null);
                         }),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: _gap),
                     ],
 
                     // 3 — City. Egypt must scope by governorate (the contract
@@ -217,7 +226,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                         _clearSchool();
                       }),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 4 — Education System.
                     ReferenceDropdown(
@@ -230,7 +239,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       onSelected: (code) =>
                           _edit(() => controller.setEducationSystem(code)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 5 — Grade (the design's label for the contract's `stage`).
                     // A closed contract enum, so it needs no endpoint.
@@ -243,13 +252,13 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       onSelected: (stage) =>
                           _edit(() => controller.setStage(stage)),
                     ),
-                    const SizedBox(height: 16),
 
                     // 6 — School. EGYPT ONLY (adr-028 §2): the coded list is
                     // Egyptian, so outside Egypt there is nothing to choose
                     // from and nothing to type — the block is absent, not
                     // disabled, exactly like the governorate branch above.
-                    if (requiresGovernorate)
+                    if (requiresGovernorate) ...[
+                      const SizedBox(height: _gap),
                       SchoolPickerField(
                         governorateId: draft.governorateId,
                         // Null under a free-text city — the search then scopes
@@ -273,6 +282,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           controller.clearSchool();
                         }),
                       ),
+                    ],
 
                     if (submitState.hasError &&
                         !restartsRegistration(submitState.error))
@@ -282,7 +292,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           submitState.error,
                         ),
                       ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: _gap),
 
                     PrimaryCta(
                       enabled: !submitState.isLoading,

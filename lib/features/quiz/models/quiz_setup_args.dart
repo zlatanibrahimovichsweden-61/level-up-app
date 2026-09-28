@@ -13,6 +13,13 @@ import 'quiz_type.dart';
 /// lecture display name"). It is server copy, already localized (adr-018), so
 /// the setup screen can title itself without a second lookup.
 ///
+/// [subjectName] is the line the setup frames draw above the scope
+/// ("Biology" over "Cell Membrane", `146:2289`). No quiz endpoint returns a
+/// subject, so the Learn stack reads it from the subjects list the student
+/// just tapped through (`cachedSubjectName`). Display only: `POST /quizzes`
+/// never sees it. Null on a cold deep link, where that list was never
+/// fetched, and the setup screen then shows the scope alone (API→UI Wave 11).
+///
 /// Carried as go_router `extra` — typed, like `OtpArgs` and `RegistrationArgs`
 /// before it — rather than as query parameters.
 @immutable
@@ -21,6 +28,7 @@ class QuizSetupArgs {
   const QuizSetupArgs.lesson({
     required String this.lessonId,
     required this.scopeName,
+    this.subjectName,
   }) : lectureId = null,
        quizType = null;
 
@@ -30,6 +38,7 @@ class QuizSetupArgs {
     required String this.lectureId,
     required this.scopeName,
     required QuizType this.quizType,
+    this.subjectName,
   }) : lessonId = null;
 
   /// Set for school, null for university.
@@ -43,14 +52,19 @@ class QuizSetupArgs {
 
   final String scopeName;
 
+  /// The subject's own name, server copy (adr-018). Null when unknown.
+  final String? subjectName;
+
   @override
   bool operator ==(Object other) =>
       other is QuizSetupArgs &&
       other.lessonId == lessonId &&
       other.lectureId == lectureId &&
       other.quizType == quizType &&
-      other.scopeName == scopeName;
+      other.scopeName == scopeName &&
+      other.subjectName == subjectName;
 
   @override
-  int get hashCode => Object.hash(lessonId, lectureId, quizType, scopeName);
+  int get hashCode =>
+      Object.hash(lessonId, lectureId, quizType, scopeName, subjectName);
 }

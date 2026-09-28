@@ -174,7 +174,13 @@ $fileProbes = @(
     # zero-enforcement and this probe now checks a ban rather than a count.
     @{ Name = 'Elevation effects enforced at zero'
        Body = "var s = BoxShadow(blurRadius: 1);"
-       Test = 'no raw elevation effect outside the two elevation folders' }
+       Test = 'no raw elevation effect outside the two elevation folders' },
+
+    # The RTL double flip Wave 07 removed: a conditional between mirror glyphs,
+    # which Icon's matchTextDirection flips straight back.
+    @{ Name = 'No mirror-glyph swap'
+       Body = "IconData probe(bool rtl) => rtl ? Icons.chevron_left : Icons.chevron_right;"
+       Test = 'no glyph is swapped for its mirror image' }
 )
 
 $i = 1

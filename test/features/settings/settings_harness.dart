@@ -24,7 +24,9 @@ import 'package:level_up_app/features/profile/repository/profile_repository.dart
 import 'package:level_up_app/features/profile/widgets/profile_menu_row.dart'
     show kProfileDisabledOpacity;
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 
+import '../leaderboard/leaderboard_fixtures.dart';
 import '../profile/profile_fixtures.dart';
 import '../profile/profile_harness.dart';
 
@@ -47,6 +49,9 @@ Future<ProviderContainer> pumpAppAt(
     overrides: [
       secureStorageProvider.overrideWithValue(signedInStorage()),
       profileRepositoryProvider.overrideWithValue(profile ?? settingsRepo()),
+      leaderboardRepositoryProvider.overrideWithValue(
+        QuietLeaderboardRepository(),
+      ),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
       // Null unless a test supplies one — the default launch does not persist,
       // which is what keeps every other test in this suite free of a plugin stub.
@@ -54,6 +59,8 @@ Future<ProviderContainer> pumpAppAt(
     ],
   );
   addTearDown(container.dispose);
+  holdBoards(container);
+  holdProfile(container);
 
   // Settings is ~850pt of sections and the default viewport is 600. Taller
   // here rather than scrolling before every tap: what this file proves is what

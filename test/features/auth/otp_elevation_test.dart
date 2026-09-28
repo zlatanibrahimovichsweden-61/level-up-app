@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
@@ -130,7 +131,8 @@ void main() {
   }
 
   // The card is the only `ElevatedSurface` ABOVE the Pinput; the cells are the
-  // only ones below it; the pill is the only stadium on the screen.
+  // only ones below it. The timer pill is the stadium around the stopwatch —
+  // NOT "the only stadium": since Wave 02 the language pill is on this view.
   ElevatedSurface cardOf(WidgetTester tester) => tester.widget<ElevatedSurface>(
     find.ancestor(
       of: find.byType(Pinput),
@@ -143,11 +145,21 @@ void main() {
     matching: find.byType(ElevatedSurface),
   );
 
-  ElevatedSurface pillOf(WidgetTester tester) => tester.widget<ElevatedSurface>(
-    find.byWidgetPredicate(
+  Finder pillFinder() => find.ancestor(
+    of: find.byWidgetPredicate(
+      (w) =>
+          w is SvgPicture &&
+          w.bytesLoader is SvgAssetLoader &&
+          (w.bytesLoader as SvgAssetLoader).assetName ==
+              'assets/icons/stopwatch.svg',
+    ),
+    matching: find.byWidgetPredicate(
       (w) => w is ElevatedSurface && w.shape is StadiumBorder,
     ),
   );
+
+  ElevatedSurface pillOf(WidgetTester tester) =>
+      tester.widget<ElevatedSurface>(pillFinder());
 
   // -----------------------------------------------------------------------
   group('#30 the resend-timer pill', () {
@@ -236,6 +248,36 @@ void main() {
       );
       await drain(tester);
     });
+
+    // Read 2026-09-24: glyph and digits share one colour per canvas —
+    // `#384F47` in `82:1316`, cream `#FCFBF9` in `337:19503` (its glyph export
+    // is stroked cream too). The build tinted the glyph `colorScheme.primary`
+    // (lavender in dark) and the digits `textSecondary`.
+    for (final (canvas, brightness, colour) in [
+      ('light', Brightness.light, const Color(0xFF384F47)),
+      ('dark', Brightness.dark, const Color(0xFFFCFBF9)),
+    ]) {
+      testWidgets('$canvas: glyph and digits in the frame\'s one colour', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          brightness: brightness,
+          resendAfterSeconds: _countdown,
+        );
+        final glyph = tester.widget<SvgPicture>(
+          find.descendant(of: pillFinder(), matching: find.byType(SvgPicture)),
+        );
+        expect(glyph.colorFilter, ColorFilter.mode(colour, BlendMode.srcIn));
+
+        final digits = tester.widget<Text>(find.text('00.21'));
+        expect(digits.style!.color, colour);
+        // Medium 12 = labelMedium (12/16, 500).
+        expect(digits.style!.fontSize, 12);
+        expect(digits.style!.fontWeight, FontWeight.w500);
+        await drain(tester);
+      });
+    }
   });
 
   // -----------------------------------------------------------------------
@@ -435,27 +477,64 @@ void main() {
       expect(focused.side!.width, 1.5);
     });
 
-    testWidgets('an otp_invalid verify turns EVERY cell red', (tester) async {
-      when(
-        () => repo.verifyOtp(
-          phone: any(named: 'phone'),
-          code: any(named: 'code'),
-          device: any(named: 'device'),
-        ),
-      ).thenThrow(const ApiException(status: 400, code: 'otp_invalid'));
+    // `Type= wrong` — `82:1439` light, `337:19284` dark (Wave 02 re-read,
+    // 2026-09-24). The build used to tint the cell 6% and stroke it 1.5 in the
+    // M3 seed red; the frame keeps the resting fill and width and turns only
+    // the stroke `#EB001B` at 50%.
+    for (final (canvas, brightness, width, fill) in [
+      ('light', Brightness.light, 1.17333, const Color(0xFFFDFDFD)),
+      ('dark', Brightness.dark, 0.5, AppColors.dark.otpDigitFill),
+    ]) {
+      testWidgets(
+        '$canvas: otp_invalid turns every cell STROKE red, as drawn',
+        (tester) async {
+          when(
+            () => repo.verifyOtp(
+              phone: any(named: 'phone'),
+              code: any(named: 'code'),
+              device: any(named: 'device'),
+            ),
+          ).thenThrow(const ApiException(status: 400, code: 'otp_invalid'));
 
-      final container = await pump(tester);
-      await container.read(otpProvider(_argsWith(0)).notifier).verify('000000');
-      await tester.pump();
+          final container = await pump(tester, brightness: brightness);
+          await container
+              .read(otpProvider(_argsWith(0)).notifier)
+              .verify('000000');
+          await tester.pump();
 
-      final error = AppTheme.light.colorScheme.error;
-      for (var i = 0; i < 6; i++) {
-        final cell = tester.widget<ElevatedSurface>(cellsFinder().at(i));
-        expect(cell.side!.color, error, reason: 'cell $i');
-        expect(cell.side!.width, 1.5, reason: 'cell $i');
-        expect(cell.color, error.withValues(alpha: 0.06), reason: 'cell $i');
-      }
-    });
+          for (var i = 0; i < 6; i++) {
+            final cell = tester.widget<ElevatedSurface>(cellsFinder().at(i));
+            expect(
+              cell.side!.color,
+              const Color(0x80EB001B),
+              reason: 'cell $i',
+            );
+            expect(cell.side!.width, width, reason: 'cell $i');
+            expect(cell.color, fill, reason: 'cell $i — the resting fill');
+          }
+
+          // The line: Inter Medium 10 `#FF465C`, start-aligned, no icon
+          // (`82:1447` / `337:19294`), 13 under the digits and 20 above Verify.
+          final line = find.text('This is an incorrect code, try again');
+          final text = tester.widget<Text>(line);
+          expect(text.style!.color, const Color(0xFFFF465C));
+          expect(text.style!.fontSize, 10);
+          expect(text.style!.fontWeight, FontWeight.w500);
+          expect(text.textAlign, TextAlign.start);
+          expect(find.byIcon(Icons.error_outline), findsNothing);
+          expect(
+            tester.getRect(line).top -
+                tester.getRect(cellsFinder().first).bottom,
+            13,
+          );
+          expect(
+            tester.getRect(find.byType(PrimaryCta)).top -
+                tester.getRect(line).bottom,
+            20,
+          );
+        },
+      );
+    }
   });
 
   // -----------------------------------------------------------------------

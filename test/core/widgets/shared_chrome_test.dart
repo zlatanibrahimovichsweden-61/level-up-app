@@ -152,13 +152,16 @@ void main() {
       );
       await tester.tap(find.byType(CircleBackButton));
       expect(taps, 1);
-      // `isSemantics`, not `matchesSemantics`: the SVG chevron merges its own
-      // `isImage` into this node, and an exhaustive matcher would fail on a
-      // flag that has nothing to do with the chip being a button.
+      // NOT an image. The chevron `SvgPicture` used to merge its own
+      // `isImage` into this node, and Android then reported the chip as an
+      // `ImageView` on every screen that has it (API→UI Wave 13 device walk;
+      // the W11-7 mechanism).
       expect(
         tester.getSemantics(find.byType(CircleBackButton)),
         isSemantics(
           isButton: true,
+          isImage: false,
+          hasTapAction: true,
           label: const DefaultMaterialLocalizations().backButtonTooltip,
         ),
       );

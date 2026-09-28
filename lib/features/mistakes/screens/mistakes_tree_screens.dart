@@ -25,6 +25,19 @@ import '../../catalog/widgets/tree_list_row.dart';
 import '../models/mistakes_tree.dart';
 import '../notifier/mistakes_notifiers.dart';
 
+// The Chapters frames' list starts 25 under the header (`404:6719` ends at
+// 99.44, the first row `404:6697` starts at 124.44) and its rows are 16 apart
+// (the second starts at 218.44), in light `404:6677` and dark `404:7894`: the
+// Units list's rhythm. `CatalogScaffold` leaves 16 under every header, so the
+// list adds the rest. It had 4 and 12 (API→UI Wave 17). The Lessons list takes
+// the same (API→UI Wave 18): `404:6762` starts its one row 25 under the header
+// (`404:6804` ends at 99.44, the row `404:6782` starts at 124.44; the RTL
+// frame `549:19390` puts its row at the same 124.44). No dark frame draws
+// Lessons: `404:7990`, the dark frame in its slot, draws a Chapters list with
+// the same 25 and rows 16 apart. It had 4 and 12 too.
+const _belowHeader = 25.0 - 16;
+const _rowGap = 16.0;
+
 /// Chapters — level 2 · Figma `404:6677`
 /// (`/learn/mistakes/subject/:subjectId/unit/:unitId`).
 class MistakesChaptersScreen extends ConsumerWidget {
@@ -107,9 +120,9 @@ class _MistakesChapterList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return ListView.separated(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       itemCount: chapters.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: _rowGap),
       itemBuilder: (context, index) {
         final chapter = chapters[index];
         return TreeListRow(
@@ -209,9 +222,9 @@ class _MistakesLessonList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return ListView.separated(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       itemCount: lessons.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: _rowGap),
       itemBuilder: (context, index) {
         final lesson = lessons[index];
         return TreeListRow(

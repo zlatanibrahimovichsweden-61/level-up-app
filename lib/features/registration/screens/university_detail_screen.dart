@@ -20,14 +20,14 @@ import '../widgets/reference_dropdown.dart';
 import '../widgets/registration_chrome.dart';
 import 'registration_expired_view.dart';
 
-/// University Registration · Figma frame `337:10373`. Egypt-only.
+/// University Registration · Figma `125:2336` (light) / `337:10373` (dark).
+/// Egypt-only.
 ///
-/// **Field order deviates from the frame, deliberately.** The design draws
-/// Faculty → Academic Year → City → University Name, but faculties belong to a
-/// university and years belong to a faculty, so a student cannot answer the
-/// first field until the last one is answered. The order here follows the data
-/// cascade instead — University → Faculty → Academic Year — and the deviation is
-/// logged for the designer as docs/DESIGN_ISSUES.md #4.
+/// **Field order follows the data cascade** — University → Faculty → Academic
+/// Year — because faculties belong to a university and years to a faculty. The
+/// LIGHT frame `125:2336` draws exactly that order; only the dark frame draws
+/// Faculty → Academic Year → City → University Name, which a student could not
+/// fill top to bottom. docs/DESIGN_ISSUES.md #4 has both readings.
 ///
 /// Two more differences from the frame, both contract-required:
 /// governorate (#3) and date of birth (#2).
@@ -47,6 +47,15 @@ class _UniversityDetailScreenState
   /// The university track is Egypt-only by shape — there is no country picker
   /// to read this from, so the geography lookups are scoped to EG.
   static const _countryCode = 'EG';
+
+  /// The frames' one vertical rhythm (`125:2336` / `337:10373`), box to box —
+  /// the text is untrimmed (title 29, subtitle 26, labels 22): header row
+  /// bottom 100.98 → title 126; subtitle bottom 189 → fields 214; field blocks
+  /// 25 apart (`Component 4`). The frame parks Start learning near the bottom
+  /// of a four-field form; with six fields this form scrolls, so the CTA
+  /// follows the last field at the same 25 School registration uses. The build
+  /// used 8 / 28 / 16 / 28 (Wave 04, W04-1).
+  static const _gap = 25.0;
 
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
@@ -98,19 +107,19 @@ class _UniversityDetailScreenState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const RegistrationHeader(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: _gap),
                     Text(
                       l10n.universityRegistrationTitle,
                       style: AppType.h1.copyWith(color: ext.textPrimary),
                     ),
                     const SizedBox(height: 8),
+                    // `125:2361` is `#7C7C7C` — `bodyMuted` per DESIGN_ISSUES
+                    // #24, as on School registration (W04-2).
                     Text(
                       l10n.universityRegistrationSubtitle,
-                      style: AppType.bodyLarge.copyWith(
-                        color: ext.textSecondary,
-                      ),
+                      style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: _gap),
 
                     // TODO(design): dateOfBirth not in Figma —
                     // see docs/DESIGN_ISSUES.md #2. Contract-required.
@@ -120,7 +129,7 @@ class _UniversityDetailScreenState
                       onChanged: (date) =>
                           _edit(() => controller.setDateOfBirth(date)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 1 — University. Must come first: faculties hang off it.
                     ReferenceDropdown(
@@ -147,7 +156,7 @@ class _UniversityDetailScreenState
                       onSelected: (id) =>
                           _edit(() => controller.setUniversity(id)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 2 — Faculty, from the selected university's own list.
                     // Gated: no university → nothing to choose from.
@@ -176,7 +185,7 @@ class _UniversityDetailScreenState
                       onSelected: (id) =>
                           _edit(() => controller.setFaculty(id)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 3 — Academic Year. EVERY year is offered; only `active`
                     // ones are selectable. The contract is explicit that this
@@ -217,7 +226,7 @@ class _UniversityDetailScreenState
                       onSelected: (id) =>
                           _edit(() => controller.setStudyYear(id)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 4 — TODO(design): governorateId not in Figma —
                     // see docs/DESIGN_ISSUES.md #3. Contract-required, and it
@@ -235,7 +244,7 @@ class _UniversityDetailScreenState
                       onSelected: (id) =>
                           _edit(() => controller.setGovernorate(id)),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: _gap),
 
                     // 5 — City, scoped by governorate (Egypt 400s without one),
                     // with the adr-028 §1 escape. The notice applies it to
@@ -270,7 +279,7 @@ class _UniversityDetailScreenState
                           submitState.error,
                         ),
                       ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: _gap),
 
                     PrimaryCta(
                       enabled: !submitState.isLoading,

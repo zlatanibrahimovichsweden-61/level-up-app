@@ -36,7 +36,6 @@ class SubjectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
     final elevation = Theme.of(context).extension<AppElevation>()!;
     final counter = subject.questionCounter;
@@ -60,10 +59,10 @@ class SubjectCard extends StatelessWidget {
                   subject.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppType.h3.copyWith(color: ext.textPrimary),
+                  style: AppType.h3.copyWith(color: ext.subjectCardTitle),
                 ),
               ),
-              Icon(forwardChevron(context), size: 16, color: ext.textPrimary),
+              Icon(forwardChevron, size: 16, color: ext.subjectCardChevron),
             ],
           ),
           const SizedBox(height: 10),
@@ -73,7 +72,10 @@ class SubjectCard extends StatelessWidget {
             value: counter.fraction,
             minHeight: 4,
             backgroundColor: ext.catalogTrack,
-            color: cs.primary,
+            // Lavender on BOTH canvases and both tracks (`135:631`,
+            // `404:6989`, `337:5745`) — not the theme primary, which is
+            // green in light.
+            color: ext.subjectCardProgress,
             borderRadius: BorderRadius.circular(52),
           ),
           const SizedBox(height: 6),

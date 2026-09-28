@@ -13,6 +13,7 @@ import '../../../core/widgets/state_widget.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/models/student_profile.dart';
 import '../../profile/notifier/me_notifier.dart';
+import '../board_failure.dart';
 import '../models/leaderboard_models.dart';
 import '../notifier/leaderboard_notifier.dart';
 import '../widgets/leaderboard_row.dart';
@@ -90,7 +91,7 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen> {
     final current = _scope;
     return current != null && allowed.contains(current)
         ? current
-        : allowed.first;
+        : LeaderboardScope.defaultFor(profile);
   }
 }
 
@@ -207,23 +208,11 @@ class _Board extends ConsumerWidget {
             ),
             error: _Message(
               icon: Icons.error_outline,
-              text: _errorText(l10n, board.error),
-              // A rate-limited board recovers on its own clock, and the
-              // contract is explicit: do not retry in a tight loop. The button
-              // is withheld rather than handed to the student to hammer.
-              //
-              // `account_pending_deletion` is withheld for a stronger reason:
-              // it does not recover on any clock. The contract's instruction is
-              // "do not log the user out and do not retry" (`openapi.yaml:82`),
-              // and until the deletion is cancelled every tap answers the same
-              // `403`. This branch used to supply the copy and still hand over
-              // the button — the copy told the student it was pointless while
-              // the button invited them to try.
-              onRetry:
-                  _isRateLimited(board.error) ||
-                      isAccountPendingDeletion(board.error)
-                  ? null
-                  : notifier.refresh,
+              text: boardFailureText(l10n, board.error),
+              // No Retry for a rate-limited board or a pending deletion — the
+              // reasons live on [boardRetryAllowed], shared with Home's Top
+              // Student block (Wave 05).
+              onRetry: boardRetryAllowed(board.error) ? notifier.refresh : null,
             ),
             offline: _Message(
               icon: Icons.wifi_off,
@@ -237,25 +226,6 @@ class _Board extends ConsumerWidget {
       ],
     );
   }
-
-  static bool _isRateLimited(Object? error) => error is RateLimitedException;
-
-  /// `403 account_pending_deletion` is not a leaderboard failure — the account
-  /// is inside its 30-day deletion grace window, during which every
-  /// authenticated endpoint but four answers this. The contract's instruction
-  /// is to route to the cancel screen and neither log out nor retry. That
-  /// screen does not exist yet, so the board says what is actually wrong
-  /// instead of showing a generic error, and withholds the retry that the
-  /// contract says would be pointless.
-  ///
-  /// Recognising the code is [isAccountPendingDeletion]'s job, not this
-  /// screen's: the board was the FIRST surface to handle it and its inline
-  /// string comparison was the de-facto definition, which is how six other
-  /// surfaces ended up with none.
-  static String _errorText(AppLocalizations l10n, Object? error) =>
-      isAccountPendingDeletion(error)
-      ? l10n.accountPendingDeletion
-      : l10n.genericError;
 
   static String _label(AppLocalizations l10n, LeaderboardScope scope) =>
       switch (scope) {
@@ -320,7 +290,10 @@ class _BoardListState extends State<_BoardList> {
       padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
       // podium + rows + trailing footer slot
       itemCount: rest.length + 2,
-      separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 24 : 10),
+      // 24 under the podium; 8 between rows, the frame's auto layout
+      // (`134:3536`: rows at y 0 / 56 / 112). It was 10 until the Wave 06 walk
+      // (W06-4). The footer shares the rows' rhythm.
+      separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 24 : 8),
       itemBuilder: (context, index) {
         if (index == 0) return Podium(top: top);
         if (index <= rest.length) return LeaderboardRow(entry: rest[index - 1]);

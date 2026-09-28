@@ -57,6 +57,9 @@ import '../../features/registration/notifier/school_search_notifier.dart';
 /// why `forceLogout` is idempotent. See the note there.
 void invalidateSessionScope(Ref ref) {
   // --- Profile: the PII. -----------------------------------------------------
+  // `meProvider` is autoDispose since API→UI Wave 19 (BUG-015): what drops it
+  // is the shell unmounting at sign-out. This invalidation only rebuilds it for
+  // the frame before that, with no token (the 401 `forceLogout` absorbs).
   ref.invalidate(meProvider); // name, phone, DOB, school, governorate
   ref.invalidate(entitlementsProvider); // what this student paid for
   ref.invalidate(editProfileProvider); // in-flight edits to the above

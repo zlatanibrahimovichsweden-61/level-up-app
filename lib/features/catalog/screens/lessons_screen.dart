@@ -8,18 +8,20 @@ import '../../../l10n/app_localizations.dart';
 import '../../quiz/models/quiz_setup_args.dart';
 import '../models/subject_tree.dart';
 import '../notifier/subject_tree_notifier.dart';
+import '../notifier/subjects_notifier.dart';
 import '../widgets/catalog_scaffold.dart';
 import '../widgets/catalog_states.dart';
 import '../widgets/tree_list_row.dart';
 
-/// Lessons — level 3, the leaf · Figma `337:6143`
+/// Lessons — level 3, the leaf · Figma `135:1485` (dark `337:6143`)
 /// (`.../unit/:unitId/chapter/:chapterId`).
 ///
 /// Reads the CACHED tree (same provider as Units/Chapters). Each row shows the
 /// lesson's `{answered}/{total} questions`, DISPLAY ONLY — the contract says it
 /// never locks retakes, so every lesson is tappable regardless of its counter.
 ///
-/// Tapping one hands off to `/quiz/setup` (Day 6) with the lesson's id and name.
+/// Tapping one hands off to `/quiz/setup` (Day 6) with the lesson's id and name,
+/// plus the subject's name for the setup header when it is known (Wave 11).
 class LessonsScreen extends ConsumerWidget {
   const LessonsScreen({
     super.key,
@@ -37,6 +39,7 @@ class LessonsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final tree = ref.watch(subjectTreeProvider(subjectId));
     final offline = ref.watch(isOnlineProvider).value == false;
+    final subjectName = cachedSubjectName(ref, subjectId);
 
     // Titled after its parent chapter, per the frame ("Cell Structure lessons").
     final chapterName = _chapterOf(tree.value)?.name;
@@ -57,7 +60,10 @@ class LessonsScreen extends ConsumerWidget {
               onRetry: () =>
                   ref.read(subjectTreeProvider(subjectId).notifier).refresh(),
               skeleton: const CatalogListSkeleton(),
-              onLoaded: (data) => _LessonList(lessons: _lessonsOf(data)),
+              onLoaded: (data) => _LessonList(
+                lessons: _lessonsOf(data),
+                subjectName: subjectName,
+              ),
             ),
           ),
         ],
@@ -83,9 +89,12 @@ class LessonsScreen extends ConsumerWidget {
 }
 
 class _LessonList extends StatelessWidget {
-  const _LessonList({required this.lessons});
+  const _LessonList({required this.lessons, required this.subjectName});
 
   final List<Lesson> lessons;
+
+  /// For the setup header's subject line. Null on a cold deep link.
+  final String? subjectName;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +103,10 @@ class _LessonList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
       itemCount: lessons.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      // 16: the frames' 78 dp rows on a 94 dp pitch (`135:1485`, dark
+      // `337:6143`), the same rhythm as Units and Chapters. API→UI Wave 10;
+      // this was 12.
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final lesson = lessons[index];
         final counter = lesson.questionCounter;
@@ -113,6 +125,7 @@ class _LessonList extends StatelessWidget {
             extra: QuizSetupArgs.lesson(
               lessonId: lesson.id,
               scopeName: lesson.name,
+              subjectName: subjectName,
             ),
           ),
         );

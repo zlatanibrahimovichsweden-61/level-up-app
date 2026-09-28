@@ -1112,11 +1112,29 @@ abstract class AppLocalizations {
   /// **'REWARDS EARNED'**
   String get rewardsEarned;
 
-  /// QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12).
+  /// QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12). Since API→UI Wave 13 this whole phrase is the rewards line's accessibility label; the line itself paints pointsAwardedValue and pointsAwardedUnit as the frame's two runs.
   ///
   /// In en, this message translates to:
   /// **'+{points} Points'**
   String pointsAwarded(int points);
+
+  /// The rewards line's first run, Figma 159:2335 (bold, lavender). QuizSummary.pointsAwarded verbatim. Painted left-to-right in every locale so Arabic keeps the sign on the left (KNOWN_BUGS BUG-003).
+  ///
+  /// In en, this message translates to:
+  /// **'+{points}'**
+  String pointsAwardedValue(int points);
+
+  /// The rewards line's second run, Figma 159:2337 (regular). The same word pointsAwarded ends with.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get pointsAwardedUnit;
+
+  /// The result header's second line, Figma 159:2250 'Biology — Cell Structure'. Both names are server copy (adr-018); only the separator is ours. When the subject is unknown the scope is shown alone.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} — {scope}'**
+  String quizResultSubtitle(String subject, String scope);
 
   /// No description provided for @reviewQuestions.
   ///
@@ -1183,6 +1201,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This lesson needs an active subscription.'**
   String get subscriptionRequiredBody;
+
+  /// The getExplanation 403 subscription_required popup. VERBATIM the contract's approved copy (openapi.yaml, GET /questions/{questionId}/explanation, 403) — do not reword. Shown on the limit card under subscriptionRequiredTitle, with no price, link or buy button (adr-049 §3). Owner ruling 2026-09-26, API→UI Wave 12.
+  ///
+  /// In en, this message translates to:
+  /// **'AI explanations are available with a Level Up subscription. Subscribe to get step-by-step explanations and more learning features.'**
+  String get explanationSubscriptionRequired;
 
   /// No description provided for @notNow.
   ///
@@ -1316,11 +1340,17 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to log out?'**
   String get logoutBody;
 
-  /// No description provided for @logoutConfirm.
+  /// No description provided for @logoutNo.
   ///
   /// In en, this message translates to:
-  /// **'Logout'**
-  String get logoutConfirm;
+  /// **'No'**
+  String get logoutNo;
+
+  /// No description provided for @logoutYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get logoutYes;
 
   /// No description provided for @goToUniTitle.
   ///

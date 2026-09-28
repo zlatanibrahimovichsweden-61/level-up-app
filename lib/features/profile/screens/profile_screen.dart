@@ -24,8 +24,10 @@ import '../widgets/profile_stat_card.dart';
 ///
 /// **This screen consumes no endpoint of its own.** It reads the existing
 /// [meProvider] (`GET /me`), which Home already populated; switching to the
-/// Account tab must not cost a second request, which is why the notifier is
-/// non-autoDispose and why nothing here calls the repository directly.
+/// Account tab must not cost a second request, and does not: Home stays mounted
+/// in the shell and keeps the provider alive (it is autoDispose only so a
+/// sign-out drops it, API→UI Wave 19). Nothing here calls the repository
+/// directly.
 ///
 /// ## What the frame draws and this screen does not
 ///
@@ -61,14 +63,12 @@ class ProfileScreen extends ConsumerWidget {
     void retry() => ref.read(meProvider.notifier).refresh();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
-        automaticallyImplyLeading: false,
-      ),
       body: SafeArea(
         bottom: false, // the nav shell owns the bottom inset
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const _Header(),
             if (offline) const OfflineBanner(),
             Expanded(
               child: StateWidget<StudentProfile>(
@@ -112,6 +112,49 @@ ScreenState<StudentProfile> profileScreenState(AsyncValue<StudentProfile> me) =>
           : ScreenError<StudentProfile>('genericError', cause: error),
     );
 
+/// The frame's title bar (`169:4631`): 35 tall, 16 under the status bar, the
+/// title centred.
+///
+/// Not an [AppBar] (API→UI Wave 19). The stock 56 dp bar put the header card
+/// 4 under it; every Profile frame puts the card 25 under a 35 dp bar, the
+/// rhythm of Home, the Leaderboard and the catalog. No back chip: this is the
+/// Account tab's root. The title keeps the app's header style, `h2` in
+/// [AppColors.textPrimary] (the frame's Inter 600 / 22 `#000000`), by the
+/// rulings on #57 and #99.
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final ext = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 0),
+      child: SizedBox(
+        height: 35,
+        child: Center(
+          // What the AppBar gave the title: a heading to screen readers.
+          child: Semantics(
+            header: true,
+            child: Text(
+              l10n.profileTitle,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppType.h2.copyWith(color: ext.textPrimary),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The first block sits 25 under the title bar: the frame's content
+/// (`336:3741`) starts at 120, the bar ends at 95. The skeleton shares it.
+const _belowHeader = 25.0;
+
 class _Loaded extends ConsumerWidget {
   const _Loaded({required this.profile});
 
@@ -122,7 +165,7 @@ class _Loaded extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     return SingleChildScrollView(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -330,13 +373,16 @@ class _Menu extends ConsumerWidget {
       ProfileConfirmDialog(
         title: l10n.logoutTitle,
         body: l10n.logoutBody,
-        confirmLabel: l10n.logoutConfirm,
+        // The frame's No / Yes pair (`180:4704`), API→UI Wave 19.
+        cancelLabel: l10n.logoutNo,
+        cancelKey: const Key('logout_no'),
+        confirmLabel: l10n.logoutYes,
         confirmKey: const Key('logout_confirm'),
         tone: ProfileConfirmTone.destructive,
         confirmEnabled: true,
       ),
     );
-    // Dismiss (the ✕, Back, or a barrier tap) resolves false and does NOTHING.
+    // No, the ✕, Back and a barrier tap resolve false and do NOTHING.
     if (!confirmed) return;
     await auth.logout();
   }
@@ -354,7 +400,7 @@ class _Skeleton extends StatelessWidget {
       // than a phone, and a skeleton that overflows instead of scrolling would
       // make the placeholder shape lie about the content it stands in for.
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

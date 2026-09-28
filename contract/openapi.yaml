@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.22.0-m1
+  version: 3.23.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -907,6 +907,67 @@ paths:
         '204': { description: Stored (idempotent; one token per the single active device). }
         '400':
           description: "`validation_failed` — `token` absent, empty/whitespace-only, or longer than 4096 characters."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/terms-acceptance:
+    get:
+      tags: [profile]
+      x-stability: draft
+      operationId: getTermsAcceptance
+      summary: The currently required Terms version, and what the caller has accepted
+      description: >-
+        The caller's own record only — the student is taken from the access token; there is no id in
+        the path, the query or a body. `currentVersion` is the server-configured version the student
+        must accept, or `null` when none is configured (the feature is inert until one is — every
+        accept is then refused). `acceptedVersion` / `acceptedAtUtc` are the caller's most recent
+        acceptance, or `null`. `isCurrent` is `true` only when `currentVersion` is non-null and equals
+        `acceptedVersion`. The version is an opaque identifier; the backend serves no Terms text and
+        no link. This records the student's own acceptance; it is not parent consent.
+      responses:
+        '200':
+          description: The caller's Terms acceptance state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentVersion:  { type: [string, "null"], maxLength: 32 }
+                  acceptedVersion: { type: [string, "null"], maxLength: 32 }
+                  acceptedAtUtc:   { type: [string, "null"], format: date-time, description: Server-recorded UTC time of that acceptance. }
+                  isCurrent:       { type: boolean }
+                required: [currentVersion, acceptedVersion, acceptedAtUtc, isCurrent]
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    post:
+      tags: [profile]
+      x-stability: draft
+      operationId: acceptTerms
+      summary: Record that the caller accepts the currently required Terms version (idempotent)
+      description: >-
+        `termsVersion` must equal the `currentVersion` returned by `getTermsAcceptance`. The server
+        records the time — no timestamp is accepted from the client. Accepting a version already
+        accepted is `204` and changes nothing: the first acceptance time stands. A later version adds
+        a new record; earlier acceptances are kept. Acceptance is recorded, not enforced: no other
+        operation refuses a student who has not accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                termsVersion: { type: string, maxLength: 32 }
+              required: [termsVersion]
+      responses:
+        '204': { description: Recorded (idempotent — a repeat of an accepted version is a no-op). }
+        '400':
+          description: >-
+            `validation_failed` with a field error on `termsVersion` — absent, empty, not a string, or
+            not equal to the currently required version (including when no version is configured). The
+            response never states the required version; read it from `getTermsAcceptance`.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"

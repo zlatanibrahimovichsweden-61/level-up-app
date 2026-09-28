@@ -431,11 +431,39 @@
   "rewardsEarned": "REWARDS EARNED",
   "pointsAwarded": "+{points} Points",
   "@pointsAwarded": {
-    "description": "QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12).",
+    "description": "QuizSummary.pointsAwarded, rendered verbatim. The app never computes or previews a points figure (seif_fight S12). Since API→UI Wave 13 this whole phrase is the rewards line's accessibility label; the line itself paints pointsAwardedValue and pointsAwardedUnit as the frame's two runs.",
     "placeholders": {
       "points": {
         "type": "int",
         "example": "5"
+      }
+    }
+  },
+  "pointsAwardedValue": "+{points}",
+  "@pointsAwardedValue": {
+    "description": "The rewards line's first run, Figma 159:2335 (bold, lavender). QuizSummary.pointsAwarded verbatim. Painted left-to-right in every locale so Arabic keeps the sign on the left (KNOWN_BUGS BUG-003).",
+    "placeholders": {
+      "points": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "pointsAwardedUnit": "Points",
+  "@pointsAwardedUnit": {
+    "description": "The rewards line's second run, Figma 159:2337 (regular). The same word pointsAwarded ends with."
+  },
+  "quizResultSubtitle": "{subject} — {scope}",
+  "@quizResultSubtitle": {
+    "description": "The result header's second line, Figma 159:2250 'Biology — Cell Structure'. Both names are server copy (adr-018); only the separator is ours. When the subject is unknown the scope is shown alone.",
+    "placeholders": {
+      "subject": {
+        "type": "String",
+        "example": "Biology"
+      },
+      "scope": {
+        "type": "String",
+        "example": "Cell Structure"
       }
     }
   },
@@ -485,6 +513,10 @@
   "@subscriptionRequiredBody": {
     "description": "Provisional engineering copy (D-007): names the entitlement the 403 reports, with no price, link or destination (adr-049 §3). \"plan\", \"premium\" and \"pro\" are glossary-forbidden for base_subscription. Pending the designer — DESIGN_ISSUES #51."
   },
+  "explanationSubscriptionRequired": "AI explanations are available with a Level Up subscription. Subscribe to get step-by-step explanations and more learning features.",
+  "@explanationSubscriptionRequired": {
+    "description": "The getExplanation 403 subscription_required popup. VERBATIM the contract's approved copy (openapi.yaml, GET /questions/{questionId}/explanation, 403) — do not reword. Shown on the limit card under subscriptionRequiredTitle, with no price, link or buy button (adr-049 §3). Owner ruling 2026-09-26, API→UI Wave 12."
+  },
   "notNow": "Not now",
 
   "errorNotEnoughQuestions": "This lesson doesn't have enough questions for that quiz size. Try a shorter quiz.",
@@ -525,7 +557,8 @@
   },
   "logoutTitle": "Logout",
   "logoutBody": "Are you sure you want to log out?",
-  "logoutConfirm": "Logout",
+  "logoutNo": "No",
+  "logoutYes": "Yes",
   "goToUniTitle": "Go to Uni",
   "goToUniBody": "Are you sure you want to convert to the University track?",
   "goToUniWarning": "You can't go back again.",

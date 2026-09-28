@@ -38,6 +38,12 @@ enum LeaderboardScope {
     };
   }
 
+  /// The board a student sees first. The Leaderboard tab opens on it, and
+  /// Home's Top Student block shows its top three (owner, API→UI Wave 05,
+  /// 2026-09-24) — so both read the SAME `leaderboardProvider` instance and one
+  /// request serves the two.
+  static LeaderboardScope defaultFor(StudentProfile me) => scopesFor(me).first;
+
   /// The wire value. `name` already matches the contract's spelling exactly;
   /// this getter exists so call sites read as wire values rather than as Dart
   /// enum names that happen to coincide.

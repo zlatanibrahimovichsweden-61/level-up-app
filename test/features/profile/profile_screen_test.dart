@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/models/screen_state.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/screens/edit_profile_screen.dart';
 import 'package:level_up_app/features/profile/screens/profile_screen.dart';
+import 'package:level_up_app/features/profile/widgets/profile_header_card.dart';
 import 'package:level_up_app/features/profile/widgets/profile_menu_row.dart';
 import 'package:level_up_app/features/profile/widgets/profile_stat_card.dart';
 import 'package:mocktail/mocktail.dart';
@@ -564,6 +567,333 @@ void main() {
       await pumpProfileScreen(tester, profile: repo, locale: 'ar');
 
       expect(find.text('أنت غير متصل بالإنترنت'), findsOneWidget);
+    });
+  });
+
+  group('Wave 19: the frames (166:4416 · 180:4704 · 180:4445)', () {
+    /// The frame's 402-wide phone, so the dialog card is the frame's 345.
+    Future<ProviderContainer> phone(
+      WidgetTester tester, {
+      String locale = 'en',
+      ThemeData? theme,
+      MockProfileRepository? profile,
+      MockAuthRepository? auth,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(402, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      return pumpProfileScreen(
+        tester,
+        profile: profile ?? profileRepo(),
+        auth: auth,
+        locale: locale,
+        theme: theme,
+      );
+    }
+
+    Finder titleBar(String title) => find.ancestor(
+      of: find.text(title),
+      matching: find.byWidgetPredicate((w) => w is SizedBox && w.height == 35),
+    );
+
+    // The dialog card: the first Material under the Dialog.
+    Rect card(WidgetTester tester) => tester.getRect(
+      find
+          .descendant(of: find.byType(Dialog), matching: find.byType(Material))
+          .first,
+    );
+
+    Color fill(WidgetTester tester, String key) => tester
+        .widget<Material>(
+          find
+              .descendant(
+                of: find.byKey(Key(key)),
+                matching: find.byType(Material),
+              )
+              .first,
+        )
+        .color!;
+
+    CtaTone toneOf(WidgetTester tester, String key) => tester
+        .widget<PrimaryCta>(
+          find.ancestor(
+            of: find.byKey(Key(key)),
+            matching: find.byType(PrimaryCta),
+          ),
+        )
+        .tone;
+
+    Finder crossGlyph() => find.descendant(
+      of: find.byKey(const Key('profile_dialog_dismiss')),
+      matching: find.byType(SvgPicture),
+    );
+
+    group('the header (169:4631), not an AppBar', () {
+      for (final (name, theme, ink) in [
+        ('light', AppTheme.light, const Color(0xFF0E0E0E)),
+        ('dark', AppTheme.dark, const Color(0xFFFCFBF9)),
+      ]) {
+        testWidgets(
+          '$name: a 35 dp bar 16 from the top, the card 25 under it',
+          (tester) async {
+            await phone(tester, theme: theme);
+
+            expect(find.byType(AppBar), findsNothing);
+            final bar = tester.getRect(titleBar('Profile'));
+            expect(bar.top, 16);
+            expect(bar.height, 35);
+            expect(
+              tester.getRect(find.byType(ProfileHeaderCard)).top - bar.bottom,
+              25,
+            );
+            // The app's header style (h2, textPrimary): #57 / #99.
+            expect(tester.widget<Text>(find.text('Profile')).style!.color, ink);
+          },
+        );
+      }
+
+      testWidgets('the title is centred and is a heading to screen readers', (
+        tester,
+      ) async {
+        await phone(tester);
+
+        expect(tester.getCenter(find.text('Profile')).dx, 201);
+        expect(
+          tester.getSemantics(find.text('Profile')),
+          isSemantics(isHeader: true),
+        );
+      });
+
+      testWidgets('Arabic: the same bar, "الملف الشخصي" centred', (
+        tester,
+      ) async {
+        await phone(tester, locale: 'ar');
+
+        final bar = tester.getRect(titleBar('الملف الشخصي'));
+        expect(bar.top, 16);
+        expect(tester.getCenter(find.text('الملف الشخصي')).dx, 201);
+        expect(
+          tester.getRect(find.byType(ProfileHeaderCard)).top - bar.bottom,
+          25,
+        );
+      });
+
+      testWidgets('the skeleton starts 25 under the bar too', (tester) async {
+        final repo = MockProfileRepository();
+        when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+        when(repo.getMe).thenAnswer((_) => Completer<StudentProfile>().future);
+        await phone(tester, profile: repo);
+
+        final scroll = tester.widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView),
+        );
+        expect(
+          scroll.padding,
+          const EdgeInsetsDirectional.fromSTEB(20, 25, 20, 24),
+        );
+      });
+    });
+
+    group('Logout: the No / Yes pair (180:4757)', () {
+      late MockAuthRepository auth;
+
+      setUp(() {
+        auth = MockAuthRepository();
+        when(auth.logout).thenAnswer((_) async {});
+      });
+
+      Future<ProviderContainer> openLogout(
+        WidgetTester tester, {
+        String locale = 'en',
+        ThemeData? theme,
+      }) async {
+        final container = await phone(
+          tester,
+          locale: locale,
+          theme: theme,
+          auth: auth,
+        );
+        container.read(authControllerProvider.notifier).markAuthenticated();
+        await tapProfileKey(tester, 'profile_row_logout');
+        return container;
+      }
+
+      testWidgets('No, Yes and the ✕', (tester) async {
+        await openLogout(tester);
+        expect(find.text('No'), findsOneWidget);
+        expect(find.text('Yes'), findsOneWidget);
+        expect(find.byKey(const Key('profile_dialog_dismiss')), findsOneWidget);
+      });
+
+      testWidgets('Arabic copy: "لا" and "نعم"', (tester) async {
+        await openLogout(tester, locale: 'ar');
+        expect(find.text('لا'), findsOneWidget);
+        expect(find.text('نعم'), findsOneWidget);
+      });
+
+      testWidgets('No dismisses and does NOT log out', (tester) async {
+        final container = await openLogout(tester);
+
+        await tester.tap(find.text('No'));
+        await tester.pumpAndSettle();
+
+        verifyNever(auth.logout);
+        expect(
+          container.read(authControllerProvider),
+          isA<AuthAuthenticated>(),
+        );
+        expect(find.byType(Dialog), findsNothing);
+      });
+
+      testWidgets('Yes revokes, then signs out', (tester) async {
+        final container = await openLogout(tester);
+
+        await tester.tap(find.text('Yes'));
+        await tester.pumpAndSettle();
+
+        verify(auth.logout).called(1);
+        expect(
+          container.read(authControllerProvider),
+          isA<AuthUnauthenticated>().having(
+            (s) => s.reason,
+            'reason',
+            LogoutReason.userInitiated,
+          ),
+        );
+      });
+
+      testWidgets('geometry: 155 x 60 each, 5 apart, 15 in, 15 above the '
+          'card\'s bottom; the card is 345', (tester) async {
+        await openLogout(tester);
+
+        final c = card(tester);
+        final no = tester.getRect(find.byKey(const Key('logout_no')));
+        final yes = tester.getRect(find.byKey(const Key('logout_confirm')));
+        expect(c.width, 345);
+        expect(no.left - c.left, 15);
+        expect(no.size, const Size(155, 60));
+        expect(yes.left - no.right, 5);
+        expect(yes.size, const Size(155, 60));
+        expect(c.right - yes.right, 15);
+        expect(c.bottom - no.bottom, 15);
+      });
+
+      testWidgets('Arabic mirrors the pair: No at the reading start, on the '
+          'right (owner ruling, #102)', (tester) async {
+        await openLogout(tester, locale: 'ar');
+
+        final c = card(tester);
+        final no = tester.getRect(find.byKey(const Key('logout_no')));
+        final yes = tester.getRect(find.byKey(const Key('logout_confirm')));
+        expect(c.right - no.right, 15);
+        expect(no.left - yes.right, 5);
+        expect(yes.left - c.left, 15);
+      });
+
+      for (final (name, theme, yesFill, hex) in [
+        ('light', AppTheme.light, const Color(0xFF384F47), '#384F47'),
+        ('dark', AppTheme.dark, const Color(0xFFAE87E7), '#AE87E7'),
+      ]) {
+        testWidgets('$name: No #EF4444, Yes $hex, both shadow-only', (
+          tester,
+        ) async {
+          await openLogout(tester, theme: theme);
+
+          expect(fill(tester, 'logout_no'), const Color(0xFFEF4444));
+          expect(fill(tester, 'logout_confirm'), yesFill);
+          // Neither glows in dark (edit2 #12).
+          expect(toneOf(tester, 'logout_no'), CtaTone.destructive);
+          expect(toneOf(tester, 'logout_confirm'), CtaTone.shadowOnly);
+          for (final label in ['No', 'Yes']) {
+            expect(
+              tester.widget<Text>(find.text(label)).style?.color ??
+                  DefaultTextStyle.of(
+                    tester.element(find.text(label)),
+                  ).style.color,
+              const Color(0xFFFCFBF9),
+            );
+          }
+        });
+      }
+    });
+
+    group('the ✕ (180:4706)', () {
+      for (final (name, theme, ink, hex) in [
+        ('light', AppTheme.light, const Color(0xFF3F3F3F), '#3F3F3F'),
+        ('dark', AppTheme.dark, const Color(0xFFFCFBF9), '#FCFBF9'),
+      ]) {
+        testWidgets('$name: the frame\'s cross in $hex, 24 from the card\'s '
+            'start, a 48 x 48 target', (tester) async {
+          await phone(tester, theme: theme);
+          await tapProfileKey(tester, 'profile_row_logout');
+
+          final c = card(tester);
+          final glyph = tester.getRect(crossGlyph());
+          expect(glyph.size, const Size(23, 23));
+          expect(glyph.left - c.left, 24);
+          expect(
+            tester.getSize(find.byKey(const Key('profile_dialog_dismiss'))),
+            const Size(48, 48),
+          );
+          expect(
+            tester.widget<SvgPicture>(crossGlyph()).colorFilter,
+            ColorFilter.mode(ink, BlendMode.srcIn),
+          );
+        });
+      }
+
+      testWidgets('Arabic: 24 from the card\'s right, and clear of the title '
+          '(SF-08)', (tester) async {
+        await phone(tester, locale: 'ar');
+        await tapProfileKey(tester, 'profile_row_logout');
+
+        final c = card(tester);
+        final target = tester.getRect(
+          find.byKey(const Key('profile_dialog_dismiss')),
+        );
+        expect(c.right - tester.getRect(crossGlyph()).right, 24);
+        final title = tester.getRect(find.text('تسجيل الخروج').last);
+        expect(title.overlaps(target), isFalse);
+      });
+
+      testWidgets('a button named "Close", not an image (W11-7)', (
+        tester,
+      ) async {
+        await phone(tester);
+        await tapProfileKey(tester, 'profile_row_logout');
+
+        expect(
+          tester.widget<SvgPicture>(crossGlyph()).excludeFromSemantics,
+          isTrue,
+        );
+        expect(
+          tester
+              .widget<IconButton>(
+                find.byKey(const Key('profile_dialog_dismiss')),
+              )
+              .tooltip,
+          'Close',
+        );
+      });
+    });
+
+    testWidgets('Go to Uni keeps ONE button, 284 wide and centred (180:4572)', (
+      tester,
+    ) async {
+      await phone(tester);
+      await tapProfileKey(tester, 'profile_row_go_to_uni');
+
+      final c = card(tester);
+      final confirm = tester.getRect(
+        find.byKey(const Key('go_to_uni_confirm')),
+      );
+      expect(find.byKey(const Key('logout_no')), findsNothing);
+      expect(confirm.width, 284);
+      expect(confirm.left - c.left, 30.5);
+      expect(c.right - confirm.right, 30.5);
+      expect(
+        tester.widget<SvgPicture>(crossGlyph()).colorFilter,
+        const ColorFilter.mode(Color(0xFF3F3F3F), BlendMode.srcIn),
+      );
     });
   });
 }

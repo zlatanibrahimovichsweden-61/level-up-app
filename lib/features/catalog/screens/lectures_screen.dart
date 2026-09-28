@@ -23,9 +23,13 @@ import '../widgets/tree_list_row.dart';
 /// The selected quiz type is ephemeral UI state — `setState`, never a provider:
 /// it is not server data, and changing it must not touch the cached tree.
 class LecturesView extends StatefulWidget {
-  const LecturesView({super.key, required this.tree});
+  const LecturesView({super.key, required this.tree, this.subjectName});
 
   final UniversitySubjectTree tree;
+
+  /// Handed to `/quiz/setup` for its subject line (API→UI Wave 11). Null on a
+  /// cold deep link, where the subjects list was never fetched.
+  final String? subjectName;
 
   @override
   State<LecturesView> createState() => _LecturesViewState();
@@ -60,13 +64,17 @@ class _LecturesViewState extends State<LecturesView> {
             selected: _quizType,
             onSelected: (type) => setState(() => _selected = type),
           ),
-          const SizedBox(height: 16),
+          // 21 + the list's own top padding of 4 = the 25 every Lectures frame
+          // leaves between the tabs and the first row (`180:5354`, `180:5208`,
+          // dark `349:15962`, `337:11059`). API→UI Wave 08; this was 20.
+          const SizedBox(height: 21),
         ],
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
             itemCount: lectures.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            // 16, the same 94 dp pitch as Units. API→UI Wave 08; was 12.
+            separatorBuilder: (_, _) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final lecture = lectures[index];
               final counter = lecture.questionCounter;
@@ -90,6 +98,7 @@ class _LecturesViewState extends State<LecturesView> {
                     lectureId: lecture.id,
                     scopeName: lecture.name,
                     quizType: _quizType,
+                    subjectName: widget.subjectName,
                   ),
                 ),
               );

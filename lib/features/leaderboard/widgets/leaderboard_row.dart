@@ -24,7 +24,18 @@ class LeaderboardRow extends StatelessWidget {
 
   final LeaderboardEntry entry;
 
-  static const _avatarDiameter = 36.0;
+  /// Figma `134:3543`, 32 square, starting 40.1 from the row's leading edge
+  /// (`134:3542`, `left-[11.08%]`). It was 36 at 48 until the Wave 06 walk
+  /// (W06-4).
+  static const _avatarDiameter = 32.0;
+
+  /// The rank's column. The frame's digit is centred about 22 in from the
+  /// edge (22.2 for "4", 22.7 for "10"), and the avatar starts at 40. The
+  /// column keeps its 28 so it still holds "200" (the display bound, which
+  /// the frame never draws); the leading pad and the gap take the difference.
+  static const _rankColumn = 28.0;
+  static const _leadingPad = 8.0;
+  static const _rankToAvatar = 4.0;
 
   /// Figma `134:3538` (an ordinary row) and `134:3554` (the caller's own) are
   /// the same rectangle — 362 × 48, radius 12 — and differ only in fill. The
@@ -41,10 +52,9 @@ class LeaderboardRow extends StatelessWidget {
     final elevation = theme.extension<AppElevation>()!;
 
     final isMe = entry.isMe;
-    final foreground = isMe ? ext.podiumOnAccent : ext.textPrimary;
-    // The points column is a shade quieter than the name in the frame, on both
-    // the plain and the highlighted row.
-    final secondary = isMe ? ext.podiumOnAccent : ext.textSecondary;
+    // One colour for rank, name and points, on both rows and both canvases:
+    // the frame draws the points no quieter than the name (W06-2).
+    final foreground = isMe ? ext.podiumOnAccent : ext.leaderboardRowText;
 
     return Semantics(
       selected: isMe,
@@ -53,7 +63,7 @@ class LeaderboardRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(_radius),
         ),
         height: _height,
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 16, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(_leadingPad, 0, 16, 0),
         // `leaderboardRowFill` now, not `cardFill`: the frame fills an
         // ordinary row pure white in light and a 20% wash in dark, and the
         // near-white `cardFill` was standing in for the first of those.
@@ -72,14 +82,14 @@ class LeaderboardRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 28,
+              width: _rankColumn,
               child: Text(
                 '${entry.rank}',
                 textAlign: TextAlign.center,
                 style: AppType.bodyMediumStrong.copyWith(color: foreground),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: _rankToAvatar),
             BoardAvatar(url: entry.avatarUrl, diameter: _avatarDiameter),
             const SizedBox(width: 12),
             Expanded(
@@ -95,7 +105,7 @@ class LeaderboardRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               l10n.leaderboardPoints(entry.points),
-              style: AppType.bodyMedium.copyWith(color: secondary),
+              style: AppType.bodyMedium.copyWith(color: foreground),
             ),
           ],
         ),

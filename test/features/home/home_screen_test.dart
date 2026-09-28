@@ -9,11 +9,15 @@ import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/home/screens/home_screen.dart';
 import 'package:level_up_app/features/home/widgets/coming_soon_section.dart';
 import 'package:level_up_app/features/home/widgets/level_card.dart';
+import 'package:level_up_app/features/home/widgets/top_student_section.dart';
+import 'package:level_up_app/features/leaderboard/models/leaderboard_models.dart';
+import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../leaderboard/leaderboard_fixtures.dart';
 import '../profile/profile_fixtures.dart';
 
 /// Home · Figma `337:5303`. Covers the four screen states (there is no Empty —
@@ -21,11 +25,27 @@ import '../profile/profile_fixtures.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockLeaderboardRepository extends Mock
+    implements LeaderboardRepository {}
+
 void main() {
+  setUpAll(() => registerFallbackValue(LeaderboardScope.system));
+
   late _MockProfileRepository repo;
+  late _MockLeaderboardRepository board;
 
   setUp(() {
     repo = _MockProfileRepository();
+    // Top Student reads `GET /leaderboard` since Wave 05. Its own states are
+    // `top_student_section_test.dart`; here it only has to resolve.
+    board = _MockLeaderboardRepository();
+    when(
+      () => board.getLeaderboard(
+        scope: any(named: 'scope'),
+        cursor: any(named: 'cursor'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => boardPage(ranks: [1, 2, 3]));
     // Entitlements are fetched independently of Home's own rendering; stub it
     // so nothing is left unstubbed if the provider is ever read here.
     when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
@@ -41,6 +61,7 @@ void main() {
       ProviderScope(
         overrides: [
           profileRepositoryProvider.overrideWithValue(repo),
+          leaderboardRepositoryProvider.overrideWithValue(board),
           isOnlineProvider.overrideWith((ref) => Stream.value(!offline)),
         ],
         child: MaterialApp(
@@ -79,15 +100,17 @@ void main() {
       expect(find.text('2,450 / 4,000'), findsOneWidget);
     });
 
-    testWidgets('the three draft-endpoint sections are stubbed, not faked', (
+    testWidgets('the two draft-endpoint sections are stubbed, not faked', (
       tester,
     ) async {
       await pumpHome(tester);
 
       expect(find.text('Daily Tasks'), findsOneWidget);
       expect(find.text('Continue Learning'), findsOneWidget);
+      // Top Student is real since Wave 05 — its rows come from the board.
       expect(find.text('Top Student'), findsOneWidget);
-      expect(find.text('Coming soon'), findsNWidgets(3));
+      expect(find.text('Student 1'), findsOneWidget);
+      expect(find.text('Coming soon'), findsNWidgets(2));
 
       // None of the designer's mock rows may reach a real student.
       for (final fake in [
@@ -98,6 +121,27 @@ void main() {
       ]) {
         expect(find.text(fake), findsNothing, reason: '$fake is mock data');
       }
+    });
+
+    // Wave 05: the board is Home's second call. Its failure is the block's
+    // state, never the screen's.
+    testWidgets('a failed board leaves the rest of Home standing', (
+      tester,
+    ) async {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => throw const UnknownException());
+      await pumpHome(tester);
+      await tester.pump();
+
+      expect(find.byType(LevelCard), findsOneWidget);
+      expect(find.text('Daily Tasks'), findsOneWidget);
+      expect(find.text('Something went wrong'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Retry'), findsOneWidget);
     });
 
     testWidgets('renders in dark theme too', (tester) async {
@@ -220,7 +264,7 @@ void main() {
       await pumpHome(tester);
 
       expect(find.text('Learning Tools'), findsOneWidget);
-      expect(find.text('Coming soon'), findsNWidgets(4));
+      expect(find.text('Coming soon'), findsNWidgets(3));
       // Never drawn as tappable cards a student can fall into.
       expect(find.text('Flash Card'), findsNothing);
       expect(find.text('Practices'), findsNothing);
@@ -231,7 +275,7 @@ void main() {
       await pumpHome(tester);
 
       expect(find.text('Learning Tools'), findsNothing);
-      expect(find.text('Coming soon'), findsNWidgets(3));
+      expect(find.text('Coming soon'), findsNWidgets(2));
     });
 
     testWidgets('Arabic labels the section in Arabic', (tester) async {
@@ -253,7 +297,7 @@ void main() {
         .map((s) => s.surface)
         .toList();
 
-    testWidgets('school: Daily Tasks, Continue Learning, Top Student', (
+    testWidgets('school: Daily Tasks, Continue Learning — then Top Student', (
       tester,
     ) async {
       when(repo.getMe).thenAnswer((_) async => schoolProfile());
@@ -262,8 +306,9 @@ void main() {
       expect(surfaces(tester), [
         ComingSoonSurface.dailyTasks,
         ComingSoonSurface.continueLearning,
-        ComingSoonSurface.topStudent,
       ]);
+      // Wave 05: a real block now, no longer a placeholder.
+      expect(find.byType(TopStudentSection), findsOneWidget);
     });
 
     testWidgets('university inserts Learning Tools, and it stays PLAIN', (
@@ -279,8 +324,8 @@ void main() {
         ComingSoonSurface.dailyTasks,
         ComingSoonSurface.plain,
         ComingSoonSurface.continueLearning,
-        ComingSoonSurface.topStudent,
       ]);
+      expect(find.byType(TopStudentSection), findsOneWidget);
     });
 
     for (final (label, profile, track) in [

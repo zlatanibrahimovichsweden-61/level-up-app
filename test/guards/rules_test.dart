@@ -493,4 +493,50 @@ abstract class Beta with _\$Beta {
       expect(dartClassBody('enum Grade { gotIt, again }', 'Grade'), isNull);
     });
   });
+
+  group('mirror-glyph swaps (the RTL double flip)', () {
+    test('flags the helper Wave 07 removed, across lines', () {
+      final v = mirroredGlyphSwaps([
+        src('''
+IconData forwardChevron(BuildContext context) =>
+    Directionality.of(context) == TextDirection.rtl
+    ? Icons.chevron_left
+    : Icons.chevron_right;
+'''),
+      ]);
+      expect(v, [
+        'lib/features/x/x.dart: Icons.chevron_left / Icons.chevron_right',
+      ]);
+    });
+
+    test('flags any condition and the back-arrow pair, in either order', () {
+      final v = mirroredGlyphSwaps([
+        src(
+          'final i = rtl ? Icons.arrow_forward_ios : Icons.arrow_back_ios_new;',
+        ),
+      ]);
+      expect(v, hasLength(1));
+    });
+
+    test('allows the unconditional LTR glyph', () {
+      final v = mirroredGlyphSwaps([
+        src('const IconData forwardChevron = Icons.chevron_right;'),
+      ]);
+      expect(v, isEmpty);
+    });
+
+    test('allows a conditional between unrelated glyphs', () {
+      final v = mirroredGlyphSwaps([
+        src('Icon(hidden ? Icons.visibility : Icons.visibility_off)'),
+      ]);
+      expect(v, isEmpty);
+    });
+
+    test('a COMMENT showing the old helper is not a violation', () {
+      final v = mirroredGlyphSwaps([
+        src('// was: rtl ? Icons.chevron_left : Icons.chevron_right'),
+      ]);
+      expect(v, isEmpty, reason: 'prose must not trip a structural rule');
+    });
+  });
 }

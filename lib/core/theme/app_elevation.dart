@@ -535,7 +535,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.dailyTasksGlass,
     required this.dailyTasksBacklightSchool,
     required this.dailyTasksBacklightUniversity,
-    required this.topStudentTopBorderWidth,
+    required this.topStudentBorderWidth,
     required this.topStudentGlass,
     required this.topStudentBacklightSchool,
     required this.continueLearningShadows,
@@ -560,6 +560,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.quizPrevButtonGlass,
     required this.quizPrevButtonRadius,
     required this.quizQuestionCardBorderWidth,
+    required this.quizSetupDividerWidth,
     required this.resultBucketShadows,
     required this.resultBucketGlass,
     required this.rewardsCardShadows,
@@ -709,9 +710,10 @@ class AppElevation extends ThemeExtension<AppElevation> {
   /// offset from the school one.
   final Backlight? dailyTasksBacklightUniversity;
 
-  /// Top Student's top-only hairline, `59:2090` / `337:5460`. The same width in
-  /// both canvases, unlike every other border here.
-  final double topStudentTopBorderWidth;
+  /// Top Student's hairline — all four sides and the row dividers —
+  /// `59:2090` / `337:5460`. The same width in both canvases, unlike every
+  /// other border here.
+  final double topStudentBorderWidth;
 
   /// Top Student, dark only — G9. `337:5460`.
   final GlassStyle? topStudentGlass;
@@ -808,6 +810,10 @@ class AppElevation extends ThemeExtension<AppElevation> {
 
   /// The quiz question card's hairline: 0.5 light, 0.2 dark.
   final double quizQuestionCardBorderWidth;
+
+  /// The rule under the setup screen's scope header: 1.18 light (`146:2287`),
+  /// 0.5 dark (`337:6268`). Its colour is `AppColors.quizDivider`.
+  final double quizSetupDividerWidth;
 
   /// The result screen's two stat buckets. Light `159:2289`; dark `337:6667`
   /// none.
@@ -999,7 +1005,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     dailyTasksGlass: null,
     dailyTasksBacklightSchool: null,
     dailyTasksBacklightUniversity: null,
-    topStudentTopBorderWidth: 1.20791,
+    topStudentBorderWidth: 1.20791,
     topStudentGlass: null,
     topStudentBacklightSchool: null,
     continueLearningShadows: const [
@@ -1063,6 +1069,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     quizPrevButtonGlass: null,
     quizPrevButtonRadius: 9,
     quizQuestionCardBorderWidth: 0.5,
+    quizSetupDividerWidth: 1.18,
     resultBucketShadows: const [
       FigmaShadow(color: _black25, offset: Offset(0.02, 0.02), blur: 2),
     ],
@@ -1208,7 +1215,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
       size: const Size(133, 21),
       color: AppColors.dark.backlight,
     ),
-    topStudentTopBorderWidth: 1.20791,
+    topStudentBorderWidth: 1.20791,
     topStudentGlass: _g9,
     topStudentBacklightSchool: Backlight(
       offset: const Offset(3, 7.57),
@@ -1279,6 +1286,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     quizPrevButtonGlass: _g13,
     quizPrevButtonRadius: 10,
     quizQuestionCardBorderWidth: 0.2,
+    quizSetupDividerWidth: 0.5,
     resultBucketShadows: const [],
     resultBucketGlass: _g5,
     rewardsCardShadows: const [],
@@ -1405,7 +1413,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? dailyTasksGlass,
     Backlight? dailyTasksBacklightSchool,
     Backlight? dailyTasksBacklightUniversity,
-    double? topStudentTopBorderWidth,
+    double? topStudentBorderWidth,
     GlassStyle? topStudentGlass,
     Backlight? topStudentBacklightSchool,
     List<FigmaShadow>? continueLearningShadows,
@@ -1430,6 +1438,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? quizPrevButtonGlass,
     double? quizPrevButtonRadius,
     double? quizQuestionCardBorderWidth,
+    double? quizSetupDividerWidth,
     List<FigmaShadow>? resultBucketShadows,
     GlassStyle? resultBucketGlass,
     List<FigmaShadow>? rewardsCardShadows,
@@ -1508,8 +1517,8 @@ class AppElevation extends ThemeExtension<AppElevation> {
           dailyTasksBacklightSchool ?? this.dailyTasksBacklightSchool,
       dailyTasksBacklightUniversity:
           dailyTasksBacklightUniversity ?? this.dailyTasksBacklightUniversity,
-      topStudentTopBorderWidth:
-          topStudentTopBorderWidth ?? this.topStudentTopBorderWidth,
+      topStudentBorderWidth:
+          topStudentBorderWidth ?? this.topStudentBorderWidth,
       topStudentGlass: topStudentGlass ?? this.topStudentGlass,
       topStudentBacklightSchool:
           topStudentBacklightSchool ?? this.topStudentBacklightSchool,
@@ -1541,6 +1550,8 @@ class AppElevation extends ThemeExtension<AppElevation> {
       quizPrevButtonRadius: quizPrevButtonRadius ?? this.quizPrevButtonRadius,
       quizQuestionCardBorderWidth:
           quizQuestionCardBorderWidth ?? this.quizQuestionCardBorderWidth,
+      quizSetupDividerWidth:
+          quizSetupDividerWidth ?? this.quizSetupDividerWidth,
       resultBucketShadows: resultBucketShadows ?? this.resultBucketShadows,
       resultBucketGlass: resultBucketGlass ?? this.resultBucketGlass,
       rewardsCardShadows: rewardsCardShadows ?? this.rewardsCardShadows,
@@ -1715,9 +1726,9 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.dailyTasksBacklightUniversity,
         t,
       ),
-      topStudentTopBorderWidth: lerpDouble(
-        topStudentTopBorderWidth,
-        other.topStudentTopBorderWidth,
+      topStudentBorderWidth: lerpDouble(
+        topStudentBorderWidth,
+        other.topStudentBorderWidth,
         t,
       )!,
       topStudentGlass: GlassStyle.lerp(
@@ -1830,6 +1841,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
       quizQuestionCardBorderWidth: lerpDouble(
         quizQuestionCardBorderWidth,
         other.quizQuestionCardBorderWidth,
+        t,
+      )!,
+      quizSetupDividerWidth: lerpDouble(
+        quizSetupDividerWidth,
+        other.quizSetupDividerWidth,
         t,
       )!,
       resultBucketShadows: FigmaShadow.lerpList(
@@ -2032,7 +2048,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     dailyTasksGlass,
     dailyTasksBacklightSchool,
     dailyTasksBacklightUniversity,
-    topStudentTopBorderWidth,
+    topStudentBorderWidth,
     topStudentGlass,
     topStudentBacklightSchool,
     continueLearningShadows,
@@ -2057,6 +2073,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     quizPrevButtonGlass,
     quizPrevButtonRadius,
     quizQuestionCardBorderWidth,
+    quizSetupDividerWidth,
     resultBucketShadows,
     resultBucketGlass,
     rewardsCardShadows,

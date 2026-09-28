@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
@@ -9,10 +11,12 @@ import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
 import 'package:level_up_app/features/profile/notifier/me_notifier.dart';
 import 'package:level_up_app/features/quiz/models/explanation_result.dart';
+import 'package:level_up_app/features/quiz/models/quiz.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_result_screen.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_screen.dart';
 import 'package:level_up_app/features/quiz/widgets/limit_sheet.dart';
 import 'package:level_up_app/features/quiz/widgets/question_option_tile.dart';
+import 'package:level_up_app/features/quiz/widgets/question_stem_text.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'quiz_fixtures.dart';
@@ -69,6 +73,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(finder);
   }
+
+  /// The previous pill's chevron, by asset. Not `find.byType(SvgPicture)`:
+  /// since API→UI Wave 12 the header's ✕ is an SVG too.
+  final chevron = find.byWidgetPredicate(
+    (w) =>
+        w is SvgPicture &&
+        w.bytesLoader is SvgAssetLoader &&
+        (w.bytesLoader as SvgAssetLoader).assetName ==
+            'assets/icons/chevron.svg',
+  );
 
   OptionTileState stateOf(WidgetTester tester, String optionText) => tester
       .widget<QuestionOptionTile>(
@@ -461,6 +475,39 @@ void main() {
       verify(() => quiz.finishQuiz('quiz-1')).called(1);
     });
 
+    testWidgets('the result carries the subject the quiz was launched with '
+        '(API→UI Wave 13)', (tester) async {
+      final quiz = MockQuizRepository();
+      stubGrade(quiz);
+      when(() => quiz.finishQuiz(any())).thenAnswer(
+        (_) async => quizSummary(
+          score: 1,
+          totalQuestions: 1,
+          answeredCount: 1,
+          pointsAwarded: 1,
+        ),
+      );
+
+      final harness = await pumpQuizApp(tester, quiz: quiz);
+      harness.router.push(
+        '/quiz/quiz-1',
+        extra: QuizScreenArgs(
+          quiz: quizFor(questionCount: 1),
+          subjectName: 'Biology',
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Finish'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(QuizResultScreen), findsOneWidget);
+      expect(find.text('Biology — Cell Structure'), findsOneWidget);
+    });
+
     testWidgets('finishing invalidates /me so Home shows the new points', (
       tester,
     ) async {
@@ -541,7 +588,7 @@ void main() {
     ) async {
       await openQuiz(tester);
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byKey(const Key('quiz_close')));
       await tester.pumpAndSettle();
 
       expect(find.text('Leave this quiz?'), findsOneWidget);
@@ -626,17 +673,14 @@ void main() {
     }
 
     ElevatedSurface pill(WidgetTester tester) => tester.widget<ElevatedSurface>(
-      find.ancestor(
-        of: find.byType(SvgPicture),
-        matching: find.byType(ElevatedSurface),
-      ),
+      find.ancestor(of: chevron, matching: find.byType(ElevatedSurface)),
     );
 
     testWidgets('does not exist on question 1', (tester) async {
       await openQuiz(tester);
 
       expect(find.byType(ElevatedSurface), findsNothing);
-      expect(find.byType(SvgPicture), findsNothing);
+      expect(chevron, findsNothing);
     });
 
     testWidgets('is a 79 x 58 pill once past question 1', (tester) async {
@@ -699,7 +743,7 @@ void main() {
     ) async {
       await openOnQuestionTwo(tester);
 
-      await tester.tap(find.byType(SvgPicture));
+      await tester.tap(chevron);
       await tester.pumpAndSettle();
 
       // The Bloc is untouched by this wave; this proves the wiring survived
@@ -724,22 +768,12 @@ void main() {
     ) async {
       await openOnQuestionTwo(tester);
       final ltr = tester.widget<Transform>(
-        find
-            .ancestor(
-              of: find.byType(SvgPicture),
-              matching: find.byType(Transform),
-            )
-            .first,
+        find.ancestor(of: chevron, matching: find.byType(Transform)).first,
       );
 
       await openOnQuestionTwo(tester, locale: 'ar');
       final rtl = tester.widget<Transform>(
-        find
-            .ancestor(
-              of: find.byType(SvgPicture),
-              matching: find.byType(Transform),
-            )
-            .first,
+        find.ancestor(of: chevron, matching: find.byType(Transform)).first,
       );
 
       // The shared asset points RIGHT, so "back" is its flip in LTR and
@@ -755,10 +789,7 @@ void main() {
       await openOnQuestionTwo(tester);
 
       final pillRect = tester.getRect(
-        find.ancestor(
-          of: find.byType(SvgPicture),
-          matching: find.byType(ElevatedSurface),
-        ),
+        find.ancestor(of: chevron, matching: find.byType(ElevatedSurface)),
       );
       final ctaRect = tester.getRect(find.byType(FilledButton));
       // Figma: the pill ends at x 99 and the CTA starts at 114.
@@ -813,13 +844,390 @@ void main() {
     });
   });
 
+  // ---------------------------------------------------- API→UI Wave 12 -----
+  group('Wave 12: the frames (159:845 · 159:1695 · 216:2973)', () {
+    Finder close() => find.byKey(const Key('quiz_close'));
+    Finder header() => find.byKey(const Key('quiz_header'));
+    Finder card() => find.byKey(const Key('quiz_question_card'));
+
+    Finder svg(String asset) => find.byWidgetPredicate(
+      (w) =>
+          w is SvgPicture &&
+          w.bytesLoader is SvgAssetLoader &&
+          (w.bytesLoader as SvgAssetLoader).assetName == asset,
+    );
+
+    /// The frame's own ✕ (`159:1227`), inside the button.
+    Finder cross() => find.descendant(
+      of: close(),
+      matching: svg('assets/icons/quiz_close.svg'),
+    );
+
+    BorderSide rule(WidgetTester tester) =>
+        ((tester.widget<Container>(header()).decoration! as BoxDecoration)
+                    .border!
+                as Border)
+            .bottom;
+
+    // W12-1. It was a bare Material `Icons.close`: #0E0E0E in light, no name.
+    testWidgets('the ✕ is the frame\'s 30 dp cross on a 48 dp target', (
+      tester,
+    ) async {
+      await openQuiz(tester);
+
+      final glyph = tester.widget<SvgPicture>(cross());
+      expect(glyph.width, 30);
+      expect(glyph.height, 30);
+      expect(
+        glyph.colorFilter,
+        const ColorFilter.mode(Color(0xFF384F47), BlendMode.srcIn),
+      );
+      final box = tester.getRect(cross());
+      final target = tester.getRect(close());
+      expect(target.size, const Size(48, 48));
+      expect(target.center, box.center);
+      // `159:1227`: 16 in from the start edge, 16 under the header's top.
+      expect(box.left - tester.getRect(header()).left, 16);
+      expect(box.top - tester.getRect(header()).top, 16);
+    });
+
+    testWidgets('TalkBack reads the ✕ as a Close button, not an image', (
+      tester,
+    ) async {
+      await openQuiz(tester);
+
+      expect(
+        tester.getSemantics(close()),
+        isSemantics(
+          tooltip: 'Close',
+          isButton: true,
+          isImage: false,
+          hasTapAction: true,
+        ),
+      );
+    });
+
+    testWidgets('Arabic mirrors the ✕: 16 from the right edge', (tester) async {
+      await openQuiz(tester, locale: 'ar');
+
+      expect(
+        tester.getRect(header()).right - tester.getRect(cross()).right,
+        16,
+      );
+      expect(find.byTooltip('إغلاق'), findsOneWidget);
+    });
+
+    testWidgets('dark: the ✕ is #FCFBF9', (tester) async {
+      await openQuiz(tester, theme: AppTheme.dark);
+
+      expect(
+        tester.widget<SvgPicture>(cross()).colorFilter,
+        const ColorFilter.mode(Color(0xFFFCFBF9), BlendMode.srcIn),
+      );
+    });
+
+    for (final (name, theme) in [
+      ('light', AppTheme.light),
+      ('dark', AppTheme.dark),
+    ]) {
+      // W12-7 / W12-8 / W12-9: `159:1224` and `337:9202` draw the same
+      // header chrome on both canvases.
+      testWidgets('$name: the header is 89.18 over a 1.18 violet-10% rule, '
+          'with a lavender bar and a #7070A0 counter', (tester) async {
+        await openQuiz(tester, theme: theme);
+
+        expect(
+          rule(tester),
+          const BorderSide(
+            color: Color.fromRGBO(124, 58, 237, 0.1),
+            width: 1.18,
+          ),
+        );
+        expect(tester.getSize(header()).height, moreOrLessEquals(89.18));
+        final bar = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator),
+        );
+        expect(bar.valueColor!.value, const Color(0xFFAE87E7));
+        expect(
+          tester.widget<Text>(find.text('1/3')).style!.color,
+          const Color(0xFF7070A0),
+        );
+      });
+    }
+
+    // W12-10 / W12-11.
+    testWidgets('the question card: 25 under the header, #384F47 text 10 '
+        'under its label, 22 over the options', (tester) async {
+      await openQuiz(tester);
+
+      final cardRect = tester.getRect(card());
+      expect(cardRect.top - tester.getRect(header()).bottom, 25);
+      expect(
+        tester.getRect(find.text('Question q1?')).top -
+            tester.getRect(find.text('QUESTION 1')).bottom,
+        10,
+      );
+      expect(
+        tester.widget<Text>(find.text('Question q1?')).style!.color,
+        const Color(0xFF384F47),
+      );
+      expect(
+        tester.getRect(find.byType(QuestionOptionTile).first).top -
+            cardRect.bottom,
+        22,
+      );
+    });
+
+    testWidgets('dark: the question text stays #FCFBF9', (tester) async {
+      await openQuiz(tester, theme: AppTheme.dark);
+
+      expect(
+        tester.widget<Text>(find.text('Question q1?')).style!.color,
+        const Color(0xFFFCFBF9),
+      );
+    });
+
+    // W12-6 (owner ruling: the whole image, no crop).
+    testWidgets('the photo sits ABOVE the question card, 22 apart, at '
+        'radius 17 with the card\'s hairline', (tester) async {
+      // CachedNetworkImage's cache manager asks path_provider for a folder.
+      const pathProvider = MethodChannel('plugins.flutter.io/path_provider');
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(
+        pathProvider,
+        (_) async => '.dart_tool/quiz_image_cache',
+      );
+      addTearDown(() => messenger.setMockMethodCallHandler(pathProvider, null));
+      final harness = await pumpQuizApp(tester);
+      harness.router.push(
+        '/quiz/quiz-1',
+        extra: Quiz.fromJson({
+          ...quizJson(questionCount: 1),
+          'questions': [
+            questionJson('q1', imageUrl: 'https://example.invalid/q1.webp'),
+          ],
+        }),
+      );
+      // Not pumpAndSettle: the image placeholder spins.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final image = find.byKey(const Key('quiz_question_image'));
+      final imageRect = tester.getRect(image);
+      expect(imageRect.top - tester.getRect(header()).bottom, 25);
+      expect(tester.getRect(card()).top - imageRect.bottom, 22);
+      // The frame's box height, for the moments before the image is in.
+      expect(imageRect.height, 189);
+      expect(
+        tester.widget<Container>(image).foregroundDecoration,
+        BoxDecoration(
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: const Color(0xFF4B675E), width: 0.5),
+        ),
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    // W12-2. `suppressesRetry` used to cover account_pending_deletion only.
+    testWidgets('a 409 quiz_already_finished shows the copy and NO Retry', (
+      tester,
+    ) async {
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.submitAnswer(
+          quizId: any(named: 'quizId'),
+          questionId: any(named: 'questionId'),
+          optionId: any(named: 'optionId'),
+        ),
+      ).thenThrow(
+        const ApiException(status: 409, code: 'quiz_already_finished'),
+      );
+
+      await openQuiz(tester, quiz: quiz);
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('This quiz has already been submitted.'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsNothing);
+      // The way out is still there.
+      expect(close(), findsOneWidget);
+    });
+
+    // W12-5 (owner ruling: build the contract's popup, verbatim).
+    Future<MockQuizRepository> askForLockedExplanation(
+      WidgetTester tester, {
+      String locale = 'en',
+    }) async {
+      final quiz = MockQuizRepository();
+      stubGrade(quiz, explanationAvailable: true);
+      when(() => quiz.getExplanation(any())).thenThrow(
+        const ApiException(status: 403, code: 'subscription_required'),
+      );
+      await openQuiz(tester, quiz: quiz, locale: locale);
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      await tapVisible(
+        tester,
+        find.text(locale == 'ar' ? 'اعرض الشرح' : 'Show explanation'),
+      );
+      await tester.pumpAndSettle();
+      return quiz;
+    }
+
+    testWidgets('explanation 403 subscription_required opens the contract '
+        'popup, verbatim, on the limit card', (tester) async {
+      await askForLockedExplanation(tester);
+
+      expect(find.byType(LimitSheet), findsOneWidget);
+      expect(find.text('Subscription Required'), findsOneWidget);
+      expect(
+        find.text(
+          'AI explanations are available with a Level Up subscription. '
+          'Subscribe to get step-by-step explanations and more learning '
+          'features.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('after the popup the button stays, and asking again asks '
+        'the server again', (tester) async {
+      final quiz = await askForLockedExplanation(tester);
+      await tester.tap(find.byKey(const Key('limit_sheet_close')));
+      await tester.pumpAndSettle();
+      expect(find.byType(LimitSheet), findsNothing);
+
+      // The contract renders the button from `explanationAvailable`, and the
+      // popup has just said an explanation exists.
+      expect(
+        find.text('No explanation is available for this question.'),
+        findsNothing,
+      );
+      await tapVisible(tester, find.text('Show explanation'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LimitSheet), findsOneWidget);
+      // The server decides, every time: the student may have subscribed on
+      // the website since.
+      verify(() => quiz.getExplanation('q1')).called(2);
+    });
+
+    testWidgets('paging back to that question does not reopen it', (
+      tester,
+    ) async {
+      await askForLockedExplanation(tester);
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(chevron);
+      await tester.pumpAndSettle();
+
+      expect(find.text('QUESTION 1'), findsOneWidget);
+      expect(find.byType(LimitSheet), findsNothing);
+    });
+
+    testWidgets('Arabic: the owner-approved copy', (tester) async {
+      await askForLockedExplanation(tester, locale: 'ar');
+
+      expect(find.text('الاشتراك مطلوب'), findsOneWidget);
+      expect(
+        find.text(
+          'شروحات الذكاء الاصطناعي متاحة مع اشتراك Level Up. اشترك لتحصل '
+          'على شروحات خطوة بخطوة ومزايا تعليمية أخرى.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    // Owner ruling: the frame's header AI icon is left out (DESIGN_ISSUES
+    // #95). A guard, not a fix: it was never built.
+    testWidgets('the header carries no AI icon, before or after grading', (
+      tester,
+    ) async {
+      final quiz = MockQuizRepository();
+      stubGrade(quiz, explanationAvailable: true);
+      await openQuiz(tester, quiz: quiz);
+      final inHeader = find.descendant(
+        of: header(),
+        matching: svg('assets/icons/ai_education.svg'),
+      );
+      expect(header(), findsOneWidget);
+      expect(inHeader, findsNothing);
+
+      await tester.tap(find.text('Option 0'));
+      await tester.pump();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
+      expect(inHeader, findsNothing);
+    });
+  });
+
+  // ------------------------------------------------------------ Wave 14 -----
+  group('the question text (openapi.yaml:2703, API→UI Wave 14)', () {
+    Future<void> openWithStem(
+      WidgetTester tester,
+      String text, {
+      String locale = 'en',
+    }) async {
+      final harness = await pumpQuizApp(tester, locale: locale);
+      final json = quizJson();
+      (json['questions'] as List<dynamic>)[0] = <String, dynamic>{
+        ...questionJson('q1'),
+        'text': text,
+      };
+      harness.router.push('/quiz/quiz-1', extra: Quiz.fromJson(json));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the stem draws <u>…</u> as an underline, never the tags', (
+      tester,
+    ) async {
+      // "Plain text; only <u>…</u> markup allowed." The page used to draw
+      // the tags (DESIGN_ISSUES #88) and TalkBack read them out.
+      final handle = tester.ensureSemantics();
+      await openWithStem(tester, 'Which <u>organelle</u> makes ATP?');
+
+      expect(find.text('Which organelle makes ATP?'), findsOneWidget);
+      expect(find.textContaining('<u>'), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('<u>|</u>')), findsNothing);
+      expect(find.byType(QuestionStemText), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('an Arabic stem is its own RTL paragraph in the English app', (
+      tester,
+    ) async {
+      await openWithStem(tester, 'أي من الخيارات التالية يصف <u>التركيب</u>؟');
+
+      final p = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.byType(QuestionStemText),
+          matching: find.byType(RichText),
+        ),
+      );
+      expect(p.textDirection, TextDirection.rtl);
+      // Set from the UI's start, as the plain Text was.
+      expect(p.textAlign, TextAlign.left);
+    });
+  });
+
   // --------------------------------------------------------------- 7.10 -----
   group('the exit dialog', () {
     testWidgets('it wears the app dialog scrim rather than Material\'s '
         'barrier', (tester) async {
       await openQuiz(tester);
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(find.byKey(const Key('quiz_close')));
       await tester.pumpAndSettle();
 
       expect(find.text('Leave this quiz?'), findsOneWidget);

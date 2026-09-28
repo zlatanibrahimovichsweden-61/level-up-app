@@ -267,6 +267,43 @@ void main() {
       },
     );
 
+    // API→UI Wave 12. The shell withholds Retry on this code
+    // (`suppressesRetry`); this pins that the Bloc never re-sends it on its
+    // own either. A guard, not a fix.
+    blocTest<QuizBloc, QuizState>(
+      'a 409 quiz_already_finished lands on AnswerFailed, sent ONCE',
+      build: build,
+      setUp: () {
+        when(
+          () => repo.submitAnswer(
+            quizId: any(named: 'quizId'),
+            questionId: any(named: 'questionId'),
+            optionId: any(named: 'optionId'),
+          ),
+        ).thenThrow(
+          const ApiException(status: 409, code: 'quiz_already_finished'),
+        );
+      },
+      seed: () => QuizInProgress(started(), selectedOptionId: 'q1-opt0'),
+      act: (bloc) => bloc.add(const AnswerSubmitted()),
+      wait: const Duration(milliseconds: 50),
+      expect: () => [
+        isA<AnswerConfirming>(),
+        isA<AnswerFailed>().having(
+          (s) => (s.error as ApiException).code,
+          'code',
+          'quiz_already_finished',
+        ),
+      ],
+      verify: (_) => verify(
+        () => repo.submitAnswer(
+          quizId: 'quiz-1',
+          questionId: 'q1',
+          optionId: 'q1-opt0',
+        ),
+      ).called(1),
+    );
+
     blocTest<QuizBloc, QuizState>(
       'AnswerRetried does nothing when there is no failure to retry',
       build: build,
@@ -529,25 +566,63 @@ void main() {
       verify: (_) => verifyNever(() => repo.getExplanation(any())),
     );
 
-    // Not fixed by asking again, so it must not offer to.
+    // API→UI Wave 12 (owner ruling): the contract's popup. Its own state, so
+    // the screen can open the popup on the transition into it and the panel
+    // can keep the button.
     blocTest<QuizBloc, QuizState>(
-      'subscription_required is not re-issued either',
+      'subscription_required lands as ExplanationSubscriptionRequired',
+      build: build,
+      setUp: () {
+        when(() => repo.getExplanation(any())).thenThrow(
+          const ApiException(status: 403, code: 'subscription_required'),
+        );
+      },
+      seed: () => QuizInProgress(graded()),
+      act: (bloc) => bloc.add(const ExplanationRequested()),
+      expect: () => [
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationSubscriptionRequired>(),
+        ),
+      ],
+    );
+
+    // Server-authoritative: the student may have subscribed on the website
+    // since the last tap, so the app asks again rather than remembering "no".
+    blocTest<QuizBloc, QuizState>(
+      'asking again after subscription_required asks the SERVER again',
       build: build,
       setUp: () {
         when(
           () => repo.getExplanation(any()),
-        ).thenAnswer((_) async => const ExplanationGenerating());
+        ).thenAnswer((_) async => const ExplanationReady('Now subscribed.'));
       },
       seed: () => QuizInProgress(
         graded().copyWith(
-          explanations: {
-            'q1': const ExplanationFailed('subscription_required'),
-          },
+          explanations: {'q1': const ExplanationSubscriptionRequired()},
         ),
       ),
       act: (bloc) => bloc.add(const ExplanationRequested()),
-      expect: () => <QuizState>[],
-      verify: (_) => verifyNever(() => repo.getExplanation(any())),
+      wait: const Duration(milliseconds: 50),
+      expect: () => [
+        isA<QuizInProgress>().having(
+          (s) => s.session.explanation,
+          'panel',
+          isA<ExplanationPending>(),
+        ),
+        isA<QuizInProgress>().having(
+          (s) => (s.session.explanation as ExplanationLoaded).text,
+          'text',
+          'Now subscribed.',
+        ),
+      ],
+      verify: (_) => verify(() => repo.getExplanation('q1')).called(1),
     );
   });
 

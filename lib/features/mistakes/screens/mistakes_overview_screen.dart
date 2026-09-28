@@ -92,6 +92,13 @@ class MistakesOverviewScreen extends ConsumerWidget {
   }
 }
 
+// The frame's grid (`404:6312`) starts 25 under the header (`404:6475` ends at
+// 99.44, the cards start at 124.44). `CatalogScaffold` leaves 16 under every
+// header, so this screen adds the rest. It had 16 (API→UI Wave 15).
+const _belowHeader = 25.0 - 16;
+const _columnGap = 16.5;
+const _rowGap = 18.0;
+
 class _MistakesGrid extends StatelessWidget {
   const _MistakesGrid({required this.subjects});
 
@@ -99,27 +106,40 @@ class _MistakesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-      // The same delegate as the catalog's Subjects grid — the two frames draw
-      // the same 2-column layout at the same spacing, so they share the numbers
-      // rather than each carrying their own copy of them.
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 18,
-        crossAxisSpacing: 16.5,
-        childAspectRatio: MistakesSubjectCard.aspectRatio,
-      ),
-      itemCount: subjects.length,
-      itemBuilder: (context, index) {
-        final subject = subjects[index];
+    // Two columns at the frame's spacing, built as rows rather than a
+    // `GridView`: a grid cell has one height for every card, and the frame's
+    // 89 is too short for the text at a raised text scale — an Arabic card
+    // overflowed from 1.3 and every card at 2.0 (BUG-002). A row is as tall
+    // as its taller card, and never shorter than the frame's.
+    final rows = (subjects.length / 2).ceil();
+    return ListView.separated(
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
+      itemCount: rows,
+      separatorBuilder: (_, _) => const SizedBox(height: _rowGap),
+      itemBuilder: (context, row) {
         // The server already ordered this list — `name` ascending, then `id`,
         // "a stable order the client can render without sorting"
-        // (`openapi.yaml:901-903`). Rendered in arrival order; never sorted.
-        return MistakesSubjectCard(
-          subject: subject,
-          // The ONE tree fetch for this subject starts here.
-          onTap: () => context.push('/learn/mistakes/subject/${subject.id}'),
+        // (`openapi.yaml:901-903`). Rendered in arrival order, row by row;
+        // never sorted.
+        Widget cell(int index) {
+          if (index >= subjects.length) return const SizedBox.shrink();
+          final subject = subjects[index];
+          return MistakesSubjectCard(
+            subject: subject,
+            // The ONE tree fetch for this subject starts here.
+            onTap: () => context.push('/learn/mistakes/subject/${subject.id}'),
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cell(row * 2)),
+              const SizedBox(width: _columnGap),
+              Expanded(child: cell(row * 2 + 1)),
+            ],
+          ),
         );
       },
     );
@@ -132,17 +152,19 @@ class _MistakesSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _belowHeader, 20, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 18,
-        crossAxisSpacing: 16.5,
-        childAspectRatio: MistakesSubjectCard.aspectRatio,
+        mainAxisSpacing: _rowGap,
+        crossAxisSpacing: _columnGap,
+        mainAxisExtent: MistakesSubjectCard.minHeight,
       ),
       itemCount: 6,
       // 89 tall at radius 10.7 — `CatalogBlock`'s own default radius, and the
-      // card's exact height. The page does not jump when the data lands.
-      itemBuilder: (_, _) => const CatalogBlock(height: 89),
+      // card's height at the default text scale. The page does not jump when
+      // the data lands.
+      itemBuilder: (_, _) =>
+          const CatalogBlock(height: MistakesSubjectCard.minHeight),
     );
   }
 }

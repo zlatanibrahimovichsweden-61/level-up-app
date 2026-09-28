@@ -83,121 +83,214 @@ class TreeListRow extends StatelessWidget {
   /// `_MistakesButton`'s own comment warns about. Owner ruling 2026-09-12.
   final VoidCallback? onTap;
 
+  // The Mistakes row's geometry, from `404:6642` (light) and every light row
+  // frame of the family (API→UI Wave 16). The row is 363 x 78 with a 0.5
+  // border; inside it the badge, the text and the 28-dp chevron sit in one
+  // container 17 from the start and the top and 12 from the END (it is 334
+  // wide), so the chevron ends 12 from the row's edge, not 17. The name's
+  // 21-dp line is centred 28.0 below the row's top and the count's 10.62-dp
+  // line 46.5; the badge and the chevron are centred at 37.0.
+  //
+  // In the scale's lines (name 24, count 18) the text block is 42 tall, and
+  // centred on the badge at 37 it starts at 16: the name's centre lands on
+  // 28.0, and the bottom inset of 20 makes the row the frame's 78. The two
+  // centres are 18.5 apart but the two lines 21, so the count is lifted
+  // 2.5 into the name line's trailing space rather than the name pushed up
+  // off its centre. The row still grows with its text (BUG-002 measured no
+  // overflow at 1.3 or 2.0); the badge and chevron stay centred on the text.
+  //
+  // The paddings exclude the 0.5 border, which the container adds.
+  static const _mistakesPadding = EdgeInsetsDirectional.fromSTEB(
+    16.5,
+    15.5,
+    11.5,
+    19.5,
+  );
+  static const _countLift = -2.5;
+
+  // The catalog rows end the same way (DESIGN_ISSUES #100, owner ruling
+  // 2026-09-27): in every catalog row frame, light and dark (Units `135:1064`,
+  // Chapters `135:1302`, Lessons `308:4769`, Lectures `309:5656`; `337:5926`,
+  // `348:7457`, `348:7527`, `349:16001`), the content is one container 17 from
+  // the start and 334 wide in a 363 row, so the 28-dp chevron ends 12 from the
+  // row's end and the text column is 242 wide. The build padded 16.5 on both
+  // sides and ended the chevron 17 in, with a 237 column. The top and bottom
+  // stay 16.5: these rows keep their own height.
+  static const _catalogPadding = EdgeInsetsDirectional.fromSTEB(
+    16.5,
+    16.5,
+    11.5,
+    16.5,
+  );
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
-    final (fill, border, content, badgeFill) = switch (palette) {
-      // Its own four tokens since 2026-09-19, read off the row frames rather
-      // than borrowed from the card and field palettes: the light hairline is
-      // the green `#4B675E`, not the grey `fieldBorder`, and the light disc is
-      // the lavender `#F4E6FF`, not `cardFill` (edit3.md #42).
+    final (
+      fill,
+      border,
+      content,
+      badgeFill,
+      chevron,
+      progressColor,
+    ) = switch (palette) {
+      // Its own tokens since 2026-09-19, read off the row frames rather than
+      // borrowed from the card and field palettes: the light hairline is the
+      // green `#4B675E`, not the grey `fieldBorder`, and the light disc is the
+      // lavender `#F4E6FF`, not `cardFill` (edit3.md #42). The chevron and the
+      // bar followed in API→UI Wave 08: see [AppColors.treeRowChevron] and
+      // [AppColors.treeRowProgress].
       TreeRowPalette.catalog => (
         ext.treeRowFill,
         ext.treeRowBorder,
         ext.textPrimary,
         ext.treeRowBadgeFill,
+        ext.treeRowChevron,
+        ext.treeRowProgress,
       ),
       // Every Mistakes value comes from the Mistakes palette, never the
       // catalog's: in light the foreground is the green the pink needs, and in
       // dark the row, hairline, text and disc are all read off the dark frame
       // `404:7765`. See [AppColors.mistakesRowFill].
+      //
+      // The chevron is the frame's stroke colour (API→UI Wave 16; it was the
+      // content colour). The Mistakes tree never passes a [progress] (no bar
+      // at any level), so its progress colour is the theme primary it always
+      // had and is never drawn.
       TreeRowPalette.mistakes => (
         ext.mistakesRowFill,
         ext.mistakesRowBorder,
         ext.mistakesContent,
         ext.mistakesBadgeFill,
+        ext.mistakesRowChevron,
+        cs.primary,
       ),
     };
 
-    return Material(
-      color: fill,
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        // Null here yields no ripple and no splash: the row stops responding to
-        // touch entirely, rather than responding and doing nothing.
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: border, width: 0.5),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsetsDirectional.all(16.5),
-          child: Row(
-            children: [
-              _IndexBadge(index: index, fill: badgeFill, content: content),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      // Server copy, already in the content language (adr-018).
-                      name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      // Frame `404:6648` specifies Inter 600/16 in `#000000`
-                      // for the Mistakes row name. Pure black is not in this
-                      // palette at all and 16/600 is not in the scale; both are
-                      // mapped to the nearest shipped values per the ruling
-                      // docs/DESIGN_ISSUES.md #57 already made. Logged as #68.
-                      style: AppType.h3.copyWith(color: content),
-                    ),
-                    if (countLabel != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        // Rendered verbatim from the server. Never summed from
-                        // the children below it and never reconciled against a
-                        // retake pool: the contract does the arithmetic and
-                        // forbids the client repeating it (adr-133).
-                        countLabel!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppType.labelLarge.copyWith(
-                          color: ext.mistakesCount,
+    // One node, and a BUTTON when it goes somewhere. The `InkWell` gives the
+    // row a tap action but not the button flag, so TalkBack read the name and
+    // never said the row could be pressed; the merge is what keeps the disc's
+    // number, the name, the caption and that flag on one node rather than
+    // four. An inert row (no [onTap]) is merged too, and gets no flag.
+    // API→UI Wave 08, the same fix `_MistakesButton` carries.
+    return MergeSemantics(
+      child: Semantics(
+        button: onTap == null ? null : true,
+        child: Material(
+          color: fill,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            // Null here yields no ripple and no splash: the row stops
+            // responding to touch entirely, rather than responding and doing
+            // nothing.
+            onTap: onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: border, width: 0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: switch (palette) {
+                TreeRowPalette.catalog => _catalogPadding,
+                TreeRowPalette.mistakes => _mistakesPadding,
+              },
+              child: Row(
+                children: [
+                  _IndexBadge(index: index, fill: badgeFill, content: content),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          // Server copy, already in the content language
+                          // (adr-018).
+                          name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          // Frame `404:6648` specifies Inter 600/16 in
+                          // `#000000` for the Mistakes row name. Pure black is
+                          // not in this palette at all and 16/600 is not in the
+                          // scale; both are mapped to the nearest shipped
+                          // values per the ruling docs/DESIGN_ISSUES.md #57
+                          // already made. Logged as #68.
+                          style: AppType.h3.copyWith(color: content),
                         ),
-                      ),
-                    ],
-                    if (progress != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Expanded(
-                            // Mirrors itself under RTL via Directionality.
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 6,
-                              backgroundColor: ext.progressTrack,
-                              color: cs.primary,
-                              borderRadius: BorderRadius.circular(52),
-                            ),
-                          ),
-                          if (caption != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              caption!,
+                        if (countLabel != null)
+                          // Straight under the name, lifted so the two lines
+                          // sit at the frame's centres - see [_countLift].
+                          Transform.translate(
+                            offset: const Offset(0, _countLift),
+                            child: Text(
+                              // Rendered verbatim from the server. Never
+                              // summed from the children below it and never
+                              // reconciled against a retake pool: the
+                              // contract does the arithmetic and forbids the
+                              // client repeating it (adr-133).
+                              countLabel!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppType.captionSmall.copyWith(
-                                color: cs.primary,
+                              style: AppType.labelLarge.copyWith(
+                                color: ext.mistakesCount,
                               ),
                             ),
-                          ],
+                          ),
+                        if (progress != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                // The bar says nothing to a screen reader
+                                // when the caption beside it says it in
+                                // words. Its own semantics carry
+                                // `SemanticsRole.progressBar` and a 0–100
+                                // range, and merged into this row they made
+                                // Android expose every Lectures row as a
+                                // ProgressBar instead of a Button, "37" read
+                                // first (Wave 08 walk, W08-6). Without a
+                                // caption the bar is the only readout, so it
+                                // keeps them.
+                                child: ExcludeSemantics(
+                                  excluding: caption != null,
+                                  // Mirrors itself under RTL via
+                                  // Directionality.
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 6,
+                                    backgroundColor: ext.progressTrack,
+                                    color: progressColor,
+                                    borderRadius: BorderRadius.circular(52),
+                                  ),
+                                ),
+                              ),
+                              if (caption != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  caption!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppType.captionSmall.copyWith(
+                                    color: progressColor,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                  // No destination, no chevron. The affordance and the
+                  // behaviour stay in step - see [onTap].
+                  if (onTap != null) ...[
+                    const SizedBox(width: 12),
+                    Icon(forwardChevron, size: 28, color: chevron),
                   ],
-                ),
+                ],
               ),
-              // No destination, no chevron. The affordance and the behaviour
-              // stay in step - see [onTap].
-              if (onTap != null) ...[
-                const SizedBox(width: 12),
-                Icon(forwardChevron(context), size: 28, color: content),
-              ],
-            ],
+            ),
           ),
         ),
       ),

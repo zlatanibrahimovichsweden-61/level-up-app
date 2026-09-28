@@ -13,18 +13,20 @@ import '../widgets/coming_soon_section.dart';
 import '../widgets/home_banner.dart';
 import '../widgets/home_header.dart';
 import '../widgets/level_card.dart';
+import '../widgets/top_student_section.dart';
 
 /// Home · Figma `337:5303` (school) and `125:2373` (university). The first tab
 /// of the nav shell, and ONE screen for both tracks.
 ///
-/// Powered by ONE call, `GET /me`, which is track-agnostic — header, level card
-/// and points are identical on both frames. The two frames differ in exactly one
+/// Powered by `GET /me`, which is track-agnostic — header, level card and
+/// points are identical on both frames — plus `GET /leaderboard` for the Top
+/// Student block ([TopStudentSection], API→UI Wave 05). The two frames differ in exactly one
 /// place: university adds a **Learning Tools** section between Daily Tasks and
 /// Continue Learning. That is a `track` branch on the profile the server already
 /// returned, not a second screen.
 ///
-/// Only the header and the level card are real; Daily Tasks / Learning Tools /
-/// Continue Learning / Top Student have no endpoint yet and render as
+/// The header, the level card and Top Student are real. Daily Tasks /
+/// Learning Tools / Continue Learning have no endpoint yet and render as
 /// coming-soon sections (see [ComingSoonSection] for why they are not populated
 /// with the frame's sample values).
 ///
@@ -124,11 +126,9 @@ class _Loaded extends StatelessWidget {
             track: profile.track,
           ),
           const SizedBox(height: 25),
-          ComingSoonSection(
-            title: l10n.topStudent,
-            surface: ComingSoonSurface.topStudent,
-            track: profile.track,
-          ),
+          // The top three of the board the Leaderboard tab opens on. Its own
+          // states live inside the block: a failed board never fails Home.
+          TopStudentSection(profile: profile),
           const SizedBox(height: 25),
           const HomeBanner(),
         ],

@@ -86,6 +86,10 @@ class CircleBackButton extends StatelessWidget {
               'assets/icons/chevron.svg',
               width: _chevronWidth,
               height: _chevronHeight,
+              // The Semantics above names the chip. Without this the glyph's
+              // own image semantics merge in and TalkBack reads an ImageView
+              // on every screen with the chip (API→UI Wave 13; W11-7).
+              excludeFromSemantics: true,
               colorFilter: ColorFilter.mode(ext.backChipGlyph, BlendMode.srcIn),
             ),
           ),

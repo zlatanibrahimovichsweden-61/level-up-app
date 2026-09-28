@@ -103,7 +103,7 @@ void main() {
     verify(() => catalog.getSubjectTree('sub-1')).called(1);
   });
 
-  testWidgets('a lesson opens /quiz/setup with its id and name', (
+  testWidgets('a lesson opens /quiz/setup with its id, name and subject', (
     tester,
   ) async {
     await pumpCatalogApp(tester, catalog: catalog);
@@ -115,6 +115,9 @@ void main() {
     final screen = tester.widget<QuizSetupScreen>(find.byType(QuizSetupScreen));
     expect(screen.args.lessonId, 'lesson-2');
     expect(screen.args.scopeName, 'Cell Division');
+    // From the subjects list the student tapped through (API→UI Wave 11).
+    expect(screen.args.subjectName, 'Biology');
+    expect(find.text('Biology'), findsOneWidget);
     // The real setup screen titles itself with the scope it was handed — the
     // hand-off is visible end to end, not just in the args.
     expect(find.text('Select Quiz Size'), findsOneWidget);

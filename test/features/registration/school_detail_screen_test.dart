@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
@@ -11,6 +12,8 @@ import 'package:level_up_app/features/registration/models/registration_validatio
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
 import 'package:level_up_app/features/registration/repository/reference_repository.dart';
 import 'package:level_up_app/features/registration/screens/school_detail_screen.dart';
+import 'package:level_up_app/features/registration/widgets/registration_chrome.dart';
+import 'package:level_up_app/features/registration/widgets/school_picker_field.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -135,6 +138,81 @@ void main() {
       final draft = container.read(registrationControllerProvider)!;
       expect(draft.countryCode, 'EG');
       expect(draft.requiresGovernorate, isTrue);
+    });
+
+    // Wave 03, W03-1: `125:511` spaces everything 25 apart, box to box (its
+    // text is untrimmed: title 29, subtitle 26). The build had 8 / 28 / 16 / 28.
+    testWidgets('vertical rhythm: 25 between every block (Egypt)', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      Rect rect(Finder f) => tester.getRect(f);
+      final cta = find.widgetWithText(FilledButton, 'Start learning');
+      await tester.ensureVisible(cta);
+      await tester.pumpAndSettle();
+
+      expect(
+        rect(find.text('School Registration').last).top -
+            rect(find.byType(RegistrationHeader)).bottom,
+        25,
+        reason: 'header row → title',
+      );
+      expect(
+        rect(find.text('Date of Birth')).top -
+            rect(find.text('Complete your profile to get started')).bottom,
+        25,
+        reason: 'subtitle → first field block',
+      );
+      expect(
+        rect(find.text('Governorate')).top -
+            rect(find.byKey(const Key('field-countryCode'))).bottom,
+        25,
+        reason: 'field block → field block',
+      );
+      expect(
+        rect(find.text('Grade')).top -
+            rect(find.byKey(const Key('field-educationSystem'))).bottom,
+        25,
+      );
+      expect(
+        rect(cta).top - rect(find.byType(SchoolPickerField)).bottom,
+        25,
+        reason: 'last field block → Start learning',
+      );
+    });
+
+    testWidgets('outside Egypt the Grade → CTA gap stays a single 25', (
+      tester,
+    ) async {
+      final container = await pump(tester);
+      container
+          .read(registrationControllerProvider.notifier)
+          .setCountry(countryCode: 'AE', requiresGovernorate: false);
+      await tester.pumpAndSettle();
+
+      final cta = find.widgetWithText(FilledButton, 'Start learning');
+      await tester.ensureVisible(cta);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(cta).top -
+            tester.getRect(find.byKey(const Key('field-stage'))).bottom,
+        25,
+      );
+    });
+
+    // W03-2: `125:536` is `#7C7C7C`, the grey DESIGN_ISSUES #24 maps to
+    // `bodyMuted`; it rendered in `textSecondary` (`#2C2C2C`).
+    testWidgets('the subtitle is muted grey, not textSecondary', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final subtitle = tester.widget<Text>(
+        find.text('Complete your profile to get started'),
+      );
+      expect(subtitle.style?.color, AppColors.light.bodyMuted);
+      expect(subtitle.style?.color, isNot(AppColors.light.textSecondary));
     });
   });
 

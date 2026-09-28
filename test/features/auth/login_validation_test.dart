@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
+import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/theme/app_typography.dart';
 import 'package:level_up_app/features/auth/models/otp_request_result.dart';
+import 'package:level_up_app/features/auth/models/phone.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
 import 'package:level_up_app/features/auth/screens/login_screen.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../core/visual_order.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
 
@@ -16,6 +22,7 @@ Widget _harness(
   MockAuthRepository repo, {
   Locale locale = const Locale('en'),
   bool offline = false,
+  bool dark = false,
 }) {
   return ProviderScope(
     overrides: [
@@ -24,7 +31,8 @@ Widget _harness(
     ],
     child: MaterialApp(
       locale: locale,
-      theme: AppTheme.light, // carries the AppColors ThemeExtension
+      // Both carry the AppColors ThemeExtension.
+      theme: dark ? AppTheme.dark : AppTheme.light,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: const LoginScreen(),
@@ -48,11 +56,16 @@ Widget _routerHarness(MockAuthRepository repo) {
       routerConfig: GoRouter(
         initialLocation: '/login',
         routes: [
-          GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
           GoRoute(
-            path: '/otp',
-            builder: (_, _) =>
-                const Scaffold(body: Center(child: Text('OTP SCREEN'))),
+            path: '/login',
+            builder: (_, _) => const LoginScreen(),
+            routes: [
+              GoRoute(
+                path: 'otp',
+                builder: (_, _) =>
+                    const Scaffold(body: Center(child: Text('OTP SCREEN'))),
+              ),
+            ],
           ),
           // The route Create New Account used to dead-end on.
           GoRoute(
@@ -167,6 +180,92 @@ void main() {
         find.widgetWithText(OutlinedButton, 'Create New Account'),
       );
       expect(button.onPressed, isNull);
+    });
+  });
+
+  // Device finding 2026-09-20 (tablet walk, item 4): the dial chip painted
+  // `20+` in Arabic. The phone TextField beside it was already LTR; the chip
+  // was not. `find.text('+20')` matches either order, so assert the paint.
+  testWidgets('the +20 dial code paints sign-first in Arabic', (tester) async {
+    await tester.pumpWidget(
+      _harness(MockAuthRepository(), locale: const Locale('ar')),
+    );
+    await tester.pump();
+
+    final chip = find.text(Phone.egyptDialCode);
+    expect(chip, findsOneWidget);
+    expect(
+      glyphLeft(tester, chip, 0),
+      lessThan(glyphLeft(tester, chip, 1)),
+      reason: '"+" must paint to the LEFT of "2" — `+20`, not `20+`',
+    );
+  });
+
+  // Wave 01 walk, W01-2: the error was stored as the RESOLVED string, so after
+  // toggling to Arabic it stayed English. Re-pumping the same tree with a new
+  // locale keeps the State (and its error) — exactly what the pill does.
+  testWidgets('an on-screen phone error follows a language toggle', (
+    tester,
+  ) async {
+    final repo = MockAuthRepository();
+    await tester.pumpWidget(_harness(repo));
+    await tester.pump(); // the CTA is not in the tree on the very first frame
+    await tester.tap(find.widgetWithText(FilledButton, 'Send OTP'));
+    await tester.pump();
+    expect(find.text('Please enter a valid phone number'), findsOneWidget);
+
+    await tester.pumpWidget(_harness(repo, locale: const Locale('ar')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Please enter a valid phone number'), findsNothing);
+    expect(find.text('من فضلك أدخل رقم هاتف صحيح'), findsOneWidget);
+  });
+
+  group('header matches 82:819 / 337:15652 (Wave 01 walk)', () {
+    // By asset, not `.first`: the language pill's icon is also an SvgPicture
+    // and comes earlier in the tree.
+    SvgPicture bird(WidgetTester tester) => tester.widget<SvgPicture>(
+      find.byWidgetPredicate(
+        (w) =>
+            w is SvgPicture &&
+            w.bytesLoader is SvgAssetLoader &&
+            (w.bytesLoader as SvgAssetLoader).assetName ==
+                'assets/images/bird_logo.svg',
+      ),
+    );
+
+    testWidgets('the bird is tinted per canvas — cream on dark (W01-1)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_harness(MockAuthRepository(), dark: true));
+      expect(
+        bird(tester).colorFilter,
+        ColorFilter.mode(AppColors.dark.brandLogo, BlendMode.srcIn),
+      );
+
+      await tester.pumpWidget(_harness(MockAuthRepository()));
+      await tester.pumpAndSettle();
+      expect(
+        bird(tester).colorFilter,
+        ColorFilter.mode(AppColors.light.brandLogo, BlendMode.srcIn),
+      );
+    });
+
+    testWidgets('the bird is drawn at the frame size, 132.854 tall (W01-4)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_harness(MockAuthRepository()));
+      expect(bird(tester).height, 132.854);
+    });
+
+    testWidgets('the subtitle is h2, start-aligned (W01-3)', (tester) async {
+      await tester.pumpWidget(_harness(MockAuthRepository()));
+      final subtitle = tester.widget<Text>(
+        find.text('Enter your phone number to continue'),
+      );
+      expect(subtitle.textAlign, TextAlign.start);
+      expect(subtitle.style?.fontSize, AppType.h2.fontSize);
+      expect(subtitle.style?.fontWeight, AppType.h2.fontWeight);
     });
   });
 }

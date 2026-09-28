@@ -47,7 +47,7 @@ import '../../l10n/app_localizations.dart';
 /// `/` (onboarding) is in this set, and it has to be: without it a signed-out
 /// student landing on `/` is redirected to `/login` and never sees onboarding at
 /// all.
-const _authRoutes = {'/', '/login', '/otp'};
+const _authRoutes = {'/', '/login', '/login/otp'};
 
 /// A location is an auth route if it is a known signed-out route OR anywhere in
 /// the `/register` wizard (identity → track → Day-3 sub-flows).
@@ -96,6 +96,13 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   ref.onDispose(authListenable.dispose);
 
+  // The args the OTP page was last opened with. go_router re-parses the STORED
+  // location on every refresh, and the stored form drops an `extra` it cannot
+  // JSON-encode — so the auth flip that a correct code causes rebuilt the OTP
+  // page with a null `extra` (a red screen under the success view). The route
+  // keeps what it was given; a fresh `go` with new args replaces it.
+  OtpArgs? lastOtpArgs;
+
   return GoRouter(
     initialLocation: '/',
     refreshListenable: authListenable,
@@ -103,10 +110,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         authRedirect(ref.read(authControllerProvider), state.matchedLocation),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const OnboardingScreen()),
-      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      // OTP is nested under /login (BUG-005). As a top-level route opened with
+      // `push`, the location stayed `/login`; verifying flipped auth, the
+      // redirect below sent a signed-in student on `/login` to `/home`, and
+      // the success view was never seen. `/login/otp` is not a landing route,
+      // so the redirect leaves it alone until "Continue" goes to /home.
       GoRoute(
-        path: '/otp',
-        builder: (_, state) => OtpScreen(args: state.extra! as OtpArgs),
+        path: '/login',
+        builder: (_, _) => const LoginScreen(),
+        routes: [
+          GoRoute(
+            path: 'otp',
+            // No args at all (never opened from Login) → back to Login rather
+            // than a null-check crash.
+            redirect: (_, state) =>
+                state.extra is OtpArgs || lastOtpArgs != null ? null : '/login',
+            builder: (_, state) {
+              final extra = state.extra;
+              if (extra is OtpArgs) lastOtpArgs = extra;
+              return OtpScreen(args: lastOtpArgs!);
+            },
+          ),
+        ],
       ),
       // Registration wizard (Day 2 front two screens + Day-3 sub-flow stubs).
       // `/register` seeds the draft from the OTP `extra`; back-navigation re-enters
@@ -293,6 +318,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/quiz/:quizId',
         builder: (_, state) => switch (state.extra) {
+          // Setup's launch: the quiz plus the subject for the result's line.
+          final QuizScreenArgs args => QuizScreen(
+            quiz: args.quiz,
+            subjectName: args.subjectName,
+          ),
           final Quiz quiz => QuizScreen(quiz: quiz),
           _ => const _QuizUnavailableScreen(),
         },
