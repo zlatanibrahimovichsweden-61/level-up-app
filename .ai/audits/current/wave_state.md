@@ -1,6 +1,6 @@
 # Wave state — API → UI → waves workflow (checkpoint)
 
-**Last updated:** 2026-09-24 · session "Level Up Flutter API audit workflow (fork)"
+**Last updated:** 2026-09-30 · session "Level Up Flutter API audit workflow (fork)"
 
 ## Workflow state (reconciled 2026-09-24 on the owner's "STOP BEFORE NEXT")
 
@@ -81,7 +81,7 @@
 | Wave 22 — Flashcards acceptance | **92%** (F 5/5, F4 N/A · V 3/4 · I 3/3) — V3 fails on **BUG-020** (a card's text takes the app's direction) — `device_walk_results.md` |
 | Wave 22 — BUG-020 fix + targeted re-walk | **COMPLETE** (owner request, 2026-09-30) — a card's text, its screen-reader label and Setup's subject / lecture lines take their own direction (`contentTextDirection`, the quiz stem's rule); +19 tests, red → green (flashcards 209 / 12 with the fix reversed, 221 / 0 with it); validate format PASS · analyze 0 · **2036 / 0 / 0** · OVERALL PASS; two read-only Sonnet reviewers (0 high / medium); Pixel 8 re-walk of the four language / content combinations **4 / 4 PASS** (the walk's "?" and "." back in place; each card pixel-identical in both apps), two read-only Sonnet verifiers — `device_walk_results.md` |
 | Wave 22 — Flashcards acceptance after the re-walk | **100%** (F 5/5, F4 N/A · V 4/4 · I 3/3) — V3 passes; the other criteria carried from the 92% walk (the fix changes only text direction) |
-| **Next action** | **WAIT FOR USER COMMAND** — Wave 22: BUG-020 fixed and re-walked (4/4 PASS, acceptance 100%); nothing committed |
+| **Next action** | **WAIT FOR USER COMMAND** — Wave 22 **COMPLETE (100%)**: BUG-020 fixed and re-walked (4/4 PASS); committed as `a988a1f` and pushed to `origin/merged` (2026-09-30). Waves 20 and 21 are not committed |
 
 **Control rules in force:** no wave starts, no screen is touched, no WALK runs, no advance happens
 without the owner's explicit command (`NEXT`, `WALK`, `FORMULATE`). Subagents: Sonnet only. Replies:
@@ -98,8 +98,8 @@ in `app_colors.dart` and the regenerated `test/goldens/otp_dark.png`.
 
 | Field | Value |
 | --- | --- |
-| Current wave | 22 — Flashcards: walked 92% (owner `WALK`, 2026-09-29; V3 failed on BUG-020, a card's text took the app's direction), then **BUG-020 fixed and re-walked: 100%** (owner request, 2026-09-30; 4/4 combinations PASS), validate 2036/0/0. Open for the owner: **the Figma credential** (TEXT `1240:9847`: remove + rotate), **Wave 22's two provisional Arabic strings** (the Setup pill and helper, #114), W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
-| Branch / HEAD | `merged` @ `cccd2f1` = `origin/merged` (the Waves 01–19 checkpoint, committed and pushed on the owner's request, 2026-09-28) |
+| Current wave | 22 — Flashcards: **COMPLETE (100%)**, committed as `a988a1f` and pushed (2026-09-30); walked 92% (owner `WALK`, 2026-09-29; V3 failed on BUG-020, a card's text took the app's direction), then **BUG-020 fixed and re-walked: 100%** (owner request, 2026-09-30; 4/4 combinations PASS), validate 2036/0/0 (the full working tree; the committed Wave 22 tree alone 1985/0/0). Open for the owner: **the Figma credential** (TEXT `1240:9847`: remove + rotate), **Wave 22's two provisional Arabic strings** (the Setup pill and helper, #114), W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
+| Branch / HEAD | `merged` = `origin/merged`. Last product checkpoint `a988a1f` (Wave 22 alone, with the BUG-020 fix; committed and pushed on the owner's request, 2026-09-30) on `cccd2f1` (the Waves 01–19 checkpoint, 2026-09-28). Not committed: Waves 20 (Edit Profile) and 21 (Settings), finished and walked, in the working tree |
 
 ## Completed investigation
 
@@ -110,7 +110,7 @@ in `app_colors.dart` and the regenerated `test/goldens/otp_dark.png`.
   16 draft.
 - Screen-first audit of every route; Figma screen index by node id (MCP).
 
-## Files changed (uncommitted)
+## Files changed (uncommitted on 2026-09-24; committed since, in `cccd2f1`)
 
 - `contract/openapi.yaml`, `contract/contract-changelog.md` — byte-identical to upstream `ea83099`
 - `contract/SOURCE.md` — new pin, census, delta
@@ -1620,6 +1620,7 @@ On the owner's request. The 92% walk above stands as recorded; this adds the fix
 
 **WAIT FOR USER COMMAND.** Wave 22 (Flashcards) walked **92%** (2026-09-29; V3 failed on BUG-020, a card's text took the
 app's direction); **BUG-020 fixed and re-walked 2026-09-30: 4/4 combinations PASS, acceptance 100%** (owner request).
+**Wave 22 COMPLETE and committed:** `a988a1f`, Wave 22 alone, pushed to `origin/merged` 2026-09-30 (that tree validates 1985/0/0; the 2036 below is the full working tree). Waves 20 and 21 are not committed.
 Validate 2036/0/0. Open for the owner: **the Figma credential** in TEXT `1240:9847` (remove it from the file and
 rotate it; one local subagent transcript holds it — masking it was refused by the permission classifier); **the two
 provisional Arabic strings** (#114). The contract is re-vendored here to `f462968` (3.27.0-m1): tell the
