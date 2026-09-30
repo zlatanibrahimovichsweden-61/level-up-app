@@ -89,19 +89,23 @@ dev_dependencies:
 
 # App launcher icon — generated, never hand-edited.
 #
-# Source of truth: assets/launcher_icon/app_icon.svg, the designer's square
-# icon frame (Figma "Frame 1000003080"), vendored unmodified. The two PNG
-# masters beside it are rendered from that vector at 1024x1024 — nothing is
-# upscaled from a PNG export. Current source: the designer's 2026-09-24 re-export
-# (732x732 canvas, same artwork as the first 82x82 delivery).
+# Source of truth: assets/launcher_icon/app_icon.svg, the designer's MARK-ONLY
+# icon (wing + arrow, no wordmark or tagline, fill #040404, no background),
+# delivered 2026-09-30 as "Object [Vectorized]2.svg" and vendored byte-for-byte.
+# The full lockup it replaces was too thin to read at launcher size.
 #
-#   app_icon.png             opaque, square-cornered. iOS forbids alpha and
-#                            masks its own corners, so the frame's rounded
-#                            corners are flattened onto its own white.
-#   app_icon_foreground.png  ink only, no background. Scaled so the artwork's
-#                            minimal enclosing circle matches Android's 66dp-
-#                            of-108dp safe circle, so no launcher mask can
-#                            clip "LEARN - GROW - ACHIEVE".
+# The two PNG masters beside it are vector renders at 1024x1024. The designer's
+# paths are never edited: they are wrapped in one translate+scale and placed by
+# the ink's minimal enclosing circle, not its bounding box, because the mark has
+# ink in three corners of its box.
+#
+#   app_icon.png             opaque white square, no alpha (iOS forbids it and
+#                            masks its own corners). Enclosing circle = 66/72
+#                            of the tile, the same visible proportion Android
+#                            gets, so both platforms show the mark equally big.
+#   app_icon_foreground.png  ink only, transparent. Enclosing circle = Android's
+#                            documented 66dp-of-108dp safe circle, so no
+#                            launcher mask (circle, squircle, teardrop) clips it.
 #
 # These masters are NOT listed under flutter: assets: on purpose — they are
 # build-time inputs, not runtime assets, and must not ship in the bundle.
@@ -115,7 +119,7 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/launcher_icon/app_icon_foreground.png"
   # The foreground master is already scaled to Android's safe circle, so the
   # package's default 16% inset would pad it a second time and leave the
-  # lockup floating small in the middle of the tile.
+  # mark floating small in the middle of the tile.
   adaptive_icon_foreground_inset: 0
   min_sdk_android: 24
 
