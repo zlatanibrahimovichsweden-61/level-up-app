@@ -1259,6 +1259,71 @@ Light EN on Home, signed in as the school student. Airplane mode off, Wi-Fi on, 
 Auto-rotate read 0 at the start and 1 at the end (the Wave 18 walk had left it on); nothing in this walk touches it,
 so it was left as it is. `/sdcard/ui.xml` and this walk's recordings removed from the phone.
 
+## Wave 20 — Edit Profile — WALK 2026-09-28
+
+Owner `WALK`. Pixel 8 (`45131FDJH0009G`, 2.625 px/dp, status bar 132 px = 50.29 dp). `flutter build apk --debug -t
+lib/main_mock.dart` with Wave 20 (validate 1723/0/0), a plain build (`main_mock.dart` blob `f189786`, untouched).
+Students: school "طالب تجريبي" (OTP `000000`) and university "طالب جامعي تجريبي" (OTP `111111`). Path: school light EN
+(Edit Profile top and bottom, the action sheet, Upload photo tapped, the picker, its ✕; the avatar picked and saved;
+a new name, with the unsaved guard by the back chip and by system Back; an e-mail set, then cleared; a malformed
+e-mail), dark EN (the app's own Settings → Mode: the form, the sheet, the picker), dark AR and light AR (Settings →
+Languages: the form, the sheet, the picker), the university student (log out, `111111`: the form top and bottom),
+offline over the form. Values from the dumps (`w19dump.py`) and the pixel tool `w20px.py`, re-measured independently by
+two read-only Sonnet verifiers against the 1x frame renders in `../w20/`. Every tap went through a guard that refuses
+input unless the call state is idle and the app is in front. Evidence: scratchpad `walk20/` (`01`–`21`, their dumps,
+`f5_compare.png`, `claims.md`, `verify.json`).
+
+| # | Criterion | Result | Evidence |
+| --- | --- | --- | --- |
+| F1 | diff-only PATCH body | **N/A** | bodies are never logged, so the device cannot show one. Test-level: `profile_update_test.dart` (only changed fields reach the wire) and the screen tests |
+| F2 | explicit null clears email | **PASS** | "sara@example.com" saved and there on reopening (`09`); the field cleared and saved (Save popped to Profile), reopened empty (`10`). The mock keeps the address when the key is absent, so the empty field is the explicit null arriving |
+| F3 | 400 field error inline | **PASS** | "a@b" → Save → "Please check this field" under E-Mail and "Please check your input and try again." above Save, both `#BA1A1A`, the field's border `#BA1A1A`; the form stays (`11`) |
+| F4 | `/me` refresh after save | **PASS** | "Sara Ali" → Save → Profile shows "Sara Ali" (`08`), and so does Home ("Welcome back, Sara Ali", `ui_home_after_name.xml`) |
+| F5 | avatar round-trip | **PASS** | Use Avatar → the third avatar → it shows on the form (`05`) → Save → Profile's header shows it (`06`, `f5_compare.png`) |
+| V1 | vs `176:1201` (light EN, `01`) | **PASS** | the avatar block 126.5–291.4, **25.1 under the 35 dp bar**, 151 + **14** tall; "Full Name" 0.8 under it; the pencil exact `#384F47`, 16.8 × 16.8, centred on the 34 dp cream badge; locked rows Phone / City / School, 25 apart; dark: the pencil `#FCFBF9`, the geometry identical (`12`); Arabic mirrored, the same y (`15`, `18`); university: Phone / Faculty / Academic Year / City / University name (`19`, `20`) |
+| V2 | action sheet vs `216:3341` (`03`) | **PASS** | handle `#000000` 93.7 × 3.8, 15 under the card's top, centred; rows full width, 43.8 and 44.2 tall, the first 39 under the top, 12.9 between; the hairline `#92A29C` (= `#4B675E` 60% on the card) on row 1's bottom only; labels 20 in; no title, ✕ or icon; dark: handle `#FCFBF9`, hairline `#3B4C48` (`13`) |
+| V3 | picker vs `180:4153` (`04`) | **PASS** | the ✕ ink exact `#3F3F3F` centred 38.5 from the card's start (the frame's 27 + 11.5), on a 48 × 48 target centred 47.6 under the top; the title centred; cells 69, the first 21 in and 89 down, 16 apart, the fifth cut at the edge; dark: the ✕ `#FCFBF9` (`14`); Arabic: the ✕ 38.6 from the right, the strip from the right (`17`) |
+| I1 | unsaved guard | **PASS** | a dirty form: the back chip → "Discard changes?" (`07`) → Keep editing stays; system Back → the dialog (the second press; the first went to the keyboard's connection, see below); Discard → Profile |
+| I2 | read-only rows announced | **PASS** | every locked row is ONE node in every Edit Profile dump, reading "value, label, hint" (e.g. "Nasr City, City, Set when you registered — this can't be changed."), with no separate label or value node |
+| I3 | Upload Photo disabled with hint | **PASS** | `enabled=false`, `clickable=false`, labelled "Upload photo, Uploading your own photo isn't available yet."; its ink dimmed (`#91908F`); the caption under the rows; a tap leaves the sheet as it was (`ui_after_upload_tap.xml`) |
+
+**Score: 10/10 = 100%** (F 4/4, F1 N/A · V 3/3 · I 3/3).
+
+Also checked:
+- Offline (`21`): "You are offline" over the loaded form, the form kept below it; gone on reconnect.
+- The mock's edits stay with their track: after the school student became "Sara Ali", the university student's form shows
+  "طالب جامعي تجريبي" (`19`).
+- Logcat: no `flutter` line from the pre-launch clear to the end (the main buffer's oldest entry, 20:55:04, predates the
+  launch); the crash buffer is empty.
+
+### Two walk-method notes (no app defect)
+
+- **A swipe typed into the name field.** After "Keep editing", the name field took focus back and the keyboard opened;
+  the next scroll swipe ran across the keyboard and its glide typing appended "لف " to the name. Seen in the next dump,
+  retyped, and from then on the keyboard was closed with Back and checked hidden (`mInputShown=false`) before any
+  swipe. Only the text field was affected.
+- **The first system Back after typing** changed nothing: the keyboard had been hidden with ESC, which leaves its
+  connection open, and that press closed it. The second press showed the discard dialog.
+
+### Observed, not logged
+
+- **Save sits 28 under the last locked row** (`02`; the frame's 25): the build's gap before the button, unchanged by
+  this wave.
+- **In Arabic the sheet's rows are 48 tall** (the frame's 44): the Arabic label line is taller (W16-6, D-019); the 13
+  between them holds.
+- **The gradient disc does not show on the mock**: its avatars are opaque photos and the loading placeholder covers
+  the disc, so the gradient is test-level only (`edit_profile_screen_test.dart` derives it from the frame's transform).
+- **No Parent's Number row**: `GET /me` has no source for it (S34, #105), as built. **No bottom nav bar**: Edit Profile
+  is a pushed route outside the shell, while the frame draws the bar; unchanged by this wave.
+- **The offline banner sits above the title bar** here; on Profile it sits under it (Wave 19).
+
+### Device state left behind
+
+Light EN on Home, signed in as the school student (a relaunch reset the mock's edits). Airplane mode off, Wi-Fi on,
+font scale 1.0 (read only), portrait, no call. Auto-rotate read 0 at the start and 1 at the end; no command in this
+walk sets it (as in the Wave 19 walk, it turned on across the walk; the launches used `monkey`, the one common step),
+so it was left as it is. `/sdcard/ui.xml` and the capture file removed from the phone.
+
 ## Wave 22 — Flashcards (Lectures tab → Flash Card Setup → study) — WALK 2026-09-29
 
 Owner `WALK`. Pixel 8 (`45131FDJH0009G`, 2.625 px/dp, status bar 132 px = 50.29 dp). `flutter build apk --debug -t

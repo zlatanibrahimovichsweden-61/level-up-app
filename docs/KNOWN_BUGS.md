@@ -540,6 +540,23 @@ value across a sign-out is unproven. A related latent issue in other autoDispose
 set after a rebuild, so e.g. Top Student's Retry after a quiz sticks on its skeleton) was probe-proven and filed as a
 separate task.
 
+## BUG-016 ✅ Every locked row on Edit Profile was announced twice
+
+**Status:** FIXED 2026-09-28 (API→UI Wave 20). Found by a read-only review lens, confirmed by a throwaway semantics
+probe. Not yet device-verified: the Wave 20 walk runs on the owner's `WALK`.
+
+**What breaks.** TalkBack reads each locked row (phone, city, school…) with its label and its value twice: the row's
+one node carried the label "City\nCity\nCairo" and the value "Cairo".
+
+**Root cause.** `ReadOnlyField` wraps its column in `Semantics(label:, value:, hint:)`, and the `FieldLabel` and value
+`Text` under it merged their own labels into the same node.
+
+**Why tests missed it.** No test read a locked row's semantics. The widget tests asserted structure (no `TextField`,
+no `InkWell`), which the row always passed.
+
+**Fix.** `excludeSemantics: true` on that `Semantics`, so the node says the label, the value and the locked hint once.
+Pinned by "I2: a locked row is announced once" in `edit_profile_screen_test.dart`, which fails on the old widget.
+
 ## BUG-019 ✅ The quiz's "<" button drew its arrow at about half the frame's size
 
 **Status:** FIXED 2026-09-29 (API→UI Wave 22). Found by a read-only review lens on the flashcards study screen, which

@@ -100,6 +100,11 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.destructive,
     required this.dialogNote,
     required this.profileDialogClose,
+    required this.avatarDiscInner,
+    required this.avatarDiscOuter,
+    required this.avatarBadgeGlyph,
+    required this.avatarSheetHandle,
+    required this.avatarSheetDivider,
     required this.flashcardProgressFill,
     required this.flashcardCardFill,
     required this.flashcardCardText,
@@ -809,6 +814,30 @@ class AppColors extends ThemeExtension<AppColors> {
   /// kept separate because that card has no dark frame and this one does.
   final Color profileDialogClose;
 
+  /// The avatar disc's radial gradient, centre → edge, behind the avatar image
+  /// on Edit Profile (`176:1343`, 151 dp) and on every cell of the Choose
+  /// Avatar picker (`180:4277`…, 69 dp): `#4B675E` → `#95CDBB`. The same on
+  /// both tracks and both canvases (`180:6437`, `337:7923`, `349:12770`,
+  /// `337:8030`). API→UI Wave 20.
+  final Color avatarDiscInner;
+
+  /// See [avatarDiscInner].
+  final Color avatarDiscOuter;
+
+  /// The pencil on Edit Profile's avatar badge (`fluent:edit-16-filled`):
+  /// light `#384F47` (`176:1347`, `180:6440`), dark `#FCFBF9` (`337:7926`,
+  /// `349:15373`). It drew [homeAccent], purple on both canvases, until API→UI
+  /// Wave 20.
+  final Color avatarBadgeGlyph;
+
+  /// The avatar action sheet's drag handle (`Rectangle 6428`, 94 x 4): light
+  /// `#000000` (`216:3342`), dark `#FCFBF9` (`337:8136`). API→UI Wave 20.
+  final Color avatarSheetHandle;
+
+  /// The hairline under the action sheet's first row: `#4B675E` at 60%, 0.5
+  /// dp, the same on both canvases (`216:3343`, `337:8137`). API→UI Wave 20.
+  final Color avatarSheetDivider;
+
   // --- Flashcards (API→UI Wave 22) ------------------------------------------
   //
   // The study screen `225:5582` (light) / `337:14475` (dark) shares the quiz's
@@ -1470,6 +1499,11 @@ class AppColors extends ThemeExtension<AppColors> {
     destructive: Color(0xFFEF4444), // Figma 176:1191
     dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
     profileDialogClose: Color(0xFF3F3F3F), // Figma 180:4707 (SVG stroke)
+    avatarDiscInner: Color(0xFF4B675E), // Figma 176:1343 (radial, stop 0)
+    avatarDiscOuter: Color(0xFF95CDBB), // Figma 176:1343 (radial, stop 1)
+    avatarBadgeGlyph: Brand.greenPrimary, // #384F47 — Figma 176:1347
+    avatarSheetHandle: Color(0xFF000000), // Figma 216:3342
+    avatarSheetDivider: Color(0x994B675E), // #4B675E @60% — Figma 216:3343
     flashcardProgressFill: Color(0xFF5A7F73), // Figma 225:5616
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 247:3260 — same in dark
     flashcardCardText:
@@ -1667,6 +1701,11 @@ class AppColors extends ThemeExtension<AppColors> {
     destructive: Color(0xFFEF4444),
     dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
     profileDialogClose: Color(0xFFFCFBF9), // Figma 337:7786 (SVG stroke)
+    avatarDiscInner: Color(0xFF4B675E), // Figma 337:7923 — same as light
+    avatarDiscOuter: Color(0xFF95CDBB), // Figma 337:7923 — same as light
+    avatarBadgeGlyph: Color(0xFFFCFBF9), // Figma 337:7926
+    avatarSheetHandle: Color(0xFFFCFBF9), // Figma 337:8136
+    avatarSheetDivider: Color(0x994B675E), // Figma 337:8137 — same as light
     flashcardProgressFill: Brand.purplePrimary, // #AE87E7 — Figma 349:15348
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 337:14513 — stays light
     flashcardCardText: Brand.greenPrimary, // #384F47 — Figma 337:14513 (text)
@@ -1863,6 +1902,11 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? destructive,
     Color? dialogNote,
     Color? profileDialogClose,
+    Color? avatarDiscInner,
+    Color? avatarDiscOuter,
+    Color? avatarBadgeGlyph,
+    Color? avatarSheetHandle,
+    Color? avatarSheetDivider,
     Color? flashcardProgressFill,
     Color? flashcardCardFill,
     Color? flashcardCardText,
@@ -2046,6 +2090,11 @@ class AppColors extends ThemeExtension<AppColors> {
       destructive: destructive ?? this.destructive,
       dialogNote: dialogNote ?? this.dialogNote,
       profileDialogClose: profileDialogClose ?? this.profileDialogClose,
+      avatarDiscInner: avatarDiscInner ?? this.avatarDiscInner,
+      avatarDiscOuter: avatarDiscOuter ?? this.avatarDiscOuter,
+      avatarBadgeGlyph: avatarBadgeGlyph ?? this.avatarBadgeGlyph,
+      avatarSheetHandle: avatarSheetHandle ?? this.avatarSheetHandle,
+      avatarSheetDivider: avatarSheetDivider ?? this.avatarSheetDivider,
       flashcardProgressFill:
           flashcardProgressFill ?? this.flashcardProgressFill,
       flashcardCardFill: flashcardCardFill ?? this.flashcardCardFill,
@@ -2399,6 +2448,23 @@ class AppColors extends ThemeExtension<AppColors> {
       profileDialogClose: Color.lerp(
         profileDialogClose,
         other.profileDialogClose,
+        t,
+      )!,
+      avatarDiscInner: Color.lerp(avatarDiscInner, other.avatarDiscInner, t)!,
+      avatarDiscOuter: Color.lerp(avatarDiscOuter, other.avatarDiscOuter, t)!,
+      avatarBadgeGlyph: Color.lerp(
+        avatarBadgeGlyph,
+        other.avatarBadgeGlyph,
+        t,
+      )!,
+      avatarSheetHandle: Color.lerp(
+        avatarSheetHandle,
+        other.avatarSheetHandle,
+        t,
+      )!,
+      avatarSheetDivider: Color.lerp(
+        avatarSheetDivider,
+        other.avatarSheetDivider,
         t,
       )!,
       flashcardProgressFill: Color.lerp(

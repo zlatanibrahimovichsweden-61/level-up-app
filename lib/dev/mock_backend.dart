@@ -1,7 +1,7 @@
 /// Throwaway on-device preview harness — NOT production code.
 ///
 /// A hand-rolled Dio interceptor that answers the stable surface — `/auth/*`,
-/// `/reference/*`, `/me`, `/me/entitlements`,
+/// `/reference/*`, `/me` (read and `PATCH`), `/me/entitlements`,
 /// `/me/mistakes*`, `/leaderboard`, `/catalog/*`, the quiz loop and the two
 /// flashcards operations (`/flashcards/lectures/{id}/cards`,
 /// `/flashcards/cards/{id}/self-grade`) — with contract-faithful canned JSON,
@@ -131,6 +131,13 @@ class MockBackendInterceptor extends Interceptor {
   /// `GET /me` falls back to the coded fixture.
   Map<String, dynamic>? _registeredCity;
 
+  /// What `PATCH /me` changed, per track, so the school student's edits never
+  /// show on the university student after a log-out → log-in. Only the keys
+  /// the student actually sent are here, and a present `email: null` is a
+  /// CLEARED address, not an absent one (the contract's tri-state). Emptied by
+  /// a registration, which is a different student.
+  final _profileEdits = <String, Map<String, Object?>>{};
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -205,6 +212,7 @@ class MockBackendInterceptor extends Interceptor {
       // registered with. A free-text registration whose profile comes back
       // coded on the next fetch would prove nothing.
       _registeredCity = _cityFromRegistration(body);
+      _profileEdits.remove(_track);
       return _ok(handler, options, 201, <String, dynamic>{
         'result': 'authenticated',
         'tokens': _tokenPair(),
@@ -224,25 +232,30 @@ class MockBackendInterceptor extends Interceptor {
     // Home is powered entirely by GET /me, so without this the whole tab
     // renders its error state on device.
     if (method == 'GET' && path == '/me') {
-      const phone = '+201021871999';
-      return _ok(
-        handler,
-        options,
-        200,
-        // Reads the LIVE total, which `finish` moves. Re-fetching after a quiz
-        // therefore shows the award, exactly as it will in production.
-        _isUniversity
-            ? _universityProfile(
-                phone: phone,
-                totalPoints: _totalPoints,
-                city: _registeredCity,
-              )
-            : _schoolProfile(
-                phone: phone,
-                totalPoints: _totalPoints,
-                city: _registeredCity,
-              ),
+      return _ok(handler, options, 200, _currentProfile());
+    }
+
+    // `updateMyProfile` (API→UI Wave 20). Contract-shaped: every field is
+    // optional and an absent key is unchanged; `email: null` CLEARS the
+    // address; a violation is `400 validation_failed` with the field map; the
+    // answer is the updated profile, and a later `GET /me` agrees with it.
+    //
+    // **Trigger for the 400 arm:** save an e-mail that is not an address (no
+    // `@`, or no dot after it). That is the contract's own `format: email`, so
+    // it is what the real server rejects, not an invented magic value.
+    if (method == 'PATCH' && path == '/me') {
+      final rejected = _profilePatchViolations(body);
+      if (rejected != null) {
+        return _validationFailed(handler, options, rejected);
+      }
+      final edits = _profileEdits.putIfAbsent(
+        _track,
+        () => <String, Object?>{},
       );
+      for (final key in _patchableProfileKeys) {
+        if (body.containsKey(key)) edits[key] = body[key];
+      }
+      return _ok(handler, options, 200, _currentProfile());
     }
 
     if (method == 'GET' && path == '/me/entitlements') {
@@ -594,6 +607,83 @@ class MockBackendInterceptor extends Interceptor {
       }
     }
 
+    return errors.isEmpty ? null : errors;
+  }
+
+  /// This session's student as `GET /me` returns them: the LIVE total, which
+  /// `finish` moves (so re-fetching after a quiz shows the award, exactly as it
+  /// will in production), the registered city, and whatever `PATCH /me` changed.
+  Map<String, dynamic> _currentProfile() {
+    const phone = '+201021871999';
+    final profile = _isUniversity
+        ? _universityProfile(
+            phone: phone,
+            totalPoints: _totalPoints,
+            city: _registeredCity,
+          )
+        : _schoolProfile(
+            phone: phone,
+            totalPoints: _totalPoints,
+            city: _registeredCity,
+          );
+    final edits = _profileEdits[_track];
+    if (edits == null) return profile;
+
+    if (edits.containsKey('name')) profile['name'] = edits['name'];
+    // Present-and-null is a cleared address, so this copies the null too.
+    if (edits.containsKey('email')) profile['email'] = edits['email'];
+    if (edits.containsKey('avatarId')) {
+      final avatar = _avatars.cast<Map<String, dynamic>>().firstWhere(
+        (a) => a['id'] == edits['avatarId'],
+      );
+      profile['avatar'] = <String, dynamic>{
+        'type': 'default',
+        'id': avatar['id'],
+        'url': avatar['url'],
+      };
+    }
+    final privacy = Map<String, dynamic>.from(profile['privacy'] as Map);
+    for (final key in const ['leaderboardVisible', 'scoreHidden']) {
+      if (edits.containsKey(key)) privacy[key] = edits[key];
+    }
+    profile['privacy'] = privacy;
+    return profile;
+  }
+
+  /// The `PATCH /me` body's violations, as the contract's field map, or null.
+  ///
+  /// Only what the contract states: `name` is a string of at most 100
+  /// characters, `email` is an address or null, the toggles are booleans.
+  /// `avatarId` must be one of `GET /reference/avatars` (a closed set); whether
+  /// the real server answers an unknown id with this 400 or with a 404 is open
+  /// (`seif_fight.md` S45). The app cannot send one: it picks from that list.
+  Map<String, List<String>>? _profilePatchViolations(
+    Map<String, dynamic> body,
+  ) {
+    final errors = <String, List<String>>{};
+    if (body.containsKey('name')) {
+      final name = body['name'];
+      if (name is! String || name.runes.length > 100) {
+        errors['name'] = ['At most 100 characters'];
+      }
+    }
+    if (body.containsKey('email')) {
+      final email = body['email'];
+      if (email != null && (email is! String || !_emailShape.hasMatch(email))) {
+        errors['email'] = ['Not a valid email address'];
+      }
+    }
+    if (body.containsKey('avatarId') &&
+        !_avatars.cast<Map<String, dynamic>>().any(
+          (a) => a['id'] == body['avatarId'],
+        )) {
+      errors['avatarId'] = ['Not one of the default avatars'];
+    }
+    for (final key in const ['leaderboardVisible', 'scoreHidden']) {
+      if (body.containsKey(key) && body[key] is! bool) {
+        errors[key] = ['Must be true or false'];
+      }
+    }
     return errors.isEmpty ? null : errors;
   }
 
@@ -2122,6 +2212,20 @@ final _avatars = <dynamic>[
       'url': 'https://picsum.photos/seed/levelup$i/200',
     },
 ];
+
+/// Every field `PATCH /me` accepts (`updateMyProfile`). Anything else in a body
+/// is ignored, as the contract's open object allows.
+const _patchableProfileKeys = [
+  'name',
+  'email',
+  'avatarId',
+  'leaderboardVisible',
+  'scoreHidden',
+];
+
+/// The contract's `format: email`, read loosely: one `@`, no spaces, and a dot
+/// in the part after it. Enough to make the 400 arm reachable from the form.
+final _emailShape = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
 /// The mock board's peers, highest first. Names are Arabic for the same reason
 /// the catalog's are (adr-018): the content language is what a real board

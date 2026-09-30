@@ -58,6 +58,9 @@
 | Wave 13 — Quiz result acceptance | **100%** (F 3/3 · V 4/4 · I 2/2), up from 44% — `device_walk_results.md` |
 | Wave 13 | **COMPLETE / RECORDED** |
 | Wave 22 — Flashcards implementation | **COMPLETE** (owner `NEXT` + rulings `1A`–`10A`, 2026-09-29) — contract re-vendored to `f462968` (3.27.0-m1) first (ruling 3B), with `Lecture.flashcardCount`; frames `225:5582` (study, light), `1234:8797` (Setup, light), Lectures `180:5208` / `349:15962`; dark `337:14475` and Arabic `549:28041` are older layouts, built from the light one; W22-1…9 (the re-vendor, the mock's two operations, the 10-card round, the Lectures Flashcard tab, the shared study chrome, Setup, the study screen, the records, tests); review 15 confirmed, all fixed (BUG-019); format PASS · analyze 0 · **2017 / 0 / 0** · OVERALL PASS (+273 over Wave 21's 1744) |
+| Wave 20 — Edit Profile device walk | **COMPLETE** (owner `WALK`, 2026-09-28) — Pixel 8 on a plain mock build: school light EN (the form, the sheet, the picker; the avatar, a name, an e-mail set and cleared, a malformed e-mail; the unsaved guard by the chip and by system Back), dark EN, dark AR, light AR, the university form, offline; two read-only Sonnet verifiers re-measured every claim |
+| Wave 20 — Edit Profile acceptance | **100%** (F 4/4, F1 N/A · V 3/3 · I 3/3) — `device_walk_results.md` |
+| Wave 20 — Edit Profile implementation | **COMPLETE** (owner `NEXT`, 2026-09-28) — frames: `176:1201` / `180:6349` (the plan's missing university frame exists), dark `337:7795` / `349:12688`, RTL `549:21413` / `549:26807`; action sheet `216:3341`; picker `180:4153`; owner rulings: the locked rows follow the frames (#105), Upload photo dimmed with its caption (#106); W20-1…9 (mock `PATCH /me`, the sheet, the picker ✕, the avatar block, the pencil, the gradient disc, the locked rows, BUG-016, tests; the review's 3 fixes); +30 tests; validate **1723/0/0 PASS** |
 | Wave 19 — Profile device walk | **COMPLETE** (owner `WALK`, 2026-09-28) — Pixel 8 on a plain mock build: school light EN, dark EN, dark AR, light AR; Go to Uni; Logout No / Yes; a cold restart; the university login recorded; the university Profile and Logout; back to the school student; offline. W19-1 verified on device (the university student on Home and Profile; 81 recorded frames go from the skeleton to the new name, never the old one; Top Student loads); W19-2 to W19-5 measured against the frames. Paused once for an incoming phone call (the walk section) |
 | Wave 19 — Profile acceptance | **100%** (F 5/5 · V 3/3 · I 2/2) — `device_walk_results.md` |
 | Wave 19 — Profile implementation | **COMPLETE** (owner `NEXT`, 2026-09-27/28) — frames: Profile `166:4416` / `309:7940`, dark `337:7433` / `349:12919`, RTL `549:21052` / `549:26384`; Logout `180:4598` (+ 5 variants); Go to Uni `180:4301` (+ dark, RTL); owner rulings: meProvider autoDispose (D-020), Points only (#101), the pair mirrored in Arabic (#102), dark scrim 60% on both tracks (#103); **W19-1** the stale profile after log-out → log-in fixed (BUG-015, W05-3's root); **W19-2** the Logout No / Yes pair; **W19-3** the dialog ✕ (the frame's cross, `#3F3F3F` light, a 48 dp target); **W19-4** the dialog card 345, Go to Uni's button 284 centred, Logout's bottom 15; **W19-5** the frame's 35 dp title bar, the card 25 under it; **W19-6** tests; validate **OVERALL PASS** 2026-09-28 (format PASS; analyze 0 issues; 1693 passed / 0 failed / 0 skipped) |
@@ -1477,6 +1480,118 @@ confirmed except one they could not re-derive from files (that the log buffer ha
   the start and 1 at the end (the Wave 18 walk had left it on); nothing in this walk touches it, so it was left for the
   owner. This walk's recordings and dumps removed from the phone.
 
+## Wave 20 — implementation (in progress, 2026-09-28)
+
+Owner `NEXT`. Screen: Edit Profile (`/profile/edit`). Endpoints `GET /me`, `PATCH /me`, `GET /reference/avatars`. The
+wave's items: (1) a contract-shaped mock `PATCH /me` (the email tri-state, a `400 validation_failed` arm), needed by
+Wave 21; (2) the avatar action sheet's chrome against its frame; (3) the university frame. Frame read + code compare
+first; findings, rulings and the Done list land here.
+
+**Frame map (read over the MCP, 2026-09-28).** The plan's "no real university frame" is wrong: `180:6349` is one
+(Faculty, Academic Year, City), with dark and RTL twins. The sheet and picker overlays sit on a school-shaped copy of
+the screen on both tracks.
+
+| What | Light school | Light university | Dark school | Dark university | RTL school | RTL university |
+| --- | --- | --- | --- | --- | --- | --- |
+| Edit Profile | `176:1201` | `180:6349` | `337:7795` | `349:12688` | `549:21413` | `549:26807` |
+| Action sheet (Upload photo / Use Avatar) | `216:3158` (sheet `216:3341`) | `309:8099` (`309:8194`) | `337:8040` (`337:8135`) | `349:12421` (`349:12516`) | `549:21658` (`549:21753`) | `565:14911` (`565:15006`) |
+| Avatar picker (Choose Avatar) | `180:3989` (`180:4153`) | `309:8268` (`309:8363`) | `337:7929` (`337:8024`) | `349:12237` (`349:12332`) | `549:21547` (`549:21642`) | `565:14727` (`565:14822`) |
+
+**Compare (2026-09-28):** frames read over the MCP by the main session: plugin dumps of `176:1201`, the action sheet
+`216:3341` (+ dark `337:8135`, RTL `549:21753`), the picker's header `180:4153` (+ dark `337:8024`), and the disc, badge,
+labels and Save on all six Edit Profile frames; 1x renders of `176:1201`, `180:6349`, `216:3158` and `180:3989`, all in
+the scratchpad `w20/`. Four read-only Sonnet lenses (screen; sheets; contract, data and mock; states, a11y and tests),
+`w20/lenses.md`.
+
+**Findings (frame-proven or probe-proven, fixed):** the avatar disc sat 16 under the title bar (every frame: 25); the
+badge hung 8 below the disc (frames: 14) and the first label sat 28 under the badge block (frames: 1); the pencil was
+`Icons.edit` in the purple `homeAccent` on both canvases (frames: `fluent:edit-16-filled`, `#384F47` light, `#FCFBF9`
+dark); the disc had no fill (frames: a radial gradient `#4B675E` → `#95CDBB`, also on every picker cell); the action
+sheet wore the picker's title and ✕ over bordered icon rows (frame: a drag handle, two plain rows, one hairline); the
+picker's ✕ was `Icons.close` in `textPrimary` with a 35 target; each locked row was announced twice (BUG-016, a
+throwaway probe: the node read "City\nCity\nCairo" with the value "Cairo"); the mock had no `PATCH /me`. **Found, not a
+defect:** the locked rows' set and order differ from the frames (the owner's call, below).
+
+**Owner rulings (2026-09-28):** (1) the locked rows follow the frames: school Phone, City, School name; university
+Phone, Faculty, Academic Year, City, University name (#105); (2) when the sheet is rebuilt to its frame, Upload photo
+stays dimmed with its caption (#106).
+
+**Done:**
+- **W20-1 the mock `PATCH /me`** (`updateMyProfile`), contract-shaped: an absent key is unchanged, `email: null` clears
+  the address, a `400 validation_failed` carries the field map (a name over 100, a malformed e-mail, an avatar not in
+  the list, a non-boolean toggle), and the answer is the updated profile. Kept per track, so a later `GET /me` agrees
+  and the other student is untouched; a registration clears it. The 400 on device: save an e-mail with no dot after
+  the `@`. Unknown avatar, 400 or 404: seif_fight S45.
+- **W20-2 the action sheet** (#106): the frame's handle (94 x 4, 15 under the card's top, `avatarSheetHandle`), two
+  full-width 44 dp rows with the labels 20 in (`h3`), the 0.5 hairline `avatarSheetDivider` under the first, 13
+  between them; no title, ✕ or icons. Upload photo dimmed and inert, with its caption (ruling).
+- **W20-3 the picker**: the frame's cross (`close_cross.svg`) in `profileDialogClose`, a 48 x 48 target centred on the
+  frame's 23 dp box 27 from the card's start (mirrored in Arabic), the bar re-centred on that 48 row; the avatar strip
+  starts 21 in and runs to the card's edge, as the frame's does.
+- **W20-4 the avatar block**: the disc 25 under the bar, the badge 14 below the disc, the first label 1 under the badge;
+  the skeleton's first block sits where the first label does.
+- **W20-5 the pencil**: the frame's `fluent:edit-16-filled` (`176:1347`), exported over the MCP as
+  `assets/icons/edit_pencil.svg`, 17 x 17, in `avatarBadgeGlyph`.
+- **W20-6 the gradient disc**: `AvatarDisc` (new, `avatar_disc.dart`) under Edit Profile's avatar and every picker cell;
+  tokens `avatarDiscInner` / `avatarDiscOuter`, the frame's `gradientTransform` inverted (centre (0.526, 0.538), radius
+  0.736).
+- **W20-7 the locked rows** (#105): the frames' rows and order. Education System and Grade are no longer on this screen
+  (their raw codes, S35, with them).
+- **W20-8 one announcement per locked row** (BUG-016): `ReadOnlyField` excludes its children's semantics.
+- **W20-9 tests**: `mock_backend_profile_test.dart` (+8, through the real repository: a name, an e-mail set then
+  cleared, an absent key, an avatar, the privacy toggles, the 400s on e-mail and name, edits kept per track); the
+  "Wave 20" group in `edit_profile_screen_test.dart` (+20: the avatar block in English and Arabic, the skeleton, the
+  pencil light and dark, the gradient checked against the frame's own transform, the school and university rows, a
+  payload with both track blocks, I2, the sheet light and dark, the scrim, the picker ✕ light, dark and Arabic, the
+  strip, I1 by system Back, offline over a loaded form, a double tap on Save); `app_colors_test.dart` (+2: the five
+  tokens' values in both palettes, and their copyWith / lerp wiring); three existing tests moved to the rulings (the
+  locked keys, the university rows, dismissing the sheet by its scrim).
+- **Review (three read-only Sonnet lenses, each finding adversarially verified): 3 confirmed, all fixed.** (1) The
+  City row, one keyed widget, sat in both track blocks, so a payload carrying both blocks (the schema does not forbid
+  it) crashed on a duplicate key; the blocks are now one exclusive chain that follows `track`. (2) The five new tokens
+  had no copyWith / lerp test, unlike every earlier batch; added. (3) The gradient test compared the widget with its
+  own constants; it now derives the centre and radius from the frame's `gradientTransform`.
+- **Red proof:** 23 of the first 27 new tests fail on the pre-wave code (all 8 mock tests: there was no `PATCH /me`;
+  15 of the screen tests). The 4 that pass pin behaviour that already worked but was untested: the scrim dismisses,
+  system Back asks, the offline banner over the form, one PATCH per double tap. The both-blocks test fails on the
+  pre-fix structure ("Duplicate keys found … `edit_city_field`"). Every file restored byte-identical.
+- **Docs:** DESIGN_ISSUES #105, #106; KNOWN_BUGS BUG-016; seif_fight S45 (+ its table row); ASSET_MANIFEST (the
+  pencil's row).
+- **Not changed:** the field labels and boxes (#90 is the owner's); the title `h2` (#99); the back chip's 35 dp target
+  (the open cross-cutting question); Profile's header card still draws `Icons.edit` and no disc gradient (not this
+  wave's screen); the mock serves 6 avatars where the contract says 20.
+- **Validation:** format PASS · analyze 0 · **1723 / 0 / 0** · OVERALL PASS (`validate.ps1`, 2026-09-28; +30 over Wave 19's 1693).
+- **Walk notes (on `WALK`):** school light EN: Edit Profile vs `176:1201` (the disc 25 under the bar, the badge and
+  first label, the pencil's colour, the locked rows Phone / City / School); a new name → Save → Profile shows it (F4);
+  clear the e-mail → Save → still empty on reopening (F2); an e-mail like `a@b` → the inline error (F3); avatar → Use
+  Avatar → pick → Save → Profile's avatar (F5); a dirty form → the back chip, then system Back → the discard dialog
+  (I1); the action sheet vs `216:3341` (V2) and the picker vs `180:4153` (V3) in light, dark and Arabic; Upload photo
+  dimmed with its caption (I3); each locked row one node in a uiautomator dump (I2); university (`111111`): Phone /
+  Faculty / Academic Year / City / University vs `180:6349`. F1 (a diff-only body) is test-level: bodies are never
+  logged.
+
+## Wave 20 — walk (2026-09-28)
+
+Owner `WALK`. Pixel 8, a plain mock build with Wave 20 (`main_mock.dart` blob `f189786`, untouched), font scale 1.0
+(read only). **Score: 100%** (F 4/4, F1 N/A · V 3/3 · I 3/3); details in `device_walk_results.md`, evidence in the
+scratchpad `walk20/`. Two read-only Sonnet verifiers re-measured the captures and dumps: every behaviour and every
+measurement confirmed. Their two FAILs were the claims file's wording, corrected in the record: the university's
+"Cairo University" row is in dump `20`, not `19`; and the claims had not named two known absences (Parent's Number,
+S34 / #105; the bottom nav bar on a pushed route).
+- **Verified:** W20-1 on device (a name, an e-mail set, then cleared by an explicit null, and the avatar all reach the
+  mock and come back through `GET /me`; a malformed e-mail is the 400 with the field marked); W20-2 the sheet (the
+  handle, the plain rows, the one hairline measured exactly); W20-3 the picker's ✕ (colour, 48 dp target, mirrored);
+  W20-4 the avatar block (25 under the bar, the 14 overhang, the first label 1 under it); W20-5 the pencil's colour and
+  size in light and dark; W20-7 the rows on both tracks; W20-8 one node per locked row. W20-6 (the gradient) cannot show
+  on the mock: its avatars are opaque photos.
+- **Walk-method notes:** a scroll swipe ran across the open keyboard and glide-typed into the name field (corrected;
+  the keyboard is now closed and checked before a swipe); the first system Back after typing closed the keyboard's
+  connection, the second showed the dialog.
+- **Observed, not logged:** Save 28 under the last row (the frame's 25); the Arabic sheet rows 48 tall (44); the offline
+  banner above the title bar (on Profile, under it); no bottom nav bar on the pushed route.
+- **Device state:** light EN on Home, the school student signed in; airplane off, Wi-Fi on. Auto-rotate read 0 at the
+  start and 1 at the end; nothing in the walk sets it, left as it is.
+
 ## Wave 22 — implementation (in progress, 2026-09-29)
 
 Owner `NEXT`. Screen: Flashcards (university; a new screen). Endpoints `GET /flashcards/lectures/{lectureId}/cards`
@@ -1624,7 +1739,7 @@ app's direction); **BUG-020 fixed and re-walked 2026-09-30: 4/4 combinations PAS
 Validate 2036/0/0. Open for the owner: **the Figma credential** in TEXT `1240:9847` (remove it from the file and
 rotate it; one local subagent transcript holds it — masking it was refused by the permission classifier); **the two
 provisional Arabic strings** (#114). The contract is re-vendored here to `f462968` (3.27.0-m1): tell the
-"Contract updates" session when it next runs. Open for the owner: W18-3, review's AI glyph size, D-019's placement;
+"Contract updates" session when it next runs. Wave 20 (Edit Profile) walked (**100%**, validate 1723/0/0). Open for the owner: W18-3, review's AI glyph size, D-019's placement;
 from the Wave 19 review, a Retry on the profile still loading when the profile is reloaded lands after the fresher
 answer and replaces it (pre-existing, probe-proven, not recorded in KNOWN_BUGS); the task chip on other notifiers'
 disposal flag. Wave 22 is the last of the 22 formulated waves: what follows is the owner's call; a walk only on `WALK`; the wave list changes only on

@@ -589,6 +589,54 @@ void main() {
     });
   });
 
+  // API→UI Wave 20: Edit Profile's avatar disc, badge glyph and action sheet.
+  group('Wave 20 avatar tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    test('the frames\' values in both palettes', () {
+      // The disc's radial gradient is the same on both canvases (`176:1343`,
+      // `337:7923`), and so is the sheet's hairline (`216:3343`, `337:8137`).
+      for (final palette in [light, dark]) {
+        expect(palette.avatarDiscInner, const Color(0xFF4B675E));
+        expect(palette.avatarDiscOuter, const Color(0xFF95CDBB));
+        expect(palette.avatarSheetDivider, const Color(0x994B675E));
+      }
+      expect(light.avatarBadgeGlyph, const Color(0xFF384F47)); // 176:1347
+      expect(dark.avatarBadgeGlyph, const Color(0xFFFCFBF9)); // 337:7926
+      expect(light.avatarSheetHandle, const Color(0xFF000000)); // 216:3342
+      expect(dark.avatarSheetHandle, const Color(0xFFFCFBF9)); // 337:8136
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(light.copyWith(avatarDiscInner: probe).avatarDiscInner, probe);
+      expect(light.copyWith(avatarDiscOuter: probe).avatarDiscOuter, probe);
+      expect(light.copyWith(avatarBadgeGlyph: probe).avatarBadgeGlyph, probe);
+      expect(light.copyWith(avatarSheetHandle: probe).avatarSheetHandle, probe);
+      expect(
+        light.copyWith(avatarSheetDivider: probe).avatarSheetDivider,
+        probe,
+      );
+
+      // …and each leaves its neighbours alone.
+      final one = light.copyWith(avatarSheetHandle: probe);
+      expect(one.avatarSheetDivider, light.avatarSheetDivider);
+      expect(one.profileDialogClose, light.profileDialogClose);
+
+      // lerp endpoints are exact, so a mid-animation frame cannot be the only
+      // place a token is correct.
+      final mixed = light.lerp(dark, 1);
+      expect(mixed.avatarBadgeGlyph, dark.avatarBadgeGlyph);
+      expect(mixed.avatarSheetHandle, dark.avatarSheetHandle);
+      expect(mixed.avatarDiscInner, dark.avatarDiscInner);
+      expect(mixed.avatarDiscOuter, dark.avatarDiscOuter);
+      expect(mixed.avatarSheetDivider, dark.avatarSheetDivider);
+      expect(light.lerp(dark, 0).avatarBadgeGlyph, light.avatarBadgeGlyph);
+    });
+  });
+
   // API→UI Wave 22: the flashcards study screen and Flash Card Setup.
   group('Wave 22 Flashcards tokens', () {
     const light = AppColors.light;

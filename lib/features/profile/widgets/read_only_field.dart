@@ -5,12 +5,13 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/form_fields.dart';
 
 /// One immutable fact about the student, shown on Edit Profile · Figma
-/// `180:3989`.
+/// `176:1201` (university `180:6349`).
 ///
-/// The frame draws phone, parent phone, city, school, education system and
-/// grade as inputs — three of them with a dropdown caret. `PATCH /me` accepts
-/// none of them: they are fixed at registration, and phone especially is the
-/// identity anchor (adr-019, phone-verify-first). `seif_fight.md` **S20**.
+/// The frames draw phone, parent phone, city and school (university: phone,
+/// faculty, academic year, city and university) as inputs, the pickers with a
+/// dropdown caret. `PATCH /me` accepts none of them: they are fixed at
+/// registration, and phone especially is the identity anchor (adr-019,
+/// phone-verify-first). `seif_fight.md` **S20**.
 ///
 /// **This is not a disabled input, and the difference is the whole widget.** A
 /// dimmed, greyed-out text field reads as *broken* — the student assumes the
@@ -59,6 +60,10 @@ class ReadOnlyField extends StatelessWidget {
       label: label,
       value: value,
       hint: lockedHint,
+      // The row's one node says it all. Without this the label and value
+      // Texts below merged into it as well, so it read "City, City, Cairo"
+      // with the value "Cairo": each fact announced twice (API→UI Wave 20).
+      excludeSemantics: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

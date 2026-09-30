@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/theme/app_colors.dart';
@@ -16,12 +17,14 @@ import '../../../l10n/app_localizations.dart';
 // picker explicitly.
 import '../../registration/models/reference_models.dart';
 import '../../registration/notifier/reference_providers.dart';
+import 'avatar_disc.dart';
 
-/// The two avatar sheets from the Edit Profile frame family (`180:3989` and its
-/// sibling variants): an action sheet that asks HOW, then the picker itself.
+/// The two avatar sheets from the Edit Profile frame family: an action sheet
+/// that asks HOW (`216:3341`), then the picker itself (`180:4153`).
 ///
-/// Both wear the frame's sheet chrome (`180:4153`) — a `#FCFBF9` card with a
-/// 22pt radius, a centred title and a ✕ at the start edge.
+/// Both are a `#FCFBF9` / `#232428` card with a 22pt top radius. The picker
+/// has a centred title and a ✕ at the start edge; the action sheet has neither,
+/// only a drag handle over two plain rows (API→UI Wave 20).
 
 /// What [AvatarActionSheet] resolved to. Only one arm is reachable today.
 enum AvatarAction {
@@ -29,12 +32,34 @@ enum AvatarAction {
   useDefault,
 }
 
-/// Shared chrome for both sheets · Figma `180:4153`.
+/// The sheets' card: OPAQUE, like the dialog (`Frame 1000003004` /
+/// `Frame 427319513` are `#FCFBF9` / `#232428`; `cardFill` is 20% in dark and
+/// made the panel see-through), 22 at the top corners.
+BoxDecoration _cardDecoration(AppColors ext) => BoxDecoration(
+  color: ext.background,
+  borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+);
+
+/// The picker's chrome · Figma `180:4153`: a 35 dp title bar 30 under the
+/// card's top, its content 24 under the bar, starting 21 in.
+///
+/// The ✕ is the frame's own `akar-icons:cross` (`180:4247`, 23 x 23, 27 from
+/// the card's start) in [AppColors.profileDialogClose], with a 48 x 48 target
+/// centred on it, as on the Profile dialogs (W19-3). The 48 dp row that target
+/// needs is centred on the frame's bar: 23.5 = 30 − (48 − 35) / 2 above it and
+/// 17.5 = 24 − 6.5 under it. It was `Icons.close` in [AppColors.textPrimary]
+/// with a 35 x 35 target; API→UI Wave 20.
 class _SheetCard extends StatelessWidget {
   const _SheetCard({required this.title, required this.child});
 
   final String title;
+
+  /// Full width: [ChooseAvatarSheet]'s strip insets itself, so it can run to
+  /// the card's edge the way the frame's does.
   final Widget child;
+
+  /// The ✕ box's start (27) minus half of what the 48 target adds to it.
+  static const _closeStart = 27 - (48 - 23) / 2;
 
   @override
   Widget build(BuildContext context) {
@@ -44,51 +69,63 @@ class _SheetCard extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        decoration: BoxDecoration(
-          // OPAQUE, like the dialog: `Frame 1000003004` / `Frame 427319513`
-          // are `#FCFBF9` / `#232428`. `cardFill` is 20% in dark and made the
-          // panel see-through.
-          color: ext.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-        ),
-        padding: const EdgeInsetsDirectional.fromSTEB(21, 30, 21, 24),
+        decoration: _cardDecoration(ext),
+        padding: const EdgeInsetsDirectional.only(top: 23.5, bottom: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: 35,
+              height: 48,
               child: Stack(
                 alignment: AlignmentDirectional.center,
                 children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    // One line, like `TitledChrome` (register SF-08).
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppType.h2.copyWith(color: ext.textPrimary),
+                  Padding(
+                    // Clear of the ✕'s whole target on both sides, so a long
+                    // title never runs under it (register SF-08).
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: _closeStart + 48,
+                    ),
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      // One line, like `TitledChrome` (register SF-08).
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppType.h2.copyWith(color: ext.textPrimary),
+                    ),
                   ),
                   PositionedDirectional(
-                    start: 0,
+                    start: _closeStart,
                     child: IconButton(
                       key: const Key('avatar_sheet_dismiss'),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints.tightFor(
-                        width: 35,
-                        height: 35,
+                        width: 48,
+                        height: 48,
                       ),
                       tooltip: l10n.dialogClose,
                       // Pops NOTHING — the sheet resolves to null, which every
                       // caller reads as "the student changed their mind".
                       onPressed: () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close, size: 23, color: ext.textPrimary),
+                      icon: SvgPicture.asset(
+                        'assets/icons/close_cross.svg',
+                        width: 23,
+                        height: 23,
+                        // The tooltip names the button; the glyph's own image
+                        // semantics would make it an ImageView (W11-7).
+                        excludeFromSemantics: true,
+                        colorFilter: ColorFilter.mode(
+                          ext.profileDialogClose,
+                          BlendMode.srcIn,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 17.5),
             child,
           ],
         ),
@@ -98,7 +135,14 @@ class _SheetCard extends StatelessWidget {
 }
 
 /// "How would you like to change your picture?" — the frame's avatar action
-/// sheet, with one of its two options permanently unavailable.
+/// sheet (`216:3341`), with one of its two options permanently unavailable.
+///
+/// The frame draws a drag handle and two plain, full-width rows with one
+/// hairline between them: no title, no ✕, no icons, no row borders (API→UI
+/// Wave 20; it used to wear the picker's title-and-✕ chrome and bordered icon
+/// rows). The one addition is the caption under the rows saying why Upload
+/// photo does nothing (owner ruling, `DESIGN_ISSUES.md` #106). Dismissed by the
+/// scrim, a drag or Back, like any modal sheet.
 ///
 /// Resolves to an [AvatarAction], or null if dismissed.
 class AvatarActionSheet extends StatelessWidget {
@@ -119,63 +163,100 @@ class AvatarActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final ext = Theme.of(context).extension<AppColors>()!;
 
-    return _SheetCard(
-      title: l10n.changeAvatarTitle,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // TODO(contract): seif_fight.md S29 — `PUT /me/avatar` is
-          // `x-stability: draft` AND moderated (adr-021: SafeSearch, so an
-          // upload is not even synchronously "set"). There is no endpoint to
-          // call and no defined UX for a rejected image, so the option renders
-          // and does not work.
-          _SheetRow(
-            key: const Key('avatar_upload_photo'),
-            icon: Icons.photo_camera_outlined,
-            label: l10n.uploadPhoto,
-            disabledHint: l10n.uploadPhotoUnavailable,
-          ),
-          const SizedBox(height: 12),
-          _SheetRow(
-            key: const Key('avatar_use_default'),
-            icon: Icons.face_outlined,
-            label: l10n.useAvatar,
-            onTap: () => Navigator.of(context).pop(AvatarAction.useDefault),
-          ),
-          const SizedBox(height: 12),
-          // Said out loud, not just implied by the dimming — the student is
-          // owed a reason a drawn option does nothing.
-          Text(
-            l10n.uploadPhotoUnavailable,
-            textAlign: TextAlign.center,
-            style: AppType.captionRegular.copyWith(
-              color: Theme.of(context).extension<AppColors>()!.textSecondary,
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: _cardDecoration(ext),
+        // `216:3341`: the handle 15 under the card's top; the last row ends
+        // 25 above the frame's bottom edge.
+        padding: const EdgeInsetsDirectional.only(top: 15, bottom: 25),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // `Rectangle 6428`: 94 x 4, fully rounded, centred. Decoration
+            // only — the sheet drags without it.
+            Center(
+              child: ExcludeSemantics(
+                child: Container(
+                  key: const Key('avatar_sheet_handle'),
+                  width: 94,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ext.avatarSheetHandle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+            // The first row starts at 39: 20 under the handle.
+            const SizedBox(height: 20),
+            // TODO(contract): seif_fight.md S29 — `PUT /me/avatar` is
+            // `x-stability: draft` AND moderated (adr-021: SafeSearch, so an
+            // upload is not even synchronously "set"). There is no endpoint to
+            // call and no defined UX for a rejected image, so the option renders
+            // and does not work.
+            _SheetRow(
+              key: const Key('avatar_upload_photo'),
+              label: l10n.uploadPhoto,
+              disabledHint: l10n.uploadPhotoUnavailable,
+              // The frame's only line: under the first row (`216:3343`).
+              divider: true,
+            ),
+            // 83 → 96 in the frame.
+            const SizedBox(height: 13),
+            _SheetRow(
+              key: const Key('avatar_use_default'),
+              label: l10n.useAvatar,
+              onTap: () => Navigator.of(context).pop(AvatarAction.useDefault),
+            ),
+            const SizedBox(height: 12),
+            // Said out loud, not just implied by the dimming — the student is
+            // owed a reason a drawn option does nothing (owner ruling, #106).
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                l10n.uploadPhotoUnavailable,
+                key: const Key('avatar_upload_unavailable_note'),
+                textAlign: TextAlign.center,
+                style: AppType.captionRegular.copyWith(
+                  color: ext.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// One action row. Same enabled/disabled contract as `ProfileMenuRow`: a null
-/// [onTap] produces a row with no [InkWell] in its subtree at all, wrapped in
-/// an [IgnorePointer] — not a live tap target with a dead callback.
+/// One action row · Figma `216:3343` / `216:3345`: full width, the label 20 in
+/// and 10 over and under (44 tall), no icon, no border. Same enabled/disabled
+/// contract as `ProfileMenuRow`: a null [onTap] produces a row with no
+/// [InkWell] in its subtree at all, wrapped in an [IgnorePointer] — not a live
+/// tap target with a dead callback.
+///
+/// The frame sets the labels in Inter Medium 20; the build keeps the type
+/// scale's `h3` (18 / 600, the same 24 line), as the Profile menu rows do
+/// (#104).
 class _SheetRow extends StatelessWidget {
   const _SheetRow({
     super.key,
-    required this.icon,
     required this.label,
     this.onTap,
     this.disabledHint,
+    this.divider = false,
   });
 
-  final IconData icon;
   final String label;
   final VoidCallback? onTap;
   final String? disabledHint;
+
+  /// The 0.5 dp hairline along the row's bottom edge, inside its 44.
+  final bool divider;
 
   /// Shared with the Profile menu rows so "disabled" looks identical wherever
   /// it appears.
@@ -185,27 +266,32 @@ class _SheetRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    final row = Container(
+    final label = Padding(
       padding: const EdgeInsetsDirectional.symmetric(
-        horizontal: 16,
-        vertical: 16,
+        horizontal: 20,
+        vertical: 10,
       ),
+      child: Text(
+        this.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppType.h3.copyWith(color: ext.textPrimary),
+      ),
+    );
+
+    // The hairline stays at full strength under a dimmed row: it separates
+    // the two rows, it is not part of the unavailable one.
+    Widget withDivider(Widget child) => DecoratedBox(
+      key: divider ? const Key('avatar_sheet_divider') : null,
+      position: DecorationPosition.foreground,
       decoration: BoxDecoration(
-        border: Border.all(color: ext.profileRowBorder, width: 0.5),
-        borderRadius: BorderRadius.circular(16),
+        border: divider
+            ? Border(
+                bottom: BorderSide(color: ext.avatarSheetDivider, width: 0.5),
+              )
+            : null,
       ),
-      child: Row(
-        children: [
-          Icon(icon, size: 26, color: ext.textPrimary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: AppType.h3.copyWith(color: ext.textPrimary),
-            ),
-          ),
-        ],
-      ),
+      child: child,
     );
 
     if (onTap == null) {
@@ -214,7 +300,7 @@ class _SheetRow extends StatelessWidget {
         enabled: false,
         hint: disabledHint,
         child: IgnorePointer(
-          child: Opacity(opacity: disabledOpacity, child: row),
+          child: withDivider(Opacity(opacity: disabledOpacity, child: label)),
         ),
       );
     }
@@ -223,11 +309,7 @@ class _SheetRow extends StatelessWidget {
       button: true,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: row,
-        ),
+        child: InkWell(onTap: onTap, child: withDivider(label)),
       ),
     );
   }
@@ -260,18 +342,30 @@ class ChooseAvatarSheet extends ConsumerWidget {
 
   static const _size = 69.0;
 
+  /// The strip's start inset (`180:4284` at 21).
+  static const _inset = 21.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
     final avatars = ref.watch(avatarsProvider);
 
+    // The strip starts 21 in and runs to the card's edge, cut there the way
+    // the frame's 409-wide row is (`180:4284`); the non-data states keep the
+    // 21 on both sides.
+    Widget inset(Widget child) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _inset),
+      child: child,
+    );
+
     return _SheetCard(
       title: l10n.chooseAvatarTitle,
       child: SizedBox(
         height: _size,
         child: avatars.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              inset(const Center(child: CircularProgressIndicator())),
           // `avatarsProvider` is a plain, non-autoDispose `FutureProvider`,
           // deliberately OUTSIDE the session scope (global reference data,
           // identical for every student — see
@@ -292,23 +386,29 @@ class ChooseAvatarSheet extends ConsumerWidget {
           // A user-tapped `ref.invalidate` — the same recovery every reference
           // picker in the registration wizard already uses. The project rule is
           // that retry is a button, never silent.
-          error: (error, _) => _SheetFailure(
-            message: isOffline(error) ? l10n.offline : l10n.genericError,
-            onRetry: () => ref.invalidate(avatarsProvider),
+          error: (error, _) => inset(
+            _SheetFailure(
+              message: isOffline(error) ? l10n.offline : l10n.genericError,
+              onRetry: () => ref.invalidate(avatarsProvider),
+            ),
           ),
           data: (items) => items.isEmpty
               // An empty list is not a failure the student can retry away —
               // the server answered, with nothing. Left as it was.
-              ? Center(
-                  child: Text(
-                    l10n.genericError,
-                    style: AppType.bodyMedium.copyWith(
-                      color: ext.textSecondary,
+              ? inset(
+                  Center(
+                    child: Text(
+                      l10n.genericError,
+                      style: AppType.bodyMedium.copyWith(
+                        color: ext.textSecondary,
+                      ),
                     ),
                   ),
                 )
               : ListView.separated(
+                  key: const Key('avatar_choice_strip'),
                   scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: _inset),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 16),
                   itemBuilder: (_, i) => _AvatarChoice(
@@ -388,11 +488,15 @@ class _AvatarChoice extends StatelessWidget {
         child: Container(
           width: ChooseAvatarSheet._size,
           height: ChooseAvatarSheet._size,
-          decoration: BoxDecoration(
+          // The ring is the build's, not the frame's (its five cells are
+          // identical): the student has to see which avatar is theirs.
+          foregroundDecoration: BoxDecoration(
             shape: BoxShape.circle,
             border: selected ? Border.all(color: cs.primary, width: 2.5) : null,
           ),
-          child: ClipOval(
+          // Every cell is the frame's gradient disc (`180:4277`…).
+          child: AvatarDisc(
+            size: ChooseAvatarSheet._size,
             child: CachedNetworkImage(
               imageUrl: avatar.url,
               fit: BoxFit.cover,

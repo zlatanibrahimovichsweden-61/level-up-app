@@ -1,13 +1,21 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
+import 'package:level_up_app/core/widgets/form_fields.dart';
+import 'package:level_up_app/core/widgets/offline_banner.dart';
 import 'package:level_up_app/features/profile/models/profile_update.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/screens/edit_profile_screen.dart';
+import 'package:level_up_app/features/profile/widgets/avatar_disc.dart';
+import 'package:level_up_app/features/profile/widgets/avatar_sheets.dart';
 import 'package:level_up_app/features/profile/widgets/read_only_field.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'profile_fixtures.dart';
@@ -370,18 +378,20 @@ void main() {
 
       // The sheet is still open and nothing was picked.
       expect(find.byKey(const Key('avatar_upload_photo')), findsOneWidget);
-      await tapProfileKey(tester, 'avatar_sheet_dismiss');
+      // The frame's sheet has no ✕ (216:3341): the scrim dismisses it.
+      await tester.tapAt(const Offset(400, 100));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('avatar_upload_photo')), findsNothing);
       await save(tester);
       verifyNever(() => repo.updateMe(any()));
     });
   });
 
   group('read-only fields (conflict 1 / S20)', () {
+    // The frame's rows (`176:1201`; owner ruling, API→UI Wave 20, #105).
     const readOnlyKeys = [
       'edit_phone_field',
       'edit_city_field',
-      'edit_education_system_field',
-      'edit_stage_field',
       'edit_school_field',
     ];
 
@@ -490,6 +500,10 @@ void main() {
       // shapes), so its three rows must not be drawn empty.
       expect(find.byKey(const Key('edit_school_field')), findsNothing);
       expect(find.byKey(const Key('edit_stage_field')), findsNothing);
+      expect(
+        find.byKey(const Key('edit_education_system_field')),
+        findsNothing,
+      );
     });
   });
 
@@ -715,6 +729,465 @@ void main() {
 
       expect(find.text('حفظ التغييرات'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  // API→UI Wave 20: the frames. Light school `176:1201`, university `180:6349`
+  // (dark `337:7795`, RTL `549:21413`); the action sheet `216:3341` (dark
+  // `337:8135`); the picker `180:4153` (dark `337:8024`). Distances are read
+  // off the frames in dp; the test surface is wider than a phone, so each one
+  // is measured from its own reference edge, never from the screen's.
+  group('Wave 20: the frames (176:1201 · 216:3341 · 180:4153)', () {
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    Future<void> openActionSheet(WidgetTester tester) =>
+        tapProfileKey(tester, 'edit_avatar_button');
+
+    Future<void> openPicker(WidgetTester tester) async {
+      await openActionSheet(tester);
+      await tapProfileKey(tester, 'avatar_use_default');
+    }
+
+    Finder badgeGlyph() => find.byKey(const Key('edit_avatar_badge_glyph'));
+
+    Rect badgeRect(WidgetTester tester) => tester.getRect(
+      find
+          .ancestor(of: badgeGlyph(), matching: find.byType(ElevatedSurface))
+          .first,
+    );
+
+    group('the avatar block (176:1343 · 176:1346)', () {
+      for (final locale in ['en', 'ar']) {
+        testWidgets('$locale: the disc 25 under the bar, the badge 14 below '
+            'the disc, the first label 1 under the badge', (tester) async {
+          await pumpEditProfile(tester, profile: editRepo(), locale: locale);
+
+          // The back chip is the whole 35 dp bar's height.
+          final bar = tester.getRect(
+            find.byKey(const Key('edit_profile_back')),
+          );
+          final disc = tester.getRect(
+            find.byKey(const Key('edit_avatar_disc')),
+          );
+          final badge = badgeRect(tester);
+          final firstLabel = tester.getRect(find.byType(FieldLabel).first);
+
+          expect(bar.height, 35);
+          expect(disc.top - bar.bottom, moreOrLessEquals(25));
+          expect(disc.size, const Size(151, 151));
+          expect(badge.size, const Size(34, 34));
+          expect(badge.center.dx, moreOrLessEquals(disc.center.dx));
+          expect(badge.bottom - disc.bottom, moreOrLessEquals(14));
+          expect(firstLabel.top - badge.bottom, moreOrLessEquals(1));
+        });
+      }
+
+      testWidgets('the skeleton puts its first block where the form puts '
+          'its first label', (tester) async {
+        final repo = profileRepo();
+        when(repo.getMe).thenAnswer((_) => Completer<StudentProfile>().future);
+        await pumpEditProfile(tester, profile: repo, settle: false);
+
+        final bar = tester.getRect(find.byKey(const Key('edit_profile_back')));
+        final blocks = find.descendant(
+          of: find.byType(EditProfileChrome),
+          matching: find.byType(Container),
+        );
+        final disc = tester.getRect(blocks.first);
+        final firstBlock = tester.getRect(blocks.at(1));
+        expect(disc.top - bar.bottom, moreOrLessEquals(25));
+        // 151 + 14 + 1: the form's disc, badge overhang and gap.
+        expect(firstBlock.top - disc.top, moreOrLessEquals(166));
+      });
+
+      for (final dark in [false, true]) {
+        final ink = dark ? const Color(0xFFFCFBF9) : const Color(0xFF384F47);
+        testWidgets('${dark ? 'dark' : 'light'}: the badge carries the '
+            "frame's pencil, 17 x 17, centred, in "
+            '${dark ? '#FCFBF9' : '#384F47'}', (tester) async {
+          await pumpEditProfile(
+            tester,
+            profile: editRepo(),
+            theme: dark ? AppTheme.dark : null,
+          );
+
+          final glyph = tester.widget<SvgPicture>(badgeGlyph());
+          expect(glyph.colorFilter, ColorFilter.mode(ink, BlendMode.srcIn));
+          final rect = tester.getRect(badgeGlyph());
+          expect(rect.size, const Size(17, 17));
+          expect(rect.center, badgeRect(tester).center);
+          // No Material stand-in left behind.
+          expect(
+            find.descendant(
+              of: find.byKey(const Key('edit_avatar_button')),
+              matching: find.byIcon(Icons.edit),
+            ),
+            findsNothing,
+          );
+        });
+      }
+
+      testWidgets("the disc is the frame's radial gradient under the image", (
+        tester,
+      ) async {
+        await pumpEditProfile(tester, profile: editRepo());
+
+        final box = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byKey(const Key('edit_avatar_disc')),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        final decoration = box.decoration! as BoxDecoration;
+        final gradient = decoration.gradient! as RadialGradient;
+        expect(decoration.shape, BoxShape.circle);
+        expect(gradient.colors, const [Color(0xFF4B675E), Color(0xFF95CDBB)]);
+
+        // Derived here from the frame's own `gradientTransform` (`176:1343`,
+        // read over the MCP), not from the widget's constants: Figma maps the
+        // box to a space where the gradient is the circle at (0.5, 0.5) with
+        // radius 0.5, so the centre is the inverse image of (0.5, 0.5) and the
+        // radius is 0.5 over the transform's scale.
+        const a = -0.014609374105930328, b = 0.6789889335632324;
+        const c = 0.14206984639167786, d = -0.6789889335632324;
+        const e = -0.014609374105930328, f = 0.8647710084915161;
+        const det = a * e - b * d;
+        final u = ((0.5 - c) * e - b * (0.5 - f)) / det;
+        final v = (a * (0.5 - f) - d * (0.5 - c)) / det;
+        final center = gradient.center as Alignment;
+        expect(center.x, moreOrLessEquals(2 * u - 1, epsilon: 1e-3));
+        expect(center.y, moreOrLessEquals(2 * v - 1, epsilon: 1e-3));
+        expect(
+          gradient.radius,
+          moreOrLessEquals(0.5 / math.sqrt(a * a + b * b), epsilon: 1e-3),
+        );
+      });
+    });
+
+    group('the locked rows follow the frames (owner ruling, #105)', () {
+      Rect rowOf(WidgetTester tester, String key) =>
+          tester.getRect(find.byKey(Key(key)));
+
+      void expectInOrder(WidgetTester tester, List<String> keys) {
+        for (var i = 1; i < keys.length; i++) {
+          expect(
+            rowOf(tester, keys[i]).top - rowOf(tester, keys[i - 1]).bottom,
+            moreOrLessEquals(25),
+            reason: '${keys[i]} 25 under ${keys[i - 1]}',
+          );
+        }
+      }
+
+      testWidgets('school (176:1201): Phone, City, School name', (
+        tester,
+      ) async {
+        await pumpEditProfile(tester, profile: editRepo());
+
+        expectInOrder(tester, const [
+          'edit_phone_field',
+          'edit_city_field',
+          'edit_school_field',
+        ]);
+        // Hidden layers in the frame: not built.
+        expect(
+          find.byKey(const Key('edit_education_system_field')),
+          findsNothing,
+        );
+        expect(find.byKey(const Key('edit_stage_field')), findsNothing);
+      });
+
+      testWidgets('university (180:6349): Phone, Faculty, Academic Year, '
+          'City, University name', (tester) async {
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(me: universityProfile()),
+        );
+
+        expectInOrder(tester, const [
+          'edit_phone_field',
+          'edit_faculty_field',
+          'edit_study_year_field',
+          'edit_city_field',
+          'edit_university_field',
+        ]);
+      });
+
+      testWidgets('a payload with both track blocks follows its track, with '
+          'one City row and no duplicate key', (tester) async {
+        // Not a shape `GET /me` sends (adr-010), but the schema does not forbid
+        // it, and the City row is one keyed widget.
+        final both = StudentProfile.fromJson(<String, dynamic>{
+          ...universityProfileJson(),
+          'track': 'school',
+          'school': schoolProfileJson()['school'],
+        });
+        await pumpEditProfile(tester, profile: editRepo(me: both));
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('edit_city_field')), findsOneWidget);
+        expect(find.byKey(const Key('edit_school_field')), findsOneWidget);
+        expect(find.byKey(const Key('edit_faculty_field')), findsNothing);
+      });
+
+      testWidgets('I2: a locked row is announced once: its label, its value '
+          'and why it is locked', (tester) async {
+        final handle = tester.ensureSemantics();
+        await pumpEditProfile(tester, profile: editRepo());
+
+        final node = tester.getSemantics(
+          find.byKey(const Key('edit_city_field')),
+        );
+        expect(
+          node,
+          isSemantics(
+            isReadOnly: true,
+            label: en.cityLabel,
+            value: readOnly(tester, 'edit_city_field'),
+            hint: en.fieldLockedHint,
+          ),
+        );
+        // It read "City\nCity\nCairo", with the value "Cairo", before.
+        expect(node.label, isNot(contains('\n')));
+        expect(node.childrenCount, 0);
+        handle.dispose();
+      });
+    });
+
+    group('the action sheet (216:3341)', () {
+      testWidgets('a drag handle over two plain, full-width rows and one '
+          'hairline: no title, no ✕, no icons', (tester) async {
+        await pumpEditProfile(tester, profile: editRepo());
+        await openActionSheet(tester);
+
+        final card = tester.getRect(find.byType(AvatarActionSheet));
+        final handleFinder = find.byKey(const Key('avatar_sheet_handle'));
+        final handle = tester.getRect(handleFinder);
+        expect(handle.size, const Size(94, 4));
+        expect(handle.top - card.top, 15);
+        expect(handle.center.dx, moreOrLessEquals(card.center.dx));
+        expect(
+          (tester.widget<Container>(handleFinder).decoration! as BoxDecoration)
+              .color,
+          const Color(0xFF000000),
+        );
+
+        final upload = tester.getRect(
+          find.byKey(const Key('avatar_upload_photo')),
+        );
+        final use = tester.getRect(find.byKey(const Key('avatar_use_default')));
+        expect(upload.top - card.top, 39);
+        expect(upload.height, 44);
+        expect(use.height, 44);
+        expect(use.top - upload.bottom, 13);
+        expect(upload.left, card.left);
+        expect(upload.width, card.width);
+        expect(tester.getRect(find.text(en.uploadPhoto)).left - card.left, 20);
+        expect(tester.getRect(find.text(en.useAvatar)).left - card.left, 20);
+
+        // The one hairline, under the first row.
+        final divider = find.byKey(const Key('avatar_sheet_divider'));
+        expect(
+          find.descendant(
+            of: find.byType(AvatarActionSheet),
+            matching: divider,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('avatar_upload_photo')),
+            matching: divider,
+          ),
+          findsOneWidget,
+        );
+        final decoration =
+            tester.widget<DecoratedBox>(divider).decoration as BoxDecoration;
+        final border = decoration.border! as Border;
+        expect(
+          border.bottom,
+          const BorderSide(color: Color(0x994B675E), width: 0.5),
+        );
+        expect(border.top, BorderSide.none);
+
+        // None of the old chrome.
+        expect(
+          find.descendant(
+            of: find.byType(AvatarActionSheet),
+            matching: find.text(en.changeAvatarTitle),
+          ),
+          findsNothing,
+        );
+        expect(find.byKey(const Key('avatar_sheet_dismiss')), findsNothing);
+        expect(
+          find.descendant(
+            of: find.byType(AvatarActionSheet),
+            matching: find.byType(Icon),
+          ),
+          findsNothing,
+        );
+        // The reason Upload photo does nothing stays (owner ruling, #106).
+        expect(
+          find.byKey(const Key('avatar_upload_unavailable_note')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('dark (337:8135): the handle #FCFBF9, the hairline the same '
+          '#4B675E at 60%', (tester) async {
+        await pumpEditProfile(
+          tester,
+          profile: editRepo(),
+          theme: AppTheme.dark,
+        );
+        await openActionSheet(tester);
+
+        final handle = tester.widget<Container>(
+          find.byKey(const Key('avatar_sheet_handle')),
+        );
+        expect(
+          (handle.decoration! as BoxDecoration).color,
+          const Color(0xFFFCFBF9),
+        );
+        final divider = tester.widget<DecoratedBox>(
+          find.byKey(const Key('avatar_sheet_divider')),
+        );
+        final border = (divider.decoration as BoxDecoration).border! as Border;
+        expect(border.bottom.color, const Color(0x994B675E));
+      });
+
+      testWidgets('the scrim dismisses it, and nothing changes', (
+        tester,
+      ) async {
+        final repo = editRepo();
+        await pumpEditProfile(tester, profile: repo);
+        await openActionSheet(tester);
+
+        await tester.tapAt(const Offset(400, 100));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AvatarActionSheet), findsNothing);
+        await save(tester);
+        verifyNever(() => repo.updateMe(any()));
+      });
+    });
+
+    group('the picker (180:4153)', () {
+      for (final dark in [false, true]) {
+        final ink = dark ? const Color(0xFFFCFBF9) : const Color(0xFF3F3F3F);
+        testWidgets("${dark ? 'dark (337:8024)' : 'light'}: the frame's ✕, "
+            "27 from the card's start, with a 48 x 48 target", (tester) async {
+          await pumpEditProfile(
+            tester,
+            profile: editRepo(),
+            theme: dark ? AppTheme.dark : null,
+          );
+          await openPicker(tester);
+
+          final card = tester.getRect(find.byType(ChooseAvatarSheet));
+          final dismiss = find.byKey(const Key('avatar_sheet_dismiss'));
+          final glyph = find.descendant(
+            of: dismiss,
+            matching: find.byType(SvgPicture),
+          );
+          final target = tester.getRect(dismiss);
+          final cross = tester.getRect(glyph);
+
+          expect(target.size, const Size(48, 48));
+          expect(cross.size, const Size(23, 23));
+          expect(cross.left - card.left, 27);
+          expect(target.center, cross.center);
+          // Centred on the frame's 35 dp bar, 30 under the card's top.
+          expect(target.center.dy - card.top, 47.5);
+          expect(
+            tester.widget<SvgPicture>(glyph).colorFilter,
+            ColorFilter.mode(ink, BlendMode.srcIn),
+          );
+        });
+      }
+
+      testWidgets("Arabic: the ✕ mirrors to 27 from the card's right", (
+        tester,
+      ) async {
+        await pumpEditProfile(tester, profile: editRepo(), locale: 'ar');
+        await openPicker(tester);
+
+        final card = tester.getRect(find.byType(ChooseAvatarSheet));
+        final cross = tester.getRect(
+          find.descendant(
+            of: find.byKey(const Key('avatar_sheet_dismiss')),
+            matching: find.byType(SvgPicture),
+          ),
+        );
+        expect(card.right - cross.right, 27);
+      });
+
+      testWidgets('the strip starts 21 in and 24 under the bar, and every '
+          'cell is the gradient disc', (tester) async {
+        await pumpEditProfile(tester, profile: editRepo());
+        await openPicker(tester);
+
+        final card = tester.getRect(find.byType(ChooseAvatarSheet));
+        final first = tester.getRect(
+          find.byKey(const Key('avatar_choice_avatar-01')),
+        );
+        expect(first.size, const Size(69, 69));
+        expect(first.left - card.left, 21);
+        expect(first.top - card.top, 89);
+        expect(
+          find.descendant(
+            of: find.byType(ChooseAvatarSheet),
+            matching: find.byType(AvatarDisc),
+          ),
+          findsNWidgets(avatarChoices.length),
+        );
+      });
+    });
+
+    testWidgets('I1: the system Back on a dirty form asks too (PopScope)', (
+      tester,
+    ) async {
+      final container = await pumpEditProfile(tester, profile: editRepo());
+
+      await tester.enterText(input('edit_name_field'), 'Ahmed Ali');
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Discard changes?'), findsOneWidget);
+      expect(locationOf(container), '/profile/edit');
+    });
+
+    testWidgets('offline over a loaded form: the banner shows and the form '
+        'stays', (tester) async {
+      await pumpEditProfile(tester, profile: editRepo(), online: false);
+
+      expect(find.byType(OfflineBanner), findsOneWidget);
+      expect(find.byKey(const Key('edit_save_button')), findsOneWidget);
+      expect(find.byType(ReadOnlyField), findsWidgets);
+    });
+
+    testWidgets('a second tap on Save while the first is in flight sends '
+        'nothing more', (tester) async {
+      final repo = profileRepo();
+      final pending = Completer<StudentProfile>();
+      when(() => repo.updateMe(any())).thenAnswer((_) => pending.future);
+      await pumpEditProfile(tester, profile: repo);
+
+      await tester.enterText(input('edit_name_field'), 'Ahmed Ali');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('edit_save_button')));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('edit_save_button')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      verify(() => repo.updateMe(any())).called(1);
+      pending.complete(schoolProfile());
+      await tester.pumpAndSettle();
     });
   });
 }

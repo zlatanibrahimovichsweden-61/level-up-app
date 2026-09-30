@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
@@ -20,11 +21,14 @@ import '../models/student_profile.dart';
 import '../notifier/edit_profile_notifier.dart';
 import '../notifier/me_notifier.dart';
 import '../profile_error_copy.dart';
+import '../widgets/avatar_disc.dart';
 import '../widgets/avatar_sheets.dart';
 import '../widgets/read_only_field.dart';
 import 'profile_screen.dart' show profileScreenState;
 
-/// Edit Profile · Figma `180:3989`, routed at `/profile/edit`.
+/// Edit Profile · Figma `176:1201` (school) / `180:6349` (university), dark
+/// `337:7795` / `349:12688`, RTL `549:21413` / `549:26807`; routed at
+/// `/profile/edit`.
 ///
 /// **The last unconsumed stable endpoint in the contract lives here.** After
 /// this screen, coverage is 21/21 stable; every remaining path is
@@ -43,11 +47,13 @@ import 'profile_screen.dart' show profileScreenState;
 ///   moderated, so that half of the sheet renders disabled (`seif_fight.md`
 ///   S29).
 ///
-/// Everything else the frame draws as an input — phone, city, education
-/// system, grade, school — is **immutable after registration** in v1.1 and
-/// renders as a [ReadOnlyField]. Phone especially: it is the identity anchor
-/// (adr-019, phone-verify-first) and cannot be a free edit. `seif_fight.md`
-/// **S20**.
+/// Everything else the frame draws as an input — phone, city, school, and on
+/// the university track faculty, academic year and university — is
+/// **immutable after registration** in v1.1 and renders as a [ReadOnlyField].
+/// Phone especially: it is the identity anchor (adr-019, phone-verify-first)
+/// and cannot be a free edit. `seif_fight.md` **S20**. The rows and their order
+/// are the frames' (owner ruling, API→UI Wave 20, `DESIGN_ISSUES.md` #105):
+/// education system and grade are hidden layers there, so they are not built.
 ///
 /// **The frame's "Parent's Number" row is not built at all.** `GET /me` does
 /// not return `parentPhone` — the field exists only on the two registration
@@ -101,6 +107,12 @@ class EditProfileScreen extends ConsumerWidget {
     );
   }
 }
+
+/// Where the content starts, under [EditProfileChrome]'s 8: together 25 under
+/// the title bar, as every frame draws it (the bar ends at 95, the avatar disc
+/// starts at 120). Shared by the form and the skeleton so the form does not
+/// shift when the profile arrives. It was 8 (16 in all); API→UI Wave 20.
+const double _underTitleBar = 17;
 
 /// The frame's title bar (`180:4012`) plus whatever sits under it.
 ///
@@ -310,7 +322,12 @@ class _FormState extends ConsumerState<_Form> {
       child: EditProfileChrome(
         onBack: _guardedBack,
         child: SingleChildScrollView(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            20,
+            _underTitleBar,
+            20,
+            32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -321,7 +338,9 @@ class _FormState extends ConsumerState<_Form> {
                   onTap: _chooseAvatar,
                 ),
               ),
-              const SizedBox(height: 28),
+              // The first label starts 1 under the badge (every frame: the
+              // badge ends at 285, "Full Name" starts at 286).
+              const SizedBox(height: 1),
 
               // --- Editable ---------------------------------------------
               FieldLabel(l10n.fullNameLabel),
@@ -412,6 +431,28 @@ class _ReadOnlySection extends StatelessWidget {
 
     final school = profile.school;
     final university = profile.university;
+    // A university student's `school` block is null and their academic facts
+    // live in `university` instead (adr-010 — the two tracks have different
+    // SHAPES). Same screen, driven by which block the payload carries.
+    final showUniversity =
+        university != null &&
+        (school == null || profile.track == Track.university);
+
+    final city = ReadOnlyField(
+      key: const Key('edit_city_field'),
+      label: l10n.cityLabel,
+      // FIRST CALL SITE of the Day 7c `ProfileCity` union, and the reason it
+      // is sealed. Under v1.0 this was a bare `NamedRef`, so a student whose
+      // city was typed rather than picked (adr-028 §1) would have thrown on a
+      // well-formed `GET /me`. Exhaustive `switch`: the coded arm has both
+      // locales, the free-text arm has one plain string and no localization
+      // to choose between.
+      value: switch (profile.geography.city) {
+        CodedCity(:final ref) => ar ? ref.nameAr : ref.nameEn,
+        FreeTextCity(:final name) => name,
+      },
+      lockedHint: locked,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -428,68 +469,18 @@ class _ReadOnlySection extends StatelessWidget {
           lockedHint: locked,
           forceLtr: true,
         ),
-        const SizedBox(height: 25),
-        ReadOnlyField(
-          key: const Key('edit_city_field'),
-          label: l10n.cityLabel,
-          // FIRST CALL SITE of the Day 7c `ProfileCity` union, and the reason
-          // it is sealed. Under v1.0 this was a bare `NamedRef`, so a student
-          // whose city was typed rather than picked (adr-028 §1) would have
-          // thrown on a well-formed `GET /me`. Exhaustive `switch`: the coded
-          // arm has both locales, the free-text arm has one plain string and
-          // no localization to choose between.
-          value: switch (profile.geography.city) {
-            CodedCity(:final ref) => ar ? ref.nameAr : ref.nameEn,
-            FreeTextCity(:final name) => name,
-          },
-          lockedHint: locked,
-        ),
-        if (school != null) ...[
-          const SizedBox(height: 25),
-          ReadOnlyField(
-            key: const Key('edit_education_system_field'),
-            label: l10n.educationSystemLabel,
-            // The wire code, verbatim. `EducationSystem` is documented as
-            // EXTENSIBLE, so there is no closed set to translate against and
-            // `GET /me` carries no display name — mapping it to copy here
-            // would go stale the day Seif adds a system. Reported rather than
-            // guessed.
-            value: school.educationSystem,
-            lockedHint: locked,
-          ),
-          const SizedBox(height: 25),
-          ReadOnlyField(
-            key: const Key('edit_stage_field'),
-            label: l10n.stageLabel,
-            value: school.stage,
-            lockedHint: locked,
-          ),
-          const SizedBox(height: 25),
-          ReadOnlyField(
-            key: const Key('edit_school_field'),
-            label: l10n.schoolLabel,
-            // adr-028 §2 made `schoolId` optional for EVERY school student and
-            // v1.1 removed free-text `schoolName` outright, so "no school" is
-            // a real, valid answer rather than missing data.
-            value: school.school == null
-                ? l10n.schoolSkipped
-                : (ar ? school.school!.nameAr : school.school!.nameEn),
-            lockedHint: locked,
-          ),
-        ],
-        // A university student's `school` block is null and their academic
-        // facts live here instead (adr-010 — the two tracks have different
-        // SHAPES). Same screen, driven by which block the payload carries.
-        if (university != null) ...[
-          const SizedBox(height: 25),
-          ReadOnlyField(
-            key: const Key('edit_university_field'),
-            label: l10n.universityLabel,
-            value: ar
-                ? university.university.nameAr
-                : university.university.nameEn,
-            lockedHint: locked,
-          ),
+        // The rows and their order are the frames' (owner ruling, API→UI Wave
+        // 20, DESIGN_ISSUES #105). School `176:1201`: Phone, City, School name
+        // (its Parent's Number is not built, above; Education System and Grade
+        // are hidden layers). University `180:6349`: Phone, Faculty, Academic
+        // Year, City, University name.
+        // ONE block, never two: [city] is a single keyed widget, so it must
+        // not land in the list twice. `GET /me` sends one track's block and
+        // null for the other (adr-010), but the schema does not enforce it; a
+        // payload carrying both follows its `track` instead of crashing on a
+        // duplicate key. Neither block still shows the city: it is the
+        // student's own data.
+        if (showUniversity) ...[
           const SizedBox(height: 25),
           ReadOnlyField(
             key: const Key('edit_faculty_field'),
@@ -505,13 +496,42 @@ class _ReadOnlySection extends StatelessWidget {
             value: l10n.studyYearNumber(university.yearNumber),
             lockedHint: locked,
           ),
+          const SizedBox(height: 25),
+          city,
+          const SizedBox(height: 25),
+          ReadOnlyField(
+            key: const Key('edit_university_field'),
+            label: l10n.universityLabel,
+            value: ar
+                ? university.university.nameAr
+                : university.university.nameEn,
+            lockedHint: locked,
+          ),
+        ] else if (school != null) ...[
+          const SizedBox(height: 25),
+          city,
+          const SizedBox(height: 25),
+          ReadOnlyField(
+            key: const Key('edit_school_field'),
+            label: l10n.schoolLabel,
+            // adr-028 §2 made `schoolId` optional for EVERY school student and
+            // v1.1 removed free-text `schoolName` outright, so "no school" is
+            // a real, valid answer rather than missing data.
+            value: school.school == null
+                ? l10n.schoolSkipped
+                : (ar ? school.school!.nameAr : school.school!.nameEn),
+            lockedHint: locked,
+          ),
+        ] else ...[
+          const SizedBox(height: 25),
+          city,
         ],
       ],
     );
   }
 }
 
-/// The 151pt avatar with the frame's edit badge (`180:4079`) on its lower edge.
+/// The 151pt avatar with the frame's edit badge (`176:1346`) on its lower edge.
 ///
 /// **The badge's shadow is much tighter than the one that shipped.** It was
 /// drawn at (0.5, 0.5) blur 2 — borrowed from the profile header — against the
@@ -519,6 +539,12 @@ class _ReadOnlySection extends StatelessWidget {
 /// same black shadow and adds **G5** over a 20% cream wash (`337:7925`); both
 /// are `AppElevation` tokens now, so the difference between the canvases is a
 /// reading rather than a call-site decision.
+///
+/// API→UI Wave 20: the badge overhangs the disc by the frame's 14 (it spans
+/// 251–285 under a disc ending at 271; it was 8), carries the frame's own
+/// `fluent:edit-16-filled` glyph, 17 x 17, in [AppColors.avatarBadgeGlyph]
+/// (it was `Icons.edit` in the purple `homeAccent` on both canvases), and the
+/// disc wears the frame's radial gradient under the image ([AvatarDisc]).
 class _AvatarEditor extends StatelessWidget {
   const _AvatarEditor({
     required this.url,
@@ -532,6 +558,9 @@ class _AvatarEditor extends StatelessWidget {
 
   static const _size = 151.0;
   static const _badge = 34.0;
+
+  /// How far the badge hangs below the disc (`176:1346`: 285 − 271).
+  static const _badgeOverhang = 14.0;
 
   @override
   Widget build(BuildContext context) {
@@ -548,11 +577,13 @@ class _AvatarEditor extends StatelessWidget {
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: _size,
-          height: _size + 8,
+          height: _size + _badgeOverhang,
           child: Stack(
             alignment: AlignmentDirectional.topCenter,
             children: [
-              ClipOval(
+              AvatarDisc(
+                key: const Key('edit_avatar_disc'),
+                size: _size,
                 child: CachedNetworkImage(
                   imageUrl: url,
                   width: _size,
@@ -579,11 +610,21 @@ class _AvatarEditor extends StatelessWidget {
                   shadows: elevation.avatarBadgeShadows,
                   glass: elevation.avatarBadgeGlass,
                   child: Center(
-                    // TODO(design-asset): the frame uses
-                    // `fluent:edit-16-filled` (`170:4669`), already listed in
-                    // docs/ASSET_MANIFEST.md. Material stands in until the
-                    // designer exports it.
-                    child: Icon(Icons.edit, size: 18, color: ext.homeAccent),
+                    // The frame's `fluent:edit-16-filled` (`176:1347`, 17 x 17
+                    // centred in the 34 chip), exported over the Figma MCP.
+                    child: SvgPicture.asset(
+                      'assets/icons/edit_pencil.svg',
+                      key: const Key('edit_avatar_badge_glyph'),
+                      width: 17,
+                      height: 17,
+                      // The button's label names it; the glyph's own image
+                      // semantics would add a second, empty node (W11-7).
+                      excludeFromSemantics: true,
+                      colorFilter: ColorFilter.mode(
+                        ext.avatarBadgeGlyph,
+                        BlendMode.srcIn,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -709,7 +750,7 @@ class _Skeleton extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 32),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, _underTitleBar, 20, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -723,7 +764,9 @@ class _Skeleton extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 28),
+          // The avatar block's badge overhang plus the 1 under it, so the
+          // first label sits where the form's does.
+          const SizedBox(height: _AvatarEditor._badgeOverhang + 1),
           for (var i = 0; i < 3; i++) ...[
             // 18, not 22: a FieldLabel is one labelLarge line (14 x 18/14)
             // since the type scale; the block stands in for exactly that, so

@@ -644,6 +644,7 @@ audit §9C) · **S42–S44 filed 2026-09-12** with `docs/day10_mistakes_brief.md
 | S42 | `getMyMistakes` — are `termId`/`termNumber` always present-and-nullable, or genuinely optional? | 🟠 | Open (2026-09-12, Day 10 brief) | not yet built |
 | S43 | A leaf badged "8 mistakes" replays a 10/30/50-question *ever wrong* quiz — no guidance on what to show | 🟠 | Open (2026-09-12, Day 10 brief) | not yet built |
 | S44 | Neither Mistakes operation can be exercised: the only test account's catalog is empty, so it can never have a wrong answer | 🔴 | Open (2026-09-12, Day 10 brief) | `tool/smoke/real_api_smoke_test.dart` |
+| S45 | `updateMyProfile`: is an unknown (well-formed) `avatarId` a 400 or a 404, and is `errors` always on its 400? | 🟡 | Open (2026-09-28, API→UI Wave 20) | `lib/dev/mock_backend.dart` (`_profilePatchViolations`) |
 
 > **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
 > the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
@@ -1618,6 +1619,27 @@ itself can be observed rather than assumed.
 live-staging rows stay empty, and must be reported empty rather than inferred from the mock.
 
 **Code marker:** `tool/smoke/real_api_smoke_test.dart`; see also `docs/RISKS.md` R-8.
+
+---
+
+## S45. 🟡 `updateMyProfile`: an unknown `avatarId`, and the 400's field map
+
+> **Filed 2026-09-28, API→UI Wave 20 (the mock `PATCH /me`).**
+
+**Where:** `contract/openapi.yaml`, `PATCH /me` (`updateMyProfile`), and the mock that imitates it,
+`lib/dev/mock_backend.dart` (`_profilePatchViolations`).
+
+**What:** (1) `avatarId` is a `Uuid` that must name one of `GET /reference/avatars`, a closed set. The operation
+declares `200`, `400 validation_failed` and `401`, and no `404`, while the reference lookups say a well-formed but
+unknown id is a `404`, not a `400`. Which does `PATCH /me` answer? (2) Its `400` says only `validation_failed`;
+`completeRegistration`'s says "field map in `errors`". Is `errors` always present on this one?
+
+**Today:** the app cannot send an unknown id (it picks from the list), and without `errors` it degrades safely (the
+banner shows, no field is marked). The mock answers an unknown id with a `400` on `avatarId` and says so.
+
+**Ask:** state both in the contract.
+
+**Impact if unanswered:** none on the app today; the mock may imitate the wrong status.
 
 ---
 

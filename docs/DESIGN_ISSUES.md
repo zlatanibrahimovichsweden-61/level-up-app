@@ -4572,6 +4572,59 @@ label (`170:4796` and siblings), Inter Medium 18, line 21.
 
 ---
 
+## 105. ✅ BUILT 2026-09-28 (API→UI Wave 20, owner ruling) — Edit Profile's locked rows follow the frames
+
+> **Classification:** owner ruling 2026-09-28 ("follow the frames").
+
+**Where:** `lib/features/profile/screens/edit_profile_screen.dart`, `_ReadOnlySection`. Frames: school `176:1201`
+(dark `337:7795`, RTL `549:21413`), university `180:6349` (dark `349:12688`, RTL `549:26807`).
+
+**What the frames draw.** School: Full Name, E-Mail, Phone Number, Parent's Number, City, School name. Education
+System and Grade are in the file as hidden layers (`176:1737`, `176:1747`). University: Full Name, E-Mail, Phone
+Number, Faculty, Academic Year, City, University name. The Wave 20 plan said there was no real university frame;
+`180:6349` is one.
+
+**What the build drew.** Phone and City, then Education System, Grade and School (school), or University, Faculty and
+Academic Year (university). Education System and Grade printed the raw wire codes (S35).
+
+**Ruling and build.** The frames' rows, in the frames' order: school Phone, City, School name; university Phone,
+Faculty, Academic Year, City, University name. Parent's Number is still not built: `GET /me` does not return it (S34).
+
+**Kept, and not in the frames.** The rows stay locked (S20), so they do not wear the frames' input look: a padlock
+where the frames draw a dropdown caret on City and School / University name, the "set when you registered" caption
+above the rows, and the phone as one LTR line (`+201…`) where the frames draw a flag, a `+02` chip (#6 rules `+20`)
+and the local number. The labels keep the type scale (#90).
+
+---
+
+## 106. ✅ BUILT 2026-09-28 (API→UI Wave 20) — The avatar action sheet wore the picker's title and ✕ over bordered icon rows; its frame is a drag handle over two plain rows
+
+> **Classification:** frame-proven (`216:3341`, dark `337:8135`, RTL `549:21753`, university `309:8194`); the
+> disabled row by owner ruling 2026-09-28.
+
+**Where:** `lib/features/profile/widgets/avatar_sheets.dart`, `AvatarActionSheet` and `_SheetRow`.
+
+**Frame.** A 94 x 4 handle (`#000000` light, `#FCFBF9` dark) 15 under the card's top; two full-width rows 44 tall,
+the labels 20 in (Inter Medium 20), the first row at 39; one 0.5 hairline, `#4B675E` at 60%, along the first row's
+bottom; 13 between the rows. No title, no ✕, no icons, no row borders.
+
+**Build now.** Exactly that. The labels keep the scale's `h3` (18 / 600, the same 24 line), as #104 does.
+
+**Kept, and not in the frame (owner ruling).** "Upload photo" is dimmed and inert, with the caption "Uploading your
+own photo isn't available yet." under the rows: `PUT /me/avatar` is draft and moderated (S29). The frame draws the
+row as a live one.
+
+**Frame slips, recorded, not built.** The dark frame's first row is 57 tall (light and RTL: 44). In the RTL frame the
+second label is set `align=LEFT` and the first `RIGHT`; both end 20 from the right edge, as the build's do.
+
+**The picker (`180:4153`), same wave.** Its ✕ is the frame's `akar-icons:cross` in `#3F3F3F` / `#FCFBF9` with a
+48 x 48 target (W19-3's pattern; it was `Icons.close` in `textPrimary`, 35 x 35), and every cell draws the frame's
+radial gradient disc (`#4B675E` → `#95CDBB`), as Edit Profile's avatar now does (`176:1343`). The RTL picker frame
+(`549:21642`) keeps the ✕ on the left; the build mirrors it, as every other ✕ in the app does. The selected ring (2.5,
+`cs.primary`) is the build's: the frame's five cells are identical.
+
+---
+
 ## 113. 🟡 The dark and Arabic flashcards frames are the OLDER layout — built from the updated light frame
 
 > **Classification:** frame gap. Owner ruling 2026-09-29 (Wave 22, item 8).
