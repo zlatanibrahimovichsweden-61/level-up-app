@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/router/app_router.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
@@ -16,8 +17,10 @@ import 'package:level_up_app/features/catalog/widgets/catalog_states.dart';
 import 'package:level_up_app/features/catalog/widgets/quiz_type_tabs.dart';
 import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
+import 'package:level_up_app/features/quiz/models/quiz_setup_args.dart';
 import 'package:level_up_app/features/quiz/models/quiz_type.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_setup_screen.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'catalog_fixtures.dart';
@@ -175,24 +178,18 @@ void main() {
       expect(find.text('Practice'), findsNothing);
     });
 
-    testWidgets('never draw a Flashcard tab — it is not in the contract', (
-      tester,
-    ) async {
-      // The frame draws one (DESIGN_ISSUES #18). `quizTypes` has no such value,
-      // and there is no M1 endpoint behind it, so a tab would be inert.
-      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
-      await openSubject(tester);
-
-      expect(find.text('Flashcard'), findsNothing);
-      expect(QuizType.values.map((t) => t.name), isNot(contains('flashcard')));
-    });
-
     testWidgets('a subject offering one type shows exactly one tab', (
       tester,
     ) async {
-      when(
-        () => catalog.getSubjectTree(any()),
-      ).thenAnswer((_) async => universityTree(quizTypes: <String>['normal']));
+      // No lecture has flashcards here, so the only tab is the quiz type. (With
+      // flashcards the Flashcard tab would sit beside it — see the group
+      // 'the Flashcard tab'.)
+      when(() => catalog.getSubjectTree(any())).thenAnswer(
+        (_) async => universityTree(
+          quizTypes: <String>['normal'],
+          lectures: lecturesWithoutFlashcards(),
+        ),
+      );
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
@@ -200,14 +197,18 @@ void main() {
       expect(find.byType(QuizTypeTabs), findsOneWidget);
       expect(find.text('Normal'), findsOneWidget);
       expect(find.text('Midterm'), findsNothing);
+      expect(find.text('Flashcard'), findsNothing);
     });
 
     testWidgets(
-      'no quiz types at all → no tab row, and the list still renders',
+      'no quiz types and no flashcards → no tab row, and the list still renders',
       (tester) async {
-        when(
-          () => catalog.getSubjectTree(any()),
-        ).thenAnswer((_) async => universityTree(quizTypes: <String>[]));
+        when(() => catalog.getSubjectTree(any())).thenAnswer(
+          (_) async => universityTree(
+            quizTypes: <String>[],
+            lectures: lecturesWithoutFlashcards(),
+          ),
+        );
 
         await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
         await openSubject(tester);
@@ -229,6 +230,13 @@ void main() {
       // It is local UI state — it selects, it does not filter or reload.
       verify(() => catalog.getSubjectTree('sub-1')).called(1);
       expect(find.byType(TreeListRow), findsNWidgets(3));
+
+      // The Flashcard tab is no different: it filters what is already loaded.
+      // (`verify` above consumed the one legitimate call, so any further
+      // `getSubjectTree` would be a NEW, unverified one.)
+      await tester.tap(find.text('Flashcard'));
+      await tester.pumpAndSettle();
+      verifyNever(() => catalog.getSubjectTree(any()));
     });
 
     testWidgets('Arabic labels the tabs in Arabic', (tester) async {
@@ -244,6 +252,512 @@ void main() {
 
       expect(find.text('عادي'), findsOneWidget);
       expect(find.text('منتصف الترم'), findsOneWidget);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  /// The Lectures "Flashcard" tab · owner rulings 2026-09-29 · DESIGN_ISSUES #18.
+  ///
+  /// Students open Flashcards through this tab. It is NOT a quiz type — the
+  /// contract's `quizTypes` enum is closed and has no such value — so it is a
+  /// `FlashcardsTab` beside the `QuizTab`s, and `QuizType` must stay four long.
+  group('the Flashcard tab', () {
+    const allFour = <String>[
+      'normal',
+      'midTermRevision',
+      'finalRevision',
+      'practicalRevision',
+    ];
+
+    /// The visible tab captions, in on-screen left-to-right order.
+    List<String> tabOrder(WidgetTester tester, List<String> candidates) {
+      final found = <(double, String)>[
+        for (final label in candidates)
+          if (find.text(label).evaluate().isNotEmpty)
+            (tester.getRect(find.text(label)).center.dx, label),
+      ]..sort((a, b) => a.$1.compareTo(b.$1));
+      return [for (final (_, label) in found) label];
+    }
+
+    Future<void> openFlashcardTab(WidgetTester tester) async {
+      await tester.tap(find.text('Flashcard'));
+      await tester.pumpAndSettle();
+    }
+
+    test('is not a quiz type — the contract enum is closed', () {
+      expect(QuizType.values.map((t) => t.name), isNot(contains('flashcard')));
+      expect(QuizType.values, hasLength(4));
+    });
+
+    testWidgets('sits SECOND when any lecture has flashcards', (tester) async {
+      // Normal · Flashcard · Midterm · Final — 180:5208 / 349:15962 / 337:11059.
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(find.text('Flashcard'), findsOneWidget);
+      expect(tabOrder(tester, ['Normal', 'Flashcard', 'Midterm', 'Final']), [
+        'Normal',
+        'Flashcard',
+        'Midterm',
+        'Final',
+      ]);
+    });
+
+    testWidgets(
+      'all four quiz types → the design\'s five pills, in its order',
+      (tester) async {
+        when(
+          () => catalog.getSubjectTree(any()),
+        ).thenAnswer((_) async => universityTree(quizTypes: allFour));
+        await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+        await openSubject(tester);
+
+        expect(
+          tabOrder(tester, [
+            'Normal',
+            'Flashcard',
+            'Midterm',
+            'Final',
+            'Practice',
+          ]),
+          ['Normal', 'Flashcard', 'Midterm', 'Final', 'Practice'],
+        );
+      },
+    );
+
+    testWidgets('is HIDDEN when no lecture in the subject has flashcards', (
+      tester,
+    ) async {
+      // The contract: "a faculty whose whole tree returns false ... the surface
+      // should not be offered at all".
+      when(() => catalog.getSubjectTree(any())).thenAnswer(
+        (_) async => universityTree(lectures: lecturesWithoutFlashcards()),
+      );
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(find.text('Flashcard'), findsNothing);
+      expect(find.byType(QuizTypeTabs), findsOneWidget);
+      // The quiz tabs are exactly what they were.
+      expect(tabOrder(tester, ['Normal', 'Midterm', 'Final']), [
+        'Normal',
+        'Midterm',
+        'Final',
+      ]);
+    });
+
+    testWidgets('one lecture with cards is enough to offer it', (tester) async {
+      when(() => catalog.getSubjectTree(any())).thenAnswer(
+        (_) async => universityTree(
+          lectures: [
+            ...lecturesWithoutFlashcards(),
+            lectureJson(
+              id: 'lec-9',
+              name: 'Pelvis',
+              hasFlashcards: true,
+              flashcardCount: 1,
+            ),
+          ],
+        ),
+      );
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(find.text('Flashcard'), findsOneWidget);
+      await openFlashcardTab(tester);
+      expect(find.byType(TreeListRow), findsOneWidget);
+      expect(find.text('Pelvis'), findsOneWidget);
+    });
+
+    testWidgets('a subject with no quiz types but flashcards shows it ALONE', (
+      tester,
+    ) async {
+      when(
+        () => catalog.getSubjectTree(any()),
+      ).thenAnswer((_) async => universityTree(quizTypes: <String>[]));
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(find.byType(QuizTypeTabs), findsOneWidget);
+      expect(find.text('Flashcard'), findsOneWidget);
+      expect(find.text('Normal'), findsNothing);
+      // ...and it is the tab in force: the default quiz type is not in this
+      // row, so the list is the Flashcard list — the two lectures with cards,
+      // no bars — not a quiz list under a pill nobody selected.
+      expect(
+        tester.widget<QuizTypeTabs>(find.byType(QuizTypeTabs)).selected,
+        const FlashcardsTab(),
+      );
+      expect(find.byType(TreeListRow), findsNWidgets(2));
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.text('Lower Limb'), findsNothing);
+    });
+
+    testWidgets('the default selection is unchanged — Normal, with every '
+        'lecture and its bar', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(find.byType(TreeListRow), findsNWidgets(3));
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
+      expect(find.text('Lower Limb'), findsOneWidget);
+    });
+
+    testWidgets('selecting it lists ONLY lectures with cards, keeping their '
+        'ORIGINAL numbers', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+      await openFlashcardTab(tester);
+
+      // Lower Limb (lec-2, hasFlashcards false) is hidden; Thorax stays "3",
+      // not "2" — its number must match its number on the quiz tabs.
+      expect(find.text('Lower Limb'), findsNothing);
+      final rows = tester
+          .widgetList<TreeListRow>(find.byType(TreeListRow))
+          .toList();
+      expect(rows.map((r) => r.name), ['Upper Limb', 'Thorax']);
+      expect(rows.map((r) => r.index), [1, 3]);
+      for (final row in rows) {
+        expect(row.onTap, isNotNull, reason: '${row.name} is not tappable');
+      }
+    });
+
+    testWidgets('its rows carry NO progress bar and NO caption — the contract '
+        'has no flashcard progress', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+      await openFlashcardTab(tester);
+
+      for (final row in tester.widgetList<TreeListRow>(
+        find.byType(TreeListRow),
+      )) {
+        expect(row.progress, isNull, reason: row.name);
+        expect(row.caption, isNull, reason: row.name);
+        expect(row.countLabel, isNull, reason: row.name);
+      }
+      expect(
+        find.descendant(
+          of: find.byType(TreeListRow),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+        findsNothing,
+      );
+      // ...and no "{answered} / {total} questions" readout either.
+      expect(find.textContaining('questions'), findsNothing);
+      // flashcardCount is informational, not a progress number, so it is not
+      // dressed up as one.
+      expect(find.text('12'), findsNothing);
+    });
+
+    testWidgets('going back to a quiz tab restores every lecture and its '
+        'bar', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      await openFlashcardTab(tester);
+      expect(find.byType(TreeListRow), findsNWidgets(2));
+
+      await tester.tap(find.text('Midterm'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TreeListRow), findsNWidgets(3));
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
+      expect(find.text('0 / 60 questions'), findsOneWidget);
+    });
+
+    testWidgets('is selected in semantics — exactly one segment at a time', (
+      tester,
+    ) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      Set<String> selectedLabels() => tester
+          .widgetList<Semantics>(
+            find.descendant(
+              of: find.byType(QuizTypeTabs),
+              matching: find.byType(Semantics),
+            ),
+          )
+          .where((s) => s.properties.selected ?? false)
+          .map((s) => s.properties.label!)
+          .toSet();
+
+      expect(selectedLabels(), {'Normal'});
+      await openFlashcardTab(tester);
+      expect(selectedLabels(), {'Flashcard'});
+    });
+
+    testWidgets('a quiz tab picked AFTER visiting Flashcard is the one handed '
+        'to /quiz/setup', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      await openFlashcardTab(tester);
+      await tester.tap(find.text('Final'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lower Limb'));
+      await tester.pumpAndSettle();
+
+      final screen = tester.widget<QuizSetupScreen>(
+        find.byType(QuizSetupScreen),
+      );
+      expect(screen.args.quizType, QuizType.finalRevision);
+      expect(screen.args.lectureId, 'lec-2');
+    });
+
+    testWidgets('the route hands LecturesView the subject id it was opened '
+        'with', (tester) async {
+      await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
+      await openSubject(tester);
+
+      expect(
+        tester.widget<LecturesView>(find.byType(LecturesView)).subjectId,
+        'sub-1',
+      );
+    });
+
+    testWidgets('Arabic: label is فلاش كارد, second from the START, and the '
+        'rows mirror', (tester) async {
+      await pumpCatalogApp(
+        tester,
+        catalog: catalog,
+        track: Track.university,
+        locale: 'ar',
+      );
+      await openLearnTab(tester, locale: 'ar');
+      await tester.tap(find.text('Biology'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('فلاش كارد'), findsOneWidget);
+      expect(find.text('Flashcard'), findsNothing);
+
+      // RTL: Normal at the right edge, Flashcard immediately to its left, then
+      // Midterm. The primitive gets this from `Row` + `Directionality`.
+      final normal = tester.getRect(find.text('عادي')).center.dx;
+      final flash = tester.getRect(find.text('فلاش كارد')).center.dx;
+      final mid = tester.getRect(find.text('منتصف الترم')).center.dx;
+      expect(normal, greaterThan(flash));
+      expect(flash, greaterThan(mid));
+
+      await tester.tap(find.text('فلاش كارد'));
+      await tester.pumpAndSettle();
+
+      // The row mirrors: the number badge leads (right), the name follows it,
+      // and the chevron trails (left).
+      final rows = find.byType(TreeListRow);
+      expect(rows, findsNWidgets(2));
+      final row = tester.getRect(rows.first);
+      final badge = tester.getRect(find.text('1'));
+      final name = tester.getRect(find.text('Upper Limb'));
+      expect(badge.center.dx, greaterThan(name.center.dx));
+      expect(row.right - badge.right, lessThan(row.width / 4));
+      expect(tester.widgetList<TreeListRow>(rows).map((r) => r.index), [1, 3]);
+    });
+
+    testWidgets('dark theme lists the same rows', (tester) async {
+      await pumpCatalogApp(
+        tester,
+        catalog: catalog,
+        track: Track.university,
+        theme: AppTheme.dark,
+      );
+      await openSubject(tester);
+      await openFlashcardTab(tester);
+
+      expect(find.byType(TreeListRow), findsNWidgets(2));
+      expect(find.text('Thorax'), findsOneWidget);
+    });
+
+    // -----------------------------------------------------------------------
+    // Navigation, and a selection the row can no longer show. These pump
+    // `LecturesView` on its own under a stand-in router: the destination route
+    // is owned by the flashcards feature, and the assertion here is only WHERE
+    // a tap goes, which must not depend on what is built there.
+    group('on its own', () {
+      /// `tree` is a notifier so a test can hand the SAME `LecturesView` state a
+      /// reloaded tree, the way `subjectTreeProvider.refresh()` does.
+      Future<GoRouter> pumpLectures(
+        WidgetTester tester, {
+        required ValueNotifier<UniversitySubjectTree> tree,
+        List<Map<String, String>>? flashcardArrivals,
+        List<Object?>? quizArrivals,
+      }) async {
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => Scaffold(
+                body: ValueListenableBuilder<UniversitySubjectTree>(
+                  valueListenable: tree,
+                  builder: (_, value, _) => LecturesView(
+                    subjectId: 'sub-1',
+                    tree: value,
+                    subjectName: 'Biology',
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/learn/subject/:subjectId/lecture/:lectureId/flashcards',
+              builder: (_, state) {
+                flashcardArrivals?.add(state.pathParameters);
+                return const Scaffold(body: Text('flashcards stand-in'));
+              },
+            ),
+            GoRoute(
+              path: '/quiz/setup',
+              builder: (_, state) {
+                quizArrivals?.add(state.extra);
+                return const Scaffold(body: Text('quiz setup stand-in'));
+              },
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        await tester.pumpWidget(
+          MaterialApp.router(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        );
+        await tester.pumpAndSettle();
+        return router;
+      }
+
+      testWidgets('a row tap pushes exactly the lecture\'s flashcards path', (
+        tester,
+      ) async {
+        final arrivals = <Map<String, String>>[];
+        final router = await pumpLectures(
+          tester,
+          tree: ValueNotifier(universityTree()),
+          flashcardArrivals: arrivals,
+        );
+
+        await tester.tap(find.text('Flashcard'));
+        await tester.pumpAndSettle();
+        // Selecting the tab navigates nowhere. `state.uri`, not
+        // `currentConfiguration.uri`: the latter silently misses an imperative
+        // push, which is what a row tap is.
+        expect(router.state.uri.toString(), '/');
+
+        await tester.tap(find.text('Thorax'));
+        await tester.pumpAndSettle();
+
+        expect(
+          router.state.uri.toString(),
+          '/learn/subject/sub-1/lecture/lec-3/flashcards',
+        );
+        expect(arrivals, [
+          {'subjectId': 'sub-1', 'lectureId': 'lec-3'},
+        ]);
+        expect(find.text('flashcards stand-in'), findsOneWidget);
+      });
+
+      testWidgets('a quiz tab row tap still goes to /quiz/setup, never the '
+          'flashcards path', (tester) async {
+        final flashcards = <Map<String, String>>[];
+        final quizzes = <Object?>[];
+        final router = await pumpLectures(
+          tester,
+          tree: ValueNotifier(universityTree()),
+          flashcardArrivals: flashcards,
+          quizArrivals: quizzes,
+        );
+
+        // A lecture that HAS cards, on the default (Normal) tab.
+        await tester.tap(find.text('Upper Limb'));
+        await tester.pumpAndSettle();
+
+        expect(router.state.uri.toString(), '/quiz/setup');
+        expect(flashcards, isEmpty);
+        expect(quizzes, hasLength(1));
+        final args = quizzes.single! as QuizSetupArgs;
+        expect(args.lectureId, 'lec-1');
+        expect(args.quizType, QuizType.normal);
+      });
+
+      testWidgets('a picked Flashcard tab falls back to Normal when a reloaded '
+          'tree no longer offers it', (tester) async {
+        final tree = ValueNotifier(universityTree());
+        await pumpLectures(tester, tree: tree);
+        await tester.tap(find.text('Flashcard'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TreeListRow), findsNWidgets(2));
+
+        // The same LecturesView state, handed a tree in which nothing has cards
+        // any more. A selection the row can no longer show must not leave the
+        // list on Flashcard while no pill is lit.
+        tree.value = universityTree(lectures: lecturesWithoutFlashcards());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Flashcard'), findsNothing);
+        expect(find.byType(TreeListRow), findsNWidgets(3));
+        expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
+      });
+    });
+  });
+
+  group('lecturesTabsFor', () {
+    const three = [
+      QuizType.normal,
+      QuizType.midTermRevision,
+      QuizType.finalRevision,
+    ];
+
+    test('inserts the Flashcard tab after the FIRST quiz type', () {
+      expect(lecturesTabsFor(quizTypes: three, hasFlashcards: true), [
+        const QuizTab(QuizType.normal),
+        const FlashcardsTab(),
+        const QuizTab(QuizType.midTermRevision),
+        const QuizTab(QuizType.finalRevision),
+      ]);
+    });
+
+    test('adds nothing when no lecture has flashcards', () {
+      expect(lecturesTabsFor(quizTypes: three, hasFlashcards: false), [
+        for (final type in three) QuizTab(type),
+      ]);
+    });
+
+    test('is the Flashcard tab alone when there are no quiz types', () {
+      expect(lecturesTabsFor(quizTypes: const [], hasFlashcards: true), [
+        const FlashcardsTab(),
+      ]);
+      expect(
+        lecturesTabsFor(quizTypes: const [], hasFlashcards: false),
+        isEmpty,
+      );
+    });
+
+    test('keeps the server order of the quiz types', () {
+      expect(
+        lecturesTabsFor(
+          quizTypes: const [QuizType.finalRevision, QuizType.normal],
+          hasFlashcards: true,
+        ),
+        [
+          const QuizTab(QuizType.finalRevision),
+          const FlashcardsTab(),
+          const QuizTab(QuizType.normal),
+        ],
+      );
+    });
+
+    test('tabs compare by value — SegmentedTrack selects with ==', () {
+      expect(const QuizTab(QuizType.normal), const QuizTab(QuizType.normal));
+      expect(
+        const QuizTab(QuizType.normal),
+        isNot(const QuizTab(QuizType.finalRevision)),
+      );
+      expect(const FlashcardsTab(), const FlashcardsTab());
+      expect(const FlashcardsTab(), isNot(const QuizTab(QuizType.normal)));
+      expect(
+        const QuizTab(QuizType.normal).hashCode,
+        const QuizTab(QuizType.normal).hashCode,
+      );
+      expect(const FlashcardsTab().hashCode, const FlashcardsTab().hashCode);
     });
   });
 
@@ -380,13 +894,18 @@ void main() {
     ) async {
       // `normal` is the contract's own default for POST /quizzes.quizType, so
       // using it when the subject offers nothing is not an invented value.
-      when(
-        () => catalog.getSubjectTree(any()),
-      ).thenAnswer((_) async => universityTree(quizTypes: <String>[]));
+      // Flashcard-free: a subject with no quiz types but with cards opens on
+      // its one tab, Flashcard, whose rows lead to flashcards, not quiz setup.
+      when(() => catalog.getSubjectTree(any())).thenAnswer(
+        (_) async => universityTree(
+          quizTypes: <String>[],
+          lectures: lecturesWithoutFlashcards(),
+        ),
+      );
 
       await pumpCatalogApp(tester, catalog: catalog, track: Track.university);
       await openSubject(tester);
-      await tester.tap(find.text('Upper Limb'));
+      await tester.tap(find.byType(TreeListRow).first);
       await tester.pumpAndSettle();
 
       final screen = tester.widget<QuizSetupScreen>(
@@ -533,7 +1052,11 @@ void main() {
       await openSubject(tester);
 
       final rects = segmentRects(tester);
-      expect(rects, hasLength(3), reason: 'the fixture lists three types');
+      expect(
+        rects,
+        hasLength(4),
+        reason: 'the fixture lists three types, and two lectures have cards',
+      );
       // Equal width to within a rounding pixel — `Expanded` divides the track.
       for (final r in rects) {
         expect(r.width, closeTo(rects.first.width, 1));
@@ -704,8 +1227,10 @@ void main() {
       ('ar', 1.0),
       ('ar', 1.3),
     ]) {
-      testWidgets('$locale at text scale $scale: four tabs stay equal, and '
-          'every label keeps its full size', (tester) async {
+      testWidgets('$locale at text scale $scale: five tabs (four quiz types '
+          '+ Flashcard) stay equal, and every label keeps its full size', (
+        tester,
+      ) async {
         await openLectures(
           tester,
           locale: locale,
@@ -740,7 +1265,9 @@ void main() {
         );
 
         final rects = segmentRects(tester);
-        expect(rects, hasLength(4));
+        // Four quiz types plus the Flashcard tab: the widest row the contract
+        // can produce, and the Figma frame's own five pills.
+        expect(rects, hasLength(5));
         // Min/max, not first/last: the list is in WIDGET order, and in Arabic
         // the first segment is the rightmost one.
         final left = rects.map((r) => r.left).reduce(min);
@@ -758,8 +1285,14 @@ void main() {
         // The ruling itself, per label: painted size == laid-out size.
         for (final label
             in locale == 'ar'
-                ? const ['عادي', 'منتصف الترم', 'نهائي', 'عملي']
-                : const ['Normal', 'Midterm', 'Final', 'Practice']) {
+                ? const ['عادي', 'فلاش كارد', 'منتصف الترم', 'نهائي', 'عملي']
+                : const [
+                    'Normal',
+                    'Flashcard',
+                    'Midterm',
+                    'Final',
+                    'Practice',
+                  ]) {
           final (painted, laid) = glyph(tester, label);
           expect(painted, closeTo(laid, 0.01), reason: '$label at $scale');
         }
@@ -774,7 +1307,13 @@ void main() {
       // worst configuration this screen can be handed.
       await openLectures(tester, locale: 'ar', scale: 1.0, quizTypes: allFour);
 
-      for (final label in ['عادي', 'منتصف الترم', 'نهائي', 'عملي']) {
+      for (final label in [
+        'عادي',
+        'فلاش كارد',
+        'منتصف الترم',
+        'نهائي',
+        'عملي',
+      ]) {
         final (painted, laid) = glyph(tester, label);
         expect(painted, closeTo(laid, 0.01), reason: label);
       }

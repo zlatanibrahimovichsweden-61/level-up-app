@@ -899,4 +899,35 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get accountPendingDeletion =>
       'حسابك مُجدوَل للحذف. ألغِ الطلب لاستخدام ليفل أب مرة أخرى.';
+
+  @override
+  String get flashcardsTab => 'فلاش كارد';
+
+  @override
+  String get flashcardsTitle => 'فلاش كارد';
+
+  @override
+  String get flashcardSetupTitle => 'إعداد الفلاش كارد';
+
+  @override
+  String flashcardSetupCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString فلاش كارد';
+  }
+
+  @override
+  String get flashcardSetupHelper => 'هذه الفلاش كارد المتاحة لهذا الاختبار';
+
+  @override
+  String get flashcardGotIt => 'فهمت';
+
+  @override
+  String get flashcardAgain => 'مرة أخرى';
+
+  @override
+  String get flashcardPreviewUsedUp =>
+      'لقد استخدمت البطاقات المجانية لهذا الأسبوع.';
 }

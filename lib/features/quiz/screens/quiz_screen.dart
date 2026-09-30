@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/exceptions.dart';
@@ -9,8 +8,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/elevation/app_modal.dart';
-import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../core/widgets/elevation/primary_cta.dart';
+import '../../../core/widgets/study_session_chrome.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../profile/notifier/me_notifier.dart';
 import '../bloc/quiz_bloc.dart';
@@ -150,8 +149,17 @@ class _QuizView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _Header(
-                    session: session,
+                  StudySessionHeader(
+                    headerKey: const Key('quiz_header'),
+                    closeKey: const Key('quiz_close'),
+                    title: l10n.quizTitle,
+                    // Denominator is the questions DELIVERED — a short pool
+                    // shows 1/7, not 1/10.
+                    position: session.position,
+                    total: session.total,
+                    progressFill: Theme.of(
+                      context,
+                    ).extension<AppColors>()!.quizProgressFill,
                     // Close, not back — the frame draws an X, because leaving
                     // ends the session rather than stepping back through it.
                     onClose: () async {
@@ -310,173 +318,6 @@ class _QuizView extends ConsumerWidget {
   }
 }
 
-/// The session header · Figma `159:1224` (light) / `337:9202` (dark).
-///
-/// Its own container rather than an `AppBar`, so it can be the frame's: the ✕
-/// box 16 in and 16 down, the title centred on it, the progress row 12 under
-/// it, and a 1.18 rule closing the header at 89.18. The app bar put the ✕ 3 dp
-/// off both ways and the card 8 dp high, and drew no rule (API→UI Wave 12).
-///
-/// The frame's three trailing icons are deliberately absent. Bookmark
-/// (`295:3108`) and share (`295:3110`): all three favourite endpoints are
-/// `draft` and there is no sharing story or endpoint at all; `isFavorite` is
-/// parsed into the model regardless (seif_fight S11). The AI "sparkle-cap"
-/// (`295:3103`): owner ruling 2026-09-26 — the frame shows it before the
-/// question is answered, which the contract forbids, and after grading it
-/// would only duplicate the panel's "Show explanation" (DESIGN_ISSUES #95).
-class _Header extends StatelessWidget {
-  const _Header({required this.session, required this.onClose});
-
-  final QuizSession session;
-  final VoidCallback onClose;
-
-  /// The frame's ✕ box (`159:1227`).
-  static const _glyph = 30.0;
-
-  /// Android's minimum touch target, kept, and centred on the ✕ box.
-  static const _target = 48.0;
-
-  /// How far the target reaches past the box on each side: 9.
-  static const _overhang = (_target - _glyph) / 2;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      key: const Key('quiz_header'),
-      // The frame's 16, less the target's overhang, so the box lands 16 in and
-      // 16 down. The same at the end, which keeps the title on the screen's
-      // centre line. 12 at the bottom: Container adds the rule's 1.18 to its
-      // padding, and 12 + 1.18 is the frame's 13.18.
-      padding: const EdgeInsetsDirectional.fromSTEB(
-        16 - _overhang,
-        16 - _overhang,
-        16 - _overhang,
-        12,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: ext.quizHeaderRule, width: 1.18),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: _target,
-            child: Stack(
-              alignment: AlignmentDirectional.center,
-              children: [
-                Padding(
-                  // Clear of the ✕ target on BOTH sides, so the title stays
-                  // centred and a long one ellipsises instead of running
-                  // under it.
-                  padding: const EdgeInsets.symmetric(horizontal: _target),
-                  child: Text(
-                    l10n.quizTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    // The frame sets Inter 600/22; the type scale has no 22,
-                    // so this is the app's screen title (h2), as on every
-                    // other title bar.
-                    style: AppType.h2.copyWith(color: ext.textPrimary),
-                  ),
-                ),
-                PositionedDirectional(
-                  start: 0,
-                  child: IconButton(
-                    key: const Key('quiz_close'),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: _target,
-                      height: _target,
-                    ),
-                    // Framework-localised ("Close" / "إغلاق"), the name
-                    // Material's own CloseButton carries.
-                    tooltip: MaterialLocalizations.of(
-                      context,
-                    ).closeButtonTooltip,
-                    onPressed: onClose,
-                    // The frame's own cross: 15 dp of 1.67 stroke, round
-                    // caps. `Icons.close` was 14 dp of a heavier, square
-                    // stroke, in #0E0E0E.
-                    icon: SvgPicture.asset(
-                      'assets/icons/quiz_close.svg',
-                      width: _glyph,
-                      height: _glyph,
-                      // The tooltip names the button. Without this the
-                      // glyph's own image semantics merge in and TalkBack
-                      // reads an ImageView (W11-7).
-                      excludeFromSemantics: true,
-                      colorFilter: ColorFilter.mode(
-                        ext.quizHeaderGlyph,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // 12 under the box in the frame, less the target's overhang.
-          const SizedBox(height: 12 - _overhang),
-          _ProgressBar(session: session),
-        ],
-      ),
-    );
-  }
-}
-
-/// Thin progress bar + `n/total` counter · Figma `308:5264` / `348:7709`.
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.session});
-
-  final QuizSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    final ext = Theme.of(context).extension<AppColors>()!;
-    final l10n = AppLocalizations.of(context);
-
-    return Padding(
-      // 20 from both screen edges, the frame's 362-wide row: the header's own
-      // 7 plus 13.
-      padding: const EdgeInsets.symmetric(horizontal: 20 - 7),
-      child: SizedBox(
-        // The frame's row is its counter's 18 dp line; the bar is centred on
-        // it.
-        height: 18,
-        child: Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(52),
-                child: LinearProgressIndicator(
-                  // Denominator is the questions DELIVERED — a short pool
-                  // shows 1/7, not 1/10.
-                  value: session.progress,
-                  minHeight: 8,
-                  backgroundColor: ext.progressTrack,
-                  valueColor: AlwaysStoppedAnimation(ext.quizProgressFill),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              l10n.quizProgress(session.position, session.total),
-              style: AppType.captionSmall.copyWith(
-                color: ext.quizProgressCounter,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Back arrow + the primary action · Figma `159:1772`.
 ///
 /// The primary action's label is the whole interaction model in one place:
@@ -522,7 +363,7 @@ class _ActionBar extends StatelessWidget {
           // chevron flips with the text direction rather than being mirrored
           // by hand.
           if (!session.isFirst) ...[
-            _PreviousButton(
+            StudyPreviousButton(
               onPressed: busy
                   ? null
                   : () => bloc.add(const PreviousQuestionRequested()),
@@ -547,85 +388,6 @@ class _ActionBar extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The previous-question pill · Figma `159:1920` (light) / `337:6464` (dark).
-///
-/// A 79 x 58 rounded rectangle, not the Material tonal icon button that stood
-/// here - which was roughly 40 dp round and carried M3's own tonal colours.
-///
-/// **The radius differs by canvas**: 9 light, 10 dark, both read off the
-/// Properties panel on 2026-09-20. One dp on a 58-high pill is invisible, and
-/// normalising it is still not this edit's call, so it lives in
-/// [AppElevation.quizPrevButtonRadius] with both values.
-///
-/// The glyph is the shared `chevron.svg`, mirrored the way
-/// [CircleBackButton] mirrors it: the asset points RIGHT, so "back" is its
-/// flip in LTR and its unflipped self in RTL. Its colour was read in both
-/// canvases - `159:1922` and `337:6466` both say cream.
-class _PreviousButton extends StatelessWidget {
-  const _PreviousButton({required this.onPressed});
-
-  /// Null while an answer or a finish is in flight.
-  final VoidCallback? onPressed;
-
-  static const _width = 79.0;
-  static const _height = 58.0;
-  static const _chevronWidth = 16.57;
-  static const _chevronHeight = 28.64;
-
-  /// `kProfileDisabledOpacity`, the project's one disabled convention. Figma
-  /// draws no disabled state for this chip (edit1.md R10).
-  static const _disabledOpacity = 0.45;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final ext = theme.extension<AppColors>()!;
-    final elevation = theme.extension<AppElevation>()!;
-    final rtl = Directionality.of(context) == TextDirection.rtl;
-    final busy = onPressed == null;
-
-    return Semantics(
-      button: true,
-      enabled: !busy,
-      // `previousPageTooltip`, NOT `backButtonTooltip`. This screen already
-      // has a control that means "back" - the ✕ in the app bar, which LEAVES
-      // the quiz - so announcing this one as "Back" would give a screen reader
-      // two buttons with the same name and very different consequences. Both
-      // strings are framework-localised, so neither needs an ARB entry.
-      label: MaterialLocalizations.of(context).previousPageTooltip,
-      child: Opacity(
-        opacity: busy ? _disabledOpacity : 1,
-        child: ElevatedSurface(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(elevation.quizPrevButtonRadius),
-          ),
-          width: _width,
-          height: _height,
-          color: ext.quizPrevButtonFill,
-          shadows: elevation.quizPrevButtonShadows,
-          glass: elevation.quizPrevButtonGlass,
-          onTap: onPressed,
-          child: Center(
-            child: Transform.flip(
-              flipX: !rtl,
-              child: SvgPicture.asset(
-                'assets/icons/chevron.svg',
-                width: _chevronWidth,
-                height: _chevronHeight,
-                excludeFromSemantics: true,
-                colorFilter: ColorFilter.mode(
-                  ext.quizPrevButtonGlyph,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

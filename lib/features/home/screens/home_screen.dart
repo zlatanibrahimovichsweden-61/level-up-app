@@ -99,11 +99,15 @@ class _Loaded extends StatelessWidget {
           const SizedBox(height: 25),
           // University only (`125:2373`) — the school frame has no such section.
           // The frame draws five shortcut cards (Flash Card, Normal EX, Midterm,
-          // Final, Practices) behind a premium crown. Every one of them needs an
-          // endpoint that does not exist yet: the four quiz types need
-          // `POST /quizzes` (Day 7), and Flashcard has no M1 content endpoint at
-          // all (docs/DESIGN_ISSUES.md #18). Stubbed rather than drawn as dead
-          // cards a student can tap into nothing.
+          // Final, Practices) behind a premium crown. The section STAYS a
+          // placeholder, by the owner's 2026-09-29 ruling that flashcards open
+          // from the Lectures tab (Learn → subject), not from a Home tile.
+          // `POST /quizzes` is built, and the two flashcards operations have
+          // been stable since 3.13.0-m1, but neither gives these five tiles a
+          // destination of their own: the quiz types start from a lecture's
+          // setup screen, flashcards from the lecture's Flashcard tab
+          // (API→UI Wave 22; docs/DESIGN_ISSUES.md #18, #20). Stubbed rather
+          // than drawn as dead cards a student can tap into nothing.
           if (profile.track == Track.university) ...[
             // `plain`, not a section surface of its own: the frame's five
             // Learning Tools tiles are recorded unbuilt (DESIGN_ISSUES #20,

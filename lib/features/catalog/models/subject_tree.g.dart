@@ -98,6 +98,7 @@ _Lecture _$LectureFromJson(Map<String, dynamic> json) => _Lecture(
     json['questionCounter'] as Map<String, dynamic>,
   ),
   hasFlashcards: json['hasFlashcards'] as bool,
+  flashcardCount: (json['flashcardCount'] as num).toInt(),
 );
 
 Map<String, dynamic> _$LectureToJson(_Lecture instance) => <String, dynamic>{
@@ -105,4 +106,5 @@ Map<String, dynamic> _$LectureToJson(_Lecture instance) => <String, dynamic>{
   'name': instance.name,
   'questionCounter': instance.questionCounter,
   'hasFlashcards': instance.hasFlashcards,
+  'flashcardCount': instance.flashcardCount,
 };

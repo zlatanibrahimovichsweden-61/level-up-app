@@ -140,9 +140,10 @@ void main() {
     test(
       'hasFlashcards is REQUIRED — an omitted one throws, never defaults',
       () {
-        // `required: [id, name, questionCounter, hasFlashcards]`
-        // (`openapi.yaml:2569`). A `?? false` would hide a whole surface for a
-        // lecture that has flashcards, and never fail while doing it.
+        // `required: [id, name, questionCounter, hasFlashcards,
+        // flashcardCount]` (`openapi.yaml:2891`). A `?? false` would hide a
+        // whole surface for a lecture that has flashcards, and never fail while
+        // doing it.
         expect(
           () => universityTree(
             lectures: <dynamic>[
@@ -150,6 +151,39 @@ void main() {
                 'id': 'lec-x',
                 'name': 'No flag',
                 'questionCounter': counterJson(0, 10),
+                'flashcardCount': 3,
+              },
+            ],
+          ),
+          throwsA(isA<TypeError>()),
+        );
+      },
+    );
+
+    test('flashcardCount parses per lecture — contract 3.27.0-m1', () {
+      final tree = universityTree();
+
+      // Varies, and agrees with hasFlashcards (`flashcardCount > 0`).
+      expect(tree.lectures.map((l) => l.flashcardCount), [12, 0, 5]);
+      expect(
+        tree.lectures.map((l) => l.hasFlashcards),
+        tree.lectures.map((l) => l.flashcardCount > 0),
+      );
+    });
+
+    test(
+      'flashcardCount is REQUIRED — an omitted one throws, never defaults',
+      () {
+        // `openapi.yaml:2891`. A default of 0 would print "0 Flash Cards" on the
+        // Setup screen for a lecture that has cards, and never fail doing it.
+        expect(
+          () => universityTree(
+            lectures: <dynamic>[
+              <String, dynamic>{
+                'id': 'lec-x',
+                'name': 'No count',
+                'questionCounter': counterJson(0, 10),
+                'hasFlashcards': true,
               },
             ],
           ),

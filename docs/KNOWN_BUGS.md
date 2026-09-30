@@ -539,3 +539,73 @@ tree, the Mistakes overview) are invalidated the same way and were not changed; 
 value across a sign-out is unproven. A related latent issue in other autoDispose notifiers (a disposal flag that stays
 set after a rebuild, so e.g. Top Student's Retry after a quiz sticks on its skeleton) was probe-proven and filed as a
 separate task.
+
+## BUG-019 ✅ The quiz's "<" button drew its arrow at about half the frame's size
+
+**Status:** FIXED 2026-09-29 (API→UI Wave 22). Found by a read-only review lens on the flashcards study screen, which
+shares the button; confirmed by rendering the button in a throwaway test and reading its pixels. Not yet
+device-verified.
+
+**What breaks.** The "<" (previous) pill on quiz questions 2 and later drew an arrow about 8.8 x 15.2 dp inside its
+79 x 58 pill. The frames (`159:845` quiz, `225:5582` flashcards) draw it 16.57 x 28.64, about half the pill's height.
+
+**Root cause.** The button took the glyph VECTOR's size (16.57 x 28.64, `225:5624`) as the box for
+`assets/icons/chevron.svg`, but that asset is a 15 x 30 viewBox whose glyph is only 9.2 x 15.91. The frame's arrow BOX
+is `225:5623`, 27 x 54: the same asset at 1.8x, its top 4 dp below the pill's. Since `e71e9a1` (2026-09-21, edit4).
+
+**Why tests missed it.** The tests pinned the pill (79 x 58), the flip and the semantics, never the drawn glyph. The
+Wave 12 walk measured the pill, not the arrow.
+
+**Fix.** `StudyPreviousButton` (`lib/core/widgets/study_session_chrome.dart`, shared by the quiz and the flashcards
+study screen) draws the asset in the frame's 27 x 54 box, centred, 4 dp from the pill's top. Pinned by the glyph-rect
+tests in `study_session_chrome_test.dart` (EN and AR). The quiz's "<" changes with it, to its own frame's size.
+
+## BUG-020 ✅ A flashcard's text takes the app's direction, not its own
+
+**Status:** FIXED 2026-09-30, on the owner's request; device-verified the same day (a targeted re-walk on the Pixel 8,
+all four language / content combinations PASS). Found 2026-09-29 by the API→UI Wave 22 walk on the Pixel 8.
+
+**What breaks.** In Arabic, an English card lays out right-to-left, so its closing "?" jumps to the start of the last
+line: "Which plane divides the body / ?into right and left parts". In English, an Arabic card lays out left-to-right,
+so its closing full stop lands at the right end of the sentence. Card text is the lecture's content, not UI copy, so
+either language can appear in either UI.
+
+**Root cause.** `FlashcardFlipCard` builds both faces as plain `Text` with no `textDirection`
+(`lib/features/flashcards/widgets/flashcard_flip_card.dart:201`, `:257`), so each face inherits the app's
+`Directionality`. The quiz's question text already sets the direction from its content (`Bidi.startsWithRtl` /
+`startsWithLtr`, `lib/features/quiz/widgets/question_stem_text.dart:81`); the flashcard did not reuse that.
+
+**Why tests missed it.** The Arabic card tests (`flashcard_flip_card_test.dart:477`,
+`flashcard_study_screen_test.dart:1623`) pump Arabic cards in the Arabic locale, where the content and the UI agree,
+and check centring and mirroring; the Arabic-locale tests with English decks check layout. No test reads the laid-out
+direction. The mock deck has Arabic cards; the walk read them in the English UI.
+
+**Scope.** Only neutral punctuation at a line's end moves (`?`, `.`). The Arabic "؟" is a strong right-to-left
+character and stays put; the Arabic comma "،" is not strong (a separator, like "."), but between Arabic words it
+resolves right-to-left, so it stays put too; a bracket pair resolves as a pair. (Corrected 2026-09-30: this entry first
+called "،" strong.) Setup's subject and lecture lines and the Lectures rows also take the UI's direction; the walked
+names end in no neutral punctuation, so nothing showed there.
+
+**Fix (2026-09-30).** `contentTextDirection` (`lib/core/widgets/content_text_direction.dart`) is the quiz stem's rule as
+a function: the direction of the text's first strong character, the app's when it has none. Both faces of
+`FlashcardFlipCard` and the card's screen-reader label take it; the faces stay centred. Setup's subject and lecture lines
+take it too, aligned at the app's start as the quiz stem is. The quiz is unchanged and keeps its inline copy of the rule;
+`test/core/widgets/content_text_direction_test.dart` ties the two together.
+
+**Tests.** +19. A new group in `flashcard_flip_card_test.dart` (the four combinations on both faces with the mock deck's
+own cards; the app's language does not move a card's text; text with no letters follows the app; the label's
+direction; the image path), two in `flashcard_study_screen_test.dart`, four in `flashcard_setup_screen_test.dart` (both
+directions, and a wrapped name keeps the app's start), two for the helper. The check
+(`test/features/flashcards/reading_order.dart`) walks every word and mark in reading order, so a failure names the mark
+that moved. Red first: with the fix reversed, 12 failed (209 / 12), naming "?" after "parts" and "." after "الأمام";
+with it, 221 / 0. Two of the card tests pin only the direction ("؟" and a bracket pair draw the same either way); the
+alignment tests fail without the Setup alignment (0 / 2). validate: format PASS · analyze 0 · 2036 / 0 / 0.
+
+**Device (2026-09-30).** The Arabic app now ends "into right and left parts?" with the "?" on the right, and the English
+app ends "إلى الأمام." with the full stop on the left; each card's interior is pixel-identical in the two apps, and the
+English card in the English app is pixel-identical to the pre-fix walk (`device_walk_results.md`).
+
+**Still open, outside this fix.** The Lectures rows and the other catalog names (subjects, units, chapters, lessons,
+Mistakes) render content-language names in the app's direction by the same mechanism; they are shared screens the fix
+did not touch. And the first-strong rule reads an Arabic sentence that opens on a Latin term ("ATP هو …") as left to
+right, so its closing "." lands at the right: the quiz's rule, reused as the owner asked.

@@ -905,4 +905,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accountPendingDeletion =>
       'Your account is scheduled for deletion. Cancel the request to use Level Up again.';
+
+  @override
+  String get flashcardsTab => 'Flashcard';
+
+  @override
+  String get flashcardsTitle => 'Flash cards';
+
+  @override
+  String get flashcardSetupTitle => 'Flash Card Setup';
+
+  @override
+  String flashcardSetupCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString Flash Cards',
+      one: '1 Flash Card',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get flashcardSetupHelper =>
+      'this is available Flash cards for this quiz';
+
+  @override
+  String get flashcardGotIt => 'Got it';
+
+  @override
+  String get flashcardAgain => 'Again';
+
+  @override
+  String get flashcardPreviewUsedUp =>
+      'You\'ve used this week\'s free flashcards.';
 }

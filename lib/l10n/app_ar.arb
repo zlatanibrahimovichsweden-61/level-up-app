@@ -294,5 +294,13 @@
   "leaderboardEmpty": "لا يوجد أحد في هذه القائمة بعد.",
   "leaderboardEndOfBoard": "هذه نهاية القائمة.",
   "leaderboardShare": "مشاركة",
-  "accountPendingDeletion": "حسابك مُجدوَل للحذف. ألغِ الطلب لاستخدام ليفل أب مرة أخرى."
+  "accountPendingDeletion": "حسابك مُجدوَل للحذف. ألغِ الطلب لاستخدام ليفل أب مرة أخرى.",
+  "flashcardsTab": "فلاش كارد",
+  "flashcardsTitle": "فلاش كارد",
+  "flashcardSetupTitle": "إعداد الفلاش كارد",
+  "flashcardSetupCount": "{count} فلاش كارد",
+  "flashcardSetupHelper": "هذه الفلاش كارد المتاحة لهذا الاختبار",
+  "flashcardGotIt": "فهمت",
+  "flashcardAgain": "مرة أخرى",
+  "flashcardPreviewUsedUp": "لقد استخدمت البطاقات المجانية لهذا الأسبوع."
 }

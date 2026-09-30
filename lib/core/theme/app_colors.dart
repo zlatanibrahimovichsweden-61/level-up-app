@@ -100,6 +100,16 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.destructive,
     required this.dialogNote,
     required this.profileDialogClose,
+    required this.flashcardProgressFill,
+    required this.flashcardCardFill,
+    required this.flashcardCardText,
+    required this.flashcardAgainFill,
+    required this.flashcardAgainGlyph,
+    required this.flashcardSetupPillFill,
+    required this.flashcardSetupPillBorder,
+    required this.flashcardSetupPillText,
+    required this.flashcardSetupHelper,
+    required this.flashcardGradeError,
     required this.podiumAccent,
     required this.podiumOnAccent,
     required this.podiumFirstRing,
@@ -799,6 +809,77 @@ class AppColors extends ThemeExtension<AppColors> {
   /// kept separate because that card has no dark frame and this one does.
   final Color profileDialogClose;
 
+  // --- Flashcards (API→UI Wave 22) ------------------------------------------
+  //
+  // The study screen `225:5582` (light) / `337:14475` (dark) shares the quiz's
+  // header, progress row and previous button (`StudySessionHeader`,
+  // `StudyPreviousButton`); only the tokens below are its own. The dark study
+  // frame is OLDER than the light one (no restart button, "Confirm" instead of
+  // "Got it", a 358-wide card), and no dark Setup frame exists at all, so
+  // several dark values below are stand-ins, each said so on its field and
+  // logged in docs/DESIGN_ISSUES.md.
+
+  /// The study screen's progress FILL: light `#5A7F73` (`225:5616`), dark
+  /// `#AE87E7` (`349:15348`, the fill inside `337:14475`). It is the one thing
+  /// the flashcards header does not share with the quiz's, whose fill is
+  /// [quizProgressFill] (`#AE87E7` on both canvases) — the light study frame
+  /// draws a green-grey here that no quiz frame has.
+  final Color flashcardProgressFill;
+
+  /// The flashcard's face: `#FCFBF9` on BOTH canvases. The card is a light
+  /// object on the dark canvas too (`337:14513`, `247:3260`; front face
+  /// `I247:3260;246:3237`), so this does not flip and must not be replaced by
+  /// [cardFill] or [background].
+  final Color flashcardCardFill;
+
+  /// The text on the flashcard, both faces: `#384F47` on BOTH canvases (front
+  /// `246:3244`, back `246:3236`, identical in `225:5582` and `337:14475`) —
+  /// the card stays light in dark mode, so its ink stays dark.
+  final Color flashcardCardText;
+
+  /// The "Again" button's disc (`1229:8739`, 38 dp circle): light `#4B675E`.
+  /// **Dark is not designed** — `337:14475` has no restart button (it predates
+  /// it). The dark theme's primary accent `#AE87E7` (the dark frame's primary
+  /// button, `349:15308`) stands in until the designer draws it
+  /// (docs/DESIGN_ISSUES.md).
+  final Color flashcardAgainFill;
+
+  /// The restart glyph inside "Again" (`1229:8745`): `#FCFBF9` on light; the
+  /// same on dark, where the button itself is undesigned (see
+  /// [flashcardAgainFill]) and a cream glyph reads on the accent stand-in.
+  final Color flashcardAgainGlyph;
+
+  /// Flash Card Setup's single "N Flash Cards" pill (`1234:8847`): light is
+  /// pure `#FFFFFF`, not the `#FCFBF9` every other surface uses. **Dark is not
+  /// designed** (no dark Setup frame): `#27282C`, the dark quiz-setup chip's
+  /// fill (`337:6239`), stands in.
+  final Color flashcardSetupPillFill;
+
+  /// The pill's 0.5 stroke: light `#384F47` (`1234:8847`). **Dark is not
+  /// designed**: `#FCFBF9`, the app's dark counterpart of the light ink
+  /// `#384F47`, stands in.
+  final Color flashcardSetupPillBorder;
+
+  /// The pill's label: light `#384F47` (`1234:8848`), dark `#FCFBF9` — the dark
+  /// quiz-setup chip's label (`337:6239`). The dark half is derived, not drawn.
+  final Color flashcardSetupPillText;
+
+  /// Setup's helper line under the pill (`1237:9845`): light `#6E7F7A`.
+  /// **Dark is not designed**: `#B3B3B3` is [mutedText]'s value — the app's
+  /// de-emphasised small-text grey — so the caption stays quieter than the
+  /// pill's `#FCFBF9` label, as it is in light. (`textSecondary`'s dark value
+  /// `#DCDCDC` would have read as loud as the label.)
+  final Color flashcardSetupHelper;
+
+  /// The study screen's grade-failure line under the card ("You are offline",
+  /// "Something went wrong"…). **Not designed** — composed from existing error
+  /// colours; DESIGN_ISSUES #119. Light is `#921119`, the quiz's inline-error
+  /// red ([quizWrongBorder]'s light value, 8.8:1 on `#FCFBF9`). Dark is
+  /// `#FF465C`, the app's dark error text ([otpErrorText]'s dark value, about
+  /// 4.6:1 on `#232428`). It is NOT [quizWrongBorder] on the dark canvas: that
+  /// token is `#921119` there too, which reads 1.7:1 on `#232428`.
+  final Color flashcardGradeError;
+
   // --- Elevation ------------------------------------------------------------
   //
   // `elevationShadow` lived here and is GONE, deleted 2026-09-20 by the edit
@@ -1389,6 +1470,18 @@ class AppColors extends ThemeExtension<AppColors> {
     destructive: Color(0xFFEF4444), // Figma 176:1191
     dialogNote: Brand.purplePrimary, // #AE87E7 — Figma 180:4571
     profileDialogClose: Color(0xFF3F3F3F), // Figma 180:4707 (SVG stroke)
+    flashcardProgressFill: Color(0xFF5A7F73), // Figma 225:5616
+    flashcardCardFill: Color(0xFFFCFBF9), // Figma 247:3260 — same in dark
+    flashcardCardText:
+        Brand.greenPrimary, // #384F47 — Figma 246:3244 / 246:3236
+    flashcardAgainFill: Color(0xFF4B675E), // Figma 1229:8739
+    flashcardAgainGlyph: Color(0xFFFCFBF9), // Figma 1229:8745
+    flashcardSetupPillFill: Color(0xFFFFFFFF), // Figma 1234:8847
+    flashcardSetupPillBorder: Brand.greenPrimary, // #384F47 — Figma 1234:8847
+    flashcardSetupPillText: Brand.greenPrimary, // #384F47 — Figma 1234:8848
+    flashcardSetupHelper: Color(0xFF6E7F7A), // Figma 1237:9845
+    // Not designed — quizWrongBorder's light value; DESIGN_ISSUES #119.
+    flashcardGradeError: Color(0xFF921119),
     podiumAccent: Color(0xFFDBB0FF), // Figma 134:3554
     podiumOnAccent: Color(0xFFFCFBF9), // Figma 158:841
     podiumFirstRing: Color(0xFFFFCA28), // Figma 134:3418 border / 134:3429
@@ -1574,6 +1667,24 @@ class AppColors extends ThemeExtension<AppColors> {
     destructive: Color(0xFFEF4444),
     dialogNote: Brand.purplePrimary, // #AE87E7 — same in both, like homeAccent
     profileDialogClose: Color(0xFFFCFBF9), // Figma 337:7786 (SVG stroke)
+    flashcardProgressFill: Brand.purplePrimary, // #AE87E7 — Figma 349:15348
+    flashcardCardFill: Color(0xFFFCFBF9), // Figma 337:14513 — stays light
+    flashcardCardText: Brand.greenPrimary, // #384F47 — Figma 337:14513 (text)
+    // Not designed — 337:14475 has no restart button. The dark primary accent
+    // (its primary button, 349:15308) stands in; DESIGN_ISSUES.
+    flashcardAgainFill: Brand.purplePrimary,
+    flashcardAgainGlyph: Color(0xFFFCFBF9), // = light; button not designed
+    // Not designed — no dark Setup frame. The dark quiz setup's chip fill
+    // (337:6239) stands in.
+    flashcardSetupPillFill: Color(0xFF27282C),
+    // Not designed — the dark counterpart of the light ink #384F47.
+    flashcardSetupPillBorder: Color(0xFFFCFBF9),
+    flashcardSetupPillText: Color(0xFFFCFBF9), // the dark quiz setup chip label
+    // Not designed — mutedText's value, the app's de-emphasised small text.
+    flashcardSetupHelper: Color(0xFFB3B3B3),
+    // Not designed — otpErrorText's dark value (337:19294), the app's existing
+    // dark error text; quizWrongBorder is 1.7:1 here. DESIGN_ISSUES #119.
+    flashcardGradeError: Color(0xFFFF465C),
     // Same in both palettes. The first four are semantic (selection, medal
     // order) and must not flip with the theme. podiumThirdRing is a light
     // value carried across (`337:5563` not read); the three badge values were
@@ -1752,6 +1863,16 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? destructive,
     Color? dialogNote,
     Color? profileDialogClose,
+    Color? flashcardProgressFill,
+    Color? flashcardCardFill,
+    Color? flashcardCardText,
+    Color? flashcardAgainFill,
+    Color? flashcardAgainGlyph,
+    Color? flashcardSetupPillFill,
+    Color? flashcardSetupPillBorder,
+    Color? flashcardSetupPillText,
+    Color? flashcardSetupHelper,
+    Color? flashcardGradeError,
     Color? podiumAccent,
     Color? podiumOnAccent,
     Color? podiumFirstRing,
@@ -1925,6 +2046,20 @@ class AppColors extends ThemeExtension<AppColors> {
       destructive: destructive ?? this.destructive,
       dialogNote: dialogNote ?? this.dialogNote,
       profileDialogClose: profileDialogClose ?? this.profileDialogClose,
+      flashcardProgressFill:
+          flashcardProgressFill ?? this.flashcardProgressFill,
+      flashcardCardFill: flashcardCardFill ?? this.flashcardCardFill,
+      flashcardCardText: flashcardCardText ?? this.flashcardCardText,
+      flashcardAgainFill: flashcardAgainFill ?? this.flashcardAgainFill,
+      flashcardAgainGlyph: flashcardAgainGlyph ?? this.flashcardAgainGlyph,
+      flashcardSetupPillFill:
+          flashcardSetupPillFill ?? this.flashcardSetupPillFill,
+      flashcardSetupPillBorder:
+          flashcardSetupPillBorder ?? this.flashcardSetupPillBorder,
+      flashcardSetupPillText:
+          flashcardSetupPillText ?? this.flashcardSetupPillText,
+      flashcardSetupHelper: flashcardSetupHelper ?? this.flashcardSetupHelper,
+      flashcardGradeError: flashcardGradeError ?? this.flashcardGradeError,
       podiumAccent: podiumAccent ?? this.podiumAccent,
       podiumOnAccent: podiumOnAccent ?? this.podiumOnAccent,
       podiumFirstRing: podiumFirstRing ?? this.podiumFirstRing,
@@ -2264,6 +2399,56 @@ class AppColors extends ThemeExtension<AppColors> {
       profileDialogClose: Color.lerp(
         profileDialogClose,
         other.profileDialogClose,
+        t,
+      )!,
+      flashcardProgressFill: Color.lerp(
+        flashcardProgressFill,
+        other.flashcardProgressFill,
+        t,
+      )!,
+      flashcardCardFill: Color.lerp(
+        flashcardCardFill,
+        other.flashcardCardFill,
+        t,
+      )!,
+      flashcardCardText: Color.lerp(
+        flashcardCardText,
+        other.flashcardCardText,
+        t,
+      )!,
+      flashcardAgainFill: Color.lerp(
+        flashcardAgainFill,
+        other.flashcardAgainFill,
+        t,
+      )!,
+      flashcardAgainGlyph: Color.lerp(
+        flashcardAgainGlyph,
+        other.flashcardAgainGlyph,
+        t,
+      )!,
+      flashcardSetupPillFill: Color.lerp(
+        flashcardSetupPillFill,
+        other.flashcardSetupPillFill,
+        t,
+      )!,
+      flashcardSetupPillBorder: Color.lerp(
+        flashcardSetupPillBorder,
+        other.flashcardSetupPillBorder,
+        t,
+      )!,
+      flashcardSetupPillText: Color.lerp(
+        flashcardSetupPillText,
+        other.flashcardSetupPillText,
+        t,
+      )!,
+      flashcardSetupHelper: Color.lerp(
+        flashcardSetupHelper,
+        other.flashcardSetupHelper,
+        t,
+      )!,
+      flashcardGradeError: Color.lerp(
+        flashcardGradeError,
+        other.flashcardGradeError,
         t,
       )!,
       // Black → cream is the widest travel of any token here, so a theme

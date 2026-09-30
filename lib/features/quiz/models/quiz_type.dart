@@ -18,10 +18,14 @@ import '../../../l10n/app_localizations.dart';
 /// directly — no `@JsonValue` bridge, per the project's no-key-bridge rule.
 ///
 /// **There is deliberately no `flashcard` member.** The Lectures frame draws a
-/// "Flashcard" tab, but flashcards are a separate `flashcardSubscription`
-/// entitlement with no M1 content endpoint, and the contract's `quizTypes` enum
-/// does not list them. Adding one here would invent a quiz type the server has
-/// never heard of. See docs/DESIGN_ISSUES.md #18.
+/// "Flashcard" tab, and the contract's `quizTypes` enum does not list one:
+/// flashcards are not a kind of quiz. They have their own operations (stable
+/// since 3.13.0-m1) and their own `flashcardSubscription` entitlement. Adding a
+/// member here would invent a quiz type the server has never heard of. The tab
+/// is built anyway, by the owner's 2026-09-29 ruling, as a `FlashcardsTab`
+/// beside the quiz types in `quiz_type_tabs.dart` rather than as a value of
+/// this enum.
+/// See docs/DESIGN_ISSUES.md #18.
 enum QuizType { normal, midTermRevision, finalRevision, practicalRevision }
 
 /// The one place the four wire values become UI copy — exhaustive, so a new

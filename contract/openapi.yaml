@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.23.0-m1
+  version: 3.27.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -130,6 +130,11 @@ tags:
     description: Subscription-code redemption (adr-016)
   - name: leaderboard
     description: Scoped boards (adr-015) with privacy filtering (adr-023)
+  - name: support
+    description: >
+      The student's own support tickets — create, list, read the thread, reply (adr-009, spec-045
+      Group A). Text only; attachments follow in their own spec, and student support does not launch
+      until they ship (adr-187). Every operation here is `draft`.
 paths:
   /auth/otp/request:
     post:
@@ -914,7 +919,7 @@ paths:
   /me/terms-acceptance:
     get:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: getTermsAcceptance
       summary: The currently required Terms version, and what the caller has accepted
       description: >-
@@ -943,7 +948,7 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     post:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: acceptTerms
       summary: Record that the caller accepts the currently required Terms version (idempotent)
       description: >-
@@ -1547,8 +1552,16 @@ paths:
       tags: [quiz]
       x-stability: draft
       operationId: getQuizReview
-      summary: Review a FINISHED quiz — questions, the student's answers, correct answers
-      description: Correct answers appear here because the quiz is complete (adr-017 history review; feeds retake-wrong).
+      summary: Review a FINISHED quiz — questions, the student's answers, and the correct answer for every answered question
+      description: >-
+        The caller's own finished quiz, rendered from the CURRENT question text (adr-017). A correct
+        answer is revealed ONLY for a question the student actually answered: `correctOptionId` is
+        null on every unanswered question (adr-178 D1). `correct` is the verdict recorded when the
+        answer was submitted and is never recomputed. A question whose content no longer exists is
+        omitted from `questions`; `score` and `totalQuestions` keep the values frozen at finish. The
+        review's all / correct / wrong filter is client-side: "wrong" means answered and incorrect
+        (`selectedOptionId != null && correct == false`), so an unanswered question appears only
+        under "all" — never under "wrong". Not release-gated and not entitlement-gated (adr-135 §4).
       parameters:
         - { name: quizId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -1561,10 +1574,11 @@ paths:
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '403':
-          description: "`insufficient_scope` (not the caller's quiz)"
-          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
-        '404':
-          description: "`validation_failed`-style not-found (unknown id) — plain 404 ProblemDetails, code `not_found`"
+          description: >-
+            `insufficient_scope` — the quiz id is unknown, malformed, or belongs to another student;
+            all three are one indistinguishable refusal (adr-178 D2) and there is deliberately no
+            404. `quiz_not_finished` — the caller's OWN quiz is not finished yet; checked only after
+            ownership, so it never describes another student's quiz.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /quizzes/{quizId}/answers:
     post:
@@ -1781,6 +1795,9 @@ paths:
                             subjectName: { type: string }
                             favoritedAt: { type: string, format: date-time }
                           required: [questionId, text, subjectName, favoritedAt]
+        '400':
+          description: "`validation_failed` — `limit` outside 1–100, or a malformed or foreign `cursor` (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -2244,6 +2261,177 @@ paths:
         '500':
           description: "`internal_error` — the board's projection could not be reached. `traceId` is the support handle."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/tickets:
+    post:
+      tags: [support]
+      x-stability: draft
+      operationId: createSupportTicket
+      summary: File a support ticket (subject + details, text only)
+      description: >
+        Opens a ticket owned by the caller, status `open`. `details` is the ticket's opening text; it
+        is NOT repeated as the first thread message (the thread holds replies only). Both fields are
+        trimmed server-side, and the limits apply to the trimmed value: `subject` 1–120 characters,
+        `details` 1–4000. No attachment field exists and none is reserved — attachments arrive
+        additively in their own spec (adr-187). No category or priority is accepted (spec-045 D3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSupportTicketRequest' }
+      responses:
+        '201':
+          description: Created. No `Location` header.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportTicket' }
+        '400':
+          description: "`validation_failed` — `subject` or `details` missing, empty after trimming, or over its limit (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114). Support is NOT one of the four: route to the cancel screen, do not log out and do not retry."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 5 ticket creates per student per day. Honour `Retry-After`. Replies have their own, separate budget."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    get:
+      tags: [support]
+      x-stability: draft
+      operationId: listMySupportTickets
+      summary: The caller's own tickets, most recently active first (cursor-paginated)
+      description: >
+        The caller's tickets only — never anyone else's. Ordered by `lastActivityAt` descending, ties
+        broken by `ticketId` descending; pages of 20 (this operation takes no `limit`). A reply bumps
+        its ticket's `lastActivityAt`, so a ticket can move to the top between pages; page with the
+        returned cursor and branch on `hasMore`, never on `items.length`.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of the caller's tickets.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/SupportTicketSummary' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/tickets/{ticketId}:
+    get:
+      tags: [support]
+      x-stability: draft
+      operationId: getMySupportTicket
+      summary: One of the caller's own tickets
+      parameters:
+        - { name: ticketId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: The ticket.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportTicket' }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_found` — no such ticket FOR THIS CALLER. An unknown id, a malformed id and another student's ticket are the same answer, so the response never reveals that someone else's ticket exists."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/tickets/{ticketId}/messages:
+    get:
+      tags: [support]
+      x-stability: draft
+      operationId: listMySupportTicketMessages
+      summary: A ticket's thread, oldest first (cursor-paginated)
+      description: >
+        Replies on one of the caller's own tickets, in chat order: `createdAt` ascending, ties broken
+        by `messageId` ascending; pages of 20 (no `limit`). The ticket's opening text is its `details`,
+        not a message. A staff reply carries `authorKind: staff` and no staff identity — show it as
+        "Customer support".
+      parameters:
+        - { name: ticketId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of the thread.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/SupportTicketMessage' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` on the caller's own ticket (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_found` — no such ticket for this caller (unknown, malformed and foreign ids are indistinguishable)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    post:
+      tags: [support]
+      x-stability: draft
+      operationId: postMySupportTicketMessage
+      summary: Reply on one of the caller's own open tickets
+      description: >
+        Appends a reply to the thread and moves the ticket's `lastActivityAt` to the reply's
+        `createdAt`. `body` is trimmed server-side and must be 1–4000 characters after trimming. A
+        closed ticket takes no reply and cannot be reopened; the student files a new ticket instead.
+      parameters:
+        - { name: ticketId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PostSupportTicketMessageRequest' }
+      responses:
+        '201':
+          description: Created. No `Location` header.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportTicketMessage' }
+        '400':
+          description: "`validation_failed` — `body` missing, empty after trimming, or over 4000 characters (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_found` — no such ticket for this caller (unknown, malformed and foreign ids are indistinguishable)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`ticket_closed` — the caller's own ticket is closed and takes no reply. There is no reopen: offer to file a new ticket. Checked after ownership, so this never describes someone else's ticket."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 60 replies per student per hour. Honour `Retry-After`. Ticket creation has its own, separate budget."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
 components:
   securitySchemes:
     bearerAuth:
@@ -2287,6 +2475,66 @@ components:
         nextCursor: { type: [string, "null"], description: Opaque. Absent/null = no more pages. }
         hasMore: { type: boolean }
       required: [items, hasMore]
+    SupportTicketStatus:
+      type: string
+      description: >
+        `open` or `closed` today. **Clients MUST tolerate an unknown `status` value**: more statuses
+        may be added later without a version break (spec-045 D4), so treat any value you do not
+        recognise as "in progress — not closed" rather than failing to parse the ticket. Only
+        `closed` means the ticket takes no reply.
+      example: open
+    SupportTicketSummary:
+      type: object
+      description: One row of the caller's ticket list.
+      properties:
+        ticketId: { $ref: '#/components/schemas/Uuid' }
+        subject: { type: string }
+        status: { $ref: '#/components/schemas/SupportTicketStatus' }
+        createdAt: { type: string, format: date-time }
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: The ticket's creation or its latest reply, whichever is later — the list's sort key.
+      required: [ticketId, subject, status, createdAt, lastActivityAt]
+    SupportTicket:
+      type: object
+      description: >
+        One of the caller's tickets. `details` is the opening text. No category, priority, assignee or
+        human-readable reference is exposed (spec-045 D3/D10); any later one arrives additively.
+      properties:
+        ticketId: { $ref: '#/components/schemas/Uuid' }
+        subject: { type: string }
+        details: { type: string }
+        status: { $ref: '#/components/schemas/SupportTicketStatus' }
+        createdAt: { type: string, format: date-time }
+        lastActivityAt: { type: string, format: date-time }
+        closedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the ticket was closed; `null` while it is not closed.
+      required: [ticketId, subject, details, status, createdAt, lastActivityAt, closedAt]
+    SupportTicketMessage:
+      type: object
+      description: >
+        One reply in a ticket's thread. Carries no staff identity or role: a `staff` message is shown
+        as "Customer support".
+      properties:
+        messageId: { $ref: '#/components/schemas/Uuid' }
+        authorKind: { type: string, enum: [student, staff] }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [messageId, authorKind, body, createdAt]
+    CreateSupportTicketRequest:
+      type: object
+      properties:
+        subject: { type: string, minLength: 1, maxLength: 120, description: Trimmed server-side; the limits apply after trimming. }
+        details: { type: string, minLength: 1, maxLength: 4000, description: Trimmed server-side; the limits apply after trimming. }
+      required: [subject, details]
+    PostSupportTicketMessageRequest:
+      type: object
+      properties:
+        body: { type: string, minLength: 1, maxLength: 4000, description: Trimmed server-side; the limits apply after trimming. }
+      required: [body]
     Uuid:
       type: string
       format: uuid
@@ -2627,7 +2875,20 @@ components:
                   Added additively in `3.12.0-m1`. **It is NOT on `SchoolSubjectTree` and never will
                   be** — flashcards are university-track only, and a school tree carries no signal
                   that they exist.
-            required: [id, name, questionCounter, hasFlashcards]
+              flashcardCount:
+                type: integer
+                minimum: 0
+                description: >
+                  The number of ACTIVE flashcards this lecture holds at read time (archived cards
+                  excluded). Informational and uncharged: it is not a reservation, not the student's
+                  remaining weekly allowance, not a round size, and it is independent of
+                  subscription state. `hasFlashcards` is exactly `flashcardCount > 0`. The study
+                  round still follows `getFlashcardsForLecture`'s `hasMore`. University track only;
+                  never on `SchoolSubjectTree`.
+
+
+                  Added additively in `3.27.0-m1` (spec-049).
+            required: [id, name, questionCounter, hasFlashcards, flashcardCount]
       required: [track, quizTypes, lectures]
     SchoolMistakesTree:
       type: object
@@ -2787,10 +3048,10 @@ components:
       required: [id, subjectName, scopeName, mode, score, totalQuestions, finishedAt]
     QuizReview:
       type: object
-      description: Post-completion review — includes the student's answer AND the correct answer per question (adr-017).
+      description: Post-completion review — the student's answer per question, and the correct answer for each question they answered (adr-017, adr-178).
       properties:
         id: { $ref: '#/components/schemas/Uuid' }
-        subjectName: { type: string }
+        subjectName: { type: [string, "null"], description: "The CURRENT subject name for a normal-mode quiz; null for retakeWrong and favorites quizzes (they span subjects) and when the subject can no longer be resolved." }
         scopeName: { type: string }
         score: { type: integer }
         totalQuestions: { type: integer }
@@ -2803,9 +3064,9 @@ components:
               - type: object
                 properties:
                   selectedOptionId: { type: [string, "null"], description: null = unanswered. }
-                  correctOptionId: { $ref: '#/components/schemas/Uuid' }
-                  correct: { type: [boolean, "null"] }
-                  explanationAvailable: { type: boolean }
+                  correctOptionId: { type: [string, "null"], format: uuid, description: "The current correct option — present ONLY when the student answered this question (selectedOptionId != null); null on every unanswered question (adr-178 D1)." }
+                  correct: { type: [boolean, "null"], description: "The verdict recorded at submit time, never recomputed; null when unanswered." }
+                  explanationAvailable: { type: boolean, description: "The same value AnswerResult.explanationAvailable carries for this question and track. Always false on an unanswered question: an explanation is only served for a question the caller answered." }
                 required: [correctOptionId, explanationAvailable]
       required: [id, subjectName, scopeName, score, totalQuestions, finishedAt, questions]
     LeaderboardEntry:

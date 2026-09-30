@@ -1,19 +1,42 @@
 # Vendored API contract — pinned copy
 
 Source: https://github.com/seifhamdii-collab/level-up-contract
-Pinned commit: ea83099 ("Mirror contract from level-up-backend@03dd474ac89d4198892898d30faa024d965062b9")
-Vendored: 2026-09-24
-Previous pin: 768e67d ("Mirror contract from level-up-backend@ac7ecd80d62bf731a50a0a0f03fe6b37ec86ef03", v3.22.0-m1), vendored 2026-09-20
+Pinned commit: f462968 ("Mirror contract from level-up-backend@f5014e6d675c047aad04364a7064661c009d6949")
+Vendored: 2026-09-29
+Previous pin: ea83099 ("Mirror contract from level-up-backend@03dd474ac89d4198892898d30faa024d965062b9", v3.23.0-m1), vendored 2026-09-24
 
-info.version at this pin: 3.23.0-m1
+info.version at this pin: 3.27.0-m1
 
 Operation census at this pin, counted by parsing `paths` with a YAML parser (never
 `grep -c "x-stability: …"` — header and description prose inflate both counts):
-**33 stable · 16 draft · 49 total**. Of the 33 stable, 3 are `x-consumers: [web]` and are
-forbidden to the app, leaving **30 stable operations the app may build against**.
-The previous pin (768e67d) was **33 stable · 14 draft · 47 total**.
+**35 stable · 19 draft · 54 total**. Of the 35 stable, 3 are `x-consumers: [web]` and are
+forbidden to the app, leaving **32 stable operations the app may build against**.
+The previous pin (ea83099) was **33 stable · 16 draft · 49 total**.
 
-## Delta from 3.22.0-m1 — one mobile-visible commit (2026-09-24 re-vendor)
+All four vendored files are blob-identical to upstream `f462968` (`git hash-object` on each equals
+`git rev-parse f462968:<file>`). `realtime.md` did not change.
+
+## Delta from 3.23.0-m1 — four mobile-visible versions (2026-09-29 re-vendor)
+
+Re-vendored on the owner's Wave 22 ruling (2026-09-29): the Flash Card Setup screen needs
+`flashcardCount`, which only 3.27.0-m1 carries. Upstream moved seven commits past ea83099
+(`96888a1`, `38a6550`, `6597313`, `d6d182b`, `0c44071`, `df955cc`, `f462968`); some touch only the
+admin files, which are deliberately not vendored.
+
+| Version | Change | Breaking | App impact |
+| --- | --- | --- | --- |
+| 3.24.0-m1 | `getQuizReview` (`GET /quizzes/{quizId}`) and `listFavorites` corrected — both still **`draft`**; `error-codes.md` + `quiz_not_finished` (403) | no | none: the app calls neither (the review is built from the in-memory session) |
+| 3.25.0-m1 | `getTermsAcceptance` / `acceptTerms` **`draft` → `stable`** | no | stable but inert in every environment (`currentVersion: null`) and no design exists; not built |
+| 3.26.0-m1 | five **`draft`** `/support/tickets` operations, new tag `support`; `error-codes.md` + `ticket_closed` (409) | no | none (draft) |
+| 3.27.0-m1 | `UniversitySubjectTree.lectures[]` gains a **required** `flashcardCount` (`openapi.yaml:2878-2891`); `hasFlashcards` is exactly `flashcardCount > 0`; "one `pageSize=10` page per round" (changelog, 2026-09-25) | no | `Lecture.flashcardCount` added in the same change, with the mock and test fixtures — without it `test/guards/contract_models_test.dart` goes red |
+
+No `x-behaviour-changed` stamp and no breaking entry. Both flashcards operations, their schemas,
+`EntitlementType` / `EntitlementState`, `CursorPage` and `ProblemDetails` are unchanged.
+
+⚠️ **Line-number drift.** New text lands at several places, so `openapi.yaml:NNN` citations in
+`lib/` / `test/` comments written against earlier pins are approximate.
+
+## Delta from 3.22.0-m1 — one mobile-visible commit (2026-09-24 re-vendor, kept for history)
 
 Upstream moved three commits past 768e67d (`bc27953`, `200073c`, `ea83099`). The first two touch
 **only** the admin files (`openapi-admin.yaml`, `error-codes-admin.md`,

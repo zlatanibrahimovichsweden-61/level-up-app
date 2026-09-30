@@ -111,25 +111,29 @@ Map<String, dynamic> universityTreeJson({
   'lectures':
       lectures ??
       <dynamic>[
-        // `hasFlashcards` is contract-required and varies across the three, so
-        // a surface that ignores it cannot pass on this fixture alone.
+        // `hasFlashcards` and `flashcardCount` are contract-required and vary
+        // across the three (`hasFlashcards` is exactly `flashcardCount > 0`),
+        // so a surface that ignores them cannot pass on this fixture alone.
         <String, dynamic>{
           'id': 'lec-1',
           'name': 'Upper Limb',
           'questionCounter': counterJson(0, 60),
           'hasFlashcards': true,
+          'flashcardCount': 12,
         },
         <String, dynamic>{
           'id': 'lec-2',
           'name': 'Lower Limb',
           'questionCounter': counterJson(30, 60),
           'hasFlashcards': false,
+          'flashcardCount': 0,
         },
         <String, dynamic>{
           'id': 'lec-3',
           'name': 'Thorax',
           'questionCounter': counterJson(45, 45),
           'hasFlashcards': true,
+          'flashcardCount': 5,
         },
       ],
 };
@@ -140,3 +144,46 @@ UniversitySubjectTree universityTree({
 }) => UniversitySubjectTree.fromJson(
   universityTreeJson(quizTypes: quizTypes, lectures: lectures),
 );
+
+/// One `Lecture` payload. `hasFlashcards` is left to the caller and
+/// `flashcardCount` follows it (the contract: `hasFlashcards` is exactly
+/// `flashcardCount > 0`), so a fixture cannot describe a lecture the server
+/// could never send.
+Map<String, dynamic> lectureJson({
+  required String id,
+  required String name,
+  required bool hasFlashcards,
+  int? flashcardCount,
+  Map<String, dynamic>? questionCounter,
+}) => <String, dynamic>{
+  'id': id,
+  'name': name,
+  'questionCounter': questionCounter ?? counterJson(0, 10),
+  'hasFlashcards': hasFlashcards,
+  'flashcardCount': flashcardCount ?? (hasFlashcards ? 8 : 0),
+};
+
+/// The default three lectures with the flashcards taken away — the payload of a
+/// faculty that has none, for which the Flashcard tab must not be offered at
+/// all. Same ids, names and counters as [universityTreeJson]'s defaults, so a
+/// test can swap this in and compare like with like.
+List<dynamic> lecturesWithoutFlashcards() => <dynamic>[
+  lectureJson(
+    id: 'lec-1',
+    name: 'Upper Limb',
+    hasFlashcards: false,
+    questionCounter: counterJson(0, 60),
+  ),
+  lectureJson(
+    id: 'lec-2',
+    name: 'Lower Limb',
+    hasFlashcards: false,
+    questionCounter: counterJson(30, 60),
+  ),
+  lectureJson(
+    id: 'lec-3',
+    name: 'Thorax',
+    hasFlashcards: false,
+    questionCounter: counterJson(45, 45),
+  ),
+];

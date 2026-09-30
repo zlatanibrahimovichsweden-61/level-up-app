@@ -607,7 +607,7 @@ audit §9C) · **S42–S44 filed 2026-09-12** with `docs/day10_mistakes_brief.md
 | ~~S3~~ | ~~Level thresholds: `GET /me` returns `level` but no target to progress toward~~ | 🔴 | **Resolved by contract prose (2026-09-04)** — `StudentProfile.level`: "thresholds every 500 points; static, not configurable" | `level_card.dart:21` |
 | S4 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Open | `tree_list_row.dart` |
 | S5 | Referral is a designed SCREEN with no contract, not the stray signup field we filed | 🟠 | Open (upgraded Day 8) | `registration_draft.dart:18`, `refer_a_friend_screen.dart` |
-| S6 | Flashcards: full screen designed + sellable entitlement, zero contract support | 🔴 | Open | `quiz_type_tabs.dart` |
+| ~~S6~~ | ~~Flashcards: full screen designed + sellable entitlement, zero contract support~~ | 🔴 | **Resolved (2026-09-29)** — both operations `stable` since 3.13.0-m1, `flashcardCount` at 3.27.0-m1; built in API→UI Wave 22. Four narrower asks remain (S6, 2026-09-29) | `flashcard_study_screen.dart` |
 | S7 | Quiz timer drawn in the design, no field in the contract | 🟠 | Open | — |
 | ~~S8~~ | ~~Paymob return deep-link scheme/host not specified~~ | 🟠 | **Withdrawn (2026-09-04)** — adr-049: there is no in-app checkout, so there is no return link to specify | — |
 | S9 | University Home "Learning Tools" cards have no endpoint in M1 | 🟠 | Open | `home_screen.dart` |
@@ -815,6 +815,29 @@ therefore stands and is sharper: the constraint has no machine-readable home at 
 sentence "(And /checkout/sessions is itself draft, so in M1 they cannot even complete the
 purchase that leads nowhere.)" is **Historical** — there is no in-app purchase of any kind
 (adr-049 §3). Phase 2 FINDING-08.
+
+**Resolved 2026-09-29 — the contract answered it, and API→UI Wave 22 built it.** Everything above is
+**Historical**. Since 3.13.0-m1 the contract carries two `stable`, mobile-only operations:
+`getFlashcardsForLecture` (`GET /flashcards/lectures/{lectureId}/cards`, cursor + `pageSize`) and
+`setFlashcardSelfGrade` (`PUT /flashcards/cards/{flashcardId}/self-grade`, a closed `{gotIt, again}`,
+latest-wins, no points). `flashcard_subscription_required` is no longer an orphan: it is the
+`getFlashcardsForLecture` 403 for a used-up weekly preview. University-only is now machine-readable:
+`Lecture.hasFlashcards` exists only on `UniversitySubjectTree`. Asks 1-5 are answered: flashcards
+are a separate surface, not a renderer inside the quiz; self-graded; no points; university-only.
+The app is purchase-silent, so nothing is "sellable" in it. At 3.27.0-m1 (pinned 2026-09-29)
+`Lecture.flashcardCount` gives the Flash Card Setup screen its count.
+
+**Four narrower asks remain (filed 2026-09-29):**
+1. **Where does the next round start?** The changelog says "one `pageSize=10` page per round" but not
+   where round two begins. The app continues at the previous round's `nextCursor` while the
+   student stays on Setup, wraps to the start after the last page, and starts over when they leave
+   Setup. Confirm, or specify.
+2. **The card list's order.** The operation promises "stable and resumable" but names no sort key.
+3. **A card delivered in an earlier week.** Is it charged again this week, and gradable before it is?
+   The contract says only that a card charged "this week" re-delivers free.
+4. **`error-codes.md` still describes `flashcard_subscription_required` as "Flashcards require
+   `flashcardSubscription`"**, while `openapi.yaml` defines it as "the free weekly preview is used
+   up". Align the registry's wording.
 
 ## S7. 🟠 Quiz timer: designed, not specified
 

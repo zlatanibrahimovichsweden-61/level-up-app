@@ -589,6 +589,178 @@ void main() {
     });
   });
 
+  // API→UI Wave 22: the flashcards study screen and Flash Card Setup.
+  group('Wave 22 Flashcards tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    test('the designed values, light and dark', () {
+      // Progress fill: the one thing the study header does not share with the
+      // quiz's. Light 225:5616; dark is the fill inside 337:14475 (349:15348).
+      expect(light.flashcardProgressFill, const Color(0xFF5A7F73));
+      expect(dark.flashcardProgressFill, const Color(0xFFAE87E7));
+      expect(light.flashcardProgressFill, isNot(light.quizProgressFill));
+
+      // The card is a LIGHT object on the dark canvas (337:14513): face and
+      // ink are the same in both palettes.
+      for (final palette in [light, dark]) {
+        expect(palette.flashcardCardFill, const Color(0xFFFCFBF9));
+        expect(palette.flashcardCardText, const Color(0xFF384F47));
+        expect(
+          palette.flashcardAgainGlyph,
+          const Color(0xFFFCFBF9),
+        ); // 1229:8745
+      }
+
+      // Again button: light is drawn (1229:8739); dark is not.
+      expect(light.flashcardAgainFill, const Color(0xFF4B675E));
+
+      // Setup: light is drawn (1234:8847, 1234:8848, 1237:9845).
+      expect(light.flashcardSetupPillFill, const Color(0xFFFFFFFF));
+      expect(light.flashcardSetupPillBorder, const Color(0xFF384F47));
+      expect(light.flashcardSetupPillText, const Color(0xFF384F47));
+      expect(light.flashcardSetupHelper, const Color(0xFF6E7F7A));
+    });
+
+    test('the grade-failure line is composed from existing error colours, '
+        'not from the quiz\'s dark red', () {
+      // No frame draws it (DESIGN_ISSUES #119). Light is the quiz's inline-error
+      // red; dark is the app's existing dark error text.
+      expect(light.flashcardGradeError, const Color(0xFF921119));
+      expect(light.flashcardGradeError, light.quizWrongBorder);
+      expect(dark.flashcardGradeError, const Color(0xFFFF465C));
+      expect(dark.flashcardGradeError, dark.otpErrorText);
+      // quizWrongBorder is #921119 on BOTH canvases, which is what made the line
+      // unreadable on the dark one.
+      expect(dark.quizWrongBorder, const Color(0xFF921119));
+      expect(dark.flashcardGradeError, isNot(dark.quizWrongBorder));
+    });
+
+    test(
+      'the grade-failure line reads on its own canvas: 4.5:1 for body text',
+      () {
+        // WCAG contrast, on the scaffold colour the line is drawn straight onto.
+        double contrast(Color a, Color b) {
+          final la = a.computeLuminance();
+          final lb = b.computeLuminance();
+          return (la > lb ? la + 0.05 : lb + 0.05) /
+              (la > lb ? lb + 0.05 : la + 0.05);
+        }
+
+        expect(
+          contrast(light.flashcardGradeError, light.background),
+          greaterThanOrEqualTo(4.5),
+        );
+        expect(
+          contrast(dark.flashcardGradeError, dark.background),
+          greaterThanOrEqualTo(4.5),
+        );
+        // The reason for the token: the quiz's red on the dark canvas.
+        expect(contrast(dark.quizWrongBorder, dark.background), lessThan(2));
+      },
+    );
+
+    test(
+      'the dark values with no frame are named stand-ins, not inventions',
+      () {
+        // 337:14475 predates the restart button: the dark primary accent
+        // (its primary button, 349:15308).
+        expect(dark.flashcardAgainFill, const Color(0xFFAE87E7));
+        expect(dark.flashcardAgainFill, dark.homeAccent);
+
+        // No dark Setup frame at all. The dark quiz-setup chip (337:6239): fill
+        // #27282C and a #FCFBF9 label; the border is the dark counterpart of the
+        // light ink #384F47.
+        expect(dark.flashcardSetupPillFill, const Color(0xFF27282C));
+        expect(dark.flashcardSetupPillFill, dark.quizOptionFill);
+        expect(dark.flashcardSetupPillBorder, const Color(0xFFFCFBF9));
+        expect(dark.flashcardSetupPillText, const Color(0xFFFCFBF9));
+        expect(dark.flashcardSetupPillText, dark.textPrimary);
+
+        // The helper is mutedText's value, so it stays quieter than the label.
+        expect(dark.flashcardSetupHelper, const Color(0xFFB3B3B3));
+        expect(dark.flashcardSetupHelper, dark.mutedText);
+      },
+    );
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(
+        light.copyWith(flashcardProgressFill: probe).flashcardProgressFill,
+        probe,
+      );
+      expect(light.copyWith(flashcardCardFill: probe).flashcardCardFill, probe);
+      expect(light.copyWith(flashcardCardText: probe).flashcardCardText, probe);
+      expect(
+        light.copyWith(flashcardAgainFill: probe).flashcardAgainFill,
+        probe,
+      );
+      expect(
+        light.copyWith(flashcardAgainGlyph: probe).flashcardAgainGlyph,
+        probe,
+      );
+      expect(
+        light.copyWith(flashcardSetupPillFill: probe).flashcardSetupPillFill,
+        probe,
+      );
+      expect(
+        light
+            .copyWith(flashcardSetupPillBorder: probe)
+            .flashcardSetupPillBorder,
+        probe,
+      );
+      expect(
+        light.copyWith(flashcardSetupPillText: probe).flashcardSetupPillText,
+        probe,
+      );
+      expect(
+        light.copyWith(flashcardSetupHelper: probe).flashcardSetupHelper,
+        probe,
+      );
+      expect(
+        light.copyWith(flashcardGradeError: probe).flashcardGradeError,
+        probe,
+      );
+
+      // …and each leaves its neighbours alone.
+      final one = light.copyWith(flashcardAgainFill: probe);
+      expect(one.flashcardAgainGlyph, light.flashcardAgainGlyph);
+      expect(one.flashcardCardFill, light.flashcardCardFill);
+
+      // Several are identical on both canvases, so light→dark would pass with
+      // a broken lerp. Lerp towards probes instead.
+      final target = light.copyWith(
+        flashcardProgressFill: probe,
+        flashcardCardFill: probe,
+        flashcardCardText: probe,
+        flashcardAgainFill: probe,
+        flashcardAgainGlyph: probe,
+        flashcardSetupPillFill: probe,
+        flashcardSetupPillBorder: probe,
+        flashcardSetupPillText: probe,
+        flashcardSetupHelper: probe,
+        flashcardGradeError: probe,
+      );
+      final end = light.lerp(target, 1);
+      expect(end.flashcardProgressFill, probe);
+      expect(end.flashcardCardFill, probe);
+      expect(end.flashcardCardText, probe);
+      expect(end.flashcardAgainFill, probe);
+      expect(end.flashcardAgainGlyph, probe);
+      expect(end.flashcardSetupPillFill, probe);
+      expect(end.flashcardSetupPillBorder, probe);
+      expect(end.flashcardSetupPillText, probe);
+      expect(end.flashcardSetupHelper, probe);
+      expect(end.flashcardGradeError, probe);
+      final start = light.lerp(target, 0);
+      expect(start.flashcardProgressFill, light.flashcardProgressFill);
+      expect(start.flashcardCardFill, light.flashcardCardFill);
+      expect(start.flashcardSetupHelper, light.flashcardSetupHelper);
+      expect(start.flashcardGradeError, light.flashcardGradeError);
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.

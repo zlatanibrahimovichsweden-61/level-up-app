@@ -69,15 +69,15 @@ void main() {
       goldenApp(
         brightness: Brightness.dark,
         child: QuizTypeTabs(
-          types: const [
-            QuizType.normal,
-            QuizType.midTermRevision,
-            QuizType.finalRevision,
+          tabs: const [
+            QuizTab(QuizType.normal),
+            QuizTab(QuizType.midTermRevision),
+            QuizTab(QuizType.finalRevision),
           ],
           // Not the first segment: a selected FIRST segment would sit in the
           // track's own rounded corner, where the selected pill's radius and
           // the track's overlap and neither can be judged.
-          selected: QuizType.midTermRevision,
+          selected: const QuizTab(QuizType.midTermRevision),
           onSelected: (_) {},
         ),
       ),

@@ -57,6 +57,7 @@
 | Wave 13 — Quiz result re-walk | **COMPLETE** (owner "WALK 13", 2026-09-26) — Pixel 8, light EN + dark AR; W13-1…9 verified on device; BUG-003 (quiz half) and BUG-013 device-verified |
 | Wave 13 — Quiz result acceptance | **100%** (F 3/3 · V 4/4 · I 2/2), up from 44% — `device_walk_results.md` |
 | Wave 13 | **COMPLETE / RECORDED** |
+| Wave 22 — Flashcards implementation | **COMPLETE** (owner `NEXT` + rulings `1A`–`10A`, 2026-09-29) — contract re-vendored to `f462968` (3.27.0-m1) first (ruling 3B), with `Lecture.flashcardCount`; frames `225:5582` (study, light), `1234:8797` (Setup, light), Lectures `180:5208` / `349:15962`; dark `337:14475` and Arabic `549:28041` are older layouts, built from the light one; W22-1…9 (the re-vendor, the mock's two operations, the 10-card round, the Lectures Flashcard tab, the shared study chrome, Setup, the study screen, the records, tests); review 15 confirmed, all fixed (BUG-019); format PASS · analyze 0 · **2017 / 0 / 0** · OVERALL PASS (+273 over Wave 21's 1744) |
 | Wave 19 — Profile device walk | **COMPLETE** (owner `WALK`, 2026-09-28) — Pixel 8 on a plain mock build: school light EN, dark EN, dark AR, light AR; Go to Uni; Logout No / Yes; a cold restart; the university login recorded; the university Profile and Logout; back to the school student; offline. W19-1 verified on device (the university student on Home and Profile; 81 recorded frames go from the skeleton to the new name, never the old one; Top Student loads); W19-2 to W19-5 measured against the frames. Paused once for an incoming phone call (the walk section) |
 | Wave 19 — Profile acceptance | **100%** (F 5/5 · V 3/3 · I 2/2) — `device_walk_results.md` |
 | Wave 19 — Profile implementation | **COMPLETE** (owner `NEXT`, 2026-09-27/28) — frames: Profile `166:4416` / `309:7940`, dark `337:7433` / `349:12919`, RTL `549:21052` / `549:26384`; Logout `180:4598` (+ 5 variants); Go to Uni `180:4301` (+ dark, RTL); owner rulings: meProvider autoDispose (D-020), Points only (#101), the pair mirrored in Arabic (#102), dark scrim 60% on both tracks (#103); **W19-1** the stale profile after log-out → log-in fixed (BUG-015, W05-3's root); **W19-2** the Logout No / Yes pair; **W19-3** the dialog ✕ (the frame's cross, `#3F3F3F` light, a 48 dp target); **W19-4** the dialog card 345, Go to Uni's button 284 centred, Logout's bottom 15; **W19-5** the frame's 35 dp title bar, the card 25 under it; **W19-6** tests; validate **OVERALL PASS** 2026-09-28 (format PASS; analyze 0 issues; 1693 passed / 0 failed / 0 skipped) |
@@ -76,7 +77,11 @@
 | Wave 14 — Quiz review acceptance | **100%** first walk (F 2/2, F2 N/A · V 3/3 · I 2/2) — `device_walk_results.md` |
 | Wave 14 — Quiz review implementation | **COMPLETE** (owner `NEXT`, 2026-09-26/27) — frames: light `162:2377`, dark `337:6705`, RTL `549:20324`; owner rulings: one shared question-text widget on both screens (D-017, #88 closed, BUG-014), dark "QUESTION n" stays cream (#54); W14-1…9; +33 tests; validate format PASS · analyze 0 · **1609 / 0 / 0** · OVERALL PASS; read-only Sonnet review: frame-fidelity lens 1 finding (label line 4.36 low), refuted by the frame's own render ("QUESTION 1" ink centred 24.32 below the row top; the build's line centre 24.56; the finding's model 20.2); correctness lens (reported after the walk) 0 findings: parser and Bidi hand-traced against intl 0.20.2, scope and guards (105/105), the three test files green; one coverage note, the chip disc glyph colour is tested in light only |
 | Wave 05 — Home device walk | **COMPLETE** — walk **60%** (W05-1 "See All" grey, W05-2 outline top-only, W05-3 stale profile → board 400) → owner: fix W05-1 + W05-2 → re-walk **100%** (F 5/5 · V 4/4 · I 1/1); validate **1479/0/0**. W05-3 open (Wave 19 root) |
-| **Next action** | **WAIT FOR USER COMMAND** |
+| Wave 22 — Flashcards device walk | **COMPLETE** (owner `WALK`, 2026-09-29) — Pixel 8 on a plain mock build, the university student: light EN (the tab, Setup for four lectures, three rounds and the wrap, flip / grade / "<" recorded, ✕, the allowance spent to the 403, offline), dark EN, dark AR, light AR; two read-only Sonnet verifiers re-measured every claim |
+| Wave 22 — Flashcards acceptance | **92%** (F 5/5, F4 N/A · V 3/4 · I 3/3) — V3 fails on **BUG-020** (a card's text takes the app's direction) — `device_walk_results.md` |
+| Wave 22 — BUG-020 fix + targeted re-walk | **COMPLETE** (owner request, 2026-09-30) — a card's text, its screen-reader label and Setup's subject / lecture lines take their own direction (`contentTextDirection`, the quiz stem's rule); +19 tests, red → green (flashcards 209 / 12 with the fix reversed, 221 / 0 with it); validate format PASS · analyze 0 · **2036 / 0 / 0** · OVERALL PASS; two read-only Sonnet reviewers (0 high / medium); Pixel 8 re-walk of the four language / content combinations **4 / 4 PASS** (the walk's "?" and "." back in place; each card pixel-identical in both apps), two read-only Sonnet verifiers — `device_walk_results.md` |
+| Wave 22 — Flashcards acceptance after the re-walk | **100%** (F 5/5, F4 N/A · V 4/4 · I 3/3) — V3 passes; the other criteria carried from the 92% walk (the fix changes only text direction) |
+| **Next action** | **WAIT FOR USER COMMAND** — Wave 22: BUG-020 fixed and re-walked (4/4 PASS, acceptance 100%); nothing committed |
 
 **Control rules in force:** no wave starts, no screen is touched, no WALK runs, no advance happens
 without the owner's explicit command (`NEXT`, `WALK`, `FORMULATE`). Subagents: Sonnet only. Replies:
@@ -93,8 +98,8 @@ in `app_colors.dart` and the regenerated `test/goldens/otp_dark.png`.
 
 | Field | Value |
 | --- | --- |
-| Current wave | 19 — Profile: walked **100%** (owner `WALK`). Open for the owner: W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
-| Branch / HEAD | `merged` @ `e4d1401` (nothing committed by this workflow) |
+| Current wave | 22 — Flashcards: walked 92% (owner `WALK`, 2026-09-29; V3 failed on BUG-020, a card's text took the app's direction), then **BUG-020 fixed and re-walked: 100%** (owner request, 2026-09-30; 4/4 combinations PASS), validate 2036/0/0. Open for the owner: **the Figma credential** (TEXT `1240:9847`: remove + rotate), **Wave 22's two provisional Arabic strings** (the Setup pill and helper, #114), W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
+| Branch / HEAD | `merged` @ `cccd2f1` = `origin/merged` (the Waves 01–19 checkpoint, committed and pushed on the owner's request, 2026-09-28) |
 
 ## Completed investigation
 
@@ -1472,10 +1477,154 @@ confirmed except one they could not re-derive from files (that the log buffer ha
   the start and 1 at the end (the Wave 18 walk had left it on); nothing in this walk touches it, so it was left for the
   owner. This walk's recordings and dumps removed from the phone.
 
+## Wave 22 — implementation (in progress, 2026-09-29)
+
+Owner `NEXT`. Screen: Flashcards (university; a new screen). Endpoints `GET /flashcards/lectures/{lectureId}/cards`
+(cursor + `pageSize`), `PUT /flashcards/cards/{id}/self-grade`. The plan (`implementation_waves.md`): gated on five
+design answers (the controls → `gotIt` / `again`; the front → back reveal; bookmark / share; the entry point; S6). First:
+the frames (`225:5582`, component `247:3260`, any dark / RTL variant), the contract at the pin and upstream, the data
+layer, the Lectures view and the mock; then the owner's questions. Nothing is built before the answers.
+
+**Read (2026-09-29; four read-only Sonnet readers + a critic, key frames re-checked by the lead over the MCP; reports in
+the scratchpad `w22/read_*.md`):**
+- **Frames.** Session light `225:5582` is the UPDATED layout: "Got it", the "<" button, a restart button above the card
+  (`1229:8739`, no reaction), the card `247:3260` of set `247:3257` (page `0:1`): the image + "What is A ?" front, the
+  "Sclera" back, ON_CLICK flip both ways (SMART_ANIMATE, ease-out 0.3 s) — the only drawn gesture. Dark `337:14475` and
+  Arabic `549:28041` are the OLDER layout ("Confirm" / "التالى", no restart). Hidden leftovers `222:5252`, `337:14430`,
+  `549:27996`. Setup `1234:8797` "Flash Card Setup" (light only: subject, lecture, the "10 Flash Cards" pill, "Start
+  learning"). The Lectures "Flashcard" tab is drawn on `180:5354` / `180:5208` / `349:15962` / `337:11059` (never active
+  on the design page); the older prototype page wires tab → `426:23888` (the tab active, 2nd) → Setup → cards. Home
+  tile `546:7199` (+ dark, RTL). All frames draw the nav with Learn selected. Purchase frames `1227:8514`, `225:7001`,
+  `431:27530`, component `1234:9634` are out (adr-049). Page `57:36` also holds a credential-like string in TEXT
+  `1240:9847` (not reproduced; flagged to the owner).
+- **Contract.** Both ops stable at the pin and unchanged up to upstream `f462968` (3.27.0-m1), which adds a required
+  `Lecture.flashcardCount` for the Setup screen's count and says "one `pageSize=10` page per round". Preview: one
+  50/week allowance shared with quizzes; charged cards re-deliver free; `403 flashcard_subscription_required` = the
+  preview is used up (not the quiz weekly limit); `imageUrl` null everywhere today; `back` a multi-line block; grading
+  latest-wins, no points. No flashcards copy exists.
+- **Code.** The data layer is built (`pageSize` 20); no screen, route or mock routes; `hasFlashcards` unread;
+  `LimitSheet` would show the quiz's weekly-limit copy for this 403 (must not be reused); `AppType` has no 22 / 25 / 55
+  size; stale comments in `quiz_type_tabs.dart`, `quiz_type.dart`, `home_screen.dart`, `question_renderer.dart` and the
+  notifier's cost rationale; S6 and #18 / #20 stale.
+- **Questions to the owner (2026-09-29):** (1) the entry; (2) lectures without flashcards in the tab; (3) Setup's
+  count vs the pin; (4) the buttons → `gotIt` / `again`; (5) the reveal; (6) after the last card; (7) the used-up
+  preview's wording; (8) dark and Arabic from the new layout; (9) the Arabic words; (10) screenshot blocking.
+- **Owner rulings (2026-09-29, `1A 2A 3B 4A … 10A`):** (1) the Lectures "Flashcard" tab is the entry; (2) lectures
+  without cards hidden, the tab hidden when none has any, no invented progress; (3) **re-vendor the contract first**
+  and show `flashcardCount` on Setup — no Setup without the count; (4) "Got it" → `gotIt` + advance, restart →
+  `again` + advance, "<" → previous card, no grade; (5) tap flips, the buttons work on either face; (6) after the last
+  card return to where the student came from, no completion screen or wording; (7) the preview-used-up line EN "You've
+  used this week's free flashcards." / AR "لقد استخدمت البطاقات المجانية لهذا الأسبوع.", purchase-silent; (8) dark +
+  Arabic from the light layout, existing theme colours, gaps logged; (9) Arabic: فلاش كارد / فهمت / مرة أخرى /
+  إعداد الفلاش كارد / ابدأ التعلّم; (10) no screenshot blocking. Plus: keep the nav, centre the title, no
+  bookmark/share/AI icons, a 10-card round, the design's 1/10 style, an image only when the card has one. BUG-017
+  stays open. **Security:** the Figma credential in TEXT `1240:9847` is never copied anywhere.
+- **Done:** **W22-1** contract re-vendored `ea83099` → **`f462968` (3.27.0-m1)**, the four files blob-identical to
+  upstream, `SOURCE.md` (census 35 stable / 19 draft / 54; 32 app-buildable), `Lecture.flashcardCount` + mock + test
+  fixtures in the same change (the contract guard needs it). **W22-2** the mock's `GET /flashcards/lectures/{id}/cards`
+  and `PUT /flashcards/cards/{id}/self-grade`: 54 cards (anatomy 24/10/4/1, physio 12/3), the one weekly allowance
+  shared with quizzes, charged cards re-delivered free, the truncated prefix + `nextCursor`, `403
+  flashcard_subscription_required` at zero, `insufficient_scope` for school / unknown / undelivered, latest-wins
+  grades; each lecture's count is its deck's length. **W22-3** the round: `flashcardRoundSize` 10, a per-lecture
+  round position (`flashcardRoundPositionProvider`) Setup keeps alive, `finishRound()` moves it to `nextCursor` (to the
+  start after the last page). **W22-4** the Lectures "Flashcard" tab (second; a `LecturesTab` that is not a
+  `QuizType`; only lectures with cards, their own numbers, no bar or caption; hidden without cards; a subject with no
+  quiz types opens on it). **W22-5** the quiz's header, progress bar and "<" extracted to
+  `lib/core/widgets/study_session_chrome.dart` (a pure move; the quiz tests unchanged) and shared. **W22-6** Flash
+  Card Setup (`1234:8797`, the quiz setup's layout and tokens; the `flashcardCount` pill, not tappable; Start disabled
+  offline and at 0). **W22-7** the study screen (`225:5582`: the centred title, the flashcard progress fill, the again
+  disc, the flip card 300 ms ease-out, image only when present, non-optimistic grading, pop to Setup after the last
+  card; the undrawn states). **W22-8** the records: DESIGN_ISSUES #18 built, #20 note, #113–#119; seif_fight S6
+  resolved + four asks; KNOWN_BUGS BUG-019; ASSET_MANIFEST (`flashcard_again.svg`); stale comments in the quiz type,
+  tabs, renderer, Home, repository, notifier. **W22-9** tests.
+- **Tokens:** `flashcardProgressFill`, `flashcardCardFill`, `flashcardCardText`, `flashcardAgainFill`,
+  `flashcardAgainGlyph`, `flashcardSetupPillFill` / `Border` / `Text`, `flashcardSetupHelper`,
+  `flashcardGradeError` (AppColors, six sites each); `flashcardCardShadows` (AppElevation, the inset shadow). Dark
+  stand-ins logged in #113, #114, #119.
+- **Strings (8):** `flashcardsTab`, `flashcardsTitle`, `flashcardSetupTitle`, `flashcardSetupCount`,
+  `flashcardSetupHelper`, `flashcardGotIt`, `flashcardAgain`, `flashcardPreviewUsedUp`. The Arabic pill and helper are
+  PROVISIONAL (#114).
+- **Lead's calls (not in any frame or ruling):** round two starts at the previous round's `nextCursor` while the
+  student stays on Setup and wraps after the last page (asked of Seif, S6); "after the last card" = pop back to Setup;
+  grading disabled offline; a refusal that cannot succeed disables the grade buttons on that card; "<" absent on card
+  1 as in the quiz; type mapped to `AppType` (#115); an image-less front centred (#116).
+- **Review (four read-only Sonnet lenses, every finding adversarially verified): 15 confirmed, 1 plausible, 2
+  refuted.** Fixed: a final grade landing during a pop popped Setup too; Start tapped during that pop re-studied the
+  finished round; a refused grade left its buttons live; the "<" arrow drawn at ~53% of the frame, in the quiz too
+  (BUG-019); the grade-error line 1.7:1 in dark (new `flashcardGradeError`); "Got it" unnamed while busy; the
+  title's centring, the icon absence and the purchase-silent scan (EN + AR, the 403 state) now pinned; stale comments
+  in the repository, notifier and error copy; two test names. Plausible, recorded: the English noun spelled as each
+  frame spells it (#114).
+- **Red proof:** every builder and fixer proved its tests red by mutation and restored the files byte-identical
+  (tab 8, Setup 25, study 43, foundation 10, mock 6, the fixes 13).
+- **Not changed:** the Home "Learning Tools" placeholder (#20, entry by the tab); `loadMore` (no production caller);
+  the quiz's own flow; the Figma file (read-only; the credential is the owner's to remove).
+- **Validation:** format PASS · analyze 0 · **2017 / 0 / 0** · OVERALL PASS (+273 over Wave 21's 1744) (`validate.ps1`, 2026-09-29).
+- **Walk notes (on `WALK`), the university student (`111111`):** F1 Lectures → Anatomy → Flashcard tab (second; the
+  four lectures with cards, their numbers; Biochemistry shows no tab; Physiology lists two of three) → Setup (the count
+  24 / 10 / 4 / 1) → Start → cards load, "1/10"; F2 a round of 10 then Start again → the next 10, then the short 4,
+  then back to the start; F3 "Got it" / restart each `PUT` and advance, "<" goes back without one; F4 reopen: the grades
+  echo (not shown in the UI — test-level unless read from the mock); F5 use the weekly allowance (e.g. a 50-question
+  quiz, or 50 cards) → the preview-used-up line, no button; F6 offline: the banner, grading off, Start off; V1 the
+  study screen vs `225:5582` (header, disc, card, buttons, the fill `#5A7F73`); V2 the back face (a multi-line answer);
+  V3 dark and Arabic (the disc at the left in Arabic, the dark stand-ins); V4 Setup vs `1234:8797`; I1 the flip (tap,
+  both ways); I2 the grade controls and the busy state; I3 the entry tab and the pop back to Setup after the last card.
+  No screenshot blocking on these screens.
+
+## Wave 22 — walk (2026-09-29)
+
+Owner `WALK`. Pixel 8, a plain mock build with Wave 22 (`main_mock.dart` blob `f189786`, untouched), launched with
+`am start`, the university student, font scale 1.0 (read only). **Score: 92%** (F 5/5, F4 N/A · V 3/4 · I 3/3);
+details in `device_walk_results.md`, evidence in the scratchpad `walk22/`. Two read-only Sonnet verifiers re-measured the captures, dumps, recording frames and 1x frames: every behaviour and every measurement confirmed, and BUG-020 with its code lines. Their PARTIALs were the record's wording, corrected here: the disc's EDGE, not its centre, is 20 from the screen edge; "exact mirror" compares the Arabic build with the English one (the Arabic frame is the older, unmirrored layout, #113); Arabic Setup's Start is 6.8 lower, not 6.4; the spinner's 24 dp is its box (the arc inks 25.9); the busy button's label is source-level (no dump was taken mid-grade); the flip card's is not the only Arabic test (none mixes directions). The walked mock is `mock_backend.dart` blob `6047624` (unchanged since 15:19; the APK built 17:43).
+- **Verified:** W22-1 the count from the contract (24 / 10 / 4 / "1 Flash Card"); W22-2 the mock (the truncated 1/1
+  round, the 403, charged cards free at zero); W22-3 rounds of 10 / 10 / 4, then the wrap; W22-4 the tab (second,
+  cards-only lectures, no bar, absent on Biochemistry); W22-5 / BUG-019 the "<" arrow 16.4 × 27.8 at the frame's
+  place; W22-6 Setup against `1234:8797` (2 dp from #115); W22-7 the study screen against `225:5582` to the dp, the
+  flip ~0.30 s, non-optimistic grading, pop to Setup, offline; purchase-silent (EN + AR, the 403 state).
+- **New — BUG-020 (open):** a card's text takes the app's direction: in Arabic an English card reads "?into right
+  and left parts"; in English an Arabic back's full stop lands at the right. `flashcard_flip_card.dart:201`, `:257`
+  set no `textDirection`; the quiz's stem does (`question_stem_text.dart:81`). Fix on the owner's request.
+- **Observed, not logged:** five tabs overflow the Lectures row (Arabic ~54 dp, Practice a sliver at rest; English
+  ~5 dp; scrolls, D-012 / #81); Arabic Setup's Start 6.8 lower; offline the card shrinks to 419.8 (the buttons move
+  3.8); a truncated preview round ("3 Flash Cards", "1/1") is unexplained; the round position ends with Setup.
+- **Not walked (test-level):** the skeleton, a load failure with Retry, a failed grade's line, the empty state,
+  `insufficient_scope`.
+- **Walk-method notes:** an incoming SMS notification covered the screen twice (one capture deleted unviewed, one
+  deleted after it showed the message; two taps lost to it); the guard now also refuses input under a notification.
+- **Device state:** light EN on Home, the university student signed in; airplane off, Wi-Fi on; auto-rotate 0 at the
+  start and the end. The phone's USB link dropped after the walk (during a log re-read).
+
+## Wave 22 — BUG-020 fix and targeted re-walk (2026-09-30)
+
+On the owner's request. The 92% walk above stands as recorded; this adds the fix and a re-walk of BUG-020 only.
+- **Fix:** `contentTextDirection` (`lib/core/widgets/content_text_direction.dart`, the quiz stem's rule: the first strong
+  character's direction, else the app's) on both faces of `FlashcardFlipCard`, its screen-reader label, and Setup's
+  subject and lecture lines (aligned at the app's start). Nothing else changed; the quiz keeps its inline copy (a test
+  ties them). Files: that helper, `flashcard_flip_card.dart`, `flashcard_setup_screen.dart`; tests
+  `flashcard_flip_card_test.dart`, `flashcard_study_screen_test.dart`, `flashcard_setup_screen_test.dart`,
+  `reading_order.dart` (new), `test/core/widgets/content_text_direction_test.dart` (new).
+- **Tests:** +19; red → green (flashcards 209 / 12 with the fix reversed, naming "?" after "parts" and "." after
+  "الأمام"; 221 / 0 with it); the Setup alignment tests fail without it (0 / 2). validate: format PASS · analyze 0 ·
+  **2036 / 0 / 0** · OVERALL PASS. Two read-only Sonnet reviewers: 0 high / medium.
+- **Re-walk (Pixel 8, the same build):** the four combinations **4 / 4 PASS** — Arabic app + English card (the "?" at the
+  end of "into right and left parts?"), English app + Arabic card (the full stop of "إلى الأمام." at the left), Arabic +
+  Arabic and English + English unchanged (each card pixel-identical in the two apps; English card 2 pixel-identical to the
+  pre-fix walk). Flip ~0.30 s both ways; the label is the showing face's full text (its direction test-level); Setup's
+  lines in place. Two read-only Sonnet verifiers confirmed all four; wording corrected per `claims.md`.
+- **Acceptance after the re-walk: 100%** (F 5/5, F4 N/A · V 4/4 · I 3/3); the other criteria carried from the 92% walk.
+- **Still open, outside this fix:** the Lectures rows and the other catalog names take the app's direction by the same
+  mechanism; the first-strong rule's edge (an Arabic sentence opening on a Latin term reads left to right).
+- **Device state:** light EN on Home, the university student signed in; airplane off, Wi-Fi on; auto-rotate 0.
+
 ## Next action
 
-**WAIT FOR USER COMMAND.** Wave 19 walked (100%). Open for the owner: W18-3, review's AI glyph size, D-019's placement;
+**WAIT FOR USER COMMAND.** Wave 22 (Flashcards) walked **92%** (2026-09-29; V3 failed on BUG-020, a card's text took the
+app's direction); **BUG-020 fixed and re-walked 2026-09-30: 4/4 combinations PASS, acceptance 100%** (owner request).
+Validate 2036/0/0. Open for the owner: **the Figma credential** in TEXT `1240:9847` (remove it from the file and
+rotate it; one local subagent transcript holds it — masking it was refused by the permission classifier); **the two
+provisional Arabic strings** (#114). The contract is re-vendored here to `f462968` (3.27.0-m1): tell the
+"Contract updates" session when it next runs. Open for the owner: W18-3, review's AI glyph size, D-019's placement;
 from the Wave 19 review, a Retry on the profile still loading when the profile is reloaded lands after the fresher
 answer and replaces it (pre-existing, probe-proven, not recorded in KNOWN_BUGS); the task chip on other notifiers'
-disposal flag. Wave 20 (Edit Profile) starts only on `NEXT`; another walk only on `WALK`; the wave list changes only on
+disposal flag. Wave 22 is the last of the 22 formulated waves: what follows is the owner's call; a walk only on `WALK`; the wave list changes only on
 `FORMULATE`. Never auto-advance.

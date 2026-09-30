@@ -604,6 +604,41 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  group('API→UI Wave 22 — flashcards', () {
+    test('the card is one INNER shadow, the same on both canvases', () {
+      // `247:3260` (light) and `337:14513` (dark) both read INNER_SHADOW
+      // #000000 @ 25%, offset (0, -1), blur 5.4, spread 0. The card stays
+      // cream on the dark canvas, so nothing about its shadow flips.
+      const inner = [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0, -1),
+          blur: 5.4,
+          inset: true,
+        ),
+      ];
+      expect(light.flashcardCardShadows, inner);
+      expect(dark.flashcardCardShadows, inner);
+      expect(light.flashcardCardShadows.single.inset, isTrue);
+    });
+
+    test('it is wired through copyWith and lerp', () {
+      const probe = [
+        FigmaShadow(color: black25, offset: Offset(9, 9), blur: 9),
+      ];
+      final one = light.copyWith(flashcardCardShadows: probe);
+      expect(one.flashcardCardShadows, probe);
+      expect(one.trackCardShadows, light.trackCardShadows);
+
+      // Both canvases hold the same value, so light→dark would pass with a
+      // lerp that ignored the token. Lerp towards a probe instead.
+      final target = light.copyWith(flashcardCardShadows: const []);
+      expect(light.lerp(target, 1).flashcardCardShadows, isEmpty);
+      expect(light.lerp(target, 0).flashcardCardShadows, isNotEmpty);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   /// Every shadow-list token, by name, so the sweeps below cannot quietly miss
   /// one that was added to the class after they were written.
   Map<String, List<FigmaShadow>> shadowsOf(AppElevation e) => {
@@ -636,6 +671,7 @@ void main() {
     'otpTimerInsetShadows': e.otpTimerInsetShadows,
     'otpCardShadows': e.otpCardShadows,
     'trackCardShadows': e.trackCardShadows,
+    'flashcardCardShadows': e.flashcardCardShadows,
   };
 
   group('#34 — the dark canvas drops BLACK shadows, never cream', () {
@@ -792,8 +828,9 @@ void main() {
         // 84 until 2026-09-20, when edit4 added `quizPrevButtonRadius` (the
         // previous button's radius differs per canvas) and `reviewRowGlass`.
         // 87 from API→UI Wave 11: `quizSetupDividerWidth` (1.18 / 0.5).
+        // 88 from API→UI Wave 22: `flashcardCardShadows`.
         light.props.length,
-        87,
+        88,
         reason:
             'a token was added or removed. Update props (and this count) so '
             'equality keeps covering every field.',

@@ -60,4 +60,26 @@ void main() {
       25,
     );
   });
+
+  testWidgets('university Lectures, Flashcard tab: same 25 under the tabs, '
+      'same 16 pitch', (tester) async {
+    when(
+      () => catalog.getSubjectTree(any()),
+    ).thenAnswer((_) async => universityTree());
+    await openBiology(tester, Track.university);
+    await tester.tap(find.text('Flashcard'));
+    await tester.pumpAndSettle();
+
+    final rows = find.byType(TreeListRow);
+    expect(rows, findsNWidgets(2));
+    expect(
+      tester.getRect(rows.at(1)).top - tester.getRect(rows.at(0)).bottom,
+      16,
+    );
+    expect(
+      tester.getRect(rows.at(0)).top -
+          tester.getRect(find.byType(QuizTypeTabs)).bottom,
+      25,
+    );
+  });
 }

@@ -1258,3 +1258,124 @@ idle (`mCallState=0`).
 Light EN on Home, signed in as the school student. Airplane mode off, Wi-Fi on, font scale 1.0 (read only), portrait.
 Auto-rotate read 0 at the start and 1 at the end (the Wave 18 walk had left it on); nothing in this walk touches it,
 so it was left as it is. `/sdcard/ui.xml` and this walk's recordings removed from the phone.
+
+## Wave 22 — Flashcards (Lectures tab → Flash Card Setup → study) — WALK 2026-09-29
+
+Owner `WALK`. Pixel 8 (`45131FDJH0009G`, 2.625 px/dp, status bar 132 px = 50.29 dp). `flutter build apk --debug -t
+lib/main_mock.dart` with Wave 22 (validate 2017/0/0), a plain build (`main_mock.dart` blob `f189786`, untouched),
+launched with `am start`. University student "طالب جامعي تجريبي" (OTP `111111`). Path: light EN (Anatomy → the
+Flashcard tab → Setup for each of its four lectures; three full rounds of lecture 1 and the wrap; flip, "Got it",
+restart and "<" screen-recorded; ✕ mid-round; Physiology and Biochemistry; the weekly allowance spent to the 403;
+offline over the study screen and Setup), dark EN (Settings → Mode), dark AR and light AR (Settings → Languages: the
+study screen, Setup, the Lectures tab, the Arabic 403 line). Values from the dumps (`w19dump.py`), the pixel tools
+`w20px.py` / `w22px.py` and the recordings' frames, against the 1x renders of `225:5582`, `1234:8797`, `337:14475`,
+`549:28041`, `180:5208` read over the MCP. Every tap went through the guard (idle call state, the app in front, and —
+from mid-walk — no notification over the screen). Evidence: scratchpad `walk22/` (captures `01`–`35`, their dumps,
+`i1frames/`, `i2frames/`, `f3frames/`, `frames/`, `claims.md`, `verify.json`).
+
+| # | Criterion | Result | Evidence |
+| --- | --- | --- | --- |
+| F1 | the entry: the Lectures Flashcard tab | **PASS** | Anatomy: Normal, **Flashcard**, Midterm, Final, Practice (`01`); the tab lists the four lectures with cards, their numbers, no progress bar or "questions" caption (`02`); Physiology lists 2 of its 3 (`20`); Biochemistry has one tab, Normal (`21`). Setup counts 24 / 10 / 4 / **1 Flash Card** (`03`, `18`) |
+| F2 | 10-card rounds, the next round, the wrap | **PASS** | 1/10 … 10/10, then Setup (`08`); Start → the deck's 11th card at 1/10 (`09`); the third round 1/4; the next Start is card 1 again (`16`) |
+| F3 | Got it / restart grade and advance; "<" does not | **PASS** | recordings: at the tap on "Got it" (or the restart disc) both grade controls dim and the counter holds, then after the mock's ~0.33 s the next card shows; "<" moves back at once with no busy frame (`i2frames/`, `f3frames/`, `f3_sequence.png`). Either face grades (from the back in `05` → 2/10). The body is test-level: bodies are never logged |
+| F4 | grades echo on reopen | **N/A** | the UI never shows `selfGrade`; test-level (`mock_backend_flashcards_test.dart`, latest-wins) |
+| F5 | the preview used up | **PASS** | the allowance spent to 50 (lectures opened: 24 + 1 + 10 + 4 + 10 + 1); a 3-card lecture delivered a truncated **1/1** round (`22`); the next Start: "You've used this week's free flashcards." with an icon and **no button, price or link**, ✕ live (`23`); Arabic "لقد استخدمت البطاقات المجانية لهذا الأسبوع." (`34`); cards already charged still open at zero (`ui_free_redeliver.xml`) |
+| F6 | offline | **PASS** | "You are offline"; "Got it" and the restart disc disabled; flip and "<" still work (`24`, `ui_off_flip.xml`, `ui_off_prev.xml`); Setup's Start disabled (`25`); both back on reconnect |
+| V1 | study screen vs `225:5582` (`04`, `06`) | **PASS** | the rule → disc **16.0**, disc **38** `#4B675E` with its edge 20 from the screen's, → card **13.7**, card **454.1**, → buttons **33.9**, "Got it" **59.8** `#384F47` (the frame's 16 / 38 / 14 / 454 / 34 / 60); fill `#5A7F73` at 1/10; counter `#7070A0`; the title centred (ruling), no bookmark / share / AI icon; the card `#FCFBF9` with its inset edge; "<" 78.9 × 57.9 `#86948E`, its arrow **16.4 × 27.8** at 29.3 / 17.1 (the frame's 16.57 × 28.64 at 29.49 / 16.69 — **BUG-019 fixed on device**). Recorded deltas: the title `#0E0E0E` for `#000000` (#99, #115), centred where the frame is off-centre (#117), no pale "<" on card 1 (#119) |
+| V2 | the back face | **PASS** | a wrapped, centred block, unmirrored (`05`); several answers keep their line breaks, English and Arabic (`13`, `14`) |
+| V3 | dark and Arabic | **FAIL** | dark matches `337:14475`'s values (canvas `#232428`, track `#2E2D32`, fill `#AE87E7`, the rule `#2C263C` = `#7C3AED` 10%, "Got it" `#AE87E7`, the card light) with the #113 stand-in disc (`27`); Arabic mirrors the English build exactly (✕ right, the disc 20 from the left, "<" at the right with its arrow at the exact mirror, the bar filling from the right) (`28`, `33`); the Arabic frame is the older, unmirrored layout (#113). **But a card's text takes the app's direction, not its own:** in Arabic the English card reads "**?into right and left parts**" (`28`, `en_front_in_ar.png`); in English the Arabic back's full stop lands at the right end (`12`, `ar_back_lastline.png`) — **BUG-020** |
+| V4 | Setup vs `1234:8797` (`03`) | **PASS** | the pill 45 tall `#FFFFFF` / `#384F47` 0.5, 20 under the hairline `#CCD5D2`; its label `#384F47` centred; the helper `#6E7F7A` 4 under it; Start `#384F47` 60 under the helper; the title centred. Start sits 2.0 higher than the frame's (the helper's line is 16, the frame's 18 — #115). Dark: the #114 stand-ins (`26`); Arabic: "إعداد الفلاش كارد", "24 فلاش كارد", "ابدأ التعلّم" (`29`, `32`) |
+| I1 | the flip | **PASS** | recording: ~0.30 s each way, fast then slow, the faces swapping at the midpoint; the back unmirrored (`i1frames/`) |
+| I2 | grade controls and the busy state | **PASS** | both controls disabled for the round trip, a spinner in "Got it" (a 24 dp box), nothing moves before the answer (`i2frames/`, `f3frames/`) |
+| I3 | entry and exit | **PASS** | after the last card (either control) → Setup (`08`, `ui_one2.xml`); ✕ mid-round → Setup, and the round replays from its first card; Setup's back → Lectures with the Flashcard tab still selected (`17`) |
+
+**Score: 11/12 = 92%** (F 5/5, F4 N/A · V 3/4 · I 3/3). V3 fails on BUG-020.
+
+Also checked:
+- Logcat from the pre-launch clear: the `flutter`-filtered read returned no line and the crash buffer none, while the
+  same buffer held lines from before the launch (`logcat_flutter.txt`, `logcat_crash.txt`; the phone's USB link dropped
+  after the walk, so the read could not be repeated).
+- Not walked (test-level): the loading skeleton, a load failure with Retry, a failed grade's line under the card, the
+  empty state (unreachable: lectures without cards are not listed) and `insufficient_scope`.
+- The Arabic card faces render in Tajawal Bold on both faces (the front 24, the back 28).
+- Independent verification: two read-only Sonnet verifiers re-measured the captures, dumps, recording frames and 1x frames: every behaviour and every measurement confirmed, and BUG-020 with its code lines. Their PARTIALs were the record's wording, corrected here: the disc's EDGE, not its centre, is 20 from the screen edge; "exact mirror" compares the Arabic build with the English one (the Arabic frame is the older, unmirrored layout, #113); Arabic Setup's Start is 6.8 lower, not 6.4; the spinner's 24 dp is its box (the arc inks 25.9); the busy button's label is source-level (no dump was taken mid-grade); the flip card's is not the only Arabic test (none mixes directions). The walked mock is `mock_backend.dart` blob `6047624` (unchanged since 15:19; the APK built 17:43).
+
+### Observed, not logged
+
+- **Five tabs overflow the Lectures row.** Arabic by ~54 dp: at rest "عملي" shows as a ~31 dp sliver with no scroll
+  cue, so Practice is effectively hidden until the row is swiped (`30`, `31`); English by ~5 dp (Practice 70.5 wide,
+  `02`). The row scrolls by the owner's ruling (D-012, #81); the Flashcard tab is what makes five.
+- **Arabic Setup is taller:** the pill's line 28.2 and the helper's 19.0, so Start sits 6.8 lower than in English
+  (`32` vs `03`).
+- **Offline, the card shrinks to 419.8** to make room for the banner (`24`), so the button row moves 3.8 when the
+  connection flips; the banner sits above the study header and under the Setup title.
+- **A truncated preview round is unexplained:** Setup says "3 Flash Cards" and the round is "1/1" (`22`).
+- **The round position lives only while Setup is open:** leaving Setup forgets it, so a lecture reopens at its
+  first round (as built, W22-3).
+
+### Walk-method notes (no app defect)
+
+- **An incoming SMS notification** covered the top of the screen twice: once around capture `15` (deleted unviewed;
+  its dump holds only the app) and once over Settings, where it took two taps aimed at the back chip (the app stayed in
+  front; nothing opened). The capture that showed it was deleted. From then on the guard also refused input while a
+  notification covered the screen. The recordings' status bars were masked and the raw videos deleted.
+- A tap at (540, 1800) px landed on the empty area under the Arabic lecture list; nothing happened.
+
+### Device state after the walk
+
+Light EN on Home, signed in as the university student. Airplane mode off, Wi-Fi on, font scale 1.0 (read only),
+auto-rotate 0 at the start and the end, no call. `/sdcard/ui.xml`, the captures and the recordings removed from the
+phone. The phone's USB link dropped after these were read (adb lost it during a log re-read).
+
+## Wave 22 — BUG-020 fix — targeted re-WALK 2026-09-30
+
+On the owner's request: fix BUG-020, then re-walk it on the device. This does not re-score the whole wave; the 92% walk
+above stands as recorded. Pixel 8 `45131FDJH0009G`, a debug mock build with the fix (`flutter build apk --debug -t
+lib/main_mock.dart`, `main_mock.dart` blob `f189786` untouched), `adb install -r`, launched with `am start`, the
+university student, light theme, font scale 1.0 (read only). Deck `anatomy-l1`, reached by grading: card 2 (the walk's
+English card, "Which plane divides the body into right and left parts?"), card 13 (its Arabic card, the answer ending
+"إلى الأمام.") and card 14 (the three-line Arabic list). Evidence: scratchpad `walk20b/` (captures `02`–`13` and their
+dumps, `flipframes/`, the before/after crops `ba_*.png`, `claims.md`, `verify.json`); the pre-fix captures are the
+2026-09-29 walk's (`walk22/`). Every capture passed the notification check; none was deleted.
+
+| # | Combination | Result | Evidence |
+| --- | --- | --- | --- |
+| 1 | Arabic app + English card | **PASS** | card 2 reads "Which plane divides the body / into right and left parts?", the "?" at the right end (`09`); before the fix the same card in the Arabic app read "?into right and left parts" (walk22 `33`; `ba_ar_app_en_card2.png`). Its back: five lines, the full stops and "(midsagittal)" in place (`10`). Both faces are pixel-identical to the English app's (`09` / `10` vs `03` / `04`: 0 of 1,059,561 px differ) |
+| 2 | English app + Arabic card | **PASS** | card 13's back ends "إلى الأمام." with the full stop the LEFTMOST ink on its line (x 146.3–150.9 dp, 5.0 × 4.6); before the fix it was the RIGHTMOST (x 261.0–265.9 dp) (`06` vs walk22 `12`; `ba_en_app_ar_card13.png`). Its front ends on "؟" at the left (`05`). Card 14's list: three answers, the third wrapping, the parentheses in place (`07`; it drew the same before the fix, walk22 `13`, 0 px) |
+| 3 | Arabic app + Arabic card | **PASS** | cards 13 and 14 are pixel-identical to the English app's (`11`, `12`, `13` vs `05`, `06`, `07`: 0 px each) |
+| 4 | English app + English card | **PASS** | card 2: the "?" at the end of line 2 (`03`), its back five lines (`04`); `03` is pixel-identical to the pre-fix walk's capture of the same card in the same app (walk22 `06`, 0 px): no regression |
+
+**Result: 4/4 PASS — BUG-020 fixed on the device.** The pre/post differences are exactly the two lines the walk
+caught (line 2 of card 2 in the Arabic app, line 4 of card 13's back in the English app); every other line measured the
+same before and after. With V3's one failure gone, **Wave 22's acceptance after the re-walk is 100%** (F 5/5, F4 N/A ·
+V 4/4 · I 3/3). The other criteria are carried from the 92% walk: the fix changes only text direction (the two card
+faces, the card's screen-reader label, Setup's subject and lecture lines).
+
+Also checked:
+- The flip: front → back in every combination; back → front for the English card in the English app (`ui_flipback.xml`)
+  and, in a 60 fps recording (card area only, the video deleted), for the Arabic card in the Arabic app, and back again.
+  Each turn changes over about 18 frames (f069–f087, ~0.30 s), decelerating in angle (ease-out), the faces swapping
+  edge-on (f074, f170), unmirrored: the Wave 22 walk's ~0.30 s. (f079 is a dropped recording frame.)
+- The screen-reader label: in every study dump the card is one clickable, enabled `Button`, labelled with the full text of
+  the face that is up, in both apps. The label's direction is a Flutter semantics attribute that uiautomator does not
+  expose, so it is test-level (`flashcard_flip_card_test.dart`, "a screen reader gets the face's own direction with its
+  label"). TalkBack was not run.
+- Setup (its two lines changed): the Arabic subject and lecture start 22.1 dp from the left in English (`02`) and end
+  22.1 from the right in Arabic (`08`), where the Wave 22 walk had them. A no-regression check only: the walked names end
+  in no neutral mark, and an English name in the Arabic app was not walked on Setup (test-level).
+- The card text stays centred on every capture (each line's ink centre within 0.6 dp of the card's).
+- Logcat since the launch-time clear: no `flutter` line; the crash buffer empty (no positive control).
+- Independent verification: two read-only Sonnet verifiers (combinations, measurements) re-ran every diff, mark and
+  timing measurement: all four combinations confirmed, no claim refuted. Their PARTIALs were wording, corrected here:
+  the turn is ~0.30 s by frame hash (a 0.5 dp threshold had read 0.25–0.27 s), ease-out holds in angle rather than in
+  raw ink width, back → front was not captured for every combination, card 14 is a combination-2 control (not
+  English-in-English evidence), and the Setup check is no-regression only.
+- Not re-walked (the fix does not touch them): dark, offline, grading, rounds, the weekly limit, the Lectures tabs.
+- Still open, outside this fix: the Lectures rows and the other catalog names take the app's direction by the same
+  mechanism (`KNOWN_BUGS.md` BUG-020).
+
+### Device state after the re-walk
+
+Light EN on Home, signed in as the university student. Airplane mode off, Wi-Fi on, font scale 1.0 (read only),
+auto-rotate 0, no call. `/sdcard/ui.xml`, the captures and the recording removed from the phone; older files from
+earlier waves were left as found.

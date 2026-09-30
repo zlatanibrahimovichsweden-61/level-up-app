@@ -4,6 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/flashcard.dart';
 import '../repository/flashcards_repository.dart';
 
+/// How many cards one study round holds — the frame's "1/10" (owner ruling
+/// 2026-09-29).
+///
+/// Matches `contract/contract-changelog.md`, 2026-09-25 (`3.27.0-m1`,
+/// `flashcardCount`): the round follows `getFlashcardsForLecture`'s `hasMore`,
+/// "one `pageSize=10` page per round, a short round when the lecture has fewer
+/// cards". Deliberately NOT [FlashcardsRepository.defaultPageSize], which stays
+/// 20 because it mirrors the contract's own default for the parameter.
+///
+/// It is also a REQUEST, not a promise: the server may return fewer cards (a
+/// lecture with fewer than ten, or a weekly-preview truncation), so a screen
+/// sizes its progress from `items.length`, never from this constant.
+const flashcardRoundSize = 10;
+
 /// One page-accumulated view of `GET /flashcards/lectures/{lectureId}/cards`.
 ///
 /// 🔴 [hasMore] comes from the server's `CursorPage.hasMore` and is NEVER
@@ -30,10 +44,10 @@ class LectureFlashcards {
   final bool isLoadingMore;
 
   /// A failed "load more". Kept HERE rather than flipping the whole
-  /// `AsyncValue` to error, so the pages already delivered survive — which
-  /// matters more here than anywhere else in the app, because on this endpoint
-  /// those cards have already been CHARGED against the weekly allowance and
-  /// throwing them away would make the student pay to see them again.
+  /// `AsyncValue` to error, so the pages already delivered survive on screen.
+  /// (Refetching them would not cost the student anything — a card already
+  /// charged this week re-delivers free — but a failed append must not blank
+  /// cards the student is already looking at.)
   final Object? appendError;
 
   /// Drives the Empty state, which on this endpoint means the lecture genuinely
@@ -62,10 +76,24 @@ class LectureFlashcards {
 /// `nextCursor` is the contract's OPAQUE keyset token — followed, never parsed
 /// or constructed, and `null` means no more pages.
 ///
-/// **This notifier deliberately does NOT decide when to page.** `loadMore` is
-/// called by whatever surface consumes it; whether that is an infinite scroll,
-/// a "next" control or a prefetch threshold is a UX decision that belongs with
-/// the screen, which does not exist yet.
+/// **The study ROUND.** The study screen (`FlashcardStudyScreen`) pages by
+/// ROUND, not by scrolling: a round is one page of [flashcardRoundSize] cards
+/// starting at the lecture's [flashcardRoundPositionProvider] cursor (`null` =
+/// the start of the deck). [build] fetches exactly that page; once the student
+/// has graded the last card the study screen calls [finishRound], which moves
+/// the position on so the NEXT round — a fresh build — continues where this one
+/// stopped, and wraps to the start after the last page.
+///
+/// **[loadMore] has no production caller today.** Only tests call it, and the
+/// study screen must not: it still asks for
+/// [FlashcardsRepository.defaultPageSize] (20), not [flashcardRoundSize], and it
+/// moves the cursor [finishRound] reads. Calling it during a round would grow
+/// the round past its ten cards and shift the next round's start to the end of
+/// the appended page. (The same goes for [LectureFlashcards.isLoadingMore] and
+/// [LectureFlashcards.appendError], which only [loadMore] sets.) Whoever wires a
+/// consumer to it decides when to page — infinite scroll, a "next" control or a
+/// prefetch threshold — and should first reconcile that page size with the
+/// round's.
 class LectureFlashcardsNotifier extends AsyncNotifier<LectureFlashcards> {
   LectureFlashcardsNotifier(this.lectureId);
 
@@ -82,14 +110,46 @@ class LectureFlashcardsNotifier extends AsyncNotifier<LectureFlashcards> {
     // Registered before the first await so a dispose during the initial page
     // load is still recorded.
     ref.onDispose(() => _disposed = true);
+    // `read`, not `watch`: the position moves when a round FINISHES, and a
+    // watch would rebuild this notifier — refetching a round the student has
+    // just completed — the instant [finishRound] wrote it.
+    final start = ref.read(flashcardRoundPositionProvider(lectureId));
     final page = await ref
         .read(flashcardsRepositoryProvider)
         .getFlashcardsForLecture(
           lectureId,
-          pageSize: FlashcardsRepository.defaultPageSize,
+          cursor: start,
+          pageSize: flashcardRoundSize,
         );
     _nextCursor = page.nextCursor;
     return LectureFlashcards(items: page.items, hasMore: page.hasMore);
+  }
+
+  /// Marks the current round complete: call it once, after the LAST card has
+  /// been graded and before the study screen returns to the screen it came
+  /// from.
+  ///
+  /// Records where the NEXT round starts in [flashcardRoundPositionProvider]:
+  /// the page's `nextCursor` when the server said `hasMore`, and `null` (wrap to
+  /// the start of the deck) when it did not. It branches on
+  /// [LectureFlashcards.hasMore] and never on `items.length`.
+  ///
+  /// A weekly-preview-truncated round is `hasMore: true` with a `nextCursor` at
+  /// the first card that was NOT delivered. Storing that cursor is correct: the
+  /// next round starts exactly there and meets
+  /// `403 flashcard_subscription_required` from the server, which is the true
+  /// state of the student's allowance. Wrapping to the start instead would hide
+  /// that and re-serve cards the student has just seen.
+  ///
+  /// A no-op when there is no delivered round (still loading, errored, or
+  /// disposed) — there is nothing to advance past.
+  void finishRound() {
+    if (_disposed) return;
+    final current = state.value;
+    if (current == null) return;
+    ref
+        .read(flashcardRoundPositionProvider(lectureId).notifier)
+        .moveTo(current.hasMore ? _nextCursor : null);
   }
 
   /// Appends the next page. No-op when exhausted or already appending — and
@@ -177,16 +237,61 @@ class LectureFlashcardsNotifier extends AsyncNotifier<LectureFlashcards> {
   }
 }
 
-/// One notifier per lecture, so moving between lectures keeps each page warm
-/// and a cursor can never cross lectures.
+/// Where the NEXT study round of one lecture starts: the opaque `nextCursor`
+/// the last finished round ended on, or `null` for the start of the deck.
+///
+/// Written only by [LectureFlashcardsNotifier.finishRound]; read (never
+/// watched) by [LectureFlashcardsNotifier.build]. The cursor is the contract's
+/// keyset token — stored and replayed, never parsed or constructed.
+///
+/// **Its lifetime is the whole point.** It is autoDispose, so it lives exactly
+/// as long as something listens: the Setup screen watches it, which keeps the
+/// position alive while Setup is on the stack (across every round the student
+/// studies from it), and leaving Setup drops the position — the next visit
+/// starts at the beginning of the deck again. The study screen must NOT be the
+/// only listener, or the position would die with it before Setup ever saw it.
+class FlashcardRoundPositionNotifier extends Notifier<String?> {
+  FlashcardRoundPositionNotifier(this.lectureId);
+
+  final String lectureId;
+
+  @override
+  String? build() => null;
+
+  /// Sets where the next round starts (`null` = the start of the deck). The
+  /// only production caller is [LectureFlashcardsNotifier.finishRound];
+  /// screens do not move the position themselves.
+  @visibleForTesting
+  void moveTo(String? cursor) => state = cursor;
+}
+
+/// One position per lecture, so a cursor can never cross lectures.
+final flashcardRoundPositionProvider = NotifierProvider.autoDispose
+    .family<FlashcardRoundPositionNotifier, String?, String>(
+      FlashcardRoundPositionNotifier.new,
+      // `build` cannot fail; stated anyway so no provider in this feature
+      // carries Riverpod 3's default automatic retry.
+      retry: _noRetry,
+    );
+
+/// One notifier per lecture, so a cursor can never cross lectures.
+///
+/// autoDispose: the notifier and the round it holds are dropped as soon as
+/// nothing listens, so leaving the study surface discards the cards and a
+/// re-entry fetches the round again. That refetch is not a second charge — a
+/// card already delivered this week re-delivers free — and the round it fetches
+/// is the one at [flashcardRoundPositionProvider], which is why the position
+/// lives in its own provider rather than here.
 final lectureFlashcardsProvider = AsyncNotifierProvider.autoDispose
     .family<LectureFlashcardsNotifier, LectureFlashcards, String>(
       LectureFlashcardsNotifier.new,
       // Riverpod 3 retries a failed build automatically with backoff, and while
       // it retries the state stays `AsyncLoading` — so a consumer would sit on
       // its skeleton instead of showing the error view. Worse here than
-      // elsewhere: every silent retry that SUCCEEDS can spend another slice of
-      // a 50/week allowance. Retry is a user-tapped button.
+      // elsewhere: two of this endpoint's refusals
+      // (`403 flashcard_subscription_required`, `403 insufficient_scope`) are
+      // ones no retry can cure, so the student would wait on a skeleton for an
+      // answer that never changes. Retry is a user-tapped button.
       retry: _noRetry,
     );
 

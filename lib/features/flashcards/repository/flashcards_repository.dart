@@ -29,9 +29,11 @@ class FlashcardsRepository {
   /// page is charged per distinct card against a 50/week allowance, so a
   /// 100-card page could spend a non-holder's whole week in one request.
   ///
-  /// The ceiling is deliberately NOT mirrored as a constant here. Nothing in
-  /// this app sends anything but this default, the bound is the server's to
-  /// enforce (`400 validation_failed` outside `1..50`), and
+  /// The ceiling is deliberately NOT mirrored as a constant here. This app sends
+  /// two page sizes, both well inside it: the study round asks for
+  /// `flashcardRoundSize` (10, `lecture_flashcards_notifier.dart`), and only
+  /// `LectureFlashcardsNotifier.loadMore` sends this default (20). The bound is
+  /// the server's to enforce (`400 validation_failed` outside `1..50`), and
   /// `ReferenceRepository.searchSchools` passes its own `limit` through the
   /// same way. A client-side copy would be a second source of truth for a
   /// number only the contract owns.

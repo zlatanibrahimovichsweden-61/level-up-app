@@ -10,17 +10,21 @@ import '../models/quiz_question.dart';
 /// [QuestionRenderer] owns the one part that varies: how a question is
 /// presented and what choosing an answer looks like.
 ///
-/// Today there is exactly one implementation, [McqRenderer]. The flashcard
-/// frame (`225:5582`) shares the entire shell and differs only here — one flip
-/// card instead of four option buttons — so putting the boundary in now is the
-/// difference between adding flashcards later as a new file and reopening the
-/// screen, the Bloc and the tests.
+/// Today there is exactly one implementation, [McqRenderer].
 ///
-/// **No `FlashcardRenderer` stub exists, and none should be written yet.** The
-/// contract has no flashcard content endpoint, no `flashcard` quiz type and no
-/// flashcard question shape — only an entitlement a student can buy and then
-/// use on nothing (docs/seif_fight.md S6). The seam is the deliverable; the
-/// second renderer waits for a contract to build against.
+/// **This seam was drawn for a `FlashcardRenderer`, and that is not what was
+/// built.** It was written when the contract had no flashcard content endpoint
+/// and the flashcard frame (`225:5582`) looked like this shell with one flip
+/// card in place of four option buttons. Two stable flashcards operations have
+/// existed since 3.13.0-m1 (`getFlashcardsForLecture`, `setFlashcardSelfGrade`)
+/// and the flashcards study screen is its own Riverpod screen
+/// (`lib/features/flashcards/`, API→UI Wave 22): a flashcard is not a
+/// `QuizQuestion`, there is no session to commit, grade or finish, and
+/// `QuizBloc` stays out of it (Bloc is quiz-only). It shares with the quiz only
+/// the header, progress row and previous-button pill — `StudySessionHeader`,
+/// `StudyProgressBar` and `StudyPreviousButton` in
+/// `lib/core/widgets/study_session_chrome.dart` — and NOT this interface, so no
+/// `FlashcardRenderer` exists and none should be written.
 ///
 /// `QuizBloc` stays renderer-agnostic: it knows a question has options and that
 /// one of them gets committed, and nothing about badges or cards.

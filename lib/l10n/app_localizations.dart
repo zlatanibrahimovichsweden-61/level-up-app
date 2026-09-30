@@ -1681,6 +1681,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account is scheduled for deletion. Cancel the request to use Level Up again.'**
   String get accountPendingDeletion;
+
+  /// The Lectures tab that opens flashcards (Figma 180:5208, 349:15962; owner ruling 2026-09-29: the entry point). Not a quiz type: the contract's quizTypes enum has no flashcard value. Arabic from the owner (2026-09-29).
+  ///
+  /// In en, this message translates to:
+  /// **'Flashcard'**
+  String get flashcardsTab;
+
+  /// The study screen's title (Figma 225:5582). Arabic from the owner (2026-09-29).
+  ///
+  /// In en, this message translates to:
+  /// **'Flash cards'**
+  String get flashcardsTitle;
+
+  /// The Setup screen's title (Figma 1234:8797). Arabic from the owner (2026-09-29).
+  ///
+  /// In en, this message translates to:
+  /// **'Flash Card Setup'**
+  String get flashcardSetupTitle;
+
+  /// The Setup pill: the lecture's flashcardCount (contract 3.27.0-m1; Figma 1234:8797 draws "10 Flash Cards"). Informational only — not a round size or an allowance. ARABIC IS PROVISIONAL: the owner's term plus the number, pending the owner's confirmation (DESIGN_ISSUES).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Flash Card} other{{count} Flash Cards}}'**
+  String flashcardSetupCount(int count);
+
+  /// Figma 1234:8797, verbatim (the frame's capitalisation and grammar; logged for the designer). ARABIC IS PROVISIONAL, pending the owner's confirmation (DESIGN_ISSUES).
+  ///
+  /// In en, this message translates to:
+  /// **'this is available Flash cards for this quiz'**
+  String get flashcardSetupHelper;
+
+  /// Grades the card gotIt and moves on (Figma 225:5626; owner ruling 2026-09-29). Arabic from the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get flashcardGotIt;
+
+  /// Screen-reader label of the restart button (Figma 1229:8739), which grades the card again and moves on (owner ruling 2026-09-29; the contract's FlashcardSelfGrade `again`). Arabic from the owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get flashcardAgain;
+
+  /// 403 flashcard_subscription_required: the free weekly preview is used up (not the quiz weekly limit). Owner wording 2026-09-29. Purchase-silent: no price, no upgrade, no button, no Retry (it would 403 again).
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used this week\'s free flashcards.'**
+  String get flashcardPreviewUsedUp;
 }
 
 class _AppLocalizationsDelegate

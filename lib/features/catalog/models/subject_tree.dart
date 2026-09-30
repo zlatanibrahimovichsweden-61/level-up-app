@@ -124,7 +124,7 @@ abstract class Lecture with _$Lecture {
     /// Whether this lecture has at least one active flashcard — the signal that
     /// decides whether to draw the Flashcards affordance.
     ///
-    /// **`required` on the wire** (`openapi.yaml:2569`), so it is `required`
+    /// **`required` on the wire** (`openapi.yaml:2891`), so it is `required`
     /// here with no default. A `?? false` would have been the wrong kind of
     /// tolerant: it would render "no flashcards" for a lecture that has them
     /// and hide a whole surface without ever failing.
@@ -138,6 +138,18 @@ abstract class Lecture with _$Lecture {
     /// says it never will be — flashcards are a university-track surface, and a
     /// school tree carries no signal that they exist.
     required bool hasFlashcards,
+
+    /// The number of ACTIVE flashcards this lecture holds at read time
+    /// (`openapi.yaml:2878-2891`, added in 3.27.0-m1). The Flash Card Setup
+    /// screen shows it (Seif's ruling 2026-09-25, the changelog's "What to
+    /// build").
+    ///
+    /// **Informational and uncharged** — not a reservation, not the student's
+    /// remaining weekly allowance, not a round size and not a progress
+    /// denominator. A study round still follows `getFlashcardsForLecture`'s
+    /// `hasMore`. The contract says `hasFlashcards` is exactly
+    /// `flashcardCount > 0`; both are kept, because both are required.
+    required int flashcardCount,
   }) = _Lecture;
 
   factory Lecture.fromJson(Map<String, dynamic> json) =>

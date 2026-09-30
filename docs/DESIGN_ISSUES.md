@@ -33,7 +33,7 @@
 | 15 | Subject-card caption is 8.56dp — below a readable minimum | 🟡 | Designer | built at 10 |
 | 16 | Units/Chapters rows show a % progress the contract cannot supply | 🔴 | Seif + Designer | `tree_list_row.dart` |
 | 17 | Search field drawn on all 3 drill-down screens, placeholder reads "Search Subjects" | 🟡 | Designer | not built |
-| 18 | University Lectures draws a **Flashcard** quiz-type tab the contract has no value for | 🟠 | Seif + Designer | `quiz_type_tabs.dart` |
+| 18 | University Lectures draws a **Flashcard** quiz-type tab the contract has no value for — ✅ **built 2026-09-29** as a non-quiz-type tab (API→UI Wave 22, owner ruling) | 🟠 | Seif + Designer | `quiz_type_tabs.dart` |
 | 19 | Arabic renders Latin digits (1, 2, 3) — confirm ٠١٢ was not intended | 🟡 | Designer | `tree_list_row.dart` |
 | 20 | University Home "Learning Tools" cards have no endpoint in M1 | 🟠 | PM + Seif | `home_screen.dart` |
 | 21 | Onboarding dark "Log In" button is the inverse of the dark Login button | 🟠 | Designer | built as Login |
@@ -312,6 +312,19 @@ such variations on purpose, so this is visible on device).
    separate entry point? If no, the tab should come out of the design.
 2. **Designer:** if Flashcard stays, where does it lead, given there is nothing to open?
 
+> **✅ Built 2026-09-29 (API→UI Wave 22, owner ruling).** Question 1 was answered by the contract:
+> two flashcards operations have been `stable` since 3.13.0-m1 (`getFlashcardsForLecture`,
+> `setFlashcardSelfGrade`), and they are a separate entry point, NOT a `quizTypes` value — the enum
+> is still the closed four. The owner ruled the Lectures "Flashcard" tab the entry point: it is built
+> as a tab that is not a quiz type (`LecturesTab` = `QuizTab(QuizType)` | `FlashcardsTab`,
+> `quiz_type_tabs.dart`), **second**, as `180:5208`, `349:15962` and `337:11059` place it
+> (`180:5354` alone puts it fourth). It lists only the lectures with `hasFlashcards`, each keeping its
+> own number, with no progress bar or caption (the contract has no flashcards progress; owner:
+> none invented); it is hidden when no lecture has cards (the contract: "the surface should not be
+> offered at all"); a subject with no quiz types but with cards opens on it. A row opens Flash Card
+> Setup (`1234:8797`). Not yet device-checked: whether five labels fit a 375 dp phone at full size
+> in Inter (the widget tests measure the test font).
+
 **Also in this frame, two smaller ones:**
 - **Label for `practicalRevision`.** The frame says **"Practice"**; the wire word is *practical*
   (as in a practical/lab exam), which is a different thing in a medical faculty. Built as
@@ -347,6 +360,11 @@ Student, and only on the university track. Not drawn as five tappable cards that
 
 **Fix we need:** confirm the section survives to M1, and which of the five are behind
 `baseSubscription` vs `flashcardSubscription`, so the crown reflects a real entitlement.
+
+> **2026-09-29 (API→UI Wave 22).** "Flashcards have no M1 content endpoint" is no longer true (#18),
+> but the owner ruled the Lectures tab the flashcards entry point, so this section stays the plain
+> placeholder; only its code comment was corrected. A crown or any entitlement marking stays out
+> (purchase-silent).
 
 **The tiles' surface, read 2026-09-17 and recorded here rather than built** (edit3.md #43). The
 owner's decision is that the section keeps the plain placeholder until an endpoint exists, so these
@@ -4551,6 +4569,142 @@ frame `337:7561` 60%.
 
 **Where:** `lib/features/profile/widgets/profile_menu_row.dart`, the label `AppType.h3`. Frame: every Profile row
 label (`170:4796` and siblings), Inter Medium 18, line 21.
+
+---
+
+## 113. 🟡 The dark and Arabic flashcards frames are the OLDER layout — built from the updated light frame
+
+> **Classification:** frame gap. Owner ruling 2026-09-29 (Wave 22, item 8).
+
+**Frames.** The study screen's light frame `225:5582` is the updated layout: "Got it", the "<" button, a
+restart button above the card (`1229:8739`), the card at 20,221.18 (363 x 454). The dark frame
+`337:14475` and the Arabic frame `549:28041` are the older layout: no restart button anywhere, the card
+358 wide at 22,178.18, the primary button reading "Confirm" / "التالى". The Arabic frame also keeps the
+"<" at the left and the progress bar unmirrored. Hidden leftovers `222:5252`, `337:14430`, `549:27996`
+are ignored.
+
+**Build.** Both built from `225:5582` with directional layout: in Arabic the restart disc sits at the
+LEFT (the end edge) and "<" behaves as the quiz's does in Arabic. Dark uses the dark frame's own values
+where it draws the element (progress fill `#AE87E7`, track `#2E2D32`, the "<" Glass, the lavender
+primary) and a stand-in where it draws nothing: the restart disc `#AE87E7` (the dark primary,
+`flashcardAgainFill`) with a `#FCFBF9` glyph. The card stays `#FCFBF9` with `#384F47` text on the
+dark canvas, as `337:14513` draws it.
+**Ask (designer):** dark and Arabic frames of the updated layout, and the dark restart button.
+
+---
+
+## 114. 🟡 Flash Card Setup: light only, a white pill, a low-contrast helper, and provisional copy
+
+> **Classification:** frame gap + copy. Owner rulings 2026-09-29 (Wave 22, items 3, 8, 9).
+
+**Frame.** `1234:8797` (light only) matches the quiz setup `135:1622` for the header, back chip,
+title, subject caption, lecture heading, hairline block and Start button (built with the quiz
+setup's tokens). Its own elements: the pill `1234:8847` (363 x 45, fill `#FFFFFF`, 0.5 `#384F47`,
+radius 10, Inter Semi Bold 18 `#384F47`) and the helper `1237:9845` (Inter Regular 12/18 `#6E7F7A`,
+4 below the pill). The pill shows `Lecture.flashcardCount` (contract 3.27.0-m1; Seif's ruling
+2026-09-25) and is not tappable (the changelog: "No size selector").
+
+**Build and gaps.**
+- The pill is `#FFFFFF` as drawn, although every other surface in these frames is `#FCFBF9`.
+- The helper's `#6E7F7A` on `#FCFBF9` is about 4.1:1 at 12 px, under 4.5:1. Built as drawn.
+- Dark is not drawn. Stand-ins: pill `#27282C` (the dark quiz setup's chip), border and label
+  `#FCFBF9`, helper `#B3B3B3` (`mutedText`).
+- The helper copy is the frame's, verbatim: "this is available Flash cards for this quiz" (lower
+  case, "are" / "lecture" expected). **Its Arabic ("هذه الفلاش كارد المتاحة لهذا الاختبار") and the
+  pill's Arabic ("{count} فلاش كارد") are PROVISIONAL**: the owner's term, but not the owner's
+  wording.
+- The English noun is spelled as each frame spells it: "Flashcard" (the tab), "Flash cards" (the study
+  title), "Flash Card Setup", "{count} Flash Cards", "Flash cards" in the helper, and "flashcards" in the owner's
+  preview-used-up line. The glossary term is "Flashcard".
+**Ask:** the owner confirms or replaces the two Arabic strings; the designer confirms the helper's
+English, its contrast, the pill's white, the English spellings, and draws dark and Arabic.
+
+---
+
+## 115. 🟡 The flashcards type sizes are off the scale — mapped to the nearest `AppType`
+
+> **Classification:** frame value, the same class as #97 and #99.
+
+**Frame.** Title Inter Semi Bold 22 (`225:5608`), the front Inter Bold 25 / 25.6 (`246:3244`), the back
+Cairo Semi Bold 55.33 / 83 (`246:3236`), the buttons Inter Semi Bold 22, the counter Rajdhani Semi
+Bold 12 (not bundled). `AppType` has no 22, 25 or 55.
+
+**Build.** Title, buttons and counter use the quiz header's and action bar's styles (the frames match
+the quiz's exactly). The front is `h1` (24 / 30); the back is `displayLarge` (28 / 34, the scale's
+largest). The contract says `back` is free multi-line text that may hold several answers, so a
+55-point block would not fit a real card; the back renders as a wrapping, centred block that scrolls
+when long. The pill is `h3` (18, exact); the helper `captionRegular` (12 / 16 against 12 / 18).
+**Ask (designer):** confirm the back's size for multi-line answers.
+
+---
+
+## 116. 🟡 No card without an image is drawn — and today no card has one
+
+> **Classification:** frame gap against the contract.
+
+**Frame.** Every drawn front reserves a 348 x 223 image (`image 71`) with the question 43 below it, and
+the sample question ("What is A ?") points at labels in that image. The contract: `imageUrl` is
+`string | null`, and "null is normal and is the answer in every environment today"
+(`openapi.yaml`, `FlashcardCard`).
+
+**Build.** Owner ruling 2026-09-29: an image only when the card has one. A card without one shows its
+front text centred in the card, as the back's answer is. With one, the image box is centred (the
+frame seats its column 5 / 10 in, a resize artefact) and a failed image collapses so the text
+re-centres.
+**Ask (designer):** the image-less front.
+
+---
+
+## 117. 🟡 The study title sits 26.5 dp left of centre; the header icons are dropped
+
+> **Classification:** frame artefact + omitted affordance (owner rulings 2026-09-29).
+
+**Frame.** `225:5607`'s title is centred at x 175, not 201: the header row is SPACE_BETWEEN over the ✕
+(30), the title (122) and an 82-wide icon cluster (bookmark `503:6807`, share `503:6811`, hidden AI
+`503:6802`). The quiz frame `159:845` centres its title.
+
+**Build.** Centred (owner ruling), through the header shared with the quiz. Bookmark, share and the AI
+icon are left out: no flashcards field or operation backs them (owner ruling; the quiz header's #95).
+
+---
+
+## 118. 🟡 The light progress fill is green here and lavender everywhere else
+
+> **Classification:** frame value.
+
+**Frame.** `225:5616` fills the progress bar `#5A7F73`. The dark frame (`349:15348`), the Arabic frame
+(`565:17260`, light canvas) and every quiz frame fill it `#AE87E7`.
+
+**Build.** `flashcardProgressFill`: `#5A7F73` light (the updated frame, in both languages), `#AE87E7`
+dark.
+**Ask (designer):** confirm the green is meant, and that the Arabic light frame follows it.
+
+---
+
+## 119. 🟡 The flashcards states and transitions nobody drew
+
+> **Classification:** frame gap. Owner rulings 2026-09-29 (items 4-7) and the lead's calls.
+
+**Build, per state.**
+- **Loading:** the header without its counter, and a card-shaped skeleton.
+- **Empty** (a `200` with no cards, e.g. a count gone stale): "Nothing here yet", no Retry.
+- **Preview used up** (`403 flashcard_subscription_required`): the owner's line, "You've used this
+  week's free flashcards." / "لقد استخدمت البطاقات المجانية لهذا الأسبوع.", and no button of any kind
+  (a Retry would 403 again; purchase-silent).
+- **Not part of your course** (`403 insufficient_scope`) and **pending deletion**: their existing
+  lines, no Retry. **Offline / network:** the offline line and a Retry.
+- **A grade that fails:** the student stays on the card with one line of copy under it; tapping the
+  button again retries. A refusal that cannot succeed (`insufficient_scope`, `account_pending_deletion`)
+  disables "Got it" and the restart button on that card instead. Grading is disabled while offline (the
+  banner shows); flipping, "<" and ✕ still work. The line's colour is not designed:
+  `flashcardGradeError`, the quiz's inline-error red `#921119` in light and the app's dark error text
+  `#FF465C` in dark (the quiz's `#921119` is 1.7:1 on the dark canvas).
+- **The flip:** 300 ms ease-out about the vertical axis (`247:3255` → `247:3256`, SMART_ANIMATE
+  0.3 s); instant with reduced motion; each card starts on its front.
+- **The end of a round:** no frame and no wording. Owner ruling: return to where the student came
+  from — the study screen pops back to Setup. No completion screen.
+- **"<" on the first card:** absent, as the quiz's is on question 1.
+**Ask (designer):** the loading, empty, error, preview-used-up and grading-failure states.
 
 ---
 

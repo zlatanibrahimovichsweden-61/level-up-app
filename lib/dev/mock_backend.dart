@@ -1,10 +1,12 @@
 /// Throwaway on-device preview harness — NOT production code.
 ///
 /// A hand-rolled Dio interceptor that answers the stable surface — `/auth/*`,
-/// `/reference/*`, `/me`, `/me/entitlements`, `/catalog/*` and the quiz loop —
-/// with contract-faithful canned JSON, so the login → OTP → registration →
-/// Home → quiz walk can be driven on a real device with no server and no
-/// network at all.
+/// `/reference/*`, `/me`, `/me/entitlements`,
+/// `/me/mistakes*`, `/leaderboard`, `/catalog/*`, the quiz loop and the two
+/// flashcards operations (`/flashcards/lectures/{id}/cards`,
+/// `/flashcards/cards/{id}/self-grade`) — with contract-faithful canned JSON,
+/// so the login → OTP → registration → Home → quiz walk can be driven on a real
+/// device with no server and no network at all.
 ///
 /// Deliberately hand-rolled rather than `http_mock_adapter`: adding a
 /// dev_dependency would mean editing `pubspec.yaml`, and this harness is meant
@@ -14,8 +16,8 @@
 /// `lib/core` knows this file exists; injection happens through a single
 /// `dioProvider` override in that entrypoint's `ProviderScope`.
 ///
-/// Shapes are taken from `contract/openapi.yaml` (pinned `184d6ec`,
-/// v3.0.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
+/// Shapes are taken from `contract/openapi.yaml` (pinned `f462968`,
+/// v3.27.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
 /// REAL freezed models — if a model changes and the mock stops parsing, that is
 /// the harness doing its job.
 ///
@@ -106,6 +108,23 @@ class MockBackendInterceptor extends Interceptor {
   /// request answers `202 generating`; every later one answers `200 ready` —
   /// so the polling path is walked every single time, not just occasionally.
   final _explanationRequests = <String, int>{};
+
+  /// Flashcards this student has been CHARGED for this week — the ids the free
+  /// preview has already delivered. Each one paid a unit of
+  /// [_questionsUsedThisWeek] once, on first delivery; from then on it
+  /// re-delivers free, and it is also the only set of cards the student may
+  /// grade (`setFlashcardSelfGrade` refuses everything else). In production the
+  /// server keeps this per student per week; here it lives and dies with the
+  /// interceptor, and no week ever rolls over.
+  ///
+  /// Never consulted for a subscriber: the mock student holds no
+  /// `flashcardSubscription` (see [_entitlements]), so every read is a preview.
+  final _flashcardsChargedThisWeek = <String>{};
+
+  /// The student's LATEST self-grade per card id (`gotIt` / `again`) — latest
+  /// wins, no history, exactly as the contract stores it. A card absent from
+  /// here is `selfGrade: null`.
+  final _flashcardGrades = <String, String>{};
 
   /// The `geography.city` this session registered with, in whichever arm of the
   /// adr-028 §1 union it used. Null until a registration happens, in which case
@@ -415,6 +434,36 @@ class MockBackendInterceptor extends Interceptor {
     ).firstMatch(path);
     if (method == 'GET' && explanation != null) {
       return _explanation(handler, options, explanation.group(1)!);
+    }
+
+    // ---- flashcards -------------------------------------------------------
+    // The two `stable` Flashcards operations (spec-028), university track only.
+    // STATEFUL for the same reason the quiz is: the free preview charges the
+    // SAME weekly allowance quizzes draw from, a charged card re-delivers free,
+    // and a grade is echoed back on the next read - none of which a canned
+    // response could show. Trigger table on [_flashcardsForLecture].
+    final flashcardCards = RegExp(
+      r'^/flashcards/lectures/([^/]+)/cards$',
+    ).firstMatch(path);
+    if (method == 'GET' && flashcardCards != null) {
+      return _flashcardsForLecture(
+        handler,
+        options,
+        flashcardCards.group(1)!,
+        query,
+      );
+    }
+
+    final flashcardGrade = RegExp(
+      r'^/flashcards/cards/([^/]+)/self-grade$',
+    ).firstMatch(path);
+    if (method == 'PUT' && flashcardGrade != null) {
+      return _setFlashcardSelfGrade(
+        handler,
+        options,
+        flashcardGrade.group(1)!,
+        body,
+      );
     }
 
     // ---- reference --------------------------------------------------------
@@ -871,6 +920,171 @@ class MockBackendInterceptor extends Interceptor {
     });
   }
 
+  /// `GET /flashcards/lectures/{lectureId}/cards` → `200 CursorPage` of
+  /// `FlashcardCard`, or one of the failures below.
+  ///
+  /// **Trigger table — how to reach each outcome on a device:**
+  ///
+  /// | Outcome | How to reach it |
+  /// |---|---|
+  /// | `200`, full round | any lecture with cards, e.g. **المحاضرة الأولى: مقدمة** (24 cards: rounds of 10 / 10 / 4) |
+  /// | `200`, empty | a lecture with no cards, e.g. **المحاضرة الثالثة: الجهاز التنفسي** — `items: []`, `hasMore: false`, and never a subscription refusal |
+  /// | `200`, SHORT round with `hasMore: true` | spend the allowance to a figure that is not a multiple of the round: a 30-question and a 10-question quiz, then the 4-card **المحاضرة الثالثة: الأطراف السفلية** (44 used), then open the 24-card lecture — its first round holds only 6 cards |
+  /// | `403 flashcard_subscription_required` | once 50 units are used, open any lecture you have not already been shown cards of |
+  /// | `403 insufficient_scope` | the School track, or an id that names no lecture of the University catalog — one indistinguishable body |
+  /// | `400 validation_failed` | `pageSize` outside 1..50, or a `cursor` that was altered or issued for another lecture (the app sends neither; tests do) |
+  ///
+  /// Everything here is a rule the REAL server applies (`openapi.yaml`,
+  /// `getFlashcardsForLecture`):
+  ///
+  ///  * The mock student holds no `flashcardSubscription`, so every read is the
+  ///    weekly PREVIEW: each card not already charged this week costs one unit
+  ///    of the SAME allowance quizzes spend ([_questionsUsedThisWeek], cap
+  ///    [_kFreeWeeklyQuestions]) — one allowance across both surfaces.
+  ///  * A charged card re-delivers free, so paging back and forth never costs
+  ///    twice, and a page made only of charged cards is delivered in full at
+  ///    zero allowance.
+  ///  * A page may come back SHORTER than `pageSize` and still not be the end:
+  ///    the affordable PREFIX is delivered (it stops at the first card that
+  ///    cannot be paid for), `hasMore` is true and `nextCursor` points at the
+  ///    first card NOT delivered. Branch on `hasMore`, never on `items.length`.
+  ///  * When ZERO cards of a non-empty page can be delivered the answer is `403
+  ///    flashcard_subscription_required`, not an empty page - an empty `items`
+  ///    means the lecture genuinely has no cards.
+  ///  * `insufficient_scope` is byte-identical for every cause
+  ///    ([_flashcardsOutOfScope]), and is decided BEFORE the query is looked at,
+  ///    so a refused caller learns nothing from what a malformed query returns.
+  void _flashcardsForLecture(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String lectureId,
+    Map<String, dynamic> query,
+  ) {
+    if (!_isUniversity || !_isUniversityLecture(lectureId)) {
+      return _flashcardsOutOfScope(handler, options);
+    }
+    final cards = _lectureFlashcards[lectureId] ?? const [];
+
+    // Validated, not clamped - the same rule `/leaderboard` follows for `limit`.
+    final rawPageSize = query['pageSize'];
+    final pageSize = rawPageSize == null
+        ? _kFlashcardsDefaultPageSize
+        : int.tryParse(rawPageSize.toString()) ?? -1;
+    if (pageSize < 1 || pageSize > _kFlashcardsMaxPageSize) {
+      return _validationFailed(handler, options, {
+        'pageSize': ['Must be between 1 and $_kFlashcardsMaxPageSize.'],
+      });
+    }
+
+    // The cursor is bound to its lecture, so one issued for another lecture is
+    // as unusable as an altered one - the contract's "malformed or foreign".
+    final cursor = query['cursor'] as String?;
+    var start = 0;
+    if (cursor != null) {
+      final parsed = _decodeMockCursor(cursor, lectureId);
+      if (parsed == null || parsed < 0 || parsed > cards.length) {
+        return _validationFailed(handler, options, {
+          'cursor': ['Altered, expired, or issued for another lecture.'],
+        });
+      }
+      start = parsed;
+    }
+
+    final end = (start + pageSize).clamp(0, cards.length);
+    final delivered = <Map<String, dynamic>>[];
+    for (final card in cards.sublist(start, end)) {
+      final id = card['id']! as String;
+      if (!_flashcardsChargedThisWeek.contains(id)) {
+        // The prefix ends at the first card the allowance cannot pay for, even
+        // if a later one on this page would have been free.
+        if (_questionsUsedThisWeek >= _kFreeWeeklyQuestions) break;
+        _flashcardsChargedThisWeek.add(id);
+        _questionsUsedThisWeek++;
+      }
+      delivered.add(<String, dynamic>{
+        ...card,
+        'selfGrade': _flashcardGrades[id],
+      });
+    }
+
+    if (delivered.isEmpty && end > start) {
+      return _problem(
+        handler,
+        options,
+        403,
+        'flashcard_subscription_required',
+        'The free weekly flashcard preview is used up',
+      );
+    }
+
+    final next = start + delivered.length;
+    final hasMore = next < cards.length;
+    return _ok(handler, options, 200, <String, dynamic>{
+      'items': delivered,
+      'nextCursor': hasMore ? _encodeMockCursor(next, lectureId) : null,
+      'hasMore': hasMore,
+    });
+  }
+
+  /// `PUT /flashcards/cards/{flashcardId}/self-grade` → `204`, no body.
+  ///
+  /// Stores the student's LATEST grade for the card and nothing else: no
+  /// history, no score, no schedule. Idempotent by construction - the same
+  /// value twice is `204` both times.
+  ///
+  /// **Same gate as the card list**: the card must be one the student could be
+  /// delivered right now, which for this mock student (no subscription) means
+  /// one already CHARGED this week. Everything else - the School track, an id
+  /// that names no card, and a real card that was never shown to them - is the
+  /// same byte-identical `403 insufficient_scope`, and never
+  /// `flashcard_subscription_required`: grading a card you were not shown has
+  /// exhausted nothing, so offering a subscription would be false and would
+  /// confirm the card exists.
+  ///
+  /// The `400 validation_failed` on field `grade` (missing, or not one of
+  /// `gotIt` / `again`) is checked AFTER the gate, so a caller who may not touch
+  /// the card learns nothing about it from which refusal they get. The app
+  /// cannot send a bad grade - it encodes the closed enum - so only a test does.
+  void _setFlashcardSelfGrade(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+    String flashcardId,
+    Map<String, dynamic> body,
+  ) {
+    if (!_isUniversity || !_flashcardsChargedThisWeek.contains(flashcardId)) {
+      return _flashcardsOutOfScope(handler, options);
+    }
+
+    final grade = body['grade'];
+    if (grade is! String || !_kFlashcardGrades.contains(grade)) {
+      return _validationFailed(handler, options, {
+        'grade': ['Must be one of ${_kFlashcardGrades.join(', ')}.'],
+      });
+    }
+
+    _flashcardGrades[flashcardId] = grade;
+    return _ok(handler, options, 204, null);
+  }
+
+  /// The flashcards `403 insufficient_scope`, the SAME body for every cause: the
+  /// School track, another cohort's lecture, an unreleased term, an id that
+  /// names nothing, and (grading only) a card never shown to the caller.
+  ///
+  /// The contract makes them "deliberately indistinguishable, permanently", so
+  /// the detail here echoes no id and names no cause. A mock that answered them
+  /// differently would let a device walk build the existence probe the contract
+  /// forbids.
+  void _flashcardsOutOfScope(
+    RequestInterceptorHandler handler,
+    RequestOptions options,
+  ) => _problem(
+    handler,
+    options,
+    403,
+    'insufficient_scope',
+    'Flashcards are not available for this request',
+  );
+
   void _ok(
     RequestInterceptorHandler handler,
     RequestOptions options,
@@ -1312,24 +1526,39 @@ final _universitySubjects = <dynamic>[
   _subject('uni-histology', 'الأنسجة', 58, 210),
 ];
 
-/// [hasFlashcards] is contract-REQUIRED on this object (`openapi.yaml:2569`),
-/// so it is always emitted. It varies per lecture below for the same reason
+/// `hasFlashcards` and `flashcardCount` are both contract-REQUIRED on this
+/// object (`openapi.yaml:2891`), so both are always emitted, and
+/// `hasFlashcards` is derived as the contract defines it: exactly
+/// `flashcardCount > 0`. The count varies per lecture below for the same reason
 /// `quizTypes` varies per subject: it decides whether an affordance is drawn,
-/// and a mock that answered `true` everywhere could never catch a surface that
-/// ignores it. Content presence, never subscription state — `true` is correct
-/// for a free student too.
-Map<String, dynamic> _lecture(
-  String id,
-  String name,
-  int answered,
-  int total, {
-  bool hasFlashcards = true,
-}) => <String, dynamic>{
-  'id': id,
-  'name': name,
-  'questionCounter': _counter(answered, total),
-  'hasFlashcards': hasFlashcards,
-};
+/// and a mock that answered one value everywhere could never catch a surface
+/// that ignores it. Content presence, never subscription state — a count is
+/// correct for a free student too.
+///
+/// The count is DERIVED from [_lectureFlashcards] (a lecture with no deck has
+/// none), never written beside the lecture: the tree and the cards the
+/// flashcards arms serve therefore cannot disagree, which is the one
+/// contradiction a device walk would otherwise expose as a setup screen
+/// promising 24 cards and a round delivering 10.
+Map<String, dynamic> _lecture(String id, String name, int answered, int total) {
+  final flashcardCount = _lectureFlashcards[id]?.length ?? 0;
+  return <String, dynamic>{
+    'id': id,
+    'name': name,
+    'questionCounter': _counter(answered, total),
+    'hasFlashcards': flashcardCount > 0,
+    'flashcardCount': flashcardCount,
+  };
+}
+
+/// Whether [lectureId] names a lecture of the mock's University catalog - the
+/// one authority on which lecture ids exist. Walks the same
+/// [_universitySubjectTrees] the Learn tab was handed, so a lecture is known to
+/// the flashcards arms exactly when the student could have tapped it.
+bool _isUniversityLecture(String lectureId) => _universitySubjectTrees.values
+    .expand((tree) => (tree['lectures']! as List<dynamic>))
+    .cast<Map<String, dynamic>>()
+    .any((lecture) => lecture['id'] == lectureId);
 
 /// `UniversitySubjectTree` — flat, plus the quiz types THIS subject offers.
 ///
@@ -1352,6 +1581,8 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
     'anatomy',
     <String>['normal', 'midTermRevision', 'finalRevision', 'practicalRevision'],
     <dynamic>[
+      // 24 cards = three rounds of 10 / 10 / 4; 10 = exactly one round; 4 =
+      // a short round; 1 = a single card.
       _lecture('anatomy-l1', 'المحاضرة الأولى: مقدمة', 44, 120),
       _lecture('anatomy-l2', 'المحاضرة الثانية: الأطراف العلوية', 120, 120),
       _lecture('anatomy-l3', 'المحاضرة الثالثة: الأطراف السفلية', 0, 90),
@@ -1363,6 +1594,8 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
     'physio',
     <String>['normal', 'midTermRevision', 'finalRevision'],
     <dynamic>[
+      // A subject where SOME lectures have flashcards: physio-l3 has none,
+      // so the Flashcard tab lists two of the three lectures.
       _lecture('physio-l1', 'المحاضرة الأولى: الدم', 80, 100),
       _lecture('physio-l2', 'المحاضرة الثانية: القلب', 100, 100),
       _lecture('physio-l3', 'المحاضرة الثالثة: الجهاز التنفسي', 60, 90),
@@ -1377,27 +1610,9 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
     'biochem',
     <String>['normal'],
     <dynamic>[
-      _lecture(
-        'biochem-l1',
-        'المحاضرة الأولى: البروتينات',
-        0,
-        0,
-        hasFlashcards: false,
-      ),
-      _lecture(
-        'biochem-l2',
-        'المحاضرة الثانية: الإنزيمات',
-        5,
-        50,
-        hasFlashcards: false,
-      ),
-      _lecture(
-        'biochem-l3',
-        'المحاضرة الثالثة: الكربوهيدرات',
-        25,
-        50,
-        hasFlashcards: false,
-      ),
+      _lecture('biochem-l1', 'المحاضرة الأولى: البروتينات', 0, 0),
+      _lecture('biochem-l2', 'المحاضرة الثانية: الإنزيمات', 5, 50),
+      _lecture('biochem-l3', 'المحاضرة الثالثة: الكربوهيدرات', 25, 50),
     ],
   ),
   // No lectures published yet — the university EMPTY state.
@@ -1405,6 +1620,313 @@ final _universitySubjectTrees = <String, Map<String, dynamic>>{
     'normal',
     'finalRevision',
   ], <dynamic>[]),
+};
+
+// ---------------------------------------------------------------------------
+// Flashcards - GET /flashcards/lectures/{id}/cards, PUT .../self-grade
+// ---------------------------------------------------------------------------
+
+/// `getFlashcardsForLecture`'s default `pageSize` (`openapi.yaml`, schema
+/// `default: 20`) and its maximum - **50, not the shared `Limit`'s 100**.
+const _kFlashcardsDefaultPageSize = 20;
+const _kFlashcardsMaxPageSize = 50;
+
+/// `FlashcardSelfGrade` - a CLOSED set of exactly two values.
+const _kFlashcardGrades = {'gotIt', 'again'};
+
+/// One deck of cards, ids minted from the lecture's own id and the card's
+/// 1-based position (`anatomy-l1-c01`) - readable and stable, like the mock's
+/// lecture ids. `imageUrl` is `null` on every card: the contract says `null` is
+/// the answer in every environment today (no card-image CDN is provisioned) and
+/// that it is not an error. `selfGrade` is deliberately absent - it is a
+/// property of the READER and is stitched on at delivery time.
+List<Map<String, dynamic>> _deck(
+  String lectureId,
+  List<(String, String)> cards,
+) => <Map<String, dynamic>>[
+  for (var i = 0; i < cards.length; i++)
+    <String, dynamic>{
+      'id': '$lectureId-c${(i + 1).toString().padLeft(2, '0')}',
+      'front': cards[i].$1,
+      'back': cards[i].$2,
+      'imageUrl': null,
+    },
+];
+
+/// The cards each lecture holds, keyed by lecture id - the ONE source of truth
+/// for how many cards a lecture has: [_lecture] derives `flashcardCount` from
+/// the length of these lists, so the catalog and the flashcards arms cannot
+/// disagree. A lecture absent here is a real lecture with no cards
+/// (`physio-l3`, all of `uni-biochem`), which is `200` with `items: []`.
+///
+/// The deck is written to exercise the shapes the study surface must render,
+/// not just to fill the counts:
+///  * `anatomy-l1-c06`, `-c14`, `-c15`, `anatomy-l2-c05` and `physio-l1-c07`
+///    carry a MULTI-LINE `back` holding several answers - the contract says to
+///    render `back` as a block, not as a single label;
+///  * `anatomy-l1-c12` has a long `front` (about three lines on a phone);
+///  * `anatomy-l1-c13`, `anatomy-l1-c14` and `physio-l1-c08` are Arabic on both
+///    sides, so the RTL card face is reachable.
+final _lectureFlashcards = <String, List<Map<String, dynamic>>>{
+  // 24 cards = rounds of 10 / 10 / 4.
+  'anatomy-l1': _deck('anatomy-l1', <(String, String)>[
+    (
+      'Describe the anatomical position.',
+      'Standing upright and facing forward, feet together and flat on the '
+          'floor, arms at the sides with the palms facing forward.',
+    ),
+    (
+      'Which plane divides the body into right and left parts?',
+      'The sagittal plane. The median (midsagittal) plane passes through the '
+          'midline and divides the body into equal right and left halves.',
+    ),
+    (
+      'Which plane divides the body into anterior and posterior parts?',
+      'The coronal (frontal) plane.',
+    ),
+    (
+      'Which plane divides the body into superior and inferior parts?',
+      'The transverse (horizontal or axial) plane.',
+    ),
+    (
+      'What does "proximal" mean?',
+      'Nearer to the trunk or to the point of attachment of a limb. The '
+          'opposite is distal.',
+    ),
+    (
+      'Name the four quadrants of the abdomen.',
+      'Right upper quadrant\n'
+          'Left upper quadrant\n'
+          'Right lower quadrant\n'
+          'Left lower quadrant',
+    ),
+    (
+      'Define "superficial" and "deep".',
+      'Superficial means nearer to the surface of the body; deep means '
+          'farther from the surface.',
+    ),
+    (
+      'What is the difference between ipsilateral and contralateral?',
+      'Ipsilateral refers to the same side of the body; contralateral refers '
+          'to the opposite side.',
+    ),
+    (
+      'Which movement decreases the angle between two bones at a joint?',
+      'Flexion. Extension increases the angle.',
+    ),
+    (
+      'What is abduction?',
+      'Movement of a limb away from the median plane of the body. Adduction '
+          'is movement toward it.',
+    ),
+    (
+      'Which movement turns the palm to face anteriorly?',
+      'Supination. Pronation turns the palm to face posteriorly.',
+    ),
+    (
+      'A patient stands with the feet together, the arms at the sides and '
+          'the palms forward. Which reference position is this, and why is '
+          'it used?',
+      'The anatomical position. Describing every structure against one agreed '
+          'posture removes any doubt about terms such as anterior, posterior, '
+          'left and right, whatever position the patient is actually in.',
+    ),
+    (
+      'ما هو الوضع التشريحي؟',
+      'وقوف الجسم منتصبًا مع النظر إلى الأمام، والذراعان بجانب الجسم، '
+          'وراحتا اليدين إلى الأمام.',
+    ),
+    (
+      'ما هي المستويات الثلاثة الرئيسية التي تقسم الجسم؟',
+      'المستوى السهمي\n'
+          'المستوى الإكليلي (الجبهي)\n'
+          'المستوى المستعرض (الأفقي)',
+    ),
+    (
+      'Name the four basic tissue types.',
+      '1. Epithelial tissue\n'
+          '2. Connective tissue\n'
+          '3. Muscle tissue\n'
+          '4. Nervous tissue',
+    ),
+    (
+      'What are the two divisions of the skeleton?',
+      'The axial skeleton (skull, vertebral column, ribs and sternum) and '
+          'the appendicular skeleton (the limbs and their girdles).',
+    ),
+    ('How many bones are in the adult human skeleton?', '206.'),
+    (
+      'Which type of joint is the shoulder?',
+      'A ball-and-socket synovial joint.',
+    ),
+    (
+      'What is the function of articular cartilage?',
+      'It covers the articulating surfaces of bones in synovial joints, '
+          'reducing friction and absorbing load.',
+    ),
+    (
+      'What connects muscle to bone?',
+      'Tendons. Ligaments connect bone to bone.',
+    ),
+    (
+      'Which body cavity contains the heart and lungs?',
+      'The thoracic cavity. The heart lies in the mediastinum; each lung lies '
+          'in its own pleural cavity.',
+    ),
+    (
+      'Which membrane lines the abdominal cavity?',
+      'The peritoneum: the parietal layer lines the wall of the cavity and '
+          'the visceral layer covers the organs.',
+    ),
+    (
+      'What does "lateral" mean?',
+      'Away from the median plane, toward the side of the body. Medial means '
+          'nearer to the median plane.',
+    ),
+    (
+      'Name the two types of bone tissue.',
+      'Compact (cortical) bone and spongy (cancellous or trabecular) bone.',
+    ),
+  ]),
+  // 10 cards = exactly one round.
+  'anatomy-l2': _deck('anatomy-l2', <(String, String)>[
+    ('Which bone forms the skeleton of the arm?', 'The humerus.'),
+    (
+      'Name the two bones of the forearm.',
+      'The radius (lateral) and the ulna (medial).',
+    ),
+    (
+      'Which nerve is compressed in carpal tunnel syndrome?',
+      'The median nerve.',
+    ),
+    (
+      'Which nerve runs in the groove behind the medial epicondyle of the '
+          'humerus?',
+      'The ulnar nerve, which causes the tingling of the "funny bone".',
+    ),
+    (
+      'Name the four rotator cuff muscles.',
+      'Supraspinatus\n'
+          'Infraspinatus\n'
+          'Teres minor\n'
+          'Subscapularis',
+    ),
+    (
+      'Which muscle is the main flexor of the elbow?',
+      'Brachialis. Biceps brachii and brachioradialis assist it.',
+    ),
+    (
+      'Which muscle abducts the arm from 15 to 90 degrees?',
+      'The deltoid. The supraspinatus initiates the first 15 degrees.',
+    ),
+    (
+      'How many carpal bones are there?',
+      'Eight, arranged in two rows of four.',
+    ),
+    (
+      'Which artery becomes the brachial artery at the lower border of teres '
+          'major?',
+      'The axillary artery.',
+    ),
+    (
+      'Which nerve supplies the extensor muscles of the arm and forearm?',
+      'The radial nerve.',
+    ),
+  ]),
+  // 4 cards = a short round.
+  'anatomy-l3': _deck('anatomy-l3', <(String, String)>[
+    ('Which is the longest bone in the body?', 'The femur.'),
+    (
+      'Name the two bones of the leg.',
+      'The tibia (medial, weight-bearing) and the fibula (lateral).',
+    ),
+    (
+      'Which is the largest nerve in the body, supplying the hamstrings?',
+      'The sciatic nerve.',
+    ),
+    (
+      'Which ligaments stop the tibia sliding on the femur?',
+      'The cruciate ligaments. The anterior cruciate ligament resists forward '
+          'sliding of the tibia; the posterior cruciate ligament resists '
+          'backward sliding.',
+    ),
+  ]),
+  // 1 card = a single-card round.
+  'anatomy-l4': _deck('anatomy-l4', <(String, String)>[
+    (
+      'How many pairs of ribs are there, and which are true ribs?',
+      'Twelve pairs. Ribs 1 to 7 are true ribs (attached directly to the '
+          'sternum), ribs 8 to 10 are false ribs and ribs 11 and 12 are '
+          'floating ribs.',
+    ),
+  ]),
+  // 12 cards = a full round of 10 and a short one of 2.
+  'physio-l1': _deck('physio-l1', <(String, String)>[
+    (
+      'What is the normal hematocrit range in an adult?',
+      'Roughly 40 to 50 percent; slightly higher in men than in women.',
+    ),
+    (
+      'Name the main components of blood plasma.',
+      'Water (about 90 percent), plasma proteins (albumin, globulins, '
+          'fibrinogen), electrolytes, nutrients, hormones and waste products.',
+    ),
+    ('Which plasma protein contributes most to oncotic pressure?', 'Albumin.'),
+    (
+      'Where are red blood cells produced in the adult?',
+      'In the red bone marrow, stimulated by erythropoietin from the kidney.',
+    ),
+    ('What is the average lifespan of a red blood cell?', 'About 120 days.'),
+    (
+      'Which hormone regulates red blood cell production?',
+      'Erythropoietin (EPO), released mainly by the kidneys in response to '
+          'hypoxia.',
+    ),
+    (
+      'List the steps of hemostasis in order.',
+      '1. Vascular spasm\n'
+          '2. Platelet plug formation\n'
+          '3. Blood coagulation (clot formation)',
+    ),
+    (
+      'ما هي وظيفة الهيموجلوبين؟',
+      'ينقل الأكسجين من الرئتين إلى الأنسجة، ويساعد في نقل ثاني أكسيد '
+          'الكربون عائدًا إلى الرئتين.',
+    ),
+    (
+      'Which blood group is the universal donor of red cells?',
+      'Group O negative: no A, B or Rh D antigens on the red cells.',
+    ),
+    (
+      'Which blood group is the universal recipient?',
+      'Group AB positive: no anti-A or anti-B antibodies in the plasma.',
+    ),
+    (
+      'Which white blood cell is the most numerous?',
+      'The neutrophil, about 60 to 70 percent of circulating leukocytes.',
+    ),
+    (
+      'What is the role of vitamin K in coagulation?',
+      'It is needed for the liver to make clotting factors II, VII, IX and X.',
+    ),
+  ]),
+  // 3 cards = a short round.
+  'physio-l2': _deck('physio-l2', <(String, String)>[
+    (
+      'Where does the cardiac impulse normally start?',
+      'In the sinoatrial (SA) node, the natural pacemaker of the heart.',
+    ),
+    (
+      'What is cardiac output?',
+      'The volume of blood pumped by each ventricle per minute: stroke volume '
+          'multiplied by heart rate, about 5 L/min at rest.',
+    ),
+    (
+      'Which heart sound is caused by closure of the atrioventricular valves?',
+      'The first heart sound (S1, "lub"). The second sound (S2, "dub") is '
+          'closure of the aortic and pulmonary valves.',
+    ),
+  ]),
 };
 
 // ---------------------------------------------------------------------------

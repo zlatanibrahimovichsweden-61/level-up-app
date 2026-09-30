@@ -14,6 +14,8 @@ import '../../features/catalog/screens/chapters_screen.dart';
 import '../../features/catalog/screens/lessons_screen.dart';
 import '../../features/catalog/screens/subject_tree_screen.dart';
 import '../../features/catalog/screens/subjects_screen.dart';
+import '../../features/flashcards/screens/flashcard_setup_screen.dart';
+import '../../features/flashcards/screens/flashcard_study_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/mistakes/screens/mistakes_overview_screen.dart';
@@ -271,6 +273,31 @@ final routerProvider = Provider<GoRouter>((ref) {
                               subjectId: state.pathParameters['subjectId']!,
                               unitId: state.pathParameters['unitId']!,
                               chapterId: state.pathParameters['chapterId']!,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Flashcards — a university lecture's Setup, and the
+                      // study round pushed over it. Both stay INSIDE the Learn
+                      // branch (every flashcard frame draws the bar with Learn
+                      // active), so the nav bar stays put like the drill-down
+                      // above. The ids ride in the PATH only: go_router drops a
+                      // non-JSON `extra` on an auth refresh (BUG-005), and
+                      // neither screen needs anything the two ids do not give.
+                      // The lecture is found by scanning the cached subject
+                      // tree, exactly as the other levels do.
+                      GoRoute(
+                        path: 'lecture/:lectureId/flashcards',
+                        builder: (_, state) => FlashcardSetupScreen(
+                          subjectId: state.pathParameters['subjectId']!,
+                          lectureId: state.pathParameters['lectureId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'study',
+                            builder: (_, state) => FlashcardStudyScreen(
+                              subjectId: state.pathParameters['subjectId']!,
+                              lectureId: state.pathParameters['lectureId']!,
                             ),
                           ),
                         ],

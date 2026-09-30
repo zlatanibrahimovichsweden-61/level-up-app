@@ -596,6 +596,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.trackCardShadows,
     required this.trackCardGlassFirst,
     required this.trackCardGlassSecond,
+    required this.flashcardCardShadows,
   });
 
   // --- edit2: shell, auth, onboarding, registration ------------------------
@@ -946,6 +947,14 @@ class AppElevation extends ThemeExtension<AppElevation> {
   /// component, different Glass; both are kept rather than averaged.
   final GlassStyle? trackCardGlassSecond;
 
+  /// The flashcard's face: an INNER shadow, `#000000` at 25%, offset (0, -1),
+  /// blur 5.4 — the same on both canvases, because the card is a light object
+  /// on the dark canvas too (`247:3260` light, `337:14513` dark, both Figma
+  /// `INNER_SHADOW`). Painted by `ElevatedSurface`'s inset path. The corner
+  /// radius (20) is the same on both canvases, so it stays at the call site
+  /// rather than becoming a token. API→UI Wave 22.
+  final List<FigmaShadow> flashcardCardShadows;
+
   /// Light canvas.
   ///
   /// **`static final`, not `const`, deliberately:** two tokens take their
@@ -1131,6 +1140,14 @@ class AppElevation extends ThemeExtension<AppElevation> {
     ],
     trackCardGlassFirst: null,
     trackCardGlassSecond: null,
+    flashcardCardShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0, -1),
+        blur: 5.4,
+        inset: true,
+      ),
+    ],
   );
 
   /// Dark canvas.
@@ -1383,6 +1400,16 @@ class AppElevation extends ThemeExtension<AppElevation> {
     trackCardShadows: const [],
     trackCardGlassFirst: _g20,
     trackCardGlassSecond: _g5,
+    // Not a light-only shadow: the card stays cream on the dark canvas
+    // (`337:14513`), so its inner shadow is the light value unchanged.
+    flashcardCardShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0, -1),
+        blur: 5.4,
+        inset: true,
+      ),
+    ],
   );
 
   @override
@@ -1474,6 +1501,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     List<FigmaShadow>? trackCardShadows,
     GlassStyle? trackCardGlassFirst,
     GlassStyle? trackCardGlassSecond,
+    List<FigmaShadow>? flashcardCardShadows,
   }) {
     // Note, as `AppColors.copyWith` already notes for its nullable borders:
     // `??` cannot CLEAR a nullable token. Dark gets its nulls from the palette
@@ -1601,6 +1629,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
       trackCardShadows: trackCardShadows ?? this.trackCardShadows,
       trackCardGlassFirst: trackCardGlassFirst ?? this.trackCardGlassFirst,
       trackCardGlassSecond: trackCardGlassSecond ?? this.trackCardGlassSecond,
+      flashcardCardShadows: flashcardCardShadows ?? this.flashcardCardShadows,
     );
   }
 
@@ -2015,6 +2044,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.trackCardGlassSecond,
         t,
       ),
+      flashcardCardShadows: FigmaShadow.lerpList(
+        flashcardCardShadows,
+        other.flashcardCardShadows,
+        t,
+      ),
     );
   }
 
@@ -2109,6 +2143,7 @@ class AppElevation extends ThemeExtension<AppElevation> {
     trackCardShadows,
     trackCardGlassFirst,
     trackCardGlassSecond,
+    flashcardCardShadows,
   ];
 
   @override

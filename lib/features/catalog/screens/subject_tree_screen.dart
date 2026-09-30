@@ -64,6 +64,7 @@ class SubjectTreeScreen extends ConsumerWidget {
                   units: units,
                 ),
                 UniversitySubjectTree() => LecturesView(
+                  subjectId: subjectId,
                   tree: data,
                   subjectName: subjectName,
                 ),

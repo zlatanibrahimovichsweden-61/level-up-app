@@ -692,5 +692,44 @@
   "accountPendingDeletion": "Your account is scheduled for deletion. Cancel the request to use Level Up again.",
   "@accountPendingDeletion": {
     "description": "403 account_pending_deletion (adr-114). Returned by every authenticated endpoint except four during the 30-day grace window. The contract says do not log out and do not retry — route to the cancel screen, which does not exist yet."
+  },
+  "flashcardsTab": "Flashcard",
+  "@flashcardsTab": {
+    "description": "The Lectures tab that opens flashcards (Figma 180:5208, 349:15962; owner ruling 2026-09-29: the entry point). Not a quiz type: the contract's quizTypes enum has no flashcard value. Arabic from the owner (2026-09-29)."
+  },
+  "flashcardsTitle": "Flash cards",
+  "@flashcardsTitle": {
+    "description": "The study screen's title (Figma 225:5582). Arabic from the owner (2026-09-29)."
+  },
+  "flashcardSetupTitle": "Flash Card Setup",
+  "@flashcardSetupTitle": {
+    "description": "The Setup screen's title (Figma 1234:8797). Arabic from the owner (2026-09-29)."
+  },
+  "flashcardSetupCount": "{count, plural, =1{1 Flash Card} other{{count} Flash Cards}}",
+  "@flashcardSetupCount": {
+    "description": "The Setup pill: the lecture's flashcardCount (contract 3.27.0-m1; Figma 1234:8797 draws \"10 Flash Cards\"). Informational only — not a round size or an allowance. ARABIC IS PROVISIONAL: the owner's term plus the number, pending the owner's confirmation (DESIGN_ISSUES).",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "24"
+      }
+    }
+  },
+  "flashcardSetupHelper": "this is available Flash cards for this quiz",
+  "@flashcardSetupHelper": {
+    "description": "Figma 1234:8797, verbatim (the frame's capitalisation and grammar; logged for the designer). ARABIC IS PROVISIONAL, pending the owner's confirmation (DESIGN_ISSUES)."
+  },
+  "flashcardGotIt": "Got it",
+  "@flashcardGotIt": {
+    "description": "Grades the card gotIt and moves on (Figma 225:5626; owner ruling 2026-09-29). Arabic from the owner."
+  },
+  "flashcardAgain": "Again",
+  "@flashcardAgain": {
+    "description": "Screen-reader label of the restart button (Figma 1229:8739), which grades the card again and moves on (owner ruling 2026-09-29; the contract's FlashcardSelfGrade `again`). Arabic from the owner."
+  },
+  "flashcardPreviewUsedUp": "You've used this week's free flashcards.",
+  "@flashcardPreviewUsedUp": {
+    "description": "403 flashcard_subscription_required: the free weekly preview is used up (not the quiz weekly limit). Owner wording 2026-09-29. Purchase-silent: no price, no upgrade, no button, no Retry (it would 403 again)."
   }
 }
