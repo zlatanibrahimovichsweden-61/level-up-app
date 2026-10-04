@@ -1,22 +1,49 @@
 # Vendored API contract — pinned copy
 
 Source: https://github.com/seifhamdii-collab/level-up-contract
-Pinned commit: f462968 ("Mirror contract from level-up-backend@f5014e6d675c047aad04364a7064661c009d6949")
-Vendored: 2026-09-29
-Previous pin: ea83099 ("Mirror contract from level-up-backend@03dd474ac89d4198892898d30faa024d965062b9", v3.23.0-m1), vendored 2026-09-24
+Pinned commit: 0df5cf4 ("Mirror contract from level-up-backend@9e273b80aa7f31d41a46b78bb03341d06c2aaec2")
+Vendored: 2026-10-04
+Previous pin: f462968 ("Mirror contract from level-up-backend@f5014e6d675c047aad04364a7064661c009d6949", v3.27.0-m1), vendored 2026-09-29
 
-info.version at this pin: 3.27.0-m1
+info.version at this pin: 3.28.0-m1
 
 Operation census at this pin, counted by parsing `paths` with a YAML parser (never
 `grep -c "x-stability: …"` — header and description prose inflate both counts):
-**35 stable · 19 draft · 54 total**. Of the 35 stable, 3 are `x-consumers: [web]` and are
-forbidden to the app, leaving **32 stable operations the app may build against**.
-The previous pin (ea83099) was **33 stable · 16 draft · 49 total**.
+**38 stable · 16 draft · 54 total**. Of the 38 stable, 3 are `x-consumers: [web]` and are
+forbidden to the app, leaving **35 stable operations the app may build against**.
+The previous pin (f462968) was **35 stable · 19 draft · 54 total**.
 
-All four vendored files are blob-identical to upstream `f462968` (`git hash-object` on each equals
-`git rev-parse f462968:<file>`). `realtime.md` did not change.
+All four vendored files are blob-identical to upstream `0df5cf4` (`git hash-object` on each equals
+`git rev-parse 0df5cf4:<file>`). `error-codes.md` and `realtime.md` did not change.
 
-## Delta from 3.23.0-m1 — four mobile-visible versions (2026-09-29 re-vendor)
+## Delta from 3.27.0-m1 — one mobile-visible version (2026-10-04 re-vendor)
+
+Re-vendored on the owner's request (2026-10-04), as a contract update only: nothing is built
+against it yet. Upstream moved one commit past f462968 (`0df5cf4`, 2026-10-01). It touches
+`openapi.yaml` (+18 / −7) and `contract-changelog.md` (+6) only; the admin files did not move.
+
+| Version | Change | Breaking | App impact |
+| --- | --- | --- | --- |
+| 3.28.0-m1 | The notification inbox goes **`draft` → `stable`**: `listMyNotifications` (`GET /me/notifications`), `getUnreadNotificationCount` (`GET /me/notifications/unread-count`), `markNotificationRead` (`POST /me/notifications/{notificationId}/read`), all mobile-only (no `x-consumers`). Each inbox item gains a **required** `category` (`system` / `announcements` / `support`, derived server-side from `kind`; today `enrolment_opened` → `system`, so the other two stay empty until a kind maps to them). `listMyNotifications` gains an optional `?category=` filter; an unknown value is the existing `400 validation_failed`. The unread count stays the total across all categories (changelog, 2026-09-26) | no | none yet: the app calls none of the three (the Home bell is inert and its unread dot is off, DESIGN_ISSUES #41; `/message` is a placeholder). An inbox needs owner and design rulings and a new FORMULATE first |
+
+Clients MUST ignore an item whose `kind` they do not recognise and an unknown `category` value. The
+3.19.0-m1 entry's push guidance still stands: this is an inbox, not push, so no push-permission
+prompt or "notifications enabled" indicator is to be built from it. No `x-behaviour-changed` stamp and no
+breaking entry. `getUnreadNotificationCount` and `markNotificationRead` keep their shapes. No schema
+the app decodes changed, and no schema bound in `test/guards/contract_models_test.dart` changed (the
+inbox item is an inline schema no Dart class decodes), so no model, mock or fixture change came with
+this re-vendor.
+
+⚠️ **Line-number drift.** Lines 1–988 keep their numbers (only line 28, `info.version`, and line 983,
+the first of the three `x-stability` flips, change in place). The inbox block grows by 11 lines: old lines 989–1008 move
+by +7 or +10, and every `openapi.yaml:NNN` citation past old line 1008 is now off by **+11**. The
+`flashcardCount` cite `openapi.yaml:2878-2891` (in `subject_tree.dart` and its generated
+`subject_tree.freezed.dart`) is now `:2889-2902`, and the single-line cite `openapi.yaml:2891` (the
+lecture's `required` list, in those two files, `mock_backend.dart` and `catalog_models_test.dart`)
+is now `:2902`.
+Citations written against earlier pins were already approximate.
+
+## Delta from 3.23.0-m1 — four mobile-visible versions (2026-09-29 re-vendor, kept for history)
 
 Re-vendored on the owner's Wave 22 ruling (2026-09-29): the Flash Card Setup screen needs
 `flashcardCount`, which only 3.27.0-m1 carries. Upstream moved seven commits past ea83099
@@ -117,13 +144,16 @@ The version string 1.4.0-m1 is PERMANENTLY INVALID — briefly published 2026-08
 ## Staging
 
 **Not re-probed at this pin, and the last observation is now stale by more than the delta.** The
-most recent probe is 2026-09-04 against backend `78c6e5dc7c0a287046ea5428fa72c3cdebf3c9c1` (built
-2026-09-03T15:38:17Z), recorded in `.ai/audits/current/smoke-staging-2026-09-04.md`: 13 of the
-then-21 stable operations decode, `PATCH /me` answers 405 and `GET /me/entitlements` 404. Those are
-facts about a backend build that has since been replaced at least nine times, so they should not be
-quoted as current. **Every operation this delta unblocks is UNOBSERVED**, and the smoke harness
-itself (`tool/smoke/real_api_smoke_test.dart`) still walks the 21-operation set as it stood on
-2026-08-23 — it is stale against the *previous* pin, never mind this one.
+most recent probe is 2026-09-22 against backend `0f97f289852b76a2762865169fb5efba909e7c1e` (built
+2026-09-22T07:54:38Z), recorded in `.ai/audits/current/smoke-staging-2026-09-22.md`: exit 0, every
+arm decoded, including `GET /leaderboard`, `PATCH /me` (200) and `GET /me/entitlements` (200). The
+probe before it, 2026-09-04 against backend `78c6e5dc7c0a287046ea5428fa72c3cdebf3c9c1`
+(`smoke-staging-2026-09-04.md`: 13 of the then-21 stable operations decode, `PATCH /me` 405,
+`GET /me/entitlements` 404), is superseded and should not be quoted as current. **Every operation
+this delta unblocks is UNOBSERVED**, and the smoke harness itself
+(`tool/smoke/real_api_smoke_test.dart`) still walks the 2026-08-23 operation set plus the leaderboard
+arm added 2026-09-22 — it is stale against the *previous* pin, never mind this one. The three inbox
+operations made stable at 3.28.0-m1 have never been probed on staging.
 
 For the Mistakes pair, re-probing cannot help: `seif_fight.md` **S44** — the only staging test
 account (`+2010000000001`, school-track) has an empty catalog, so it can never hold a graded wrong
@@ -134,8 +164,8 @@ answer and both operations will answer empty regardless of whether they are depl
 The source repo also carries `openapi-admin.yaml`, `error-codes-admin.md` and
 `contract-changelog-admin.md` — the admin SPA's contract (adr-050). They are deliberately NOT
 vendored: the app has never consumed them and they are not the mobile partner's surface.
-`openapi-admin.yaml` and `contract-changelog-admin.md` did move in this delta; that is Badawy's
-document, not ours.
+All three moved in the 2026-09-29 delta (ea83099 → f462968); none moved in the 2026-10-04 delta
+(f462968 → 0df5cf4). That is Badawy's document, not ours.
 
 Do NOT edit these files here — they are Seif's owned artifact. When Seif publishes a
 new version, re-copy from the source repo and bump the commit above. Build ONLY against

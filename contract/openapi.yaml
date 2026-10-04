@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.27.0-m1
+  version: 3.28.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -980,18 +980,28 @@ paths:
   /me/notifications:
     get:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: listMyNotifications
       summary: The caller's own notification inbox (cursor-paginated, newest first)
       parameters:
         - { $ref: '#/components/parameters/Cursor' }
         - { $ref: '#/components/parameters/Limit' }
+        - name: category
+          in: query
+          required: false
+          description: >-
+            Narrow the page to one inbox tab. Absent means All. A category no kind maps to yet
+            returns an empty page. The unread count is unaffected: it is always the total.
+          schema: { type: string, enum: [system, announcements, support] }
       responses:
         '200':
           description: >-
             A page of the caller's inbox items, newest first. `kind` + `data` are a LOCALIZATION
             CONTRACT, not display text: render the string for `kind` in the user's language and
-            substitute `data`. Branch on `hasMore`, never on `items.length`.
+            substitute `data`. Branch on `hasMore`, never on `items.length`. `category` is derived
+            server-side from `kind`. Clients MUST ignore an item whose `kind` they do not recognise,
+            and MUST ignore an unknown `category` value, so new values can be added without a
+            breaking change.
           content:
             application/json:
               schema:
@@ -1006,12 +1016,13 @@ paths:
                           properties:
                             notificationId: { $ref: '#/components/schemas/Uuid' }
                             kind:      { type: string, enum: [enrolment_opened] }
+                            category:  { type: string, enum: [system, announcements, support] }
                             data:      { type: object, additionalProperties: { type: string } }
                             createdAt: { type: string, format: date-time }
                             readAt:    { type: [string, "null"], format: date-time }
-                          required: [notificationId, kind, data, createdAt, readAt]
+                          required: [notificationId, kind, category, data, createdAt, readAt]
         '400':
-          description: "`validation_failed` — `cursor` is not a cursor this API issued, or `limit` is out of range."
+          description: "`validation_failed` — `cursor` is not a cursor this API issued, `limit` is out of range, or `category` is not a published value."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
@@ -1019,7 +1030,7 @@ paths:
   /me/notifications/unread-count:
     get:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: getUnreadNotificationCount
       summary: How many of the caller's own inbox items are unread
       responses:
@@ -1038,7 +1049,7 @@ paths:
   /me/notifications/{notificationId}/read:
     post:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: markNotificationRead
       summary: Mark one of the caller's own inbox items read (idempotent)
       parameters:
