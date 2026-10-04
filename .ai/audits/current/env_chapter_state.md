@@ -35,3 +35,8 @@ audit → focused commit → report (with rubric score, supported versions, back
 - **Owner decisions required before Wave 1:** D-021 Q1 (production ids: keep template / one shared
   token / other prefix), Q2 (two or three installable identities), Q3 (display names), Q4 (confirm
   minSdk 24 / target 36 / iOS 13.0).
+
+## Inputs received for Wave 1
+
+- **2026-10-04, DEVICE (Pixel 8, debug `main_mock` build of `f4cd5a9`, reported by the launcher-icon session):** the launcher label reads `level_up_app` in the app drawer, Recents and App info — DEVICE confirmation of audit gap G-9 (Android label hardcoded in `AndroidManifest.xml:27`, no `strings.xml`). Wave 1 moves the label to a per-flavor `resValue`/`@string/app_name` per D-021 Q3.
+- **Same report, SOURCE-confirmed here:** `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` has no `<monochrome>` layer, so Android 13+ themed icons fall back to a generic tile. Not an environment item — **deferred to the launcher-icon work**, recorded so it is not lost.
