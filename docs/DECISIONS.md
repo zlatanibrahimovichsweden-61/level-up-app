@@ -1013,3 +1013,43 @@ signed out.
 
 **Revisit when:** another session provider shows the same stale state, or the app gains a session id to key
 providers by.
+
+---
+
+## Environment & platform identity
+
+### D-021 · Production platform identifiers, environment count and display names
+
+**Feature:** Environment & Architecture chapter (Wave 0) · **Date:** 2026-10-04 · **Status:** **PROPOSED — awaiting
+owner ratification; nothing implemented** · **Raised by:** the identity audit
+(`.ai/audits/current/app_identity_environment_audit_2026-10-04.md`) and `docs/ENVIRONMENTS.md` §2
+
+**Context.** Both platform identifiers are `flutter create` template output from the first commit (`5e4a512`,
+2026-07-22): Android `applicationId` `com.levelup.level_up_app` (`android/app/build.gradle.kts:43`, the template's
+"Specify your own unique Application ID" TODO still above it), iOS `PRODUCT_BUNDLE_IDENTIFIER` `com.levelup.levelUpApp`
+(`ios/Runner.xcodeproj/project.pbxproj:371,550,572`). Neither was ever ratified; `RELEASE_SIGNING.md:80-85` says to
+confirm the value before the production keystore, the store audit (BS-D-09, BS-C-13, IOS-17) asks for the decision to
+be recorded here. The Day-0 spec planned three flavors with a bundle-id suffix each (prom.md Prompt 9,
+`Platform_Specifics.md:21-22`); only the Dart half exists. The identifier becomes permanent at the first Play upload /
+Apple App ID registration and keys every future Firebase registration. The stores are the client's accounts.
+
+**Options.**
+- **Q1 production ids** — (A) ratify the template ids as they are, two spellings forever; (B) one shared lowercase
+  alphanumeric token under `com.levelup` on both platforms — the token must come from the owner, nothing in the repo
+  names one; (C) a different organisation prefix if the client does not accept `com.levelup`.
+- **Q2 installable identities** — three (`<prod>`, `<prod>.staging`, `<prod>.dev`, matching the Dart enum and the
+  Day-0 spec) or two (dev shares staging's id).
+- **Q3 display names** — proposed `Level Up` / `Level Up STG` / `Level Up DEV`.
+- **Q4 supported versions** — confirm Android min 24 / target 36 / compile 36 and iOS 13.0 (`ENVIRONMENTS.md` §3);
+  min 24 excludes Android 5.x–6.x devices.
+
+**Engineering recommendation (not a decision).** Q1: B if a token can be named, else A. Q2: three. Q3: as proposed.
+Q4: confirm — the dependency set allows nothing lower and the stores require nothing higher.
+
+**Decision.** _Pending the owner. Fill in: Q1 ___ · Q2 ___ · Q3 ___ · Q4 ___ · date ___._
+
+**Consequences (once decided).** Wave 1 implements Android `productFlavors` and the ids; Wave 3 the iOS schemes;
+every build command gains `--flavor`; test devices need one uninstall of the old package; `RELEASE_SIGNING.md:80-85`
+is corrected to cite this entry. Until decided, no identifier changes, no flavors, no Firebase, no keystore.
+
+**Revisit when:** never for Q1 after the first store upload (irreversible); Q2–Q3 when an environment is added.

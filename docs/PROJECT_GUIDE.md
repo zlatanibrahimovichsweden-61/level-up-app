@@ -59,6 +59,7 @@ semantic tokens. Extract with it, then verify on a device against the frame.
 | Glossary | `level_up/00_Project/Glossary.md` | Use terms **verbatim** in class, field, file and route names |
 | Assets | `docs/ASSET_MANIFEST.md` | Flutter asset dirs are **not recursive** |
 | Release signing | `docs/RELEASE_SIGNING.md` | |
+| **Environments & platform identity** | **`docs/ENVIRONMENTS.md`** + `docs/STORE_READINESS_RUBRIC.md` | Flavors, ids, supported OS versions, build-command contract. Identity decision pending: `DECISIONS.md` D-021 |
 | Decisions | `docs/DECISIONS.md` + `00_Project/Decisions_Log.md` | |
 | Bugs | `docs/KNOWN_BUGS.md` | Entries keep their history — the "why tests missed it" note is the point |
 | Design ↔ contract gaps | `docs/DESIGN_ISSUES.md` | |

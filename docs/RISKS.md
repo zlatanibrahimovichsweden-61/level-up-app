@@ -126,6 +126,18 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 
 ---
 
+## R-9 · One platform identity for all environments; production id never ratified
+
+| | |
+| --- | --- |
+| **Impact** | Staging and production share `com.levelup.level_up_app` / `com.levelup.levelUpApp`; a tester cannot hold both on one phone, and a wrong-environment build is indistinguishable by package name or on screen (`isDev` is dead code). The id becomes permanent at the first Play upload or Apple App ID registration and keys every later Firebase registration. Nobody has confirmed the template strings are the ones the business wants. |
+| **Evidence** | `android/app/build.gradle.kts:42-43` (template TODO + id); `project.pbxproj:371,550,572`; no `productFlavors` ever (`git log -S`); one Xcode scheme; `.ai/audits/current/app_identity_environment_audit_2026-10-04.md`; flagged before by F-9-08 (2026-08-14), BS-D-09 / BS-C-13 (2026-09). |
+| **Owner** | Product owner (decision D-021) · engineering (Waves 1–3 of the Environment & Architecture chapter) |
+| **Next action** | Owner answers D-021 Q1–Q4 in `docs/DECISIONS.md`; then Wave 1 (Android flavors) per `docs/ENVIRONMENTS.md` §8. Nothing may be uploaded to any store track or registered with Firebase before that. |
+| **Status** | **OPEN — opened 2026-10-04.** Closes when both platforms carry distinct, ratified staging and production ids verified at ARTEFACT level (Android) and BUILD level on a Mac (iOS). |
+
+---
+
 ## Closed
 
 | Risk | Closed by |
