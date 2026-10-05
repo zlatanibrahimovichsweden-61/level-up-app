@@ -114,7 +114,7 @@ Feature repositories are `Provider`s that `ref.watch(dioProvider)`. There is no 
 
 ### 1.3 Configuration
 
-`AppConfig` (`lib/core/config/app_config.dart`) is the only runtime configuration: `flavor`, `baseUrl`, `isDev`. There are **no Gradle product flavors and no iOS schemes** — the `-t` entrypoint argument is the *only* thing that selects the backend. `main.dart` forwards to the dev flavor, so a flagless `flutter build apk` ships the staging host (proven at ARTEFACT level on 2026-09-05; now guarded by a test that scans every release command in `docs/`, `tool/`, `.github/`, `.githooks/`). `isDev` is computed and never read anywhere.
+`AppConfig` (`lib/core/config/app_config.dart`) is the only runtime configuration: `flavor`, `baseUrl`, `isDev`. Since 2026-10-06 Android has two Gradle product flavors, `prod` (`com.levelupworld.app`, "Level Up") and `staging` (`com.levelupworld.app.stg`, "Level Up STG"), and Gradle refuses a flavor compiled from the wrong `-t` entrypoint; iOS schemes are still pending (Wave 3, needs a Mac). Every build and run command is `--flavor <prod|staging> -t lib/main_<x>.dart` — see `docs/ENVIRONMENTS.md` §4. The pre-flavor hazard (a flagless `flutter build apk` shipped the staging host, ARTEFACT-proven 2026-09-05) is now a build failure, and a text guard still scans every release command in `docs/`, `tool/`, `.github/`, `.githooks/`. `isDev` is computed and never read anywhere.
 
 ### 1.4 Storage
 

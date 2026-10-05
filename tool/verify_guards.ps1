@@ -43,7 +43,8 @@ deliberate violation. It is never imported, so it cannot affect the app - the
 guards see it because they scan `lib/` from disk, which is the surface under
 test. It is gitignored so a crashed run cannot leave it staged.
 
-Two probes must edit a real file (`ci.yml`, `AndroidManifest.xml`). Those are
+Five probes must edit a real file (`ci.yml`, `AndroidManifest.xml`,
+`RELEASE_SIGNING.md`, `build.gradle.kts`). Those are
 backed up first and restored in a `finally` block with a SHA-256 comparison
 before the script exits, so an error or Ctrl-C cannot leave the repo modified.
 
@@ -194,7 +195,7 @@ foreach ($p in $fileProbes) {
     $i++
 }
 
-# --- 5 & 6: probes that edit a real file -------------------------------------
+# --- 7..11: probes that edit a real file -------------------------------------
 # Backed up, restored in Probe's finally, then SHA-256 verified here.
 $editProbes = @(
     @{ Name = 'CI test discovery'
@@ -214,18 +215,40 @@ $editProbes = @(
        To   = ''
        Label = 'release INTERNET permission (Tier-0 C-1)' },
 
-    # Reintroduce the 2026-09-05 defect, in its SUBTLER form. The doc used to
-    # say `flutter build apk --release` with no target; this probe drops the
-    # `--release` too, because release is Flutter's default build mode. A guard
-    # that only looked for `--release` would stay green here - which is exactly
-    # the hole Fable found in the first version of this guard.
-    @{ Name = 'Release build entrypoint'
-       Test = 'every runnable release-build command targets lib/main_prod.dart'
+    # Reintroduce the 2026-09-05 defect in its post-flavor form: the command
+    # that was correct until 2026-10-06 (right entrypoint, no --flavor). Gradle
+    # now refuses it, so a doc teaching it is wrong; the `--release` is dropped
+    # too, because release is Flutter's default build mode and a guard that only
+    # looked for `--release` would stay green here - the hole Fable found in the
+    # first version of this guard.
+    @{ Name = 'Release build: flavor present'
+       Test = 'every runnable release-build command pairs --flavor with a matching entrypoint'
        Path = 'docs/RELEASE_SIGNING.md'
        Bak  = 'RELEASE_SIGNING.guardprobe.bak'
-       From = 'flutter build apk --release -t lib/main_prod.dart'
-       To   = 'flutter build apk'
-       Label = 'release build names the prod entrypoint' }
+       From = 'flutter build apk --release --flavor prod -t lib/main_prod.dart'
+       To   = 'flutter build apk -t lib/main_prod.dart'
+       Label = 'release build carries --flavor' },
+
+    # The combination D-021 makes impossible to ship: the production identity
+    # compiled from the staging entrypoint. Gradle refuses it at build time; this
+    # proves the text guard refuses it in a doc as well.
+    @{ Name = 'Release build: flavor/entry mismatch'
+       Test = 'every runnable release-build command pairs --flavor with a matching entrypoint'
+       Path = 'docs/RELEASE_SIGNING.md'
+       Bak  = 'RELEASE_SIGNING.guardprobe2.bak'
+       From = 'flutter build apk --release --flavor prod -t lib/main_prod.dart'
+       To   = 'flutter build apk --release --flavor prod -t lib/main_staging.dart'
+       Label = 'release build pairs --flavor prod with main_prod.dart' },
+
+    # The identity itself. Revert the ratified applicationId to the template
+    # value - the most likely accidental edit (a template re-run or a rename).
+    @{ Name = 'Android applicationId ratified'
+       Test = 'the production applicationId is com.levelupworld.app'
+       Path = 'android/app/build.gradle.kts'
+       Bak  = 'build.gradle.kts.guardprobe.bak'
+       From = 'applicationId = "com.levelupworld.app"'
+       To   = 'applicationId = "com.levelup.level_up_app"'
+       Label = 'applicationId is the D-021 value' }
 )
 
 foreach ($p in $editProbes) {

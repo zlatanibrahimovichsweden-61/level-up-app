@@ -22,9 +22,13 @@
          school, governorate) and auth material. allowBackup=false stops Google
          auto-backup to the user's Drive; on Android 12+ that flag does NOT cover
          device-to-device transfer, which is why dataExtractionRules is also set.
-         fullBackupContent=false covers pre-12 devices. -->
+         fullBackupContent=false covers pre-12 devices.
+
+         The label is NOT a literal: `app_name` is generated per product flavor in
+         android/app/build.gradle.kts ("Level Up" / "Level Up STG", D-021 Q3), so
+         the two installable identities are told apart on the launcher. -->
     <application
-        android:label="level_up_app"
+        android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"

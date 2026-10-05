@@ -46,19 +46,20 @@ Debug and profile builds are unaffected — `flutter run` still works with no ke
    `CN=Android Debug`:
 
    ```bash
-   flutter build apk --release -t lib/main_prod.dart
-   keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk
+   flutter build apk --release --flavor prod -t lib/main_prod.dart
+   keytool -printcert -jarfile build/app/outputs/flutter-apk/app-prod-release.apk
    ```
 
-   **The `-t` is not optional.** `lib/main.dart` forwards to `main_dev.dart`
-   (`lib/main.dart:4-6`), so a flagless `flutter build apk --release` compiles the
-   **dev** flavor — which resolves `AppConfig.baseUrl` to the live staging host
-   (`lib/core/config/app_config.dart:43-52`). That is not a theory: on 2026-09-05 both
-   builds were made and unzipped, and `level-up-backend-staging.up.railway.app` is
-   present in `lib/*/libapp.so` of the flagless build and absent from the
-   `-t lib/main_prod.dart` one. Nothing in Gradle or Flutter stops it — there are no
-   product flavors, only this argument — so every release command in this repo names
-   the entrypoint, and `test/guards/workflow_test.dart` fails if one stops doing so.
+   **Both flags are required, and they must agree.** `--flavor prod` selects the
+   production identity (`com.levelupworld.app`); `-t lib/main_prod.dart` selects the
+   production configuration. Since 2026-10-06 (`DECISIONS.md` D-021, `ENVIRONMENTS.md` §4)
+   Gradle refuses a release build without a flavor and refuses the `prod` flavor compiled
+   from any other entrypoint, so the wrong pair fails the build instead of shipping. The
+   history is why: `lib/main.dart` forwards to `main_dev.dart`, and on 2026-09-05 a flagless
+   `flutter build apk --release` was unzipped and found to carry the live staging host in
+   `lib/*/libapp.so` while the `-t lib/main_prod.dart` build did not. Every documented
+   release command in this repo carries a coherent pair, and `test/guards/workflow_test.dart`
+   fails if one stops doing so.
 
    If the owner reads `CN=Android Debug, OU=Android, O=Android, L=Mountain View`, the
    keystore was not picked up — check that `key.properties` sits in `android/`, not
@@ -77,23 +78,23 @@ Debug and profile builds are unaffected — `flutter run` still works with no ke
 - **Enrol in Play App Signing** when the Play Console listing is created. Google then
   holds the app signing key and you keep only an upload key, which *can* be rotated if it
   leaks. Strongly recommended before first release, and it makes rule 2 much less scary.
-- The signing identity binds to `applicationId`. The **value** is already settled in code
-  — `com.levelup.level_up_app` (`android/app/build.gradle.kts:43`), matching the
-  `namespace` at `:28` and ARTEFACT-confirmed as the package name of the release APK on
-  2026-09-05. Only the template's "specify your own" TODO comment above it (`:42`) is
-  left over; it is stale, and deleting the comment must not be confused with changing the
-  ID. Confirm the value is the one the business wants **before** generating the
-  production keystore. The earlier rationale here —
-  registering App Links for the Paymob return deep link — is **superseded**: no such deep
-  link exists, the app is purchase-silent (adr-049 §3, `DECISIONS.md` D-007). The
-  `applicationId` rule stands on its own: changing it afterwards means a new listing.
+- The signing identity binds to `applicationId`. The value is **ratified**:
+  `com.levelupworld.app` for production and `com.levelupworld.app.stg` for the single
+  non-production app (`DECISIONS.md` D-021, 2026-10-06; set by the `prod` / `staging`
+  product flavors in `android/app/build.gradle.kts`). The Kotlin `namespace` stays at the
+  template value `com.levelup.level_up_app` on purpose — it is not shipped. The production
+  keystore signs `com.levelupworld.app`; a staging QA build is a different package and may
+  be signed by anything. The earlier rationale here — registering App Links for the Paymob
+  return deep link — is **superseded**: no such deep link exists, the app is purchase-silent
+  (adr-049 §3, `DECISIONS.md` D-007). The `applicationId` rule stands on its own: changing
+  it after the first upload means a new listing.
 
 ## CI
 
 CI exists and already builds a release APK, but it does **not** sign one. The
 `build-release-apk` job (`.github/workflows/ci.yml:318-414`, `push` to `main` only) runs
-`flutter build apk --release --no-pub -t lib/main_prod.dart` purely as a compile gate and
-then proves the artefact carries `INTERNET` via `aapt2`. It references no secrets at all,
+`flutter build apk --release --no-pub --flavor prod -t lib/main_prod.dart` purely as a compile
+gate and then proves via `aapt2` that the artefact is `com.levelupworld.app` and carries `INTERNET`. It references no secrets at all,
 so what it produces is unsigned — deliberately, until there is a real distribution
 channel.
 

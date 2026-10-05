@@ -20,10 +20,13 @@ wins** and the other document is stale. Fix the other document.
 A dedicated chapter (identity / flavors / store-ready environment workflow) runs alongside the
 API→UI waves. Its source of truth for *architecture* is `docs/ENVIRONMENTS.md`; its wave state is
 `.ai/audits/current/env_chapter_state.md`; its fixed readiness scale is `docs/STORE_READINESS_RUBRIC.md`.
-**Wave 0 (architecture & identity decision) is done — documentation only; no code, Gradle, Xcode or
-Firebase file changed.** Wave 1 (Android flavors) is **blocked on the owner's D-021** (production ids,
-two-or-three identities, display names, supported versions). Risk R-9 tracks it. Rubric at Wave 0:
-Google Play 32% · Apple App Store 18% (evidence-based, not chapter progress).
+**Wave 0 (architecture & identity decision) done 2026-10-04. D-021 ratified 2026-10-06:** production
+`com.levelupworld.app`, non-production `com.levelupworld.app.stg` (two identities, no DEV app), names
+`Level Up` / `Level Up STG`, `Flutter 3.44.7 · Android 24/36/36 · iOS 15.0`. **Wave 1 (Android) done
+2026-10-06:** Gradle flavors `prod`/`staging`, build-time flavor ⇄ entrypoint check, SDK literals, evolved
+guards, CI/tool/hook updates — every Android command is now `--flavor <prod|staging> -t lib/main_<x>.dart`
+(`ENVIRONMENTS.md` §4). Wave 2 (Flutter contract) next; Wave 3 (iOS) blocked on a Mac with Xcode 26.
+Risk R-9 is mitigating. Rubric after Wave 1: see `docs/STORE_READINESS_RUBRIC.md` score log.
 
 ---
 

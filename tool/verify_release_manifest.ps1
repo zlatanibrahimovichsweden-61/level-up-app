@@ -30,6 +30,9 @@ if (-not $root) { $root = (Get-Location).Path }
 Set-Location $root
 
 $PERM = 'android.permission.INTERNET'
+# The ratified production identity (docs/DECISIONS.md D-021). The flavor sets it;
+# the artefact must carry it, or the build picked the wrong flavor.
+$PROD_ID = 'com.levelupworld.app'
 $failed = $false
 
 function Ok   ($m) { Write-Host "  PASS  $m" -ForegroundColor Green }
@@ -56,8 +59,8 @@ Write-Host ''
 
 # --- 2. Release build --------------------------------------------------------
 Write-Host '[2/3] release build'
-Info 'flutter build apk --release -t lib/main_prod.dart  (this takes a few minutes)'
-& flutter build apk --release -t lib/main_prod.dart
+Info 'flutter build apk --release --flavor prod -t lib/main_prod.dart  (this takes a few minutes)'
+& flutter build apk --release --flavor prod -t lib/main_prod.dart
 $buildRc = $LASTEXITCODE
 
 if ($buildRc -ne 0) {
@@ -73,7 +76,7 @@ Write-Host ''
 
 # --- 3. The artefact itself --------------------------------------------------
 Write-Host '[3/3] the shipped artefact'
-$apk = 'build/app/outputs/flutter-apk/app-release.apk'
+$apk = 'build/app/outputs/flutter-apk/app-prod-release.apk'
 $verifiedStrong = $false
 
 if (Test-Path $apk) {
@@ -98,6 +101,23 @@ if (Test-Path $apk) {
       Info 'The source says one thing and the built artefact says another -'
       Info 'something is stripping it during the merge.'
       $perms | ForEach-Object { Info $_ }
+      $failed = $true
+    }
+
+    # Identity: the prod flavor must produce the ratified applicationId (D-021).
+    $badging = & $aapt2.FullName dump badging $apk 2>&1
+    $pkgLine = ($badging | Where-Object { $_ -match "^package: name='([^']+)'" } | Select-Object -First 1)
+    if ($pkgLine -match "^package: name='([^']+)'") {
+      $pkg = $Matches[1]
+      if ($pkg -eq $PROD_ID) {
+        Ok "the release APK is $PROD_ID (the ratified production identity)"
+      } else {
+        Bad "the release APK is '$pkg', expected '$PROD_ID'"
+        Info 'Wrong flavor, or applicationId edited without a DECISIONS.md entry.'
+        $failed = $true
+      }
+    } else {
+      Bad 'aapt2 dump badging produced no package line'
       $failed = $true
     }
   } else {

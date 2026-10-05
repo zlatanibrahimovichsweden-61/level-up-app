@@ -373,8 +373,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      # `--flavor prod` selects the production identity (com.levelupworld.app,
+      # DECISIONS.md D-021); Gradle refuses the build if the entrypoint does not
+      # match the flavor, so this line cannot quietly ship the staging host.
       - name: Build release APK (unsigned — compile gate only)
-        run: flutter build apk --release --no-pub -t lib/main_prod.dart
+        run: flutter build apk --release --no-pub --flavor prod -t lib/main_prod.dart
 
       # The other half of the C-1 guard, and the only one that is actual proof:
       # inspect what the merge ACTUALLY produced, not what the source says. A
@@ -387,13 +390,22 @@ jobs:
       - name: Release APK actually carries INTERNET
         run: |
           set -eu
-          apk=build/app/outputs/flutter-apk/app-release.apk
+          apk=build/app/outputs/flutter-apk/app-prod-release.apk
           test -f "$apk" || { echo "::error::release APK not found at $apk"; exit 1; }
 
           aapt2="$(find "$ANDROID_HOME/build-tools" -name aapt2 -type f 2>/dev/null | sort -V | tail -1 || true)"
 
           if [ -n "$aapt2" ]; then
             echo "inspecting the built APK with $aapt2"
+            # Identity first: the prod flavor must yield the ratified applicationId
+            # (DECISIONS.md D-021). A different package means the wrong flavor or an
+            # edited id, and either is a release blocker.
+            pkg="$("$aapt2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -1)"
+            if [ "$pkg" != "com.levelupworld.app" ]; then
+              echo "::error title=Release APK has the wrong applicationId::got '$pkg', expected 'com.levelupworld.app' (D-021)"
+              exit 1
+            fi
+            echo "VERIFIED: the release APK is com.levelupworld.app"
             if "$aapt2" dump permissions "$apk" | grep -q 'android.permission.INTERNET'; then
               echo "VERIFIED: the release APK declares android.permission.INTERNET"
               exit 0

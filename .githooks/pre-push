@@ -22,6 +22,12 @@
 # contract-only pushes cost nothing. Everything else pays ~3-5 minutes, which is
 # the right trade at push time and the wrong one at commit time.
 #
+# android/, ios/, tool/, .github/ and .githooks/ are in the trigger list because
+# guards READ them: test/guards/android_identity_test.dart checks the Gradle
+# identity and SDK pins, workflow_test.dart scans the scripts and CI for release
+# commands. A push that edits only those would otherwise skip the very tests
+# written for it (gap found in the 2026-10-04 identity audit).
+#
 # The report is written to a temp file via LEVELUP_VALIDATE_OUT so pushing does
 # not dirty the committed evidence at .ai/audits/current/test-results.md.
 #
@@ -72,8 +78,8 @@ done
 [ "$saw_ref" -eq 0 ] && run_anyway=1
 
 if [ "$run_anyway" -eq 0 ]; then
-  if ! printf '%s\n' "$touched" | grep -q -E '^(lib|test)/|^pubspec\.(yaml|lock)$|^l10n\.yaml$|^analysis_options\.yaml$|^dart_test\.yaml$|^\.flutter-version$'; then
-    echo "pre-push: no Dart/config changes in this push — skipping validation."
+  if ! printf '%s\n' "$touched" | grep -q -E '^(lib|test|android|ios|tool|\.github|\.githooks)/|^pubspec\.(yaml|lock)$|^l10n\.yaml$|^analysis_options\.yaml$|^dart_test\.yaml$|^\.flutter-version$'; then
+    echo "pre-push: no Dart/platform/config changes in this push — skipping validation."
     exit 0
   fi
 fi

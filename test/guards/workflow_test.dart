@@ -144,24 +144,36 @@ void main() {
     });
   });
 
-  group('the release build command names the production entrypoint', () {
-    // There are no Gradle product flavors and no iOS schemes. The ONLY thing
-    // deciding which backend a release artefact talks to is the `-t` argument,
-    // and `lib/main.dart` forwards to `main_dev.dart` — so a flagless
-    // `flutter build apk --release` compiles the dev flavor, which resolves
-    // AppConfig.baseUrl to the live staging host.
+  group('release-build commands pair --flavor with a matching entrypoint', () {
+    // Android product flavors landed on 2026-10-06 (DECISIONS.md D-021): `prod`
+    // and `staging`, each with its own applicationId, plus a Gradle check that
+    // refuses to compile a flavor from the wrong Dart entrypoint. So the BUILD
+    // is now the real line of defence. This scan stays for the documents and
+    // scripts that TELL people which command to run: the pre-flavor form
+    // `flutter build apk --release -t lib/main_prod.dart` now dies in Gradle
+    // ("you must specify a --flavor option"), and `--flavor prod` paired with
+    // `main_staging.dart` dies there too. Both should be caught when they are
+    // written into a doc, not when somebody follows the doc.
     //
-    // Verified at ARTEFACT level on 2026-09-05, not reasoned about: both APKs
-    // were built and unzipped, and `level-up-backend-staging.up.railway.app`
-    // is present in lib/*/libapp.so of the flagless build and absent from the
-    // `-t lib/main_prod.dart` one. docs/RELEASE_SIGNING.md carried the flagless
-    // command until that day, which is the whole argument for making this a
-    // test instead of a sentence.
+    // History, because it is the whole argument for a test over a sentence:
+    // until 2026-10-06 there were no flavors and the `-t` file was the ONLY
+    // selector. A flagless `flutter build apk --release` compiled lib/main.dart
+    // → main_dev.dart → the live staging host — verified at ARTEFACT level on
+    // 2026-09-05 by unzipping both APKs, after docs/RELEASE_SIGNING.md had
+    // carried the flagless command for weeks.
+    //
     // Scanned by tree, not by a hand-written file list. "We fixed the instance
     // we noticed" is how the xargs defect below recurred, and the same trap
     // applies here: a release command can be written into any doc or script.
     const operationalTrees = <String>['docs', 'tool', '.github', '.githooks'];
     const textExtensions = <String>['.md', '.ps1', '.sh', '.yml', '.yaml'];
+
+    /// Dated records (`STORE_READINESS_AUDIT_2026-09-05.md`) describe what WAS
+    /// run on that day. They are history, not instructions, and this project
+    /// does not rewrite history (CLAUDE.md §1.2 — briefs and audits are dated
+    /// records). Known limit: a wrong command in a NEW dated record is not seen
+    /// either; the files that teach commands carry no date in their name.
+    final datedRecord = RegExp(r'\d{4}-\d{2}-\d{2}');
 
     /// `flutter build apk|appbundle|ipa|ios` — the store-artefact commands.
     ///
@@ -171,21 +183,35 @@ void main() {
     final buildCommand = RegExp(r'^flutter build (apk|appbundle|ipa|ios)\b');
     final notRelease = RegExp(r'--(debug|profile)\b');
 
-    /// Accepts every spelling of the flag that actually works, so a legitimate
-    /// `--target=./lib/main_prod.dart` or a Windows `lib\main_prod.dart` is not
-    /// reported. A false positive would be the worse defect (ENFORCEMENT.md).
-    final prodTarget = RegExp(
-      '(?:-t|--target)[=\\s]+[\'"]?\\.?[\\\\/]?lib[\\\\/]main_prod\\.dart',
+    /// `--flavor prod` / `--flavor=prod` / `--flavor "prod"`.
+    final flavorFlag = RegExp('--flavor[=\\s]+[\'"]?([a-z]+)');
+
+    /// Accepts every spelling of the target flag that actually works, so a
+    /// legitimate `--target=./lib/main_prod.dart` or a Windows
+    /// `lib\main_prod.dart` is not reported. A false positive would be the
+    /// worse defect (ENFORCEMENT.md).
+    final targetFlag = RegExp(
+      '(?:-t|--target)[=\\s]+[\'"]?\\.?[\\\\/]?lib[\\\\/](main(?:_[a-z]+)?)\\.dart',
     );
+
+    /// Mirrors the RELEASE rule in android/app/build.gradle.kts: prod compiles
+    /// main_prod only; staging compiles main_staging or main_dev (both talk to
+    /// the staging backend). main_mock never ships. A documented command must
+    /// also be explicit about `-t`, even though Gradle would tolerate a bare
+    /// `--flavor staging` (it falls back to lib/main.dart → dev).
+    const allowed = <String, Set<String>>{
+      'prod': {'main_prod'},
+      'staging': {'main_staging', 'main_dev'},
+    };
 
     /// A line is a runnable command only if it *starts* one, once the shell,
     /// PowerShell, YAML and Markdown prefixes are stripped, and once repeated
     /// whitespace is collapsed (`flutter  build` is the same command).
     ///
     /// Prose that merely mentions a command mid-sentence — including the
-    /// warning in RELEASE_SIGNING.md that explains this very hazard, and the
-    /// table in the 2026-09-05 audit — is not a command and must not trip the
-    /// guard, or documenting the rule would violate it.
+    /// warning in RELEASE_SIGNING.md that explains this very hazard — is not a
+    /// command and must not trip the guard, or documenting the rule would
+    /// violate it. Table rows (`| … |`) are not commands either.
     ///
     /// Known limit: a command hidden inside a wrapper (`sh -c "..."`,
     /// `cd x && flutter build`) or split across a line continuation is not
@@ -200,6 +226,30 @@ void main() {
       return buildCommand.hasMatch(s) ? s : null;
     }
 
+    /// Why a command is wrong, or null if it is coherent.
+    String? violation(String command) {
+      final flavor = flavorFlag.firstMatch(command)?.group(1);
+      final target = targetFlag.firstMatch(command)?.group(1);
+      if (flavor == null) {
+        return 'no --flavor. Gradle refuses a flavorless build now, and before '
+            'flavors existed this form shipped the staging host.';
+      }
+      final ok = allowed[flavor];
+      if (ok == null) {
+        return 'unknown flavor "$flavor" (only ${allowed.keys.join(', ')} exist)';
+      }
+      if (target == null) {
+        return 'no -t. A documented command must name its entrypoint '
+            '(lib/${ok.first}.dart).';
+      }
+      if (!ok.contains(target)) {
+        return '--flavor $flavor cannot be built from $target.dart '
+            '(allowed: ${ok.map((e) => '$e.dart').join(', ')}). Gradle would '
+            'refuse this build; the doc must not teach it.';
+      }
+      return null;
+    }
+
     /// Every runnable store-artefact build command in the operational trees.
     List<({String path, int line, String command})> releaseBuildCommands() {
       final found = <({String path, int line, String command})>[];
@@ -209,9 +259,11 @@ void main() {
         for (final entity in dir.listSync(recursive: true)) {
           if (entity is! File) continue;
           final path = entity.path.replaceAll(r'\', '/');
+          final name = path.split('/').last;
           final hasKnownExtension = textExtensions.any(path.endsWith);
-          final isExtensionless = !path.split('/').last.contains('.');
+          final isExtensionless = !name.contains('.');
           if (!hasKnownExtension && !isExtensionless) continue;
+          if (datedRecord.hasMatch(name)) continue;
 
           late final List<String> lines;
           try {
@@ -231,23 +283,24 @@ void main() {
       return found;
     }
 
-    test('every runnable release-build command targets lib/main_prod.dart', () {
+    test('every runnable release-build command pairs --flavor with a matching '
+        'entrypoint', () {
       final offenders = [
         for (final c in releaseBuildCommands())
-          if (!prodTarget.hasMatch(c.command))
-            '  ${c.path}:${c.line}  ${c.command}',
+          if (violation(c.command) case final why?)
+            '  ${c.path}:${c.line}  ${c.command}\n      → $why',
       ];
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'A release build command does not name the production entrypoint:\n'
+            'A release build command is not a coherent --flavor / -t pair:\n'
             '${offenders.join('\n')}\n'
-            'Without `-t lib/main_prod.dart` the build compiles lib/main.dart, '
-            'which forwards to main_dev.dart — so the shipped artefact talks to '
-            'the staging backend. Add the flag. (Remember release is the '
-            'DEFAULT build mode: a bare `flutter build apk` is a release too.)',
+            'Valid forms: `--flavor prod -t lib/main_prod.dart` for the store, '
+            '`--flavor staging -t lib/main_staging.dart` for QA. (Remember '
+            'release is the DEFAULT build mode: a bare `flutter build apk` is a '
+            'release too.) See docs/ENVIRONMENTS.md §4.',
       );
     });
 
@@ -269,6 +322,42 @@ void main() {
             'If the scan has stopped seeing them, the guard above is passing '
             'vacuously and protects nothing.\n'
             '${found.map((c) => '  ${c.path}:${c.line}').join('\n')}',
+      );
+    });
+
+    test('the coherence rule itself fires on each kind of bad command', () {
+      // The detector is proven against literal strings so a regex edit cannot
+      // quietly widen it into accepting everything (rules_test.dart pattern).
+      expect(
+        violation('flutter build apk --release -t lib/main_prod.dart'),
+        contains('no --flavor'),
+      );
+      expect(violation('flutter build apk --flavor prod'), contains('no -t'));
+      expect(
+        violation('flutter build apk --flavor prod -t lib/main_staging.dart'),
+        contains('cannot be built from main_staging.dart'),
+      );
+      expect(
+        violation(
+          'flutter build appbundle --flavor staging -t lib/main_mock.dart',
+        ),
+        contains('cannot be built from main_mock.dart'),
+      );
+      expect(
+        violation('flutter build apk --flavor dev -t lib/main_dev.dart'),
+        contains('unknown flavor'),
+      );
+      expect(
+        violation(
+          'flutter build appbundle --release --flavor prod -t lib/main_prod.dart',
+        ),
+        isNull,
+      );
+      expect(
+        violation(
+          'flutter build apk --release --flavor=staging --target=./lib/main_dev.dart',
+        ),
+        isNull,
       );
     });
   });
