@@ -1,0 +1,3447 @@
+{
+  "schema": "level-up.project-files-forensic-audit/1",
+  "generated": "2026-09-23",
+  "repository": {
+    "root": "F:\\level\\level_up\\level_up_app",
+    "remote": "https://github.com/zlatanibrahimovichsweden-61/level-up-app.git",
+    "branch": "merged",
+    "head": "e4d1401",
+    "ahead_of_upstream": 8,
+    "working_tree_clean": true,
+    "commits_on_head": 112,
+    "tracked_files": 689,
+    "files_on_disk_excl_generated": 814,
+    "untracked_or_ignored": 125,
+    "branches": [
+      "main",
+      "dev",
+      "merged",
+      "backup/pre-split",
+      "backup/pre-day7-reorder",
+      "backup/2026-08-22-dirty-tree"
+    ],
+    "flutter_version": "3.44.7",
+    "dart_sdk_constraint": "^3.10.4",
+    "package_name": "level_up_app",
+    "app_version": "1.0.0+1",
+    "application_id_android": "com.levelup.level_up_app",
+    "bundle_id_ios": "com.levelup.levelUpApp",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "flavors": [
+      "dev",
+      "staging",
+      "prod"
+    ],
+    "non_shipping_entrypoints": [
+      "lib/main_mock.dart"
+    ],
+    "lib_loc": 51191,
+    "lib_dart_files": 218,
+    "test_loc": 31585,
+    "test_dart_files": 112,
+    "golden_baselines": 41,
+    "tests_passing": 1429,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "contract_pin": "768e67d",
+    "contract_version": "3.22.0-m1",
+    "contract_paths": 43,
+    "contract_operations": 47,
+    "contract_stable": 33,
+    "contract_draft": 14,
+    "contract_paths_consumed": 26
+  },
+  "audit_scope": {
+    "modified_any_project_file": false,
+    "executed_any_build_or_test": false,
+    "artifacts_added": [
+      ".ai/audits/current/project_files_forensic_audit.html",
+      ".ai/audits/current/project_files_inventory.json"
+    ],
+    "not_checked": [
+      "iOS build (never compiled; no Podfile)",
+      "live API calls",
+      "full read of the 2.3 MB documentation corpus (sampled by header + grep)",
+      "line-by-line read of build/ and .dart_tool/"
+    ]
+  },
+  "counts": {
+    "security_findings": {
+      "CRITICAL": 1,
+      "HIGH": 3,
+      "MEDIUM": 5,
+      "LOW": 4,
+      "INFORMATIONAL": 3
+    },
+    "ai_agent_findings": {
+      "CRITICAL": 1,
+      "HIGH": 6,
+      "MEDIUM": 10,
+      "LOW": 2
+    },
+    "inventory_entries": 129,
+    "authoritative": 78,
+    "historical": 17,
+    "misleading": 9,
+    "generated": 10,
+    "do_not_touch": 42,
+    "archive_candidates": 8,
+    "needs_human_decision": 4,
+    "delete_candidates_dependencies": 2,
+    "colour_tokens": 117
+  },
+  "inventory": [
+    {
+      "path": "CLAUDE.md",
+      "category": "AI Instruction",
+      "type": "AI instruction (auto-loaded)",
+      "purpose": "Standing context loaded at the start of every Claude Code session in this repo; sets read order, the five rules, and the non-negotiables.",
+      "used_by": "Every Claude Code session automatically; cited by no other file.",
+      "authority": "MISLEADING",
+      "status": "KEEP/CLEAN",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "README.md",
+      "category": "Documentation",
+      "type": "Documentation",
+      "purpose": "Should describe the project. Is the verbatim flutter create template, 571 bytes.",
+      "used_by": "Nothing; flagged as wrong by 3 prior audit files.",
+      "authority": "MISLEADING",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "pubspec.yaml",
+      "category": "Config",
+      "type": "Build configuration",
+      "purpose": "Dependency manifest, asset + font declarations, flutter_launcher_icons config, app version 1.0.0+1.",
+      "used_by": "Flutter toolchain, CI lockfile-drift check, flutter_launcher_icons.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "pubspec.lock",
+      "category": "Config",
+      "type": "Lockfile (generated)",
+      "purpose": "Pins the exact resolved dependency set. CI fails if pub get changes it.",
+      "used_by": "CI cache key + drift gate (ci.yml).",
+      "authority": "GENERATED",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "analysis_options.yaml",
+      "category": "Config",
+      "type": "Analysis configuration",
+      "purpose": "Includes package:flutter_lints/flutter.yaml. Every custom rule is commented out — it is the stock template.",
+      "used_by": "flutter analyze (CI, pre-commit hook, validate.*).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "l10n.yaml",
+      "category": "Config",
+      "type": "Build configuration",
+      "purpose": "gen-l10n config: arb-dir lib/l10n, template app_en.arb, class AppLocalizations, non-nullable getter.",
+      "used_by": "flutter gen-l10n; CI l10n drift gate.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "dart_test.yaml",
+      "category": "Config",
+      "type": "Test configuration",
+      "purpose": "Declares the golden tag so CI can select by tag rather than by directory.",
+      "used_by": "flutter test; ci.yml both jobs; workflow_test.dart asserts it.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".flutter-version",
+      "category": "Config",
+      "type": "Toolchain pin",
+      "purpose": "Single source of truth for the SDK version: 3.44.7.",
+      "used_by": "ci.yml (4 jobs read it), tool/validate.*, workflow_test.dart guards it.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".gitignore",
+      "category": "Config",
+      "type": "Git configuration",
+      "purpose": "Root ignore rules. Notably defers signing patterns to android/.gitignore with a comment, and ignores docs/device_pass/ and lib/__guard_probe.dart with written rationale.",
+      "used_by": "git",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".gitattributes",
+      "category": "Config",
+      "type": "Git configuration",
+      "purpose": "Line-ending normalisation (LF in repo; CRLF for .ps1/.bat/.cmd; LF for .sh/gradlew) and binary markers.",
+      "used_by": "git",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".git-blame-ignore-revs",
+      "category": "Config",
+      "type": "Git configuration",
+      "purpose": "One SHA — the 140-file dart format reformat — for git blame to skip. Requires git config blame.ignoreRevsFile.",
+      "used_by": "git blame, if configured.",
+      "authority": "REFERENCE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": ".metadata",
+      "category": "Config",
+      "type": "Flutter metadata (generated)",
+      "purpose": "Records the revision the project was CREATED with (f6ff152…). ci.yml uses it for a WARNING only, never as the pin.",
+      "used_by": "Flutter migrate tooling; ci.yml toolchain report.",
+      "authority": "GENERATED",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "level_up_app.iml",
+      "category": "IDE",
+      "type": "IDE metadata",
+      "purpose": "IntelliJ module file. Present on disk, NOT tracked (matched by *.iml in .gitignore).",
+      "used_by": "IntelliJ/Android Studio only.",
+      "authority": "GENERATED",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "edit1.md",
+      "category": "Design reference",
+      "type": "Design/implementation spec",
+      "purpose": "Elevation Foundation — design tokens plus the Glass/back-light primitives. LANDED in f987f20.",
+      "used_by": "Cited by 40 files, including 32 live (edit1.md R#) comments in lib/ and test/.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "edit2.md",
+      "category": "Design reference",
+      "type": "Design/implementation spec",
+      "purpose": "Shared chrome — nav bar, CTAs, dialogs, fields. LANDED in f987f20.",
+      "used_by": "6 files (2 live code, 3 DESIGN_ISSUES, 1 device-verification doc).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "edit3.md",
+      "category": "Design reference",
+      "type": "Design/implementation spec",
+      "purpose": "Home / Learn / Mistakes surfaces. LANDED in 7876242.",
+      "used_by": "14 files across lib/, test/, DESIGN_ISSUES, DECISIONS.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "edit4.md",
+      "category": "Design reference",
+      "type": "Design/implementation spec",
+      "purpose": "Quiz flow + Leaderboard. LANDED in e71e9a1.",
+      "used_by": "9 files.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "edit5.md",
+      "category": "Design reference",
+      "type": "Design/implementation spec",
+      "purpose": "Profile / Settings / OTP / track picker. LANDED in e71e9a1.",
+      "used_by": "12 files; 21 citations in DESIGN_ISSUES.md alone.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "edit2_unblock.md",
+      "category": "Temporary artifact",
+      "type": "Spent task brief",
+      "purpose": "Three Figma-blocked items from edit2. All three RESOLVED the same day (D-011, DESIGN_ISSUES #74, #75).",
+      "used_by": "1 file (DESIGN_ISSUES.md, 2 citations).",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "edit3_prompt.md",
+      "category": "Temporary artifact",
+      "type": "Spent launch prompt",
+      "purpose": "One-shot 'paste into a fresh session' payload for edit3. SPENT.",
+      "used_by": "Zero files.",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "edit4_prompt.md",
+      "category": "Temporary artifact",
+      "type": "Spent launch prompt",
+      "purpose": "One-shot launch prompt for edit4, with an 8-point staleness-correction list. SPENT.",
+      "used_by": "Zero files.",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "zna.md",
+      "category": "Documentation",
+      "type": "Outbound correspondence record",
+      "purpose": "Two verbatim message drafts (to the backend partner and to the designer), dated 2026-09-04, about the contract 3.0.0-m1 adoption.",
+      "used_by": "Cited 22 times across 8 files; explicitly excluded from a cleanup phase by WAVE_STATUS.md.",
+      "authority": "HISTORICAL",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "flutter_code_tree.md",
+      "category": "Documentation",
+      "type": "Generated snapshot",
+      "purpose": "Architecture + contract-endpoint status tree, self-dated 'Generated 2026-09-19 from HEAD 9f415dd'. Still describes the leaderboard as gated and the pin as 3.13.0-m1.",
+      "used_by": "1 file (edit3_prompt.md, itself spent).",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "flutter_frontend_workflow.md",
+      "category": "Documentation",
+      "type": "Application runtime trace",
+      "purpose": "Traces the app from startup to final interaction. Dated 2026-09-08. NOT an agent-process doc despite the name; contains zero references to docs/AGENT_WORKFLOW.md and no rule conflicts.",
+      "used_by": "1 file (its companion HTML).",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "flutter_project_audit.html",
+      "category": "Report",
+      "type": "Previous audit report",
+      "purpose": "Full HTML project audit, 'Generated 2026-09-08'. Verdict 'Fair — functional but incomplete'; production readiness 22/100; 890 tests; pin 184d6ec.",
+      "used_by": "2 files. Its own 'potentially useless files' section is the direct precursor of this report.",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": ".claude/skills/  (22 SKILL.md + 3 evals.json)",
+      "category": "AI Instruction",
+      "type": "AI skills (LOADED)",
+      "purpose": "The skill tree Claude Code actually loads. 7 project-specific (level-up-domain, seif-api-contract, bloc, river, build-screen, screen-states, figma-frame) + 15 generic dart-*/flutter-*.",
+      "used_by": "Loaded automatically by Claude Code in this repo.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": ".claude/skills/bloc/SKILL.md",
+      "category": "AI Instruction",
+      "type": "AI skill",
+      "purpose": "Quiz Bloc engine rules. Correctly scopes Bloc to the quiz only. Contains a fabricated timer section (AI-05, K-36).",
+      "used_by": "Claude Code, on any quiz work.",
+      "authority": "SECONDARY",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": ".claude/skills/seif-api-contract/SKILL.md",
+      "category": "AI Instruction",
+      "type": "AI skill",
+      "purpose": "How to consume the contract. Contains the wrong snake_case @JsonKey rule with a worked example (AI-04).",
+      "used_by": "Claude Code, on any API work.",
+      "authority": "SECONDARY",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": ".claude/skills/level-up-domain/SKILL.md",
+      "category": "AI Instruction",
+      "type": "AI skill",
+      "purpose": "Domain knowledge; correctly states purchase-silent (adr-049 §3). Also carries the snake_case error.",
+      "used_by": "Claude Code, on any feature work.",
+      "authority": "SECONDARY",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": ".claude/settings.local.json",
+      "category": "Config",
+      "type": "AI tool permissions (untracked)",
+      "purpose": "20 scoped permission grants. Includes Bash(python -) and Read(//f/level/**). No secrets. Gitignored.",
+      "used_by": "Claude Code locally.",
+      "authority": "REFERENCE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "skills/  (26 files)",
+      "category": "AI Instruction",
+      "type": "STALE duplicate skill tree",
+      "purpose": "A tracked mirror of .claude/skills/ frozen at 2026-08-20. 6 files diverge; 16 identical. Teaches Paymob checkout + Fawry 'pending' — both deleted by adr-049 §3.",
+      "used_by": "Nothing loads it. skills/RESTORE.md documents a command that copies it OVER the live tree.",
+      "authority": "MISLEADING",
+      "status": "NEEDS HUMAN DECISION",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "CRITICAL"
+    },
+    {
+      "path": "skills/RESTORE.md",
+      "category": "AI Instruction",
+      "type": "Restore procedure (DANGEROUS)",
+      "purpose": "Claims the two trees are 'byte-identical' (false since 2026-09-04) and gives Copy-Item -Recurse -Force skills\\* .claude\\skills\\.",
+      "used_by": "Nothing. Discoverable by any agent recovering a wiped .claude/.",
+      "authority": "MISLEADING",
+      "status": "NEEDS HUMAN DECISION",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "CRITICAL"
+    },
+    {
+      "path": ".ai/audits/current/_AGENT_CONTEXT.md",
+      "category": "Report",
+      "type": "Audit scoping doc (expired)",
+      "purpose": "Hard constraints for the 2026-08-11 ten-agent pass: 'REPORT ONLY, do not edit lib/, test/, android/, ios/, assets/…'. Nothing marks it expired.",
+      "used_by": "The first file an agent browsing .ai/audits/current/ opens (underscore sorts first).",
+      "authority": "HISTORICAL",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".ai/audits/current/known-issues.md",
+      "category": "Report",
+      "type": "Fix queue (stale snapshot)",
+      "purpose": "K-0…K-37 issue queue dated 2026-09-05. K-0/K-1/K-2 closed but unmarked; K-36 genuinely open.",
+      "used_by": "CLAUDE.md Quick reference calls it 'the ordered fix queue'.",
+      "authority": "HISTORICAL",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".ai/audits/current/test-results.md",
+      "category": "Report",
+      "type": "Machine-generated evidence",
+      "purpose": "237 KB validate.* output: 1429 passed / 0 failed / 0 skipped, 2026-09-22T15:34:18Z, commit e683e8d.",
+      "used_by": "Written by tool/validate.sh and validate.ps1; validate_reporting_test.dart asserts its shape.",
+      "authority": "AUTHORITATIVE",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".ai/audits/current/store_readiness_audit.md (+ _matrix, _state, checklist, 20 parts/)",
+      "category": "Report",
+      "type": "Current store-readiness audit",
+      "purpose": "'FINAL v2', 2026-09-21→22, built against the current pin, adversarially reviewed. The deepest current document in the repo.",
+      "used_by": "Nothing points to it from docs/ or CLAUDE.md (AI-18).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".ai/audits/current/smoke-staging-2026-09-22.md",
+      "category": "Report",
+      "type": "Live staging probe",
+      "purpose": "Newest probe. PATCH /me 405→200, /me/entitlements 404→200, catalog 1 subject, full quiz loop runs.",
+      "used_by": "Referenced by D008_LEADERBOARD_AUDIT.md.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".ai/audits/current/ — 10 agent reports + 5 fable-* + wave records",
+      "category": "Report",
+      "type": "Historical audit corpus",
+      "purpose": "The 2026-08-11 Wave-0 ten-agent audit and the Fable adversarial reviews of Waves 0–3.",
+      "used_by": "Each other; project-audit.md consolidates them.",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".ai/audits/current/decisions.md",
+      "category": "Report",
+      "type": "Audit methodology decisions",
+      "purpose": "D-1…D-9 — the Wave-0 orchestrator's judgment calls. Collides with docs/DECISIONS.md's namespace (AI-10).",
+      "used_by": "Nothing.",
+      "authority": "HISTORICAL",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".ai/audits/current/changed-files.md",
+      "category": "Report",
+      "type": "Frozen tree snapshot",
+      "purpose": "Inventory of one 2026-08-11 pass's file changes, baselined at dev@e3651e6. ~60 commits stale.",
+      "used_by": "Nothing.",
+      "authority": "HISTORICAL",
+      "status": "ARCHIVE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/WAVE_STATUS.md",
+      "category": "Documentation",
+      "type": "Live status (declared source of truth)",
+      "purpose": "Wave state, test count (1429), verification levels. Last updated 2026-09-22. Wins every disagreement per CLAUDE.md.",
+      "used_by": "CLAUDE.md, AGENT_WORKFLOW.md, PROJECT_GUIDE.md, many briefs.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/PROJECT_GUIDE.md",
+      "category": "Documentation",
+      "type": "Governance index",
+      "purpose": "Says where every rule lives and which source wins. Self-dated 'Last grounded 2026-08-11, dev @ e3651e6'. Still says 22 of 36 contract paths and 'main/dev, 43/43 commits'. Routes to an off-repo vault (AI-07).",
+      "used_by": "CLAUDE.md read order.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "docs/AGENT_WORKFLOW.md",
+      "category": "Documentation",
+      "type": "Process spec",
+      "purpose": "The canonical build/remediation loop and the DO-NOT-GUESS protocol. No date banner; evergreen. No stale facts found.",
+      "used_by": "CLAUDE.md read order.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/ENFORCEMENT.md",
+      "category": "Documentation",
+      "type": "Mechanised-rules reference",
+      "purpose": "What a machine checks vs what is left to humans; the ratchets, each dated.",
+      "used_by": "CLAUDE.md Quick reference.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/AUDIT_PROTOCOL.md",
+      "category": "Documentation",
+      "type": "Process spec",
+      "purpose": "How to run an audit; the Fable handoff contract. Matches the actual .ai/audits/current/ layout exactly.",
+      "used_by": "CLAUDE.md Quick reference.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "category": "Documentation",
+      "type": "Append-only decision log",
+      "purpose": "D-001…D-011 with reasoning and rejected alternatives. 'Never delete — supersede and link forward.'",
+      "used_by": "Widely cited across docs and code comments.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/KNOWN_BUGS.md",
+      "category": "Documentation",
+      "type": "Runtime defect log",
+      "purpose": "BUG-001 FIXED (Riverpod mutation in initState). BUG-002 OPEN (Mistakes cards overflow at textScale ≥1.3, Arabic only, device-verified 2026-09-12).",
+      "used_by": "CLAUDE.md Quick reference; guard tests reference BUG-001.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/RISKS.md",
+      "category": "Documentation",
+      "type": "Live risk register",
+      "purpose": "R-1…R-8. Open: R-2 (ref after await in OtpNotifier.verify), R-3 (CI never observed running), R-4 (no signed-release device verification), R-8 (staging coverage). Last reviewed 2026-09-04.",
+      "used_by": "CLAUDE.md read order.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/DESIGN_ISSUES.md",
+      "category": "Documentation",
+      "type": "Design↔contract gap register",
+      "purpose": "88 numbered entries (#1–#88, no gaps): 12 blocking, 27 important, 29 minor, 17 resolved, 2 withdrawn, 1 blocked. Its own Summary table covers only #1–#28. Header cites pin 184d6ec.",
+      "used_by": "Cited by edit1–5, day briefs, DECISIONS.md.",
+      "authority": "MISLEADING",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "docs/RELEASE_SIGNING.md",
+      "category": "Documentation",
+      "type": "Release procedure",
+      "purpose": "Fail-closed signing: key.properties present → signed; absent → UNSIGNED, never debug-signed. Contains no real secret — only a generic keytool template and the PUBLIC debug-keystore password as the problem being solved.",
+      "used_by": "android/app/build.gradle.kts references it; workflow_test.dart asserts its release command carries -t lib/main_prod.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/ASSET_MANIFEST.md",
+      "category": "Documentation",
+      "type": "Asset export register",
+      "purpose": "Lists five nav glyphs as 'still needed' at flat paths; all five already ship at assets/icons/nav/*.svg (AI-06).",
+      "used_by": "Nothing current.",
+      "authority": "MISLEADING",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "docs/RESPONSIVE.md",
+      "category": "Documentation",
+      "type": "Proposed rules",
+      "purpose": "Self-declares 'proposed, 2026-08-11 … nothing applied yet'. Verified STILL TRUE — queue 0/11 applied; BUG-002 confirms Rule 4 unapplied.",
+      "used_by": "KNOWN_BUGS.md BUG-002; PROJECT_REPORT_2026-09-13.md.",
+      "authority": "REFERENCE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/STORE_READINESS.md",
+      "category": "Documentation",
+      "type": "Living compliance register",
+      "purpose": "Points forward to STORE_READINESS_AUDIT_2026-09-05.md as its fact authority — which is itself superseded by the FINAL v2 audit in .ai/ (AI-18).",
+      "used_by": "Nothing points past it.",
+      "authority": "MISLEADING",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "docs/D008_LEADERBOARD_AUDIT.md",
+      "category": "Documentation",
+      "type": "Dated scoped audit",
+      "purpose": "2026-09-22, current pin 768e67d, the only docs/ file citing it. Freshest document in the corpus.",
+      "used_by": "app_router.dart:152-165 comment cites it.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "docs/day*_brief.md  (15 files)",
+      "category": "Documentation",
+      "type": "Dated feature records",
+      "purpose": "Per-feature build briefs, Days 00–10. Days 7/7b/7c/8/9 carry dated superseded-pin banners from the 2026-09-05 stamping pass.",
+      "used_by": "CLAUDE.md says read one only when working on that feature.",
+      "authority": "HISTORICAL",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "docs/day8-9_quiz_review_brief.md",
+      "category": "Documentation",
+      "type": "Dated feature record (UNFLAGGED)",
+      "purpose": "Written 2026-09-08, three days AFTER the stamping pass; cites pin 184d6ec with NO superseded banner — the only pin-citing brief without one.",
+      "used_by": "Nothing current.",
+      "authority": "HISTORICAL",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "docs/seif_fight.md",
+      "category": "Documentation",
+      "type": "Contract Q&A ledger",
+      "purpose": "Part A: a scored contract-change ladder (LEVEL 0→4). Part B: the live S1–S44 question register. Header pin 184d6ec; ladder never extended past LEVEL 4.",
+      "used_by": "CLAUDE.md Quick reference; code comments cite S-numbers.",
+      "authority": "REFERENCE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "docs/PROGRESS.md",
+      "category": "Documentation",
+      "type": "Historical build log",
+      "purpose": "Carries an explicit banner: 'HISTORICAL LOG, NOT CURRENT STATE'. Last updated 2026-07-23.",
+      "used_by": "Nothing current.",
+      "authority": "HISTORICAL",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/LEVEL_UP_AUDIT_2026-07-28.md / STATUS_REPORT_2026-07-28.md / CONTRACT_3_0_0_IMPLEMENTATION_IMPACT.md / PROJECT_REPORT_2026-09-13.md / STORE_READINESS_AUDIT_2026-09-05.md",
+      "category": "Report",
+      "type": "Dated audit snapshots",
+      "purpose": "One-time audits, each honestly dated. All superseded on specific facts; none claims currency.",
+      "used_by": "Each other and WAVE_STATUS.md history tables.",
+      "authority": "HISTORICAL",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "docs/DEVICE_VERIFICATION_2026-09-{12,19,20,20-edit5}.md",
+      "category": "Report",
+      "type": "Device verification records",
+      "purpose": "Four dated on-device passes. The only DEVICE-level evidence the project has.",
+      "used_by": "edit5.md and WAVE_STATUS.md.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "docs/device_pass/  (76 PNG + ui_dump.xml)",
+      "category": "Temporary artifact",
+      "type": "Screenshots (ignored)",
+      "purpose": "Raw Day-00 walkthrough screenshots, 2026-08-04. Gitignored with a written rationale.",
+      "used_by": "Nothing.",
+      "authority": "HISTORICAL",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "contract/openapi.yaml",
+      "category": "API Contract",
+      "type": "Vendored contract (DO NOT EDIT)",
+      "purpose": "The authoritative API surface. 151 KB / 2,772 lines, 43 paths, 47 operations (33 stable / 14 draft) at pin 768e67d = v3.22.0-m1.",
+      "used_by": "Every repository; contract_models_test.dart reads it at runtime.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "contract/SOURCE.md",
+      "category": "API Contract",
+      "type": "Pin record",
+      "purpose": "Names the pinned commit (768e67d), version, census and the delta from 3.13.0-m1. Flags a router defect that has since been fixed (AI-12).",
+      "used_by": "CLAUDE.md read order.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "contract/contract-changelog.md / error-codes.md / realtime.md",
+      "category": "API Contract",
+      "type": "Vendored contract (DO NOT EDIT)",
+      "purpose": "Change history, the stable error-code table, and the realtime spec (byte-identical since the first contract commit).",
+      "used_by": "Repositories and error_interceptor.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "lib/main.dart",
+      "category": "Production source",
+      "type": "Entrypoint",
+      "purpose": "Default entrypoint so a bare flutter run works. Forwards to main_dev.dart → Flavor.dev → the STAGING URL.",
+      "used_by": "Flutter default target.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/main_dev.dart / main_staging.dart / main_prod.dart",
+      "category": "Production source",
+      "type": "Flavor entrypoints",
+      "purpose": "bootstrap(Flavor.X). Three lines each.",
+      "used_by": "flutter run -t; ci.yml release build uses main_prod.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/main_mock.dart",
+      "category": "Production source",
+      "type": "Dev harness entrypoint",
+      "purpose": "Overrides dioProvider with the canned backend; clears tokens at launch. Never imported by anything.",
+      "used_by": "Manual flutter run -t lib/main_mock.dart only.",
+      "authority": "REFERENCE",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/bootstrap.dart",
+      "category": "Production source",
+      "type": "Boot sequence",
+      "purpose": "Shared boot for all three shipping flavors: ensureInitialized → AppConfig.init → await PreferencesStore.load (before runApp, to avoid a wrong-theme flash) → ProviderScope.",
+      "used_by": "All three shipping entrypoints.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/app.dart",
+      "category": "Production source",
+      "type": "Root widget",
+      "purpose": "MaterialApp.router; theme, locale, the app's ONLY SystemUiOverlayStyle (guard-enforced to live here alone).",
+      "used_by": "bootstrap.dart, main_mock.dart, settings_harness.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/config/app_config.dart",
+      "category": "Production source",
+      "type": "Environment configuration",
+      "purpose": "Flavor enum + base-URL resolution. PROD is a placeholder; dev and staging share the live staging host. isDev is dead.",
+      "used_by": "bootstrap.dart, main_mock.dart, dio_client.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "CRITICAL",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/core/router/app_router.dart",
+      "category": "Production source",
+      "type": "Routing + auth guard",
+      "purpose": "442 lines. authRedirect (pure, unit-tested), StatefulShellRoute.indexedStack with 5 branches, nested catalog and mistakes stacks, ValueNotifier mirror feeding refreshListenable.",
+      "used_by": "app.dart; app_router_test.dart; registration_router_flow_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/network/dio_client.dart",
+      "category": "Production source",
+      "type": "HTTP client factory",
+      "purpose": "Two factories: create (auth + error interceptors) and createBare (error only, so refresh cannot re-enter the retry path). No logging, no TLS override.",
+      "used_by": "core_providers.dart. NO TEST REFERENCES IT.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/network/interceptors/auth_interceptor.dart",
+      "category": "Production source",
+      "type": "Auth interceptor",
+      "purpose": "Bearer attach; 401 handling; single-flight refresh; one-retry cap via extra['__retried']; instant forceLogout on session_superseded. Never navigates — flips state and lets the router react.",
+      "used_by": "dio_client.dart; auth_interceptor_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/network/interceptors/error_interceptor.dart",
+      "category": "Production source",
+      "type": "Error mapping",
+      "purpose": "Maps DioException → sealed AppException. Defensive Retry-After (delta-seconds only) and ProblemDetails.errors parsing.",
+      "used_by": "dio_client.dart; error_interceptor_test.dart, account_pending_deletion_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/network/exceptions.dart",
+      "category": "Production source",
+      "type": "Domain errors",
+      "purpose": "Sealed AppException hierarchy: Offline, Network, Api, Unauthorized, Validation, RateLimited, Unknown.",
+      "used_by": "5 test files; every repository.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "lib/core/storage/secure_storage.dart",
+      "category": "Production source",
+      "type": "Secure storage",
+      "purpose": "Tokens + device_id in Keychain/Keystore. iOS first_unlock_this_device, synchronizable:false. clearTokens() for logout; clear() only for a true reset.",
+      "used_by": "core_providers.dart; auth chain; secure_storage_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/storage/preferences_store.dart",
+      "category": "Production source",
+      "type": "Preferences",
+      "purpose": "Theme mode + locale only. Every read/write in try/catch. Stores the theme as a NAME, not an enum index.",
+      "used_by": "bootstrap.dart; theme/locale providers; preferences_store_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "lib/core/session/session_scope.dart",
+      "category": "Production source",
+      "type": "Session teardown",
+      "purpose": "invalidateSessionScope drops 11 user-scoped providers on logout, with a written rationale for every inclusion AND every exclusion.",
+      "used_by": "auth_controller.dart; session_scope_discipline_test.dart enforces completeness.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/providers/core_providers.dart",
+      "category": "Production source",
+      "type": "Dependency injection",
+      "purpose": "Riverpod IS the container. secureStorage, preferencesStore (override-injected), refreshDio, dio, connectivity, isOnline.",
+      "used_by": "25 test files; every feature.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/theme/app_colors.dart",
+      "category": "Production source",
+      "type": "Design tokens",
+      "purpose": "1,987 lines. Brand (2 constants) + AppColors extends ThemeExtension with 123 fields × 2 canvases; 11 fields nullable (canvas-specific).",
+      "used_by": "app_theme.dart and every widget; palette_discipline_test.dart, app_colors_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/theme/app_elevation.dart",
+      "category": "Production source",
+      "type": "Elevation system",
+      "purpose": "2,122 lines of Figma-measured shadow/glow specs. The only place BoxShadow may be constructed, alongside core/widgets/elevation/.",
+      "used_by": "Elevation widgets; app_elevation_test.dart; 5 golden test files.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/theme/app_theme.dart",
+      "category": "Production source",
+      "type": "ThemeData",
+      "purpose": "Wires AppColors into light/dark ThemeData; fontFamily: 'Inter' with fontFamilyFallback: ['Tajawal','Cairo'].",
+      "used_by": "app.dart; 5+ test files.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/theme/app_typography.dart",
+      "category": "Production source",
+      "type": "Type scale",
+      "purpose": "Named AppType styles. Deliberately sets no fontFamily so the fallback chain survives.",
+      "used_by": "Every widget; typography_discipline_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/theme/glass_mapping.dart",
+      "category": "Production source",
+      "type": "Glass surface mapping",
+      "purpose": "160 lines mapping semantic surfaces to glass/backlight treatments.",
+      "used_by": "Elevation widgets; 3 test files.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/core/widgets/  (13 files)",
+      "category": "Production source",
+      "type": "Shared UI",
+      "purpose": "circle_back_button, form_fields, language_pill, offline_banner, state_widget, titled_chrome + elevation/ (7 primitives: app_modal, elevated_surface, figma_shadow_painter, glass_surface, layer_blur, primary_cta, segmented_track).",
+      "used_by": "Every feature; 7 dedicated test files + goldens.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/dev/mock_backend.dart",
+      "category": "Production source",
+      "type": "Dev harness (inert in prod)",
+      "purpose": "2,124 lines simulating 17 endpoints with contract-faithful JSON, pinned at 184d6ec. Reachable ONLY from main_mock.dart. Proven tree-shaken from every shipping build.",
+      "used_by": "main_mock.dart:30 (the single import); 4 test files / 44 tests.",
+      "authority": "REFERENCE",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/l10n/app_en.arb / app_ar.arb",
+      "category": "Production source",
+      "type": "Localisation source",
+      "purpose": "The two ARB files. Key parity is guard-enforced (arbKeyDrift).",
+      "used_by": "gen-l10n; project_rules_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "lib/l10n/app_localizations*.dart  (3 files)",
+      "category": "Generated code",
+      "type": "Generated localisation (TRACKED)",
+      "purpose": "Produced by flutter gen-l10n and committed. CI regenerates and fails on drift. Imported RELATIVELY everywhere — never via package:flutter_gen/, contradicting the comment in l10n.yaml.",
+      "used_by": "60+ files in lib/; excluded from format and pre-commit checks.",
+      "authority": "GENERATED",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/**/*.freezed.dart (22) / *.g.dart (20)",
+      "category": "Generated code",
+      "type": "Generated models (TRACKED)",
+      "purpose": "freezed + json_serializable output, committed so PRs do not pay build_runner. Drift is checked by a CI job that only runs on main (SEC-04).",
+      "used_by": "Their own model files.",
+      "authority": "GENERATED",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/features/  (13 populated features)",
+      "category": "Production source",
+      "type": "Feature modules",
+      "purpose": "account_shells, auth, catalog, flashcards, home, leaderboard, mistakes, onboarding, profile, quiz, registration, settings, shell. Consistent models/notifier/repository/screens/widgets shape.",
+      "used_by": "Router; each other via the shell.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "lib/features/quiz/bloc/  (4 files)",
+      "category": "Production source",
+      "type": "State management (Bloc)",
+      "purpose": "The ONLY Bloc in the app. quiz_bloc, quiz_event, quiz_state (+ .freezed). Guard-enforced scope. No timer exists (contra the bloc skill).",
+      "used_by": "quiz screens; quiz_bloc_test.dart (34 blocTest cases).",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "HIGH"
+    },
+    {
+      "path": "lib/features/subscription/  (4 × .gitkeep)",
+      "category": "Obsolete artifact",
+      "type": "Empty scaffold",
+      "purpose": "Zero Dart. Dead by DECISION: adr-049 §3 made the app purchase-silent; D-007 removed the Profile subscription row.",
+      "used_by": "Nothing.",
+      "authority": "MISLEADING",
+      "status": "NEEDS HUMAN DECISION",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/features/track/  (4 × .gitkeep)",
+      "category": "Obsolete artifact",
+      "type": "Empty scaffold",
+      "purpose": "Zero Dart. Track selection was absorbed into the registration wizard.",
+      "used_by": "Nothing.",
+      "authority": "MISLEADING",
+      "status": "NEEDS HUMAN DECISION",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "lib/features/shell/screens/tab_placeholder.dart",
+      "category": "Production source",
+      "type": "Placeholder screen",
+      "purpose": "TabPlaceholder — still referenced; distinct from the private _Placeholder in app_router.dart used only by the dead /track-select route.",
+      "used_by": "main_shell.dart.",
+      "authority": "SECONDARY",
+      "status": "INVESTIGATE",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "tool/validate.sh / validate.ps1",
+      "category": "Script",
+      "type": "Canonical validation",
+      "purpose": "Format → analyze → FULL test suite (goldens INCLUDED, unlike CI). Never stops at first failure. Writes .ai/audits/current/test-results.md; overridable via LEVELUP_VALIDATE_OUT.",
+      "used_by": "pre-push hook (not installed); humans; CLAUDE.md 'the one command'.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "tool/verify_guards.ps1",
+      "category": "Script",
+      "type": "Guard meta-verification",
+      "purpose": "Proves the guards can actually FAIL by writing and deleting lib/__guard_probe.dart (gitignored so a crashed run cannot leave it staged).",
+      "used_by": "Humans; CLAUDE.md.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "tool/verify_release_manifest.ps1",
+      "category": "Script",
+      "type": "Release verification",
+      "purpose": "Builds a release APK and inspects the merged manifest for INTERNET. Its build command carries -t lib/main_prod.dart (guard-asserted).",
+      "used_by": "Humans; workflow_test.dart asserts its content.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "tool/verify_session_regression.ps1",
+      "category": "Script",
+      "type": "Session regression check",
+      "purpose": "Scripted check of the session-teardown behaviour.",
+      "used_by": "Humans.",
+      "authority": "SECONDARY",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "tool/smoke/real_api_smoke_test.dart",
+      "category": "Script",
+      "type": "Live API smoke harness",
+      "purpose": "27 KB. Walks the live staging API. contract/SOURCE.md says it still walks the 21-operation set as of 2026-08-23 — but the file was modified 2026-09-22, so that claim needs re-checking.",
+      "used_by": "Manual runs; produces the smoke-staging-*.md records.",
+      "authority": "SECONDARY",
+      "status": "INVESTIGATE",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".githooks/pre-commit",
+      "category": "Git Hook",
+      "type": "Git hook (NOT INSTALLED)",
+      "purpose": "Staged-Dart format + analyze. NUL-delimited file lists end to end. Excludes generated output. Fast; never runs tests.",
+      "used_by": "NOTHING — core.hooksPath is unset (SEC-03).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".githooks/pre-push",
+      "category": "Git Hook",
+      "type": "Git hook (NOT INSTALLED)",
+      "purpose": "Runs tool/validate.sh unless the push touches no Dart/config. Fails CLOSED when it cannot compute a range. Writes its report to a temp file so pushing never dirties the committed evidence.",
+      "used_by": "NOTHING — core.hooksPath is unset (SEC-03).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "category": "CI",
+      "type": "CI pipeline",
+      "purpose": "4 jobs. Gate: manifest grep → pub get → lockfile drift → l10n drift → format (hand-written only) → analyze → test (excluding goldens). Plus advisory Windows goldens, main-only codegen drift, main-only release compile + aapt2 artefact check.",
+      "used_by": "GitHub Actions on push/PR to dev, main, merged.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "android/app/build.gradle.kts",
+      "category": "Build configuration",
+      "type": "Gradle app module",
+      "purpose": "Fail-closed release signing (findByName, never getByName(\"debug\")). namespace/applicationId com.levelup.level_up_app. NO minify/shrink configured.",
+      "used_by": "Gradle; CI release job.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "category": "Build configuration",
+      "type": "Android manifest",
+      "purpose": "INTERNET in main (Tier-0 C-1), allowBackup=false, fullBackupContent=false, dataExtractionRules. One exported activity (the launcher). No deep links, no extra permissions. Label is the raw package name.",
+      "used_by": "Android build; CI grep + aapt2 artefact check.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "android/app/src/main/res/xml/data_extraction_rules.xml",
+      "category": "Build configuration",
+      "type": "Backup policy",
+      "purpose": "Excludes all five domains from BOTH cloud-backup and device-transfer.",
+      "used_by": "AndroidManifest.xml.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "HIGH",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "android/app/src/{debug,profile}/AndroidManifest.xml",
+      "category": "Build configuration",
+      "type": "Per-build-type manifests",
+      "purpose": "INTERNET for the Flutter tool's hot-reload channel. These merge ONLY into their own build types — the cause of Tier-0 C-1.",
+      "used_by": "Android build.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "android/key.properties.example",
+      "category": "Build configuration",
+      "type": "Signing template",
+      "purpose": "The only tracked signing file. CHANGE_ME placeholders; no real values.",
+      "used_by": "docs/RELEASE_SIGNING.md; build.gradle.kts reads the non-example sibling.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "android/local.properties",
+      "category": "Build configuration",
+      "type": "Machine config (untracked)",
+      "purpose": "SDK paths for this machine; contains the Windows username. Correctly ignored.",
+      "used_by": "settings.gradle.kts reads flutter.sdk from it.",
+      "authority": "GENERATED",
+      "status": "KEEP",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "category": "Build configuration",
+      "type": "Gradle pin",
+      "purpose": "gradle-8.14-all.zip over HTTPS; no distributionSha256Sum. The wrapper JAR and scripts are gitignored.",
+      "used_by": "Gradle.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "android/gradle.properties",
+      "category": "Build configuration",
+      "type": "Gradle tuning",
+      "purpose": "-Xmx8G (CI overrides to 4g), kotlin.incremental=false and a JVM-target downgrade — both with long written rationales tied to this machine's C:/F: drive split.",
+      "used_by": "Gradle.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "ios/Runner/Info.plist",
+      "category": "Build configuration",
+      "type": "iOS plist",
+      "purpose": "No ATS override (defaults apply = HTTPS enforced). No URL schemes. No ITSAppUsesNonExemptEncryption. Landscape allowed on iPhone. CFBundleName is the raw package name.",
+      "used_by": "Xcode build (never run).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "ios/Runner.xcodeproj/project.pbxproj",
+      "category": "Build configuration",
+      "type": "Xcode project",
+      "purpose": "Bundle id com.levelup.levelUpApp (differs from Android). CODE_SIGN_STYLE Automatic. Legacy 'iPhone Developer' identity string.",
+      "used_by": "Xcode build (never run).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "LOW",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "ios/  (no Podfile, no entitlements)",
+      "category": "Build configuration",
+      "type": "Unbuilt platform",
+      "purpose": "Podfile is generated on first macOS build; its absence is strong evidence iOS has never been compiled.",
+      "used_by": "—",
+      "authority": "UNKNOWN",
+      "status": "INVESTIGATE",
+      "security_risk": "MEDIUM",
+      "ai_confusion_risk": "MEDIUM"
+    },
+    {
+      "path": "test/guards/rules.dart",
+      "category": "Test",
+      "type": "Guard rule library",
+      "purpose": "504 lines of pure detectors: blocOutsideQuiz, providerMutationInInitState, autoDisposeNotifiersWithoutDisposalFlag, rawTextLiterals, rawElevationEffects, contractRequiredFields, arbKeyDrift. Strips comments before matching.",
+      "used_by": "project_rules_test.dart, rules_test.dart.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/guards/project_rules_test.dart",
+      "category": "Test",
+      "type": "Architecture guards",
+      "purpose": "7 mechanised rules. Ratchets: hardcoded strings baseline = 4 (line 122), inline fontSize baseline = 0 (line 176), raw elevation effects hard-zero. Protected by a sources.length > 100 canary.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/guards/rules_test.dart",
+      "category": "Test",
+      "type": "Tests for the guards",
+      "purpose": "50 tests asserting each detector catches a real violation AND does NOT flag a comment describing one — the exact bug class that let prose satisfy a guard in Wave 1.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/guards/workflow_test.dart",
+      "category": "Test",
+      "type": "CI/tooling guards",
+      "purpose": "14 tests pinning ci.yml, tool/validate.*, .flutter-version, the hooks and RELEASE_SIGNING.md. ALL 14 CLAIMS RE-VERIFIED TRUE in this audit.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/guards/contract_models_test.dart",
+      "category": "Test",
+      "type": "Contract binding guard",
+      "purpose": "Reads contract/openapi.yaml at runtime and pins 13 schema→Dart-class bindings, scoped per CLASS to prevent same-file masking. Canary: contract length > 100000.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/core/theme/palette_discipline_test.dart",
+      "category": "Test",
+      "type": "Colour guard",
+      "purpose": "Asserts zero 0xFF/Color(0x and zero Colors.black/Colors.white outside lib/core/theme/, and that SystemUiOverlayStyle lives only in app.dart. NO size canary — an empty scan would pass vacuously.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "test/core/theme/typography_discipline_test.dart",
+      "category": "Test",
+      "type": "Type guard",
+      "purpose": "The real fontSize enforcement. Same missing-canary weakness as the palette guard.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP/CLEAN",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "test/core/session/session_scope_discipline_test.dart",
+      "category": "Test",
+      "type": "Session guard",
+      "purpose": "Fails if a new non-autoDispose notifier appears in lib/features/ without being classified in session_scope.dart. Two of its five tests read a named file directly, so they throw rather than pass silently.",
+      "used_by": "flutter test; CI.",
+      "authority": "AUTHORITATIVE",
+      "status": "DO NOT TOUCH",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "test/goldens/  (7 test files + 41 PNG + harness)",
+      "category": "Test",
+      "type": "Golden tests",
+      "purpose": "18 matchesGoldenFile call sites resolving to 41 baselines. ZERO orphan baselines, ZERO tests without a baseline. All 7 files carry @Tags(['golden']).",
+      "used_by": "Local validate.* (runs them); CI Windows job (ADVISORY ONLY).",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "test/widget_test.dart",
+      "category": "Test",
+      "type": "Placeholder / discovery canary",
+      "purpose": "expect(1 + 1, 2). Touches no app code. Its historical silent omission is why CI no longer passes directory paths to flutter test.",
+      "used_by": "flutter test discovery.",
+      "authority": "REFERENCE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "test/  (12 fixture/harness files)",
+      "category": "Test",
+      "type": "Fixtures and harnesses",
+      "purpose": "2,024 lines: 6 pump helpers, 5 JSON fixture sets, 1 golden harness. Zero test declarations — they are libraries, not dead tests.",
+      "used_by": "Imported by the feature tests.",
+      "authority": "AUTHORITATIVE",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "test/dev/  (4 files, 44 tests)",
+      "category": "Test",
+      "type": "Mock-backend tests",
+      "purpose": "Assert the canned backend stays contract-faithful.",
+      "used_by": "flutter test; CI.",
+      "authority": "SECONDARY",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": "build/  (~258 MB)",
+      "category": "Generated",
+      "type": "Build output (ignored)",
+      "purpose": "Three 86–92 MB stale .cache.dill.track.dill files from July/August plus per-plugin output.",
+      "used_by": "Flutter toolchain.",
+      "authority": "GENERATED",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": ".dart_tool/",
+      "category": "Generated",
+      "type": "Tool cache (ignored)",
+      "purpose": "Package config and tool state. Note a stray lib/l10n/.dart_tool/native_assets.yaml also exists.",
+      "used_by": "Dart/Flutter toolchain.",
+      "authority": "GENERATED",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "LOW"
+    },
+    {
+      "path": ".idea/  (5 files, ignored)",
+      "category": "IDE",
+      "type": "IDE metadata",
+      "purpose": "IntelliJ workspace, run configurations, library stubs.",
+      "used_by": "IntelliJ only.",
+      "authority": "GENERATED",
+      "status": "KEEP",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    },
+    {
+      "path": "android/.gradle/, android/.kotlin/errors/, ios/Flutter/ephemeral/, GeneratedPluginRegistrant.*",
+      "category": "Generated",
+      "type": "Platform build state (ignored)",
+      "purpose": "Gradle caches, two Kotlin error logs, iOS ephemeral scripts, plugin registrants.",
+      "used_by": "Platform toolchains.",
+      "authority": "GENERATED",
+      "status": "GENERATED",
+      "security_risk": "NONE",
+      "ai_confusion_risk": "NONE"
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-01",
+      "kind": "security",
+      "title": "Production base URL is a non-existent placeholder host",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "category": "Environment / Release",
+      "files": [
+        "lib/core/config/app_config.dart:54"
+      ],
+      "observed_fact": "_baseUrlFor(Flavor.prod) returns 'https://TBD.example/api/v1'. Flavor.dev and Flavor.staging both return the real staging host https://level-up-backend-staging.up.railway.app/api/v1 (app_config.dart:43-44). The source carries its own TODO(contract) saying \"Do NOT ship a prod build until this is replaced.\"",
+      "interpretation": "A production build is functionally impossible today — every request would fail DNS. Worse is the adjacent failure mode: lib/main.dart forwards to main_dev.dart, so any release build that omits -t lib/main_prod.dart compiles the LIVE STAGING URL into a production-signed artefact. docs/RELEASE_SIGNING.md records that this exact mistake already happened once (2026-09-05).",
+      "recommendation": "Replace the placeholder when the production host is published (it arrives via contract-changelog.md). Until then, treat any release artefact as staging-pointed. Consider making Flavor.prod throw at AppConfig.init rather than returning an unusable string, so the failure is at boot, not at first request.",
+      "exploitable": "Not exploitable by a third party. It is a release-correctness and data-routing defect."
+    },
+    {
+      "id": "SEC-02",
+      "kind": "security",
+      "title": "Legal / privacy-policy URLs are reserved-TLD placeholders",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "category": "Compliance / Store",
+      "files": [
+        "lib/features/auth/screens/login_screen.dart:41-46",
+        "lib/features/auth/screens/login_screen.dart:118"
+      ],
+      "observed_fact": "Three constants — _termsUrl = 'https://levelup.example/legal/user-agreement', _privacyPolicyUrl = 'https://levelup.example/legal/privacy', _cookiePolicyUrl = 'https://levelup.example/legal/cookies' — are opened with launchUrl(..., LaunchMode.externalApplication) at line 118. A TODO(legal) on line 41 flags them as placeholders. .example is an IANA-reserved TLD that cannot resolve.",
+      "interpretation": "The only privacy-policy link a user can reach from inside the app is dead. Both Apple and Google require a reachable privacy policy for an app that collects minors' PII (this app collects date of birth, school and governorate). This is a store-submission blocker, not merely cosmetic.",
+      "recommendation": "Publish the three documents and replace the constants before any store submission. Because the links are already wired and launch externally, the change is a constant swap with no UI work.",
+      "exploitable": "Not exploitable. Compliance blocker."
+    },
+    {
+      "id": "SEC-03",
+      "kind": "security",
+      "title": "Neither git hook is installed — the local enforcement layer is inert",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "category": "Process / Enforcement",
+      "files": [
+        ".githooks/pre-commit",
+        ".githooks/pre-push",
+        ".git/config"
+      ],
+      "observed_fact": "git config --get core.hooksPath returns nothing at local, global and system scope. .git/hooks/ contains only the 14 stock *.sample files. .git/config has no [core] hooksPath entry. Both hooks document the one-time install step (git config core.hooksPath .githooks) in their own headers; it has not been run in this clone.",
+      "interpretation": "pre-commit (format + analyze on staged Dart) and pre-push (the full tool/validate.sh gate) have never fired here. Combined with RISKS.md R-3 (\"CI has never been observed running\") and the fact that the two strongest CI jobs are gated to a stale main (see SEC-04), the ONLY validation actually executing is a human or agent manually invoking tool/validate.ps1. The documentation describes a three-layer gate; one layer is running.",
+      "recommendation": "Run git config core.hooksPath .githooks in this clone, or add an install step to the onboarding docs and a guard test that fails if the hooks are documented but not installable. Note the hooks are deliberately bypassable (--no-verify, LEVELUP_SKIP_HOOKS=1) by design — that is fine; silently-not-installed is not.",
+      "exploitable": "Not exploitable. Creates false confidence that quality gates ran."
+    },
+    {
+      "id": "SEC-04",
+      "kind": "security",
+      "title": "The two strongest CI jobs are gated to `main`, which is 8 commits stale",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "category": "CI / Release",
+      "files": [
+        ".github/workflows/ci.yml:266",
+        ".github/workflows/ci.yml:305"
+      ],
+      "observed_fact": "codegen-drift and build-release-apk both carry if: github.event_name == 'push' &amp;&amp; github.ref == 'refs/heads/main'. Active development is on branch merged (HEAD e4d1401, 8 ahead of origin/merged); main sits at e71e9a1. The release-APK job is also the ONLY place the merged-manifest INTERNET permission is verified against a real built artefact (ci.yml:384-414).",
+      "interpretation": "The codegen-drift safety net and the release compile gate — including the aapt2 verification of the Tier-0 C-1 regression — have effectively never run against current work. The cheap grep half of the C-1 guard does run on every PR, but the audit's own comment says that half is \"the cheap deterministic half\" and the artefact inspection is \"the only one that is actual proof.\"",
+      "recommendation": "Either extend the two if: conditions to include refs/heads/merged, or merge merged into main regularly so the gates see current code. This is a one-line change in each job.",
+      "exploitable": "Not exploitable. Release-correctness gap."
+    },
+    {
+      "id": "SEC-05",
+      "kind": "security",
+      "title": "R8 / ProGuard is disabled for Android release builds",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "category": "Android",
+      "files": [
+        "android/app/build.gradle.kts:63-71"
+      ],
+      "observed_fact": "The release buildType sets only signingConfig. There is no isMinifyEnabled, no isShrinkResources, and no proguard-rules.pro anywhere in android/. The Android Gradle Plugin default for minifyEnabled is false.",
+      "interpretation": "Release APK/AAB ships with unshrunk, unobfuscated Kotlin/Java. For a Flutter app most logic is in AOT Dart (already opaque), so the security benefit of R8 is modest — but the size benefit is real, and unshrunk resources compound the 1.83 MB font payload (ASSET-01).",
+      "recommendation": "Evaluate enabling isMinifyEnabled = true with isShrinkResources = true and a proguard file, then re-run the release compile gate. Do not enable blind: several plugins here (screen_protector, flutter_secure_storage) use reflection-adjacent paths and need keep rules. NEEDS HUMAN DECISION.",
+      "exploitable": "Potential only — increases reverse-engineering convenience, does not itself expose data."
+    },
+    {
+      "id": "SEC-06",
+      "kind": "security",
+      "title": "`Bash(python -)` is a standing arbitrary-code-execution grant in the local Claude settings",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "category": "AI tooling",
+      "files": [
+        ".claude/settings.local.json"
+      ],
+      "observed_fact": "permissions.allow contains 20 entries, all scoped. One is Bash(python -), which pre-approves executing arbitrary Python read from stdin. Another is Read(//f/level/**), granting read across the whole F:\\level tree rather than just this repository. No token, key or credential is present in the file. The Windows username musta appears in several literal paths.",
+      "interpretation": "No blanket Bash(*) or skip-permissions setting exists, so the posture is broadly sound. Bash(python -) is the one entry that grants unbounded execution — a pre-approval that cannot be reasoned about from the rule text. The file is untracked (gitignored), so it does not ship.",
+      "recommendation": "Narrow or remove Bash(python -). Consider narrowing Read(//f/level/**) to the repository root. Leave the file untracked.",
+      "exploitable": "Potential only, and only within an already-trusted local agent session."
+    },
+    {
+      "id": "SEC-07",
+      "kind": "security",
+      "title": "CI actions are pinned to mutable tags, including a third-party action",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "category": "CI / Supply chain",
+      "files": [
+        ".github/workflows/ci.yml"
+      ],
+      "observed_fact": "actions/checkout@v4, actions/cache@v4, actions/setup-java@v4, actions/upload-artifact@v4 and subosito/flutter-action@v2 are referenced by floating major tags, not commit SHAs. subosito/flutter-action is community-maintained, not GitHub-owned.",
+      "interpretation": "A tag is mutable; a compromised or re-pointed tag executes in the workflow. Mitigations present and real: the workflow uses pull_request (not pull_request_target), declares permissions: contents: read, consumes no secrets at all, and uploads no artefacts except golden failure PNGs. Blast radius today is therefore low.",
+      "recommendation": "Pin to full commit SHAs with a comment naming the version, at minimum for subosito/flutter-action. Revisit before any signing secret is ever added to the workflow — at that point this becomes HIGH.",
+      "exploitable": "Potential only. No secrets currently reachable from CI."
+    },
+    {
+      "id": "SEC-08",
+      "kind": "security",
+      "title": "Gradle wrapper is gitignored and absent from the repository",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "category": "Build reproducibility",
+      "files": [
+        "android/.gitignore:1,4,5",
+        "android/gradle/wrapper/gradle-wrapper.properties"
+      ],
+      "observed_fact": "android/.gitignore ignores gradle-wrapper.jar, /gradlew and /gradlew.bat. All three exist on this machine but are untracked. gradle-wrapper.properties IS tracked and pins gradle-8.14-all.zip over HTTPS, but declares no distributionSha256Sum.",
+      "interpretation": "A fresh clone has no wrapper — builds depend on the Flutter tool supplying Gradle, which works but removes the version pin's teeth and makes 'reproduce the build' machine-dependent. The missing checksum means the distribution is trusted on transport security alone.",
+      "recommendation": "Consider tracking the wrapper (the standard Gradle recommendation) and adding distributionSha256Sum. NEEDS HUMAN DECISION — the current arrangement may be deliberate.",
+      "exploitable": "Potential only."
+    },
+    {
+      "id": "SEC-09",
+      "kind": "security",
+      "title": "Golden regressions can merge without failing CI",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "category": "CI / Tests",
+      "files": [
+        ".github/workflows/ci.yml:200-262"
+      ],
+      "observed_fact": "The goldens job runs on windows-latest with continue-on-error: true. Its own comment says: \"ADVISORY ... until it has been green once — flip continue-on-error to false at that point and add it to branch protection.\" That flip has not happened. The Linux gate runs --exclude-tags golden. All 41 baselines and all 7 golden test files were verified present and correctly tagged.",
+      "interpretation": "41 pixel baselines across light and dark canvases exist and are correct, but nothing in CI enforces them. Locally tool/validate.* DOES run them (no tag exclusion), so the gate exists only on the developer machine — which is also the machine where the hooks are not installed (SEC-03).",
+      "recommendation": "Flip continue-on-error to false once the Windows job has been observed green, and add it to branch protection, exactly as the file's own comment prescribes.",
+      "exploitable": "Not exploitable. Visual-regression gap."
+    },
+    {
+      "id": "SEC-10",
+      "kind": "security",
+      "title": "Staging host is compiled into every dev and staging build",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "category": "Environment",
+      "files": [
+        "lib/core/config/app_config.dart:43-44"
+      ],
+      "observed_fact": "_stagingBaseUrl = 'https://level-up-backend-staging.up.railway.app/api/v1' is a compile-time constant, taken verbatim from the contract's servers: block. Flavor.dev resolves to the same host.",
+      "interpretation": "This is a public identifier, not a secret — it is published in the contract. It is recorded here because it means any dev/staging artefact that leaves the team carries a reachable live backend address, and because isDev does not gate it.",
+      "recommendation": "No action needed while it matches the contract. If a separate dev backend ever exists, split the two flavors.",
+      "exploitable": "Not exploitable beyond disclosure of a host already published in the contract."
+    },
+    {
+      "id": "SEC-11",
+      "kind": "security",
+      "title": "`AppConfig.isDev` is declared but never read",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "category": "Environment",
+      "files": [
+        "lib/core/config/app_config.dart:13,18,33"
+      ],
+      "observed_fact": "isDev is set to flavor != Flavor.prod and is referenced nowhere else in lib/ — the only other match is its own doc comment at line 42. Independently: lib/ contains ZERO occurrences of print(, debugPrint, kDebugMode or kReleaseMode.",
+      "interpretation": "Read positively: there is no debug-only behaviour to leak into production, because there is no debug-gated code at all. The field is dead weight rather than a risk. It is worth recording because a future contributor may reach for it assuming it already gates something.",
+      "recommendation": "Either wire it or delete it. Low priority. NEEDS HUMAN DECISION.",
+      "exploitable": "Not exploitable."
+    },
+    {
+      "id": "SEC-12",
+      "kind": "security",
+      "title": "No secrets found anywhere in the tracked tree — verified",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "category": "Secrets",
+      "files": [
+        "(whole tracked tree)"
+      ],
+      "observed_fact": "A pattern sweep across every tracked file for sk_live, sk_test, AKIA[0-9A-Z]{16}, ghp_*, AIza*, xox[baprs]- and BEGIN … PRIVATE KEY returned ZERO matches in code, config, Gradle, plist, XML, PowerShell and shell files. Every token/secret/password hit is documentation prose in contract/openapi.yaml or an explanatory code comment. android/key.properties.example uses CHANGE_ME placeholders only. No *.jks, *.keystore, key.properties, .apk, .aab or .ipa exists anywhere in the working tree.",
+      "interpretation": "Secret hygiene is clean and the gitignore rules that keep it that way are correct and non-duplicated (android/.gitignore owns the signing patterns; the root .gitignore explicitly defers to it with a comment rather than repeating them).",
+      "recommendation": "No action. Preserve the split-gitignore arrangement.",
+      "exploitable": "N/A"
+    },
+    {
+      "id": "SEC-13",
+      "kind": "security",
+      "title": "TLS handling is left at platform defaults — verified, and that is correct",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "category": "Network",
+      "files": [
+        "lib/core/network/dio_client.dart",
+        "ios/Runner/Info.plist",
+        "android/app/src/main/AndroidManifest.xml"
+      ],
+      "observed_fact": "lib/ contains no badCertificateCallback, no HttpClientAdapter/IOHttpClientAdapter override, no SecurityContext and no LogInterceptor. Info.plist declares no NSAppTransportSecurity key (ATS defaults apply). The Android manifest sets no usesCleartextTraffic and no networkSecurityConfig. Zero http:// URLs exist in production lib/ code.",
+      "interpretation": "Certificate validation is intact on both platforms and cleartext is off by platform default. There is no certificate pinning — a deliberate, defensible choice for an app whose backend host is still moving.",
+      "recommendation": "No action. If pinning is ever added, it belongs behind a kill switch, not compiled in.",
+      "exploitable": "N/A"
+    },
+    {
+      "id": "SEC-14",
+      "kind": "security",
+      "title": "Token storage, session teardown and backup exclusion are correctly implemented",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "category": "Storage",
+      "files": [
+        "lib/core/storage/secure_storage.dart",
+        "lib/core/session/session_scope.dart",
+        "android/app/src/main/res/xml/data_extraction_rules.xml"
+      ],
+      "observed_fact": "Tokens and device_id live only in flutter_secure_storage with iOS options first_unlock_this_device + synchronizable: false. Logout calls clearTokens() (tokens only) and never clear(), preserving device_id so session_superseded eviction still fires. SharedPreferences holds only theme mode and locale, with every read and write in try/catch. invalidateSessionScope drops 11 user-scoped providers on logout. Android sets allowBackup=false, fullBackupContent=false AND excludes all five domains from both cloud-backup and device-transfer.",
+      "interpretation": "This chain is unusually well-reasoned for a project at this stage. The shared-handset PII leak it was built to close (Tier-0 C-2) is closed with a single inventory function rather than scattered invalidations, and there is a discipline test that fails when a new non-autoDispose notifier appears without being classified.",
+      "recommendation": "No action. When adding any user-scoped provider, add it to invalidateSessionScope — the discipline test enforces this.",
+      "exploitable": "N/A"
+    },
+    {
+      "id": "SEC-15",
+      "kind": "security",
+      "title": "iOS has never been built — no Podfile, no entitlements",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "category": "iOS",
+      "files": [
+        "ios/"
+      ],
+      "observed_fact": "There is no ios/Podfile and no ios/Podfile.lock, and no *.entitlements file anywhere. Six plugins in use ship iOS pods (flutter_secure_storage, connectivity_plus, device_info_plus, url_launcher, screen_protector, shared_preferences). Debug.xcconfig and Release.xcconfig are identical one-line includes. CODE_SIGN_IDENTITY[sdk=iphoneos*] is the legacy string \"iPhone Developer\". Info.plist has no ITSAppUsesNonExemptEncryption key.",
+      "interpretation": "The Podfile is generated on the first macOS build, so its absence is strong evidence that iOS has never been compiled — consistent with a Windows-only development machine. Every iOS claim in the store-readiness documents is therefore SOURCE-level at best, never BUILD or ARTEFACT.",
+      "recommendation": "Treat all iOS findings as unverified until a macOS build exists. Add ITSAppUsesNonExemptEncryption before the first App Store Connect upload.",
+      "exploitable": "N/A"
+    },
+    {
+      "id": "SEC-16",
+      "kind": "security",
+      "title": "Bundle identifiers and display names diverge across platforms",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "category": "Store / Platform",
+      "files": [
+        "android/app/build.gradle.kts:43",
+        "ios/Runner.xcodeproj/project.pbxproj:371",
+        "android/app/src/main/AndroidManifest.xml:31",
+        "ios/Runner/Info.plist"
+      ],
+      "observed_fact": "Android applicationId = \"com.levelup.level_up_app\"; iOS PRODUCT_BUNDLE_IDENTIFIER = com.levelup.levelUpApp. Android android:label=\"level_up_app\" — the raw package name is what appears under the launcher icon. iOS CFBundleDisplayName is \"Level Up App\" but CFBundleName is level_up_app. The Android gradle file still carries the flutter create TODO comment telling the developer to choose a unique application ID.",
+      "interpretation": "Two different reverse-DNS identifiers for one product, and an Android launcher label that shows a snake_case package name to students. Both are store-submission items.",
+      "recommendation": "Settle one identifier scheme, set the Android label to the product name (via a string resource so it can be localised), and remove the stale template TODO.",
+      "exploitable": "N/A"
+    },
+    {
+      "id": "AI-01",
+      "kind": "ai-agent",
+      "title": "`skills/RESTORE.md` documents a one-command restore that silently reverts a security-relevant instruction fix",
+      "severity": "CRITICAL",
+      "confidence": "HIGH",
+      "files": [
+        "skills/RESTORE.md",
+        "skills/level-up-domain/SKILL.md",
+        "skills/river/SKILL.md",
+        "skills/screen-states/SKILL.md",
+        "skills/build-screen/SKILL.md",
+        "skills/seif-api-contract/SKILL.md"
+      ],
+      "observed_fact": "diff -rq .claude/skills skills reports 6 differing files plus skills/RESTORE.md (only in skills/). md5sum over all 22 SKILL.md pairs: 16 identical, 6 differ. The 6 differences are one consistent edit: .claude/skills/ was corrected for adr-049 §3 (purchase-silent) on 2026-09-05; skills/ still teaches an external Paymob web checkout via url_launcher and a Fawry pending subscription state with its own \"Payment processing\" UI. skills/RESTORE.md calls the tree \"a byte-identical mirror\" and gives Copy-Item -Recurse -Force skills\\* .claude\\skills\\. All 26 files under skills/ are git-tracked (verified: git ls-files skills | wc -l = 26), swept in by commit f987f20 whose message never mentions skills.",
+      "why_misleading": "An agent recovering a wiped .claude/ — precisely the scenario RESTORE.md anticipates — would follow the documented command on the file's own authority. The \"byte-identical\" claim suppresses any instinct to diff first. The result reinstalls instructions to build a paywall the contract deleted, in a repo whose top-level rule is that the contract wins.",
+      "recommendation": "Delete skills/, or replace RESTORE.md's body with a pointer to git history and remove the copy command. If the mirror is kept for a real reason, make the restore step a diff-then-review, and correct the six files. DO NOT run the documented command."
+    },
+    {
+      "id": "AI-02",
+      "kind": "ai-agent",
+      "title": "CLAUDE.md — every headline number is wrong, and it cites a contract pin two re-vendors stale",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        "CLAUDE.md:12-16",
+        "CLAUDE.md:36-40",
+        "CLAUDE.md:113-118",
+        "CLAUDE.md:126"
+      ],
+      "observed_fact": "§1.1 asserts 63 commits (actual 112), ~36k lines of lib/ (actual 51,191), 849 passing tests (actual 1,429), 12 day-briefs (actual 15), 29 documents in docs/ (actual 41), 27 audit reports in .ai/audits/current/ (actual 35 top-level, 55 including parts), and a design-gap register with 48 entries (actual 88, numbered #1–#88 with no gaps). §1.2 says \"the pin has since moved to 184d6ec (3.0.0-m1)\" — contract/SOURCE.md pins 768e67d / 3.22.0-m1, vendored 2026-09-20, via 2dca3c5 / 3.13.0-m1. §1.2 also claims \"Days 00–7b cite 23f0535\"; only day1, day7 and day7b cite any pin at all — seven of the nine briefs in that range cite none.",
+      "why_misleading": "This is the file loaded automatically at the start of every Claude Code session, and it instructs the reader to consume it \"top to bottom\" before touching code. An agent that trusts it starts with a 68% undercount of the test suite, a 83% undercount of the design-gap register, and a contract version that has been superseded twice — including by the delta that made getExplanation real and made three newly-stable operations FORBIDDEN to the app.",
+      "recommendation": "Re-ground every number against the repository, or — better — delete the numbers and point at docs/WAVE_STATUS.md and contract/SOURCE.md, which are current and maintained. A count in a hand-written file is a fact with an expiry date."
+    },
+    {
+      "id": "AI-03",
+      "kind": "ai-agent",
+      "title": "CLAUDE.md references sections of itself that do not exist",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        "CLAUDE.md:96",
+        "CLAUDE.md:104",
+        "CLAUDE.md:54",
+        "CLAUDE.md:63"
+      ],
+      "observed_fact": "§1.7 says \"expect a dirty tree — see §3.4, do not 'clean' it\". §1.8 says \"Do §14 (THE COOKIE). It is the migration's completion signal.\" §1.1/§1.5 reference §7 and §10.3. The file contains §1.1–§1.8 and then two unnumbered sections (\"Quick reference\", \"The one command\", \"Non-negotiables\"). There is no §3.4, §7, §10.3 or §14. Separately, the working tree is CLEAN (git status --porcelain returns zero lines), so the \"expect a dirty tree\" instruction is also factually wrong.",
+      "why_misleading": "A fresh agent is given a completion ritual (§14) that cannot be performed and four cross-references that lead nowhere, then told to expect a repository state that is not the current one. The likely cause is that CLAUDE.md was extracted from the longer tell_claude.md handoff (deleted per its own read-receipt protocol) without renumbering. An agent may reasonably conclude the file is truncated and go looking for the missing parts.",
+      "recommendation": "Either restore the referenced sections or strip the dangling references and the §14 instruction. Delete the \"expect a dirty tree\" line."
+    },
+    {
+      "id": "AI-04",
+      "kind": "ai-agent",
+      "title": "The loaded skill tree teaches a snake_case @JsonKey bridge that ten model files explicitly forbid",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        ".claude/skills/level-up-domain/SKILL.md",
+        ".claude/skills/seif-api-contract/SKILL.md",
+        ".claude/skills/build-screen/SKILL.md",
+        "lib/features/profile/models/student_profile.dart:13",
+        "lib/features/quiz/models/quiz.dart:13"
+      ],
+      "observed_fact": "Three skills in .claude/skills/ — the tree Claude Code actually loads — instruct: \"API uses snake_case; Dart uses camelCase — bridge with @JsonKey(name: '...') in the model, nowhere else\", with a worked StreakPair/current_streak example in seif-api-contract. Ten model files in lib/ carry the same defensive doc comment: \"Contract keys are already camelCase — NO @JsonKey(name:) bridge is needed and none must be added.\" The 2026-09-05 remediation that fixed the purchase-surface language in these same files did not touch this rule.",
+      "why_misleading": "seif-api-contract is the skill that fires on any API-touching work, and its copy-pasteable worked example is the most likely thing an agent reproduces. The result is a mapping layer that is wrong against the live contract, written into committed model code.",
+      "recommendation": "Delete or invert the snake_case instruction in all three skills. The ten doc comments in lib/ are the correct statement of the rule; lift their wording."
+    },
+    {
+      "id": "AI-05",
+      "kind": "ai-agent",
+      "title": "The `bloc` skill specifies a quiz timer that does not exist and the code says so",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        ".claude/skills/bloc/SKILL.md",
+        "lib/features/quiz/bloc/quiz_state.dart:94-97",
+        ".ai/audits/current/known-issues.md"
+      ],
+      "observed_fact": "bloc/SKILL.md has a \"Timer discipline\" section specifying a QuizTimeExpired event, a QuizTimedOut state and an in-bloc countdown Ticker. Neither quiz_event.dart nor quiz_state.dart contains any such type. quiz_state.dart:94-97 states: \"There is no timer and no timeout state. The bloc skill describes a countdown, but the contract defines no time limit on a quiz anywhere.\" Tracked as K-36 in known-issues.md; still open. The file is byte-identical in both skill trees, so this is not a mirror-staleness problem — it is a live defect in the tree that loads.",
+      "why_misleading": "The bloc skill is scoped to fire on ANY quiz work. An agent asked to touch the timer, the results flow or the answer path would build a fabricated event chain against a state machine that has none of it, then have to unpick it.",
+      "recommendation": "Delete the Timer discipline section (K-36 already prescribes exactly this). If a timer is ever specified, it needs a contract field first — seif_fight.md S7 is the open question."
+    },
+    {
+      "id": "AI-06",
+      "kind": "ai-agent",
+      "title": "`docs/ASSET_MANIFEST.md` lists shipped assets as \"still needed\" and prescribes the wrong paths",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        "docs/ASSET_MANIFEST.md"
+      ],
+      "observed_fact": "The manifest's \"Still needed\" table asks for five nav glyphs at assets/icons/nav_home.svg, nav_leaderboard.svg, nav_learn.svg, nav_message.svg, nav_account.svg. All five already exist — at DIFFERENT paths: assets/icons/nav/home.svg, nav/leaderboard.svg, nav/learn.svg, nav/message.svg, nav/account.svg, each referenced exactly once from lib/. It also asks for assets/icons/bell.svg; the repo ships assets/icons/notification.svg, in use. Other rows are still accurate — home_banner.png, level_medallion.png and assets/icons/profile/*.svg genuinely do not exist.",
+      "why_misleading": "Partial staleness is worse than total staleness: the reader cannot dismiss the document, so they trust the wrong rows too. An agent following it would create five duplicate SVGs at flat paths, add a second assets/icons/ entry to pubspec, and ship both copies — while the real ones stay wired.",
+      "recommendation": "Move the five nav rows and the bell row into the \"Already downloaded\" table with their REAL paths. Keep the genuinely-outstanding rows."
+    },
+    {
+      "id": "AI-07",
+      "kind": "ai-agent",
+      "title": "Three files route agents to an off-repository Obsidian vault, one of which is declared wrong",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "files": [
+        "docs/PROJECT_GUIDE.md:22-23",
+        "docs/PROJECT_GUIDE.md:44",
+        "CLAUDE.md:70",
+        "test/widget_test.dart:2"
+      ],
+      "observed_fact": "PROJECT_GUIDE.md's rule-precedence table places level_up/01_Flutter_Specs/ at level 4 (\"Existing project architecture\") and level 5 (\"Project-wide engineering rules\"). Its own source table then says of level_up/01_Flutter_Specs/Architecture_and_Folders.md: \"⚠ known stale — wrong in 5 of ~10 assertions. The code is right in 4 of 5. Fix the doc.\" CLAUDE.md:70 repeats the warning. test/widget_test.dart:2 says \"See the vault's Testing_and_Quality spec.\" No such path exists in the repository.",
+      "why_misleading": "The governance index — the file whose job is to say which source wins — sends the reader to a source that (a) is not in the repository and therefore unreachable to any agent, and (b) it simultaneously declares to be wrong in half its assertions. An agent that cannot find it may search, infer, or worse, treat the absence as permission to invent.",
+      "recommendation": "Either vendor the specs into docs/ or remove them from the precedence ladder entirely and delete the dangling pointers. A rule source nobody can open is not a rule source."
+    },
+    {
+      "id": "AI-08",
+      "kind": "ai-agent",
+      "title": "`_AGENT_CONTEXT.md` states expired hard constraints with nothing marking them expired",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        ".ai/audits/current/_AGENT_CONTEXT.md"
+      ],
+      "observed_fact": "The file declares: \"REPORT ONLY. Do not edit, create or delete anything under lib/, test/, android/, ios/, assets/, pubspec.yaml or analysis_options.yaml\", and baselines itself at \"branch dev, commit e3651e6\". These applied to one ten-agent audit pass on 2026-08-11. Nothing in the file, its directory, or any pointer to it marks the constraints as spent. Current branch is merged at e4d1401, roughly 60 commits later.",
+      "why_misleading": "It is the first file an agent following any \"read .ai/audits/current/ for context\" instinct would open — the underscore prefix sorts it to the top. Read as live, it forbids writing code at all; read for its project shape, it reports 66 test files (now 112) and a branch that has not been the working branch since 2026-08-22.",
+      "recommendation": "Add a dated CLOSED banner at the top, or move the whole 2026-08-11 wave into .ai/audits/2026-08-11/ so \"current\" means current."
+    },
+    {
+      "id": "AI-09",
+      "kind": "ai-agent",
+      "title": "`known-issues.md` is called the live fix queue but is a 2026-09-05 snapshot with closed items unmarked",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        ".ai/audits/current/known-issues.md",
+        "CLAUDE.md:130"
+      ],
+      "observed_fact": "CLAUDE.md's Quick reference labels it \"The ordered fix queue\". K-0 (uncommitted 141-file reformat), K-1 (missing INTERNET permission) and K-2 (logout PII leak) are presented as an open Tier 0. K-1 and K-2 were closed by Wave 1 and independently VERIFIED in fable-wave1-verdict.md; K-0 is long moot. Several Tier-3 enforcement proposals have shipped (test/guards/rules.dart and workflow_test.dart exist and run) without being crossed off. K-36 is genuinely still open.",
+      "why_misleading": "An agent told this is the ordered queue will start at Tier 0 and re-investigate three closed bugs, and may 'fix' the INTERNET permission that is already present and CI-guarded.",
+      "recommendation": "Mark closures inline with the verdict file that closed them, or regenerate the queue."
+    },
+    {
+      "id": "AI-10",
+      "kind": "ai-agent",
+      "title": "Two unrelated documents share the `D-NNN` decision namespace",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        ".ai/audits/current/decisions.md",
+        "docs/DECISIONS.md"
+      ],
+      "observed_fact": ".ai/audits/current/decisions.md records D-1…D-9, the Wave-0 orchestrator's audit-methodology judgment calls. docs/DECISIONS.md records D-001…D-011, the project's product and architecture decisions (D-007 removed the subscription row; D-008 gated then un-gated the leaderboard). Neither file cross-references the other.",
+      "why_misleading": "\"D-8\" is ambiguous in this repository. A citation resolved against the wrong file produces a confidently wrong claim about what was decided.",
+      "recommendation": "Rename the audit file's IDs (e.g. AD-1) or add a one-line disambiguation header to both files."
+    },
+    {
+      "id": "AI-11",
+      "kind": "ai-agent",
+      "title": "`wave3-implementation.md` contradicts `WAVE_STATUS.md` on whether Wave 3D is finished",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        ".ai/audits/current/wave3-implementation.md",
+        "docs/WAVE_STATUS.md"
+      ],
+      "observed_fact": "The implementation record self-reports 3D as \"stopped, needs design input\". WAVE_STATUS.md — which CLAUDE.md says wins every disagreement — shows 3D ✅ COMPLETE (2026-08-21), and the typography ratchet reaching 0 confirms it.",
+      "why_misleading": "Both files are in the agent's likely read path. The precedence rule resolves it, but only for an agent that knows the rule — and the implementation record is the more specific, more detailed-looking document.",
+      "recommendation": "Add a closing note to wave3-implementation.md: 3D completed 2026-08-21, ratchet at 0."
+    },
+    {
+      "id": "AI-12",
+      "kind": "ai-agent",
+      "title": "`contract/SOURCE.md` flags a router defect that was fixed two days after it was written",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        "contract/SOURCE.md",
+        "lib/core/router/app_router.dart:152-165"
+      ],
+      "observed_fact": "SOURCE.md (vendored 2026-09-20) states: \"The leaderboard gate's comment at lib/core/router/app_router.dart:152-158 claims GET /leaderboard is 'x-stability: draft AT OUR PIN'. That was already false at 2dca3c5 and is false here.\" The current router at that location reads: \"UN-GATED 2026-09-22. D-008 is closed: GET /leaderboard is x-stability: stable at the pin 768e67d (3.22.0-m1, contract/openapi.yaml:2007)…\" — fixed by commit 09dca36.",
+      "why_misleading": "contract/ is a DO-NOT-EDIT vendored directory, so the stale note cannot be corrected in place without breaking that rule. An agent following SOURCE.md's remaining-work list would go 'fix' code that is already correct.",
+      "recommendation": "Record the discharge in docs/DECISIONS.md under D-008 and in docs/WAVE_STATUS.md, and leave contract/ untouched. This is a case where the vendoring rule and the accuracy rule genuinely conflict; the resolution is a note outside contract/."
+    },
+    {
+      "id": "AI-13",
+      "kind": "ai-agent",
+      "title": "`README.md` is the untouched `flutter create` template",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        "README.md",
+        "pubspec.yaml:2"
+      ],
+      "observed_fact": "571 bytes, verbatim boilerplate: \"# level_up_app / A new Flutter project. / This project is a starting point for a Flutter application.\" pubspec.yaml carries the matching description: \"A new Flutter project.\". The repository has 112 commits, 51,191 lines of lib/, 1,429 tests, 41 documents, 22 skills, a vendored API contract and three prior audits.",
+      "why_misleading": "README is the file every human and most agents open first, by convention, before CLAUDE.md. It describes a scaffold. Both prior audits already flagged it (flutter_project_audit.html; .ai/…/06_security_release.md SEC-15) and it has not been acted on in seven weeks.",
+      "recommendation": "Write a real README: what the app is, the five entrypoints, tool/validate.*, and a pointer to CLAUDE.md → WAVE_STATUS.md → PROJECT_GUIDE.md. This is the single cheapest high-value fix in the repository."
+    },
+    {
+      "id": "AI-14",
+      "kind": "ai-agent",
+      "title": "The `*_prompt.md` and `*_unblock.md` files read as live imperatives but are spent",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        "edit3_prompt.md",
+        "edit4_prompt.md",
+        "edit2_unblock.md"
+      ],
+      "observed_fact": "These are one-shot launch payloads: edit3_prompt.md opens \"Copy everything inside the fence below into a fresh Claude Code session opened at F:\\level\\level_up\\level_up_app.\" edit2_unblock.md says \"Your job is to get into Figma…\". All the work landed: f987f20 landed edit1/edit2, 7876242 landed edit3, e71e9a1 landed edit4 and edit5 and states \"this closes the set.\" The three blocked items in edit2_unblock.md resolved the same day. Nothing INSIDE any of the three files says so. edit3_prompt.md and edit4_prompt.md are referenced by zero other files.",
+      "why_misleading": "Imperative prose addressed to a future agent, with no completion marker in the file itself, in the repository root where it is impossible to miss. The 'done' fact lives only in git history.",
+      "recommendation": "Move to docs/archive/ or add a one-line DONE banner with the landing commit. ARCHIVE, not delete — edit1–edit5 proper are cited by 40+ live code comments and must stay."
+    },
+    {
+      "id": "AI-15",
+      "kind": "ai-agent",
+      "title": "Three large root-level artefacts are stale snapshots of this same repository",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        "flutter_project_audit.html",
+        "flutter_code_tree.md",
+        "flutter_frontend_workflow.md"
+      ],
+      "observed_fact": "flutter_project_audit.html (127 KB) is a previous full-project audit, \"Generated 2026-09-08\", header branch: merged @ 7e7129c (dirty) · contract: 184d6ec · 3.0.0-m1 · 88 commits, verdict \"🟡 Fair — functional but incomplete\", production-readiness score 22/100, 890 tests. flutter_code_tree.md (90 KB) self-declares \"Generated 2026-09-19 from the source at HEAD 9f415dd\" and still describes the leaderboard as gated. flutter_frontend_workflow.md (71 KB) is an application runtime trace dated 2026-09-08, also citing pin 184d6ec and 890 tests. None is referenced by CLAUDE.md, WAVE_STATUS.md, AGENT_WORKFLOW.md or PROJECT_GUIDE.md.",
+      "why_misleading": "Three authoritative-looking, large, root-level documents about this exact repository, all predating the elevation system (edit1–5), the 3.13 and 3.22 contract re-vendors, the Mistakes ship and the leaderboard un-gating. flutter_frontend_workflow.md additionally shares a name with the real process doc docs/AGENT_WORKFLOW.md — a search for \"workflow\" returns both. Note: they do not contain contradictory RULES; the inspection found zero quotable rule conflicts. The risk is stale FACTS presented with authority.",
+      "recommendation": "ARCHIVE all three under docs/archive/2026-09-08/ with a dated banner, or regenerate. Keep flutter_project_audit.html — it is the direct predecessor of this report and its \"potentially useless files\" section is still largely accurate."
+    },
+    {
+      "id": "AI-16",
+      "kind": "ai-agent",
+      "title": "`WAVE_STATUS.md` — the declared source of truth — has no row for the elevation waves",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "files": [
+        "docs/WAVE_STATUS.md"
+      ],
+      "observed_fact": "A grep of WAVE_STATUS.md for elevation, edit[1-5] and ratchet returns only unrelated typography-ratchet lines. Its Waves table goes from Day 10 (2026-09-12) straight to Leaderboard (2026-09-22), with no row for edit1–edit5 — despite both landing commits (f987f20 2026-09-19, e71e9a1 2026-09-21) predating its own \"Last updated: 2026-09-22\" stamp. Confidence is MEDIUM because the grep was keyword-based; a row under a different name may exist.",
+      "why_misleading": "CLAUDE.md says this file wins over every other document about wave state. An agent that reads only WAVE_STATUS.md would not learn that the entire Glass/elevation design system exists — while 32 live files in lib/ and test/ carry (edit1.md R#) citations in their comments.",
+      "recommendation": "Add the elevation wave rows. Verify the gap first — it is the one finding here I could not close to HIGH confidence."
+    },
+    {
+      "id": "AI-17",
+      "kind": "ai-agent",
+      "title": "`test/widget_test.dart` is a trivially-true placeholder",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "files": [
+        "test/widget_test.dart"
+      ],
+      "observed_fact": "The entire test is test('scaffold boots', () { expect(1 + 1, 2); });, with a comment pointing at an off-repo vault spec. It touches no application code and would pass against an empty tree.",
+      "interpretation": "It is not worthless: it is the file whose silent omission motivated removing the hard-coded directory list from CI (workflow_test.dart now fails if a path argument is reintroduced). It functions as a test-discovery canary rather than an application test.",
+      "why_misleading": "A reader counting tests sees a passing test that proves nothing. A reader deleting 'dead' tests removes the canary.",
+      "recommendation": "KEEP — but rename it or add a comment saying it is a discovery canary, so nobody deletes it as dead weight."
+    },
+    {
+      "id": "AI-18",
+      "kind": "ai-agent",
+      "title": "`.ai/audits/current/store_readiness_audit.md` is the newest, deepest audit and nothing points to it",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "files": [
+        ".ai/audits/current/store_readiness_audit.md",
+        "docs/STORE_READINESS.md",
+        "CLAUDE.md"
+      ],
+      "observed_fact": "docs/STORE_READINESS.md names docs/STORE_READINESS_AUDIT_2026-09-05.md as the authority on facts. That 09-05 audit is superseded by .ai/audits/current/store_readiness_audit.md — \"Status: FINAL v2\", 2026-09-21→22, built against the current pin, with 20 supporting store_readiness_parts/ files and a full adversarial review cycle, committed in e683e8d. docs/STORE_READINESS.md contains zero references to it, to .ai/audits/current/, or to any 2026-09-2x date. CLAUDE.md's Quick reference points into .ai/audits/current/ only via known-issues.md.",
+      "why_misleading": "An agent following the documented pointer chain lands on a 17-day-stale document and never discovers the one that replaced it. The forward-pointer chain is broken at exactly the step that matters most for shipping.",
+      "recommendation": "Add a forward pointer in docs/STORE_READINESS.md and a Quick-reference row in CLAUDE.md."
+    },
+    {
+      "id": "AI-19",
+      "kind": "ai-agent",
+      "title": "`mistakes_subject_card.dart` says Cairo is not in the design system; the theme and pubspec disagree",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "files": [
+        "lib/features/mistakes/widgets/mistakes_subject_card.dart:109-110",
+        "lib/core/theme/app_theme.dart:52-54",
+        "pubspec.yaml"
+      ],
+      "observed_fact": "The widget comment reads: \"Frame: Cairo 600 / 14 … Cairo is not in the design system and adding a [family] …\". app_theme.dart:54 sets fontFamilyFallback: const ['Tajawal', 'Cairo'], and pubspec.yaml bundles three Cairo weights (283 KB).",
+      "why_misleading": "A small, local contradiction about whether a font family is part of the system. An agent reading the widget would conclude Cairo is unavailable and work around it; an agent reading the theme would use it freely.",
+      "recommendation": "Reword the widget comment to say Cairo is a tertiary Arabic fallback, not a named style family."
+    },
+    {
+      "id": "ARC-01",
+      "kind": "architecture",
+      "title": "Mixed state management is INTENTIONAL, scoped and enforced",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "Bloc exists only at lib/features/quiz/bloc/{quiz_bloc,quiz_event,quiz_state}.dart. Everything else is Riverpod. test/guards/project_rules_test.dart test 1 (blocOutsideQuiz) asserts this mechanically and passes. Both the bloc and river skills state the boundary identically and correctly.",
+      "assessment": "This is the textbook case of a mixed architecture being deliberate rather than accidental: one bounded context (a strict state machine with illegal-transition rejection) uses Bloc; the rest, which is server-data-shaped, uses AsyncNotifier. It is documented, guard-enforced and mutually consistent across the instruction layer. It should NOT be 'cleaned up'."
+    },
+    {
+      "id": "ARC-02",
+      "kind": "architecture",
+      "title": "Riverpod is the DI container — no service locator",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "lib/core/providers/core_providers.dart defines secureStorageProvider, preferencesStoreProvider, refreshDioProvider, dioProvider, connectivityProvider, isOnlineProvider. No get_it or equivalent appears anywhere. dioProvider carries an explicit left-side type annotation to break a static reference cycle with authRepositoryProvider (the refresh closure is resolved lazily at onError).",
+      "assessment": "Clean, single-container DI. The cycle-breaking annotation and the lazy refresh closure are both non-obvious and both correctly commented."
+    },
+    {
+      "id": "ARC-03",
+      "kind": "architecture",
+      "title": "Two dead feature scaffolds and one dead route remain in `lib/`",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "observed_fact": "lib/features/subscription/ and lib/features/track/ each contain four .gitkeep files and zero Dart. 29 .gitkeep files are tracked overall; lib/features/home/{models,notifier,repository}/ are also empty. /track-select is a registered route (app_router.dart:135) rendering _Placeholder('Track select'); nothing navigates to it — the only two references to the string are the route definition and a doc comment at line 427.",
+      "assessment": "subscription/ is dead by DECISION, not neglect: adr-049 §3 made the app purchase-silent and D-007 removed the Profile subscription row. Keeping an empty subscription/ directory is therefore actively misleading — it implies a surface that the contract forbids building. track/ is dead because registration absorbed track selection. NEEDS HUMAN DECISION."
+    },
+    {
+      "id": "ARC-04",
+      "kind": "architecture",
+      "title": "`lib/dev/mock_backend.dart` cannot ship — proven by import graph, not by convention",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "2,124 lines simulating 17 endpoints with contract-faithful canned JSON. grep -rn \"mock_backend\" lib returns exactly one hit: lib/main_mock.dart:30. main_mock.dart is itself imported by nothing. None of main.dart, main_dev.dart, main_staging.dart, main_prod.dart, bootstrap.dart or app.dart reaches it. Dart tree-shakes from the entrypoint's reachable graph, so no shipping build can contain it. Exercised by 4 test files / 44 tests.",
+      "assessment": "A dev harness inside lib/ is a legitimate smell to check; here it is provably inert in production and the single dioProvider override is why no production file had to learn about it."
+    },
+    {
+      "id": "ARC-05",
+      "kind": "architecture",
+      "title": "Error handling is typed end-to-end with no silent swallowing on the network path",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "ErrorInterceptor maps every DioException to a sealed AppException (OfflineException, NetworkException, ApiException, UnauthorizedException, ValidationException, RateLimitedException, UnknownException). Retry-After parsing accepts delta-seconds only and returns null on anything unusable rather than trusting the device clock. ProblemDetails.errors parsing degrades to {} rather than throwing. The only deliberate swallows are the three try/catch blocks in PreferencesStore, each with a written justification (a damaged preferences file must not prevent startup).",
+      "assessment": "One open TODO: error_interceptor.dart:8 — \"full mapping of error-codes.md codes lands per-feature\". Unmapped codes fall through as ApiException carrying the raw code, which is a safe default."
+    },
+    {
+      "id": "ARC-06",
+      "kind": "architecture",
+      "title": "Contract coverage: 26 of 43 declared paths are consumed; 3 stable paths are forbidden",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "43 paths are declared in contract/openapi.yaml. 26 are called from lib/. The 17 not called are: the four /auth/recovery/* paths; /auth/redemption-session/otp/{request,verify} and /subscription-codes/redemptions (all three x-consumers: [web] — FORBIDDEN to this app); /me/avatar; /me/fcm-token (newly stable, push not built); /me/notifications, /me/notifications/unread-count, /me/notifications/{id}/read; /me/deletion-request; /catalog/modules; /quizzes/{quizId} (draft — quiz history); /questions/{id}/favorite; /me/favorites; /leaderboard/me.",
+      "assessment": "At pin 3.22.0-m1 the rule \"build only against x-stability: stable\" became insufficient for the first time: three of the four newly-stable operations are web-only. stable must now be read together with x-consumers. This is the single most important contract-semantics change in the current delta and it is stated clearly in contract/SOURCE.md — but nowhere in CLAUDE.md's Non-negotiables, which still says only \"Build only against x-stability: stable.\""
+    },
+    {
+      "id": "ASSET-01",
+      "kind": "assets",
+      "title": "Fonts are 85% of the asset payload; two Arabic families are bundled",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "observed_fact": "Total assets/ = 2,147,896 bytes. Fonts alone = 1,827,696 bytes (85.1%). Inter's four weights = 1,373,860 bytes (64% of ALL assets) at ~343 KB each. Cairo (3 weights) = 283,820 bytes and Tajawal (3 weights) = 170,016 bytes — both are Arabic families. app_theme.dart:54 sets fontFamilyFallback: const ['Tajawal', 'Cairo'], so Cairo is reached only for glyphs Tajawal lacks. Flutter tree-shakes ICON fonts but not text fonts.",
+      "interpretation": "Cairo is not dead — it is wired as a tertiary fallback — but 283 KB for a fallback-of-a-fallback is a real payload question, and one widget comment already claims Cairo is \"not in the design system\" (AI-19). Inter's 18pt static files are full multi-language builds; the app needs Latin plus punctuation.",
+      "recommendation": "Two independent options, both NEEDS HUMAN DECISION: (a) drop Cairo if Tajawal's coverage is sufficient for Egyptian Arabic — saves ~283 KB; (b) subset Inter to the Latin range — potentially saves several hundred KB. Measure before acting; do not remove a declared font without checking assets/fonts/README.md's warning that a missing declared font is a build error."
+    },
+    {
+      "id": "ASSET-02",
+      "kind": "assets",
+      "title": "Zero unused runtime assets — verified",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "All 15 runtime SVGs (5 under images/, 5 under icons/, 5 under icons/nav/) are referenced from lib/. The three assets/launcher_icon/ files are build-time inputs, deliberately excluded from flutter: assets: with a written explanation. Two .gitkeep files hold otherwise-populated directories. No orphan images, no duplicate icons, no debug screenshots inside assets/.",
+      "interpretation": "Asset hygiene is clean. The largest single non-font asset, onboarding_illustration.svg at 185 KB, is a genuine full-screen illustration and is used.",
+      "recommendation": "No action."
+    },
+    {
+      "id": "ASSET-03",
+      "kind": "assets",
+      "title": "76 device-walkthrough screenshots sit untracked in `docs/device_pass/`",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "observed_fact": "docs/device_pass/ holds 76 PNGs plus ui_dump.xml, timestamped 2026-08-04, named for a Day-00 onboarding→registration→home walkthrough. The directory is gitignored with an explicit rationale (\"a single pass is ~12 MB of PNGs that git can never shrink again\"). No .md file in docs/ references them.",
+      "interpretation": "Correctly ignored — the gitignore comment shows this was a considered decision, not an oversight. They are machine-local evidence for one debug session. They do not ship and do not affect the repository.",
+      "recommendation": "No repository action. The developer may delete them locally at any time. Findings worth keeping belong in DESIGN_ISSUES.md / KNOWN_BUGS.md as text, exactly as the gitignore comment says."
+    },
+    {
+      "id": "ASSET-04",
+      "kind": "assets",
+      "title": "`build/` holds ~258 MB of stale compiler caches",
+      "severity": "INFORMATIONAL",
+      "confidence": "HIGH",
+      "observed_fact": "build/ contains three *.cache.dill.track.dill files of 86–92 MB each, dated July and early August 2026, plus per-plugin subdirectories. It is gitignored (/build/).",
+      "interpretation": "Normal, ignored, regenerable build output. Recorded only because it dominates the on-disk footprint and its age suggests nothing has done a full clean build on this machine since early August.",
+      "recommendation": "flutter clean reclaims it whenever disk matters. Never track it."
+    }
+  ],
+  "dependencies": [
+    {
+      "package": "riverpod_generator",
+      "constraint": "^4.0.4",
+      "scope": "dev",
+      "verdict": "UNUSED — HIGH confidence",
+      "evidence": "Zero @riverpod/@Riverpod annotations in lib/; no build.yaml; no riverpod-generated file exists. The project hand-writes every provider.",
+      "recommendation": "DELETE CANDIDATE (needs human confirmation — removing it changes the build_runner graph)"
+    },
+    {
+      "package": "cupertino_icons",
+      "constraint": "^1.0.8",
+      "scope": "runtime",
+      "verdict": "UNUSED — HIGH confidence",
+      "evidence": "Zero imports of package:cupertino_icons/ and zero references to the CupertinoIcons symbol anywhere in lib/ or test/. It is the flutter create default.",
+      "recommendation": "DELETE CANDIDATE — low risk, but confirm no icon font is referenced by name"
+    },
+    {
+      "package": "freezed",
+      "constraint": "^3.2.6-dev.1",
+      "scope": "dev",
+      "verdict": "PRE-RELEASE PIN",
+      "evidence": "The constraint targets a -dev prerelease. Generated output (22 .freezed.dart files) is committed, so day-to-day builds do not re-run it; the codegen-drift CI job does — and that job only runs on main (SEC-04).",
+      "recommendation": "KEEP BUT CLEAN — move to a stable release when one covers the needed features"
+    },
+    {
+      "package": "flutter_bloc",
+      "constraint": "^9.1.1",
+      "scope": "runtime",
+      "verdict": "USED, narrowly",
+      "evidence": "2 files in lib/ (both under features/quiz/bloc/), 1 in test/. Scope is guard-enforced.",
+      "recommendation": "KEEP — the narrow usage is the design, not an accident"
+    },
+    {
+      "package": "screen_protector",
+      "constraint": "^1.5.3",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "lib/features/quiz/screens/screen_protection.dart only — wraps preventScreenshotOn/Off behind a platform-channel-safe abstraction so tests can stub it.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "country_flags",
+      "constraint": "^4.1.2",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "Single call site. Note project_rules_test.dart's hardcoded-string allowlist exists partly because of flag-emoji joins in login_screen.dart and signup_identity_screen.dart.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "device_info_plus",
+      "constraint": "^13.2.0",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "Feeds the device-binding flow (adr-019).",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "url_launcher",
+      "constraint": "^6.3.2",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "Only call site is login_screen.dart:118 — the three placeholder legal URLs (SEC-02).",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "connectivity_plus",
+      "constraint": "^7.3.0",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "Drives isOnlineProvider and the Offline screen state.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "shared_preferences",
+      "constraint": "^2.5.5",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "PreferencesStore only — theme mode and locale. Deliberately NOT used for anything sensitive.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "flutter_secure_storage",
+      "constraint": "^10.3.1",
+      "scope": "runtime",
+      "verdict": "USED, 1 file",
+      "evidence": "SecureStorage only. 10.x Android backend is always encrypted; the source explicitly warns against re-adding the deprecated encryptedSharedPreferences option.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "cached_network_image",
+      "constraint": "^3.4.1",
+      "scope": "runtime",
+      "verdict": "USED, 5 files",
+      "evidence": "Avatars and question images over metered connections.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "flutter_svg",
+      "constraint": "^2.3.0",
+      "scope": "runtime",
+      "verdict": "USED, 11 files",
+      "evidence": "All 15 runtime SVGs.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "pinput",
+      "constraint": "^6.0.2",
+      "scope": "runtime",
+      "verdict": "USED, 1 lib + 3 test",
+      "evidence": "OTP entry.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "intl",
+      "constraint": "0.20.2 (exact)",
+      "scope": "runtime",
+      "verdict": "USED, 4 files",
+      "evidence": "Pinned without a caret — a deliberate lockstep with flutter_localizations.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "go_router",
+      "constraint": "^17.3.0",
+      "scope": "runtime",
+      "verdict": "USED, 26 files",
+      "evidence": "Single router, StatefulShellRoute.indexedStack, one redirect function.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "dio",
+      "constraint": "^5.10.0",
+      "scope": "runtime",
+      "verdict": "USED, 14 files",
+      "evidence": "Two client factories, two interceptors.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "flutter_riverpod",
+      "constraint": "^3.3.2",
+      "scope": "runtime",
+      "verdict": "USED, 63 files",
+      "evidence": "The DI container and all non-quiz state.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "freezed_annotation / json_annotation",
+      "constraint": "^3.1.0 / ^4.12.0",
+      "scope": "runtime",
+      "verdict": "USED",
+      "evidence": "22 .freezed.dart + 20 .g.dart generated and committed.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "flutter_launcher_icons",
+      "constraint": "^0.14.4",
+      "scope": "dev",
+      "verdict": "USED, build-time",
+      "evidence": "Generates every Android mipmap and iOS appiconset from assets/launcher_icon/. Masters are deliberately NOT declared under flutter: assets: so they do not ship.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "mocktail / bloc_test / build_runner / json_serializable / flutter_lints / flutter_test",
+      "constraint": "—",
+      "scope": "dev",
+      "verdict": "USED",
+      "evidence": "mocktail is the mocking library throughout; bloc_test drives 34 blocTest&lt;QuizBloc, QuizState&gt; cases in one file.",
+      "recommendation": "KEEP"
+    },
+    {
+      "package": "hive_ce / hive_ce_flutter / hive_ce_generator",
+      "constraint": "REMOVED 2026-08-15",
+      "scope": "—",
+      "verdict": "ALREADY REMOVED",
+      "evidence": "Declared but never imported; zero Dart references, no adapters, no build.yaml. The pubspec keeps a written tombstone explaining the removal was not a storage migration.",
+      "recommendation": "N/A — exemplary removal note"
+    }
+  ],
+  "palette": {
+    "brand": [
+      {
+        "token": "Brand.greenPrimary",
+        "group": "PRIMARY",
+        "note": "app_colors.dart:8 — light-theme primary. Same constant, used differently per canvas.",
+        "light": "#384F47",
+        "dark": "#384F47",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "Brand.purplePrimary",
+        "group": "PRIMARY",
+        "note": "app_colors.dart:9 — dark-theme primary.",
+        "light": "#AE87E7",
+        "dark": "#AE87E7",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      }
+    ],
+    "tokens": [
+      {
+        "token": "background",
+        "group": "BACKGROUNDS",
+        "note": "The two canvases. Cream vs charcoal. Every other token is measured against one of these.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "onboardingIllustrationMask",
+        "group": "BACKGROUNDS",
+        "note": "Dark only — masks the onboarding SVG to the dark canvas.",
+        "dark": "#232428",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "navBarFill",
+        "group": "BACKGROUNDS",
+        "note": "Figma 59:1264 / 348:6686. Dark nav bar is #212226 — deliberately NOT the #232428 page fill.",
+        "light": "#FCFBF9",
+        "dark": "#212226",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "fieldFill",
+        "group": "SURFACES",
+        "note": "Dark is rgba(35,36,40,0.2) — a translucent field over the canvas.",
+        "light": "#FDFDFD",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "cardFill",
+        "group": "SURFACES",
+        "note": "Light carries TODO(design): frame 59:1439 says #FCFBF9, code ships #FDFDFD.",
+        "light": "#FDFDFD",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "sheetFill",
+        "group": "SURFACES",
+        "note": "Both canvases translucent at 20%. Note dark uses #232628, not the #232428 canvas.",
+        "light": "#FCFBF9",
+        "dark": "#232628",
+        "light_alpha": 0.2,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizOptionFill",
+        "group": "SURFACES",
+        "note": "Dark has no Figma frame — derived from the dark card fill.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesCardFill",
+        "group": "SURFACES",
+        "note": "Light is an opaque dusty rose; dark is #27282C @30%.",
+        "light": "#EAD5D5",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.302,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesRowFill",
+        "group": "SURFACES",
+        "note": "Figma 404:6642 / 404:7765.",
+        "light": "#EAD5D5",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesBadgeFill",
+        "group": "SURFACES",
+        "note": "Dark #27282C @20%.",
+        "light": "#FDFDFD",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "subjectCardFill",
+        "group": "SURFACES",
+        "note": "Light is PURE WHITE (#FFFFFF), not the #FCFBF9 canvas — Figma 135:618.",
+        "light": "#FFFFFF",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "treeRowFill",
+        "group": "SURFACES",
+        "note": "Catalog drill-down rows.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "treeRowBadgeFill",
+        "group": "SURFACES",
+        "note": "Light lilac disc; dark translucent.",
+        "light": "#F4E6FF",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "aiPanelOuterFill",
+        "group": "SURFACES",
+        "note": "Figma 159:1811 / 337:9270.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "aiPanelCardFill",
+        "group": "SURFACES",
+        "note": "Dark #1A1A1A @20% — the only use of #1A1A1A in the palette.",
+        "light": "#FCFBF9",
+        "dark": "#1A1A1A",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "resultCardFill",
+        "group": "SURFACES",
+        "note": "Quiz result card.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "resultStarDiscFill",
+        "group": "SURFACES",
+        "note": "Light #F8EFFC is a unique near-white lilac.",
+        "light": "#F8EFFC",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "reviewFilterIdleFill",
+        "group": "SURFACES",
+        "note": "Figma 162:2782 / 337:6827.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileHeaderFill",
+        "group": "SURFACES",
+        "note": "Figma 169:4609 / 337:7455.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileStatFill",
+        "group": "SURFACES",
+        "note": "Dark is OPAQUE here (Figma 661:8579) while its neighbours are translucent.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileMenuRowFill",
+        "group": "SURFACES",
+        "note": "Figma 170:4790 / 337:7479.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileMenuIconDiscFill",
+        "group": "SURFACES",
+        "note": "Light lilac disc behind profile row glyphs.",
+        "light": "#F4E6FF",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileEditChipFill",
+        "group": "SURFACES",
+        "note": "Pencil chip.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "settingsSectionFill",
+        "group": "SURFACES",
+        "note": "Light-only field. Dark section has no frame.",
+        "light": "#FCFBF9",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "otpTimerFill",
+        "group": "SURFACES",
+        "note": "Light-only.",
+        "light": "#FCFBF9",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "otpCardFill",
+        "group": "SURFACES",
+        "note": "Light-only — Figma 308:5114.",
+        "light": "#FCFBF9",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "otpDigitFill",
+        "group": "SURFACES",
+        "note": "Light-only — Rectangle 104-107.",
+        "light": "#FDFDFD",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "trackCardFill",
+        "group": "SURFACES",
+        "note": "Light-only — Figma 125:862.",
+        "light": "#FCFBF9",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "backChipSurfaceFill",
+        "group": "SURFACES",
+        "note": "Figma 90:208 / 404:7424.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "registrationBackChipFill",
+        "group": "SURFACES",
+        "note": "Dark uses #333439 @20% — a one-off hue.",
+        "light": "#FCFBF9",
+        "dark": "#333439",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "languagePillFill",
+        "group": "SURFACES",
+        "note": "Figma 82:1093 / 340:19734.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "homeBellFill",
+        "group": "SURFACES",
+        "note": "Figma 59:1466 / 337:5330.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "dailyTasksFill",
+        "group": "SURFACES",
+        "note": "Dark #242329 @20% — one digit off the canvas, a distinct hue.",
+        "light": "#FCFBF9",
+        "dark": "#242329",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "topStudentFill",
+        "group": "SURFACES",
+        "note": "Light is PURE WHITE; dark #26272B @20%.",
+        "light": "#FFFFFF",
+        "dark": "#26272B",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "subjectSearchFill",
+        "group": "SURFACES",
+        "note": "Figma 135:610 / 337:5724.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesPillFill",
+        "group": "SURFACES",
+        "note": "Dark #565656 @20% — only use of #565656.",
+        "light": "#FCFBF9",
+        "dark": "#565656",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "leaderboardRowFill",
+        "group": "SURFACES",
+        "note": "Light is PURE WHITE — Figma 134:3538.",
+        "light": "#FFFFFF",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "avatarBadgeFill",
+        "group": "SURFACES",
+        "note": "Dark inverts: the cream at 20% over charcoal.",
+        "light": "#FCFBF9",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizPrevButtonFill",
+        "group": "SURFACES",
+        "note": "Dark-only field.",
+        "dark": "#27282C",
+        "dark_alpha": 0.2,
+        "canvas_specific": true
+      },
+      {
+        "token": "continueLearningFillSchool",
+        "group": "SURFACES",
+        "note": "School Home lilac; the one card whose fill changes with the STUDENT'S TRACK, not the canvas.",
+        "light": "#F3E5FF",
+        "dark": "#C4A8E3",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "continueLearningFillUniversity",
+        "group": "SURFACES",
+        "note": "University Home lilac — identical on both canvases.",
+        "light": "#DBB0FF",
+        "dark": "#DBB0FF",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "textPrimary",
+        "group": "TEXT",
+        "note": "Near-black on cream; cream on charcoal.",
+        "light": "#0E0E0E",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "textSecondary",
+        "group": "TEXT",
+        "note": "The second text rank.",
+        "light": "#2C2C2C",
+        "dark": "#DCDCDC",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "hint",
+        "group": "TEXT",
+        "note": "Dark hint is FULL cream — same value as textPrimary. Verify intent.",
+        "light": "#696969",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "legalText",
+        "group": "TEXT",
+        "note": "Dark-only field.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "cardLabel",
+        "group": "TEXT",
+        "note": "IDENTICAL on both canvases (periwinkle). Figma 59:1439 / 337:5340.",
+        "light": "#7070A0",
+        "dark": "#7070A0",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "cardValue",
+        "group": "TEXT",
+        "note": "",
+        "light": "#393939",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mutedText",
+        "group": "TEXT",
+        "note": "IDENTICAL on both canvases.",
+        "light": "#B3B3B3",
+        "dark": "#B3B3B3",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "bodyMuted",
+        "group": "TEXT",
+        "note": "Figma 459:43887 / 459:43877.",
+        "light": "#858585",
+        "dark": "#ECECEC",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "continueLearningContent",
+        "group": "TEXT",
+        "note": "IDENTICAL — dark keeps the light value because the card fill stays lilac.",
+        "light": "#2B2B2B",
+        "dark": "#2B2B2B",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizExplanationBody",
+        "group": "TEXT",
+        "note": "IDENTICAL periwinkle.",
+        "light": "#7070A0",
+        "dark": "#7070A0",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizReviewFilterLabel",
+        "group": "TEXT",
+        "note": "INVERTS between canvases.",
+        "light": "#FCFBF9",
+        "dark": "#232428",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizReviewRowContent",
+        "group": "TEXT",
+        "note": "Dark-only. Documented at 8.24:1 contrast.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "mistakesContent",
+        "group": "TEXT",
+        "note": "Dark-only.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "profileStatLabel",
+        "group": "TEXT",
+        "note": "Dark-only.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "profileStatValue",
+        "group": "TEXT",
+        "note": "IDENTICAL periwinkle.",
+        "light": "#7070A0",
+        "dark": "#7070A0",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "pillTrackLabel",
+        "group": "TEXT",
+        "note": "Light reuses Brand.greenPrimary's value inline.",
+        "light": "#384F47",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "pillTrackSelectedLabel",
+        "group": "TEXT",
+        "note": "IDENTICAL.",
+        "light": "#FCFBF9",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "scopeIdleLabel",
+        "group": "TEXT",
+        "note": "Light reuses Brand.greenPrimary's value.",
+        "light": "#384F47",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizPrevButtonGlyph",
+        "group": "TEXT",
+        "note": "IDENTICAL.",
+        "light": "#FCFBF9",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileEditChipGlyph",
+        "group": "TEXT",
+        "note": "",
+        "light": "#333333",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "languagePillContent",
+        "group": "TEXT",
+        "note": "Dark-only.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "backChipGlyph",
+        "group": "TEXT",
+        "note": "Dark value carries a TODO(design) fallback marker in source.",
+        "light": "#4B675E",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "bellGlyph",
+        "group": "TEXT",
+        "note": "",
+        "light": "#4B675E",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "navCentreGlyphOn",
+        "group": "TEXT",
+        "note": "Pure white on BOTH canvases — the only always-white glyph.",
+        "light": "#FFFFFF",
+        "dark": "#FFFFFF",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumOnAccent",
+        "group": "TEXT",
+        "note": "IDENTICAL.",
+        "light": "#FCFBF9",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizReviewFilterFill",
+        "group": "TEXT",
+        "note": "Light-only fill for the selected review filter.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "link",
+        "group": "TEXT",
+        "note": "Light link is ORANGE; dark link is the brand purple. Two different semantics for one role.",
+        "light": "#E67E22",
+        "dark": "#AE87E7",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "fieldBorder",
+        "group": "BORDERS",
+        "note": "",
+        "light": "#D1D1D1",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "otpDigitBorder",
+        "group": "BORDERS",
+        "note": "IDENTICAL on both canvases (source says so explicitly).",
+        "light": "#D1D1D1",
+        "dark": "#D1D1D1",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizOptionBorder",
+        "group": "BORDERS",
+        "note": "Light-only — Figma 308:5153.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "quizDivider",
+        "group": "BORDERS",
+        "note": "Dark reuses the dark progressTrack value (no dark frame existed).",
+        "light": "#CCD5D2",
+        "dark": "#2E2D32",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesRowBorder",
+        "group": "BORDERS",
+        "note": "",
+        "light": "#4B675E",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "languagePillBorder",
+        "group": "BORDERS",
+        "note": "Light-only.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "trackCardBorderEnd",
+        "group": "BORDERS",
+        "note": "Light-only mint — Figma 82:1785.",
+        "light": "#95CDBB",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "profileRowBorder",
+        "group": "BORDERS",
+        "note": "IDENTICAL periwinkle.",
+        "light": "#7070A0",
+        "dark": "#7070A0",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "profileMenuRowBorder",
+        "group": "BORDERS",
+        "note": "Light-only — NULL in dark (the hairline is dropped, see profile_menu_row.dart:203).",
+        "light": "#7070A0",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "profileMenuEmphasisRowBorder",
+        "group": "BORDERS",
+        "note": "Light-only near-black — Figma 170:4921.",
+        "light": "#101010",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "dailyTasksBorder",
+        "group": "BORDERS",
+        "note": "Light-only.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "treeRowBorder",
+        "group": "BORDERS",
+        "note": "",
+        "light": "#4B675E",
+        "dark": "#FCFBF9",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "aiPanelOuterBorder",
+        "group": "BORDERS",
+        "note": "Light-only.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "quizQuestionCardBorder",
+        "group": "BORDERS",
+        "note": "Light-only.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "quizOptionTileBorder",
+        "group": "BORDERS",
+        "note": "Light-only.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "quizOptionBadgeRing",
+        "group": "BORDERS",
+        "note": "Source comment: 'carried, not read' — a token defined but not consumed.",
+        "light": "#4B675E",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "subjectSearchTopBorder",
+        "group": "BORDERS",
+        "note": "Light-only — Figma 135:610.",
+        "light": "#F3F4F6",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "trackRadioRing",
+        "group": "BORDERS",
+        "note": "Dark-only.",
+        "dark": "#FCFBF9",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "bellRing",
+        "group": "BORDERS",
+        "note": "IDENTICAL sage-green on both canvases.",
+        "light": "#4B675E",
+        "dark": "#4B675E",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "successBadge",
+        "group": "STATUS",
+        "note": "IDENTICAL. Sourced from assets/images/success_badge.svg, not a Figma frame.",
+        "light": "#22C55E",
+        "dark": "#22C55E",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "destructive",
+        "group": "STATUS",
+        "note": "IDENTICAL — Figma 176:1191.",
+        "light": "#EF4444",
+        "dark": "#EF4444",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizCorrectFill",
+        "group": "STATUS",
+        "note": "IDENTICAL mint. DESIGN_ISSUES #87 (blocking) records the dark correct-option tile at 1.11:1 contrast.",
+        "light": "#BFFFC3",
+        "dark": "#BFFFC3",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizCorrectBorder",
+        "group": "STATUS",
+        "note": "IDENTICAL.",
+        "light": "#00D33C",
+        "dark": "#00D33C",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizWrongFill",
+        "group": "STATUS",
+        "note": "IDENTICAL — rgba(255,192,192,0.3).",
+        "light": "#FFC0C0",
+        "dark": "#FFC0C0",
+        "light_alpha": 0.302,
+        "dark_alpha": 0.302,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizWrongBorder",
+        "group": "STATUS",
+        "note": "IDENTICAL deep red.",
+        "light": "#921119",
+        "dark": "#921119",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "quizWrongBadge",
+        "group": "STATUS",
+        "note": "IDENTICAL — same value as destructive and mistakesCount.",
+        "light": "#EF4444",
+        "dark": "#EF4444",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesCount",
+        "group": "STATUS",
+        "note": "IDENTICAL — third token carrying #EF4444.",
+        "light": "#EF4444",
+        "dark": "#EF4444",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "mistakesPillAccent",
+        "group": "STATUS",
+        "note": "IDENTICAL — fourth token carrying #EF4444.",
+        "light": "#EF4444",
+        "dark": "#EF4444",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "reviewRowCorrectFill",
+        "group": "STATUS",
+        "note": "Dark is the same hue at 20%.",
+        "light": "#BFFFC3",
+        "dark": "#BFFFC3",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "reviewRowWrongFill",
+        "group": "STATUS",
+        "note": "Dark drops alpha from 0.3 to 0.2 on the same hue.",
+        "light": "#FFC0C0",
+        "dark": "#FFC0C0",
+        "light_alpha": 0.302,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "reviewRowSkippedFill",
+        "group": "STATUS",
+        "note": "No Figma frame on either canvas — derived.",
+        "light": "#FCFBF9",
+        "dark": "#27282C",
+        "light_alpha": 1.0,
+        "dark_alpha": 0.2,
+        "canvas_specific": false
+      },
+      {
+        "token": "bellUnreadDot",
+        "group": "STATUS",
+        "note": "Light-only orange — same value as the light link.",
+        "light": "#E67E22",
+        "light_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "navAccent",
+        "group": "PRIMARY",
+        "note": "Light is sage #4B675E — source explicitly notes it is NOT Brand.greenPrimary.",
+        "light": "#4B675E",
+        "dark": "#AE87E7",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "navCentreIdleFill",
+        "group": "PRIMARY",
+        "note": "",
+        "light": "#F3F1F8",
+        "dark": "#3E3E3E",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "accentSoft",
+        "group": "PRIMARY",
+        "note": "Light is sage #A0B384 (Figma 459:43876) — again NOT greenPrimary.",
+        "light": "#A0B384",
+        "dark": "#AE87E7",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumAccent",
+        "group": "PRIMARY",
+        "note": "IDENTICAL lilac.",
+        "light": "#D8B0FF",
+        "dark": "#D8B0FF",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "scopeSelectedFill",
+        "group": "PRIMARY",
+        "note": "Light matches continueLearningFillUniversity exactly.",
+        "light": "#DBB0FF",
+        "dark": "#C4A8E3",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "progressTrack",
+        "group": "PRIMARY",
+        "note": "",
+        "light": "#ECECEC",
+        "dark": "#2E2D32",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "catalogTrack",
+        "group": "PRIMARY",
+        "note": "Dark-only — and it carries the LIGHT #ECECEC value on the dark canvas.",
+        "dark": "#ECECEC",
+        "dark_alpha": 1.0,
+        "canvas_specific": true
+      },
+      {
+        "token": "pillTrackFill",
+        "group": "PRIMARY",
+        "note": "",
+        "light": "#ECECEC",
+        "dark": "#232429",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "scopeTrackFill",
+        "group": "PRIMARY",
+        "note": "Same pair as pillTrackFill — a duplicate token.",
+        "light": "#ECECEC",
+        "dark": "#232429",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumFirstRing",
+        "group": "STATUS",
+        "note": "IDENTICAL gold.",
+        "light": "#FFCA28",
+        "dark": "#FFCA28",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumSecondRing",
+        "group": "STATUS",
+        "note": "IDENTICAL orange.",
+        "light": "#FF8228",
+        "dark": "#FF8228",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumThirdRing",
+        "group": "STATUS",
+        "note": "IDENTICAL silver.",
+        "light": "#DEDEDE",
+        "dark": "#DEDEDE",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "podiumBadgeIdle",
+        "group": "STATUS",
+        "note": "IDENTICAL — a LIGHT grey retained on the dark canvas.",
+        "light": "#F4F4F4",
+        "dark": "#F4F4F4",
+        "light_alpha": 1.0,
+        "dark_alpha": 1.0,
+        "canvas_specific": false
+      },
+      {
+        "token": "backlight",
+        "group": "SHADOW",
+        "note": "Dark-only back-light. Consumed by 10 shadow specs in app_elevation.dart (lines 1192-1354).",
+        "dark": "(see app_elevation)",
+        "canvas_specific": true
+      },
+      {
+        "token": "otpCardGlow",
+        "group": "SHADOW",
+        "note": "Dark-only glow, non-null asserted at app_elevation.dart:1368.",
+        "dark": "(see app_elevation)",
+        "canvas_specific": true
+      }
+    ],
+    "platform": [
+      {
+        "token": "ic_launcher_background",
+        "hex": "#FFFFFF",
+        "note": "android/app/src/main/res/values/colors.xml — matches pubspec adaptive_icon_background."
+      }
+    ]
+  }
+}
