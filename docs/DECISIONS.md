@@ -1020,8 +1020,8 @@ providers by.
 
 ### D-021 · Production platform identifiers, environment count and display names
 
-**Feature:** Environment & Architecture chapter (Wave 0) · **Date:** 2026-10-04 · **Status:** **PROPOSED — awaiting
-owner ratification; nothing implemented** · **Raised by:** the identity audit
+**Feature:** Environment & Architecture chapter (Wave 0) · **Date:** proposed 2026-10-04, **ratified 2026-10-06** ·
+**Status:** **RATIFIED — Android implemented (Wave 1, 2026-10-06); iOS pending Wave 3** · **Raised by:** the identity audit
 (`.ai/audits/current/app_identity_environment_audit_2026-10-04.md`) and `docs/ENVIRONMENTS.md` §2
 
 **Context.** Both platform identifiers are `flutter create` template output from the first commit (`5e4a512`,
@@ -1046,10 +1046,28 @@ Apple App ID registration and keys every future Firebase registration. The store
 **Engineering recommendation (not a decision).** Q1: B if a token can be named, else A. Q2: three. Q3: as proposed.
 Q4: confirm — the dependency set allows nothing lower and the stores require nothing higher.
 
-**Decision.** _Pending the owner. Fill in: Q1 ___ · Q2 ___ · Q3 ___ · Q4 ___ · date ___._
+**Decision (2026-10-06).** Ratified by the owner by forwarding Seif's written reply (which answered Q1–Q3 and added
+Q5–Q7) and closing Q4 with the frontend decision. Recorded as answered, not paraphrased:
 
-**Consequences (once decided).** Wave 1 implements Android `productFlavors` and the ids; Wave 3 the iOS schemes;
-every build command gains `--flavor`; test devices need one uninstall of the old package; `RELEASE_SIGNING.md:80-85`
-is corrected to cite this entry. Until decided, no identifier changes, no flavors, no Firebase, no keystore.
+| | Answer |
+| --- | --- |
+| **Q1** | **C — a different organisation prefix.** Production Android `applicationId` **`com.levelupworld.app`**; production iOS bundle id **`com.levelupworld.app`**; non-production Android **`com.levelupworld.app.stg`**; non-production iOS **`com.levelupworld.app.stg`**. Same string on both platforms; suffix `.stg` (not `.staging`/`.dev`). Based on the product name and the owned domain `level-upworld.com`, deliberately independent of any person's name and of the still-unknown legal company name. The template ids are dropped. Store registrations and account ownership are *not* decided here. |
+| **Q2** | **Two identities** — production + one non-production. No DEV identity; `Flavor.dev` and the mock harness run under the staging identity. |
+| **Q3** | Production **`Level Up`**; non-production **`Level Up STG`**; no DEV name. |
+| **Q4** | **`Flutter 3.44.7 · Android 24/36/36 · iOS 15.0`.** Android min 24 / target 36 / compile 36 as proposed. iOS: Seif's rule was "the lowest version supported by the pinned Flutter" (13.0 for 3.44.7); the frontend decision chose **15.0** as a more appropriate production baseline that still covers the iPhone generations iOS 15 supports, with the instruction to verify the dependency set against 15.0 before implementation — done, all floors ≤ 13.0 (`ENVIRONMENTS.md` §3.2). |
+| **Q5 (Seif, input)** | Production API base URL **not ready**: planned `https://api.level-upworld.com/api/v1`, not deployed, DNS unverified, **not in the contract's `servers:`** (still exactly one entry, staging). The contract stays the announcement channel; the app keeps a production base URL that cannot ship by accident until then. |
+| **Q6 (Seif, input)** | Non-production app → staging backend; production app → production backend; **no development backend**. Staging is shared with the web team and may be reset. |
+| **Q7 (Seif, input)** | No id checks on API requests; no CORS/OAuth concerns; Firebase: the four ids above must be registered before push, nothing registered, ownership and project sharing unsettled, backend has no Firebase credential and sends no push; no deep links in release 1; website host `level-upworld.com` with `/redeem` opened in the browser (per-flavor config, not hard-coded); one device per account server-side. |
+
+**Engineering choices made under the decision (not identifiers, reversible):** Gradle flavor / future Xcode scheme names are
+`prod` and `staging`, mirroring the Dart enum and entrypoint file names; the Android `namespace` / Kotlin package stays
+`com.levelup.level_up_app` (never shipped). Rationale in `ENVIRONMENTS.md` §2.0.
+
+**Consequences.** Wave 1 (2026-10-06) implemented the Android half: `productFlavors` `prod`/`staging`, the ids, the
+per-flavor names, explicit SDK literals, a Gradle check that refuses a flavor compiled from the wrong entrypoint, the
+evolved release-command guard, `ci.yml`/`tool/`/`pre-push` updates and the `RELEASE_SIGNING.md` correction. Every build
+command now carries `--flavor` (`ENVIRONMENTS.md` §4). Wave 3 applies the iOS half (schemes, bundle ids, 13.0 → 15.0)
+on a Mac. The old `com.levelup.level_up_app` install on test devices is an orphan and can be uninstalled. Firebase and
+the keystore remain gated on their own prerequisites (`ENVIRONMENTS.md` §7, §10).
 
 **Revisit when:** never for Q1 after the first store upload (irreversible); Q2–Q3 when an environment is added.
