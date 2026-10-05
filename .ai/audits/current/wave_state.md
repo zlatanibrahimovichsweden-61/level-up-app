@@ -58,6 +58,9 @@
 | Wave 13 — Quiz result acceptance | **100%** (F 3/3 · V 4/4 · I 2/2), up from 44% — `device_walk_results.md` |
 | Wave 13 | **COMPLETE / RECORDED** |
 | Wave 22 — Flashcards implementation | **COMPLETE** (owner `NEXT` + rulings `1A`–`10A`, 2026-09-29) — contract re-vendored to `f462968` (3.27.0-m1) first (ruling 3B), with `Lecture.flashcardCount`; frames `225:5582` (study, light), `1234:8797` (Setup, light), Lectures `180:5208` / `349:15962`; dark `337:14475` and Arabic `549:28041` are older layouts, built from the light one; W22-1…9 (the re-vendor, the mock's two operations, the 10-card round, the Lectures Flashcard tab, the shared study chrome, Setup, the study screen, the records, tests); review 15 confirmed, all fixed (BUG-019); format PASS · analyze 0 · **2017 / 0 / 0** · OVERALL PASS (+273 over Wave 21's 1744) |
+| Wave 21 — Settings device walk | **COMPLETE** (owner `WALK`, 2026-09-29) — Pixel 8 on a plain mock build: light EN (each Rank switch flipped, one flip screen-recorded, reopened), dark EN, dark AR, light AR, English + dark across a cold start, a tap on a disabled row; two read-only Sonnet verifiers re-measured every claim |
+| Wave 21 — Settings acceptance | **100%** (F 2/2, F3 N/A · V 2/2 · I 3/3) — `device_walk_results.md` |
+| Wave 21 — Settings implementation | **COMPLETE** (owner `NEXT` 2026-09-28, rulings 2026-09-29) — frames `176:1840` (= `309:8452`), dark `337:8141`, Arabic `549:21759`; rulings: English left in Arabic (#108), the frame's switch with a stand-in OFF (#107), "الأوضاع" (#110), F3 test-level; W21-1…8 (the switch, the 25s to ink, the row labels, the language order, the Arabic heading, headers + BUG-018 + a stable node, the stale records, tests); the review's fixes; +21 tests; validate **1744/0/0 PASS**; new for the owner: BUG-017 |
 | Wave 20 — Edit Profile device walk | **COMPLETE** (owner `WALK`, 2026-09-28) — Pixel 8 on a plain mock build: school light EN (the form, the sheet, the picker; the avatar, a name, an e-mail set and cleared, a malformed e-mail; the unsaved guard by the chip and by system Back), dark EN, dark AR, light AR, the university form, offline; two read-only Sonnet verifiers re-measured every claim |
 | Wave 20 — Edit Profile acceptance | **100%** (F 4/4, F1 N/A · V 3/3 · I 3/3) — `device_walk_results.md` |
 | Wave 20 — Edit Profile implementation | **COMPLETE** (owner `NEXT`, 2026-09-28) — frames: `176:1201` / `180:6349` (the plan's missing university frame exists), dark `337:7795` / `349:12688`, RTL `549:21413` / `549:26807`; action sheet `216:3341`; picker `180:4153`; owner rulings: the locked rows follow the frames (#105), Upload photo dimmed with its caption (#106); W20-1…9 (mock `PATCH /me`, the sheet, the picker ✕, the avatar block, the pencil, the gradient disc, the locked rows, BUG-016, tests; the review's 3 fixes); +30 tests; validate **1723/0/0 PASS** |
@@ -101,7 +104,7 @@ in `app_colors.dart` and the regenerated `test/goldens/otp_dark.png`.
 
 | Field | Value |
 | --- | --- |
-| Current wave | 22 — Flashcards: **COMPLETE (100%)**, committed as `a988a1f` and pushed (2026-09-30); walked 92% (owner `WALK`, 2026-09-29; V3 failed on BUG-020, a card's text took the app's direction), then **BUG-020 fixed and re-walked: 100%** (owner request, 2026-09-30; 4/4 combinations PASS), validate 2036/0/0 (the full working tree; the committed Wave 22 tree alone 1985/0/0). Open for the owner: **the Figma credential** (TEXT `1240:9847`: remove + rotate), **Wave 22's two provisional Arabic strings** (the Setup pill and helper, #114), W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
+| Current wave | 22 — Flashcards: **COMPLETE (100%)**, committed as `a988a1f` and pushed (2026-09-30); walked 92% (owner `WALK`, 2026-09-29; V3 failed on BUG-020, a card's text took the app's direction), then **BUG-020 fixed and re-walked: 100%** (owner request, 2026-09-30; 4/4 combinations PASS), validate 2036/0/0 (the full working tree; the committed Wave 22 tree alone 1985/0/0). Wave 21 walked **100%**. Open for the owner: **the Figma credential** (TEXT `1240:9847`: remove + rotate), **Wave 22's two provisional Arabic strings** (the Setup pill and helper, #114), **BUG-017's wording** (the "Hide my points" help line against adr-111), W18-3 (the inert row's text column), review's AI glyph size, D-019's placement (`FORMULATE`) |
 | Branch / HEAD | `merged` = `origin/merged`. Last product checkpoint `a988a1f` (Wave 22 alone, with the BUG-020 fix; committed and pushed on the owner's request, 2026-09-30) on `cccd2f1` (the Waves 01–19 checkpoint, 2026-09-28). Not committed: Waves 20 (Edit Profile) and 21 (Settings), finished and walked, in the working tree |
 
 ## Completed investigation
@@ -1592,6 +1595,94 @@ S34 / #105; the bottom nav bar on a pushed route).
 - **Device state:** light EN on Home, the school student signed in; airplane off, Wi-Fi on. Auto-rotate read 0 at the
   start and 1 at the end; nothing in the walk sets it, left as it is.
 
+## Wave 21 — implementation (2026-09-28 → 2026-09-29)
+
+Owner `NEXT`. Screen: Settings (`/settings`). Endpoints `GET /me`, `PATCH /me` (the Rank toggles); gated: `POST` +
+`DELETE /me/deletion-request` (no design), `PUT /me/fcm-token` (no Firebase, no product call). The plan: verify the
+built screen against its frames (ruled #45, #46, #48), exercise the Rank toggles against Wave 20's mock `PATCH /me`,
+and correct `docs/STORE_READINESS.md:59`; account deletion is built only if a design and copy arrive. Frame read +
+code compare first; findings, rulings and the Done list land here.
+
+**Frame map (read over the MCP, 2026-09-28):** light `176:1840` / university `309:8452`, dark `337:8141` / `349:12113`,
+RTL `549:21759` / `565:14612`. No account-deletion frame exists anywhere on the design page (no frame or text names
+it).
+
+- **Owner rulings (2026-09-29, `1A 2A 3A 4A`):** (1) the language track follows the frames, English on the left in
+  Arabic too (#108); (2) the frame's switch, OFF over a stand-in grey `#B3B3B3` for the designer to replace (#107);
+  (3) the Arabic "Mode" heading is the frame's word, "الأوضاع" (#110); (4) F3 stays test-level: the mock cannot fail a
+  toggle's `PATCH /me` (airplane mode does not reach its interceptor), and no failure trigger was added.
+- **Done:** **W21-1** the frame's switch (48 x 24, `#AE87E7`, a 16 `#FFFFFF` knob 4 in; the row carries its
+  semantics; the knob's ends are physical, as `549:21823` draws). **W21-2** the spacing, measured to ink: the frame's
+  25 from the bar to the first cap top, from a heading's baseline to its control and from a control to the next cap
+  top (they were 26.1 / 14.8 / 30.1); headings flush with the edge (inset 4); rows 16 / 14 inside the card's
+  hairline, 52 tall (53); the note under a card flush. **W21-3** row labels Inter Regular 16 in `#384F47` /
+  `#FCFBF9` (`h3` in `textPrimary`). **W21-4** the language order fixed in Arabic. **W21-5** "الأوضاع". **W21-6**
+  screen reader: headings are headers; a disabled row says its label once (BUG-018); a Rank save keeps the row's one
+  node, so focus survives it. **W21-7** the stale records: STORE_READINESS (both deletion endpoints exist and are
+  stable; the push-token endpoint is stable), S28, the S27 / #46 cites, the S28 comment in code. **W21-8** tests.
+- **Probed, no change:** the Mode rows were already one node each ("Light", button, checked, tappable); a lens had
+  called them un-merged. Pinned by a test.
+- **New, open for the owner — BUG-017:** the "Hide my points" help line says "You'll still be listed — without your
+  score." Under adr-111 a score-hidden student is taken off every board and refused their own rank
+  (`openapi.yaml:2076-2083`, `:2181-2183`). The wording (EN + AR) is the owner's; S27 and #46 now carry the adr-111
+  note.
+- **Tokens:** `settingsRowLabel`, `settingsToggleOnTrack`, `settingsToggleOffTrack`, `settingsToggleKnob`, each in the
+  six `AppColors` places.
+- **Tests:** `settings_frame_test.dart` (new, 18, the bundled fonts loaded: the 25s against Inter's measured baseline,
+  headings flush on both sides, the row labels in both canvases, no stock `Switch`, the switch ON / OFF / Arabic, a row
+  52 inside the hairline in light and 16 from the card in dark, a screen-reader flip, a disabled row's label once, the
+  node surviving a save, the headers, the Mode node, both Rank switches off while a save is out, Rank's skeleton before
+  `/me` answers); `settings_screen_test.dart` (3 moved to `SettingsToggle`, the Arabic word);
+  `settings_elevation_test.dart` (English stays left in Arabic; the pin is local); `settings_harness.dart` (`settle:
+  false`); `app_colors_test.dart` (+2); the golden `settings_section_dark.png` re-captured (the heading 4 left and 10.2
+  down, nothing else).
+- **Review (three read-only Sonnet lenses, every finding adversarially verified): 19 confirmed (two found twice), 4
+  refuted.** Fixed: BUG-018 and the node rebuilt on every save; headers; the note's inset; the rows' 14.5 padding; a
+  centring test that could not fail (now the 52-row test); a token test blind to 3 of the 4 tokens' lerp; stale
+  comments (fcm-token "draft", the old `scoreHidden` meaning, the divider's "no reading"); S28's line cite; the rest of
+  STORE_READINESS. Recorded instead (#107-#109): the dimmed notification switches, "English" where the Arabic frame
+  writes "الانجليزية", the row pitch 52.5 against 52.2, the label line 24 against 21, headings `#0E0E0E` against
+  `#000000`, the build's caption under Notification Preferences, the frame's 0.2 hairline.
+- **Red proof:** 13 mutations, each undoing one fix on the finished code, each turn their tests red (the 25s x 3, the
+  inset, the mirror, the label, the knob's ends, the toggled state, the doubled label, the two trees, the row padding,
+  the header, a token's lerp, the Arabic word). Every file restored byte-identical. The in-flight and skeleton tests
+  pin behaviour that already worked and was untested.
+- **Docs:** DESIGN_ISSUES #107-#112 (+ #46's cites and adr-111 note); KNOWN_BUGS BUG-017 (open), BUG-018; seif_fight
+  S27, S28; STORE_READINESS.
+- **Not changed:** the Mode card (#45); two Rank switches (#46 / S27); notifications ON and disabled (#48 / S28); the
+  title `h2` (#99); the divider (0.5 `profileRowBorder`); the 44 dp language track (#112); the Rank skeleton's 128
+  height; account deletion and the push token (no design; gated).
+- **Validation:** format PASS · analyze 0 · **1744 / 0 / 0** · OVERALL PASS (+21 over Wave 20's 1723) (`validate.ps1`, 2026-09-29).
+- **Walk notes (on `WALK`):** light EN vs `176:1840` (the 25s by pixel runs: the bar to "Languages"' cap top, a
+  baseline to its control, a card to the next cap top; headings at x 20; rows 52; the switch 48 x 24 with its knob 4
+  in; labels `#384F47`); dark vs `337:8141` (labels `#FCFBF9`, rows on the card's edge, the switch 16 in); Arabic vs
+  `549:21759` (English left, "الأوضاع", the switch at the left with its ON knob right); F1 flip each Rank switch, then
+  reopen Settings (a fresh `GET /me`) and see it kept; F2 nothing moves before the answer; I1 / I2 the language and the
+  canvas live and after a cold start; I3 the four notification rows dead, one uiautomator node each; F3 N/A on the
+  mock (ruling 4).
+
+## Wave 21 — walk (2026-09-29)
+
+Owner `WALK`. Pixel 8, a plain mock build with Wave 21 (`main_mock.dart` blob `f189786`, untouched), launched with
+`am start`, font scale 1.0 (read only). **Score: 100%** (F 2/2, F3 N/A · V 2/2 · I 3/3); details in
+`device_walk_results.md`, evidence in the scratchpad `walk21/`. Two read-only Sonnet verifiers re-measured the
+captures, dumps and the recording's frames: every behaviour and every measurement confirmed. Their four FAILs were the
+record's (the crash buffer checked but not saved, now saved; the flip's timing a lower bound; a helper message misread
+as Home's colour; the preferences read live but not saved), corrected in `claims.md`.
+- **Verified:** W21-1 the switch in light, dark and Arabic (48 × 24, the knob 4 in, ON's knob at the right end in
+  Arabic, OFF `#B3B3B3`); W21-2 the 25s to ink (24.4–25.3, the headings ~0.3 above layout from a whole-pixel baseline),
+  headings on the edge, rows 52 inside the hairline in light and on the edge in dark; W21-3 labels `#384F47` /
+  `#FCFBF9`; W21-4 English left in Arabic; W21-5 "الأوضاع"; W21-6 each disabled row one node with its label once
+  (BUG-018). F2 by a screen recording: both Rank switches dim at the tap, the tapped one moves only after `/me`
+  answers. I1 / I2 across a cold start.
+- **Observed, not logged:** Arabic lines are taller (Rank rows 79 against 72; "تفضيلات الإشعارات" 28.2 against 24), so
+  the Arabic gaps around that heading run ~4 dp longer; the Notification caption is met five times by a screen reader
+  (the block's node and each row's hint) — a candidate follow-up; the mock's Rank values reset on a restart.
+- **Walk-method notes:** a Back press after typing the OTP returned to the login screen; the first recording was lost
+  to a `/c/…` path adb cannot read.
+- **Device state:** light EN on Home, the school student signed in; airplane off, Wi-Fi untouched; auto-rotate 0 at the
+  start and the end.
+
 ## Wave 22 — implementation (in progress, 2026-09-29)
 
 Owner `NEXT`. Screen: Flashcards (university; a new screen). Endpoints `GET /flashcards/lectures/{lectureId}/cards`
@@ -1738,8 +1829,8 @@ app's direction); **BUG-020 fixed and re-walked 2026-09-30: 4/4 combinations PAS
 **Wave 22 COMPLETE and committed:** `a988a1f`, Wave 22 alone, pushed to `origin/merged` 2026-09-30 (that tree validates 1985/0/0; the 2036 below is the full working tree). Waves 20 and 21 are not committed.
 Validate 2036/0/0. Open for the owner: **the Figma credential** in TEXT `1240:9847` (remove it from the file and
 rotate it; one local subagent transcript holds it — masking it was refused by the permission classifier); **the two
-provisional Arabic strings** (#114). The contract is re-vendored here to `f462968` (3.27.0-m1): tell the
-"Contract updates" session when it next runs. Wave 20 (Edit Profile) walked (**100%**, validate 1723/0/0). Open for the owner: W18-3, review's AI glyph size, D-019's placement;
+provisional Arabic strings** (#114); **BUG-017**. The contract is re-vendored here to `f462968` (3.27.0-m1): tell the
+"Contract updates" session when it next runs. Wave 21 (Settings) walked (**100%**, validate 1744/0/0). Open for the owner: **BUG-017** — new wording (EN + AR) for the "Hide my points" help line, which contradicts adr-111. Wave 20 (Edit Profile) walked (**100%**, validate 1723/0/0). Waves 20 and 21 are not committed (Wave 22 is, `a988a1f`); the "Contract updates" session asked to be told when Wave 20 is committed (upstream is at 3.27.0-m1; its `flashcardCount` touches `mock_backend.dart`). Open for the owner: W18-3, review's AI glyph size, D-019's placement;
 from the Wave 19 review, a Retry on the profile still loading when the profile is reloaded lands after the fresher
 answer and replaces it (pre-existing, probe-proven, not recorded in KNOWN_BUGS); the task chip on other notifiers'
 disposal flag. Wave 22 is the last of the 22 formulated waves: what follows is the owner's call; a walk only on `WALK`; the wave list changes only on

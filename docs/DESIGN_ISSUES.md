@@ -1265,13 +1265,17 @@ floating with nothing to group them. When #45 is answered, the card goes with th
 **Where:** Setting (`176:1840`) — a single **Show Rank** toggle.
 Code: `lib/features/settings/screens/settings_screen.dart`.
 
-**What.** `PATCH /me` accepts two privacy fields (`openapi.yaml:620-621`), and adr-023 defaults them
-differently (`:1380-1382`):
+**What.** `PATCH /me` accepts two privacy fields (`openapi.yaml:846-847` at the 3.23.0-m1 pin; `:620-621` when this
+was filed), and adr-023 defaults them differently (`:2481-2485`; was `:1380-1382`):
 
 | Field | Question it answers | Default |
 |---|---|---|
 | `leaderboardVisible` | am I on the leaderboard at all? | `true` |
 | `scoreHidden` | I am listed — is my score shown? | `false` |
+
+> **2026-09-29 (API→UI Wave 21): the `scoreHidden` row above is stale.** Since adr-111 a score-hidden student is taken
+> off every board, and `GET /leaderboard/me` refuses them their own rank (`openapi.yaml:2076-2083`, `:2181-2183`). See
+> seif_fight S27 and KNOWN_BUGS BUG-017 (the app's help line still says "listed, without your score").
 
 These are not two spellings of one setting. A student who wants to compete but not publish their
 score picks the second without the first; a student who wants out entirely picks the first. One
@@ -4622,6 +4626,133 @@ second label is set `align=LEFT` and the first `RIGHT`; both end 20 from the rig
 radial gradient disc (`#4B675E` → `#95CDBB`), as Edit Profile's avatar now does (`176:1343`). The RTL picker frame
 (`549:21642`) keeps the ✕ on the left; the build mirrors it, as every other ✕ in the app does. The selected ring (2.5,
 `cs.primary`) is the build's: the frame's five cells are identical.
+
+---
+
+## 107. ✅ BUILT 2026-09-29 (API→UI Wave 21, owner ruling) — The Settings switch is the frame's 48 x 24 stadium, not Flutter's; 🟡 its OFF state is not designed
+
+> **Classification:** frame-proven for ON (Rank `642:8525`, dark `642:8587`; Notification Preferences `176:2394` …
+> `176:2421`, dark `337:8199` …; Arabic `549:21822` …); OFF by owner ruling 2026-09-29.
+
+**Where:** `lib/features/settings/widgets/settings_rows.dart`, `SettingsToggle`; tokens `settingsToggleOnTrack`,
+`settingsToggleOffTrack`, `settingsToggleKnob`.
+
+**Frame.** A 48 x 24 fully rounded track in `#AE87E7` on both canvases; a 16 dp `#FFFFFF` knob 4 in from the right end,
+centred; the switch ends 16 in from the card (inside its 0.5 hairline) and is centred on a 52 row. Every switch in the
+file is drawn ON.
+
+**Build before.** Material 3's stock `Switch`: 52 x 32 with a growing knob, in the theme's seed colours. No theme value
+gives it the frame's shape.
+
+**Build now.** The frame's shape and colours. The switch only paints; the row is the tap target and carries what the
+stock switch used to announce (toggled, enabled, the tap).
+
+**Ruling (OFF).** The knob moves to the left end over `#B3B3B3`, `mutedText`'s value (the app's inactive grey, the same
+on both canvases), until the designer draws OFF. `#B3B3B3` on the `#FCFBF9` card is about 2.0:1 and ON's `#AE87E7` is
+2.74:1 (#77): both under the 3:1 guideline for controls. The knob's position and the announced state carry the value.
+**Ask (designer):** draw the OFF state.
+
+**Drawn, and built as drawn.** The Arabic frame mirrors the row (the switch at the left edge, `549:21822`) but keeps the
+ON knob at the switch's RIGHT end (`549:21823`), as in English. The knob's ends are physical. Platform switches mirror
+it; the frame does not.
+
+**Not the frame's colours on screen.** The four Notification Preferences switches are dimmed to 45% with their rows
+(disabled, S28 / #48), so they do not paint the frame's full `#AE87E7` / `#FFFFFF`. The Rank switches do.
+
+---
+
+## 108. ✅ BUILT 2026-09-29 (API→UI Wave 21, owner ruling) — In Arabic the language track keeps English on the left
+
+> **Classification:** frame-proven; owner ruling 2026-09-29 ("follow the frames").
+
+**Where:** `lib/features/settings/screens/settings_screen.dart`, `_LanguagesSection`.
+
+**Frames.** English at x 20 and Arabic at x 201 in every frame: light `176:2372` / `176:2374`, dark `337:8178` /
+`337:8180`, Arabic `549:21798` "الانجليزية" / `549:21796` "العربية". Only the filled segment moves.
+
+**Build before.** `SegmentedTrack` is a `Row`, so in Arabic it put العربية on the left.
+
+**Build now.** This one instance is pinned to LTR; the page around it stays RTL. The primitive still mirrors for the
+Lectures tabs and the leaderboard toggle, which share it.
+
+**Kept, and not in the frame.** The Arabic frame names the English segment "الانجليزية"; the build writes each language
+in its own script ("English", "العربية") in both locales, so a student stranded in a script they cannot read can find
+the way out (`_LanguagesSection`'s rule since Day 8).
+
+---
+
+## 109. ✅ BUILT 2026-09-29 (API→UI Wave 21) — Settings' spacing, headings and row labels, measured against the frames
+
+> **Classification:** frame-proven (`176:1840`, dark `337:8141`, Arabic `549:21759`).
+
+**Where:** `lib/features/settings/widgets/settings_section.dart` (`kSettingsRhythm`, `SettingsHeading`),
+`settings_screen.dart`, `settings_rows.dart`; token `settingsRowLabel`.
+
+**Frame.** One spacing, 25. Each heading's box is trimmed to its cap height (13 tall), so the 25s run from the bar to
+the first heading's cap top, from a heading's baseline to its control, and from a control to the next heading's cap
+top. Headings sit on the content edge (x 20; the right edge, 382, in Arabic). Row labels are Inter Regular 16 in
+`#384F47` light / `#FCFBF9` dark.
+
+**Build before.** Heading to control 10 box to box (14.8 from the baseline); blocks 24 apart (30.1 to the next cap
+top); content 12 under the bar (26.1 to the first cap top); headings inset 4; row labels `h3` (18 / 600) in
+`textPrimary` (`#0E0E0E` in light).
+
+**Build now.** The 25s, from Inter's own metrics (the baseline 19.22 down an `h3` line, the caps 13.10 above it).
+`settings_frame_test.dart` checks them against the real font. Headings are flush with the edge, and marked as headers
+for screen readers; row labels are `bodyLarge` in `settingsRowLabel`. Rows take the frame's padding, 16 / 14, inside the
+card's 0.5 hairline, so a row is the frame's 52 (it was 53: 14.5 + 24 + 14.5, the hairline folded into every row), and
+the note under a card is flush with it.
+
+**Recorded, not changed.**
+- The row pitch is 52.5 (52 + the build's 0.5 divider) against the frame's 52.2, so the Notification card is 210.5 tall
+  to the frame's 209.
+- A row label's baseline sits 1.4 lower in its row than the frame's. The build's label line is `bodyLarge`'s 24, the
+  frame's is 21, and Flutter splits a line's leading in proportion to the font's ascent and descent where Figma splits
+  it evenly. Every screen has this.
+- The frame's row hairline is `#4B675E` at 50%, 0.2 dp, on both canvases (`176:2387`, `337:8196`): the first reading
+  of it. The build's divider stays `profileRowBorder` at 0.5; a 0.2 dp line is half a device pixel.
+- Headings keep `textPrimary` (`#0E0E0E` in light) where the frame reads `#000000`, as every heading and title in the
+  app does.
+- The line under Notification Preferences ("Notification settings aren't available yet.") is the build's, not the
+  frame's: the reason the four switches cannot move (S28).
+- Arabic headings fall back to Tajawal, whose ink sits differently in the same line; the gaps are Inter's.
+
+---
+
+## 110. ✅ BUILT 2026-09-29 (API→UI Wave 21, owner ruling) — The Arabic "Mode" heading is the frame's "الأوضاع", not "المظهر"
+
+> **Classification:** frame copy; owner ruling 2026-09-29.
+
+**Frame.** `549:21802` reads "الاوضاع". The ARB had "المظهر", a different word, not a spelling.
+
+**Build now.** "الأوضاع", the frame's word spelled with its hamza (`settingsMode` in `app_ar.arb`).
+
+**Kept.** The Arabic title: the frame's "الاعدادات" is the same word as the ARB's "الإعدادات" without the hamza, so the
+ARB's spelling stays.
+
+---
+
+## 111. 🟡 The Arabic Settings frame has no Rank block
+
+> **Classification:** frame gap.
+
+**Frame.** `549:21759`'s content (`549:21790`) is 478 tall: Languages, Mode, Notification Preferences. There is no
+Rank block ("الترتيب"), which the light and dark frames draw between Mode and Notification Preferences (`642:8516`,
+`642:8579`). The university Arabic frame `565:14612` was not read.
+
+**Build.** Rank stays in Arabic: a control a student has in English cannot disappear in Arabic.
+**Ask (designer):** add the block to the Arabic frame.
+
+---
+
+## 112. 🟡 The language track's 44 dp height is under the 48 dp tap-target guideline
+
+> **Classification:** frame value, the same class as #80 and #89.
+
+**Frame.** `176:2371` / `337:8177` / `549:21795` are 44 tall; `SegmentedTrack` takes 44 by default, and so do the
+Lectures tabs and the leaderboard toggle, which share it.
+
+**Build.** Kept at the frame's 44, as #80 and #89 were. Not changed in Wave 21.
 
 ---
 

@@ -203,7 +203,7 @@ void main() {
       );
     });
 
-    testWidgets('in Arabic the first segment leads on the RIGHT', (
+    testWidgets('in Arabic English STAYS on the left — the frame\'s order', (
       tester,
     ) async {
       await pumpAppAt(tester, '/settings', locale: 'ar');
@@ -214,12 +214,31 @@ void main() {
       final arabic = tester.getRect(
         find.byKey(const Key('settings_language_ar')),
       );
+      final track = tester.getRect(trackFinder());
       expect(
         english.left,
-        greaterThan(arabic.left),
+        lessThan(arabic.left),
         reason:
-            'the primitive lays segments out as a Row, so RTL mirrors them '
-            'with no mirroring code and no second order to maintain',
+            '`549:21798` "الانجليزية" is at x 20 and `549:21796` "العربية" '
+            'at x 201 — the Arabic frame does not mirror this control '
+            '(owner ruling 2026-09-29; it mirrored until API→UI Wave 21)',
+      );
+      expect(english.left, closeTo(track.left, 0.5));
+      expect(arabic.right, closeTo(track.right, 0.5));
+    });
+
+    testWidgets('the pin is local — the page around it is still RTL', (
+      tester,
+    ) async {
+      await pumpAppAt(tester, '/settings', locale: 'ar');
+
+      expect(
+        Directionality.of(tester.element(find.text('اللغة'))),
+        TextDirection.rtl,
+      );
+      expect(
+        Directionality.of(tester.element(trackFinder())),
+        TextDirection.ltr,
       );
     });
 

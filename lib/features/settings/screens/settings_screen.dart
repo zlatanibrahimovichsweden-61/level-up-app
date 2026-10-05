@@ -38,6 +38,9 @@ import '../widgets/settings_section.dart';
 /// still switch to the dark canvas; putting the page behind one state machine
 /// would take away two working controls because a third one's request failed.
 /// Only the Rank block carries `/me`'s state, and only that block degrades.
+///
+/// The spacing is the frame's single 25, measured to the headings' ink — see
+/// [kSettingsRhythm].
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -56,14 +59,19 @@ class SettingsScreen extends ConsumerWidget {
                 title: l10n.profileSettings,
                 backKey: const Key('settings_back'),
                 child: ListView(
-                  padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 32),
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    20,
+                    _contentTop,
+                    20,
+                    32,
+                  ),
                   children: const [
                     _LanguagesSection(),
-                    SizedBox(height: 24),
+                    SizedBox(height: _blockGap),
                     _ModeSection(),
-                    SizedBox(height: 24),
+                    SizedBox(height: _blockGap),
                     _RankSection(),
-                    SizedBox(height: 24),
+                    SizedBox(height: _blockGap),
                     _NotificationsSection(),
                   ],
                 ),
@@ -75,6 +83,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+/// The title bar's bottom to the first heading's cap top: the frame's 25
+/// (`176:1863` ends at y 95, `176:2298` starts at y 120). `TitledChrome` ends
+/// its bar with 8 of its own padding.
+const double _contentTop = kSettingsRhythm - 8 - kSettingsHeadingCapTop;
+
+/// A block's bottom to the next heading's cap top: the frame's 25.
+const double _blockGap = kSettingsRhythm - kSettingsHeadingCapTop;
 
 /// Languages — the existing [localeProvider], not a second mechanism.
 ///
@@ -99,10 +115,14 @@ class SettingsScreen extends ConsumerWidget {
 /// tokens; building it a second way is exactly the drift the primitive exists
 /// to stop.
 ///
-/// **English comes first.** The build listed Arabic first; both frames list
-/// English first (`176:2373` then `176:2375`, `337:8179` then `337:8181`), and
-/// `SegmentedTrack` lays its segments out as a `Row`, so in Arabic the first
-/// segment is the leading one on the right without any mirroring code.
+/// **English is on the LEFT in both languages** — owner ruling 2026-09-29
+/// (docs/DESIGN_ISSUES.md #108). The Arabic frame does not mirror this
+/// control: `549:21798` "الانجليزية" sits at x 20 and `549:21796` "العربية" at
+/// x 201, the same places as in English (`176:2372`, `176:2374`); only the
+/// filled segment moves. `SegmentedTrack` is a `Row` and mirrors under RTL on
+/// its own — right for the Lectures tabs and the leaderboard toggle, which
+/// share it — so this one instance is pinned to LTR rather than the primitive
+/// being changed. The build mirrored it until API→UI Wave 21.
 ///
 /// The two `Key`s are preserved through `keyOf`, so the screen's existing tests
 /// still find the same targets they always did.
@@ -128,46 +148,45 @@ class _LanguagesSection extends ConsumerWidget {
         // The same title treatment `SettingsSection` gives its own blocks, so
         // losing the card does not make this heading a different size from the
         // three above and below it.
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 10),
-          child: Text(
-            l10n.settingsLanguages,
-            style: AppType.h3.copyWith(color: ext.textPrimary),
-          ),
-        ),
-        SegmentedTrack<Locale>(
-          segments: const [_english, _arabic],
-          selected: selected,
-          onChanged: (value) => ref.read(localeProvider.notifier).select(value),
-          labelOf: (value) => value.languageCode == 'ar'
-              ? l10n.languageArabicName
-              : l10n.languageEnglishName,
-          keyOf: (value) => Key('settings_language_${value.languageCode}'),
-          style: SegmentedTrackStyle(
-            trackColor: ext.pillTrackFill,
-            trackRadius: 32,
-            trackInsetShadows: elevation.pillTrackInsetShadows,
-            selectedColor: ext.pillTrackSelectedFill,
-            // The frame's 51 on a 44-high segment; anything at or above half
-            // the height is the same stadium and 22 is that half exactly —
-            // the quiz-type tabs' reasoning, on the same component.
-            selectedRadius: 22,
-            selectedInsetShadows: elevation.pillTrackSelectedInsetShadows,
-            // ⚠️ The frame's own label here is Inter Medium 500 at **18**
-            // (`176:2373` / `176:2375`, and `337:8179` / `337:8181` in dark).
-            // The scale has no 18/w500 — `h3` is 18/w600 — and the SAME Figma
-            // component reads **14** on the Lectures screen (`180:5339`). One
-            // component, two sizes, neither of them the build's 12. Recorded
-            // for the designer in docs/DESIGN_ISSUES.md #72; the shared
-            // style is kept rather than inventing a scale entry, which
-            // docs/AGENT_WORKFLOW.md forbids outright.
-            labelStyle: AppType.labelMedium,
-            // Read on the Properties panel 2026-09-20 and both already
-            // tokenised by edit3: idle `#384F47` light / `#FCFBF9` dark,
-            // selected `#FCFBF9` on both. The selected pair is the 2.74:1 the
-            // owner accepted in docs/DESIGN_ISSUES.md #77.
-            idleLabelColor: ext.pillTrackLabel,
-            selectedLabelColor: ext.pillTrackSelectedLabel,
+        SettingsHeading(l10n.settingsLanguages),
+        Directionality(
+          // The frame's fixed order — see the class doc.
+          textDirection: TextDirection.ltr,
+          child: SegmentedTrack<Locale>(
+            segments: const [_english, _arabic],
+            selected: selected,
+            onChanged: (value) =>
+                ref.read(localeProvider.notifier).select(value),
+            labelOf: (value) => value.languageCode == 'ar'
+                ? l10n.languageArabicName
+                : l10n.languageEnglishName,
+            keyOf: (value) => Key('settings_language_${value.languageCode}'),
+            style: SegmentedTrackStyle(
+              trackColor: ext.pillTrackFill,
+              trackRadius: 32,
+              trackInsetShadows: elevation.pillTrackInsetShadows,
+              selectedColor: ext.pillTrackSelectedFill,
+              // The frame's 51 on a 44-high segment; anything at or above half
+              // the height is the same stadium and 22 is that half exactly —
+              // the quiz-type tabs' reasoning, on the same component.
+              selectedRadius: 22,
+              selectedInsetShadows: elevation.pillTrackSelectedInsetShadows,
+              // ⚠️ The frame's own label here is Inter Medium 500 at **18**
+              // (`176:2373` / `176:2375`, and `337:8179` / `337:8181` in dark).
+              // The scale has no 18/w500 — `h3` is 18/w600 — and the SAME Figma
+              // component reads **14** on the Lectures screen (`180:5339`). One
+              // component, two sizes, neither of them the build's 12. Recorded
+              // for the designer in docs/DESIGN_ISSUES.md #72; the shared
+              // style is kept rather than inventing a scale entry, which
+              // docs/AGENT_WORKFLOW.md forbids outright.
+              labelStyle: AppType.labelMedium,
+              // Read on the Properties panel 2026-09-20 and both already
+              // tokenised by edit3: idle `#384F47` light / `#FCFBF9` dark,
+              // selected `#FCFBF9` on both. The selected pair is the 2.74:1 the
+              // owner accepted in docs/DESIGN_ISSUES.md #77.
+              idleLabelColor: ext.pillTrackLabel,
+              selectedLabelColor: ext.pillTrackSelectedLabel,
+            ),
           ),
         ),
       ],
@@ -233,11 +252,14 @@ class _ModeSection extends ConsumerWidget {
 /// Rank — **two** independent booleans, where the frame draws one "Show Rank"
 /// switch.
 ///
-/// TODO(contract): seif_fight.md **S27** — `leaderboardVisible` ("am I listed
-/// at all") and `scoreHidden` ("listed, but without my score") are different
-/// questions, and adr-023 defaults them differently (`true` / `false`). One
-/// switch cannot express two booleans, and collapsing them would mean silently
-/// choosing a privacy policy for a minor. Both are drawn.
+/// TODO(contract): seif_fight.md **S27** — `leaderboardVisible` and
+/// `scoreHidden` are two booleans, and adr-023 defaults them differently
+/// (`true` / `false`). One switch cannot express two booleans, and collapsing
+/// them would mean silently choosing a privacy policy for a minor. Both are
+/// drawn. ⚠️ Since adr-111 BOTH take a student off the board; `scoreHidden`
+/// also costs them their own rank (`403 score_hidden_leaderboard_unavailable`).
+/// The old reading, "listed, but without my score", survives in the help line
+/// (docs/KNOWN_BUGS.md BUG-017).
 ///
 /// Writes go through Step 2's [EditProfileNotifier] — the same command over the
 /// same `ProfileRepository.updateMe`, so there is exactly one `PATCH /me` path
@@ -319,8 +341,9 @@ class _RankSection extends ConsumerWidget {
 /// Notification Preferences — four toggles, no storage.
 ///
 /// TODO(contract): seif_fight.md **S28** — nothing in the contract persists a
-/// notification preference. `PUT /me/fcm-token` is a device token and is draft
-/// besides, so there is not even a draft endpoint to build against. All four
+/// notification preference. `PUT /me/fcm-token` is `x-stability: stable` but
+/// registers a DEVICE token for push, not a student's choice of what to
+/// receive, so there is still no endpoint to build these against. All four
 /// render disabled: a switch that slides and forgets is worse than one that
 /// visibly cannot.
 ///
@@ -432,7 +455,8 @@ class _SectionMessage extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
 
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16.5, 18, 16.5, 18),
+      // The rows' 16 in from the card's inner edge (see `_rowPadding`).
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 18),
       child: Row(
         children: [
           Expanded(

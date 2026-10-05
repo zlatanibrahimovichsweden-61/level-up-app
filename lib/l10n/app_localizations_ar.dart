@@ -790,7 +790,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsLanguages => 'اللغة';
 
   @override
-  String get settingsMode => 'المظهر';
+  String get settingsMode => 'الأوضاع';
 
   @override
   String get settingsRank => 'الترتيب';

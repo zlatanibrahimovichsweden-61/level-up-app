@@ -557,6 +557,47 @@ no `InkWell`), which the row always passed.
 **Fix.** `excludeSemantics: true` on that `Semantics`, so the node says the label, the value and the locked hint once.
 Pinned by "I2: a locked row is announced once" in `edit_profile_screen_test.dart`, which fails on the old widget.
 
+## BUG-017 🟠 "Hide my points" tells a student they stay on the leaderboard; the contract takes them off it
+
+**Status:** OPEN 2026-09-29 (API→UI Wave 21). Found reading the contract for Settings. Waiting on the owner for the new
+wording in English and Arabic; the copy is not invented.
+
+**What breaks.** Settings > Rank explains the `scoreHidden` switch as "You'll still be listed — without your score." /
+"ستظل في القائمة — بدون ظهور نقاطك." Under adr-111 a score-hidden student is removed from every board before ranking,
+"the row is absent entirely" (`openapi.yaml:2076-2083`, `:2814-2822`), and `GET /leaderboard/me` refuses them their
+own rank (`403 score_hidden_leaderboard_unavailable`, `:2181-2183`, `:2236`). A student who turns it on expecting to
+stay listed disappears from the board and loses their own rank.
+
+**Root cause.** The help line describes a "listed without a score" state the contract does not have. The leaderboard
+models already follow adr-111 (`leaderboard_models.dart:58`); the Settings copy was not re-read against it.
+
+**Why tests missed it.** The tests assert that the switch sends only `scoreHidden`. None compares what the explanation
+promises with what the contract does.
+
+**Fix.** Owed: a new help line for "Hide my points", and a check of the line under "Show me on the leaderboard" (true,
+but it does not say that the student still sees their own rank), both in English and Arabic, approved by the owner.
+seif_fight **S27** carries the contract side.
+
+## BUG-018 ✅ A disabled Settings switch was announced with its label twice
+
+**Status:** FIXED 2026-09-29 (API→UI Wave 21). Found by a read-only review lens, confirmed by a probe of the real
+`/settings` semantics tree. Not yet device-verified: the Wave 21 walk runs on the owner's `WALK`.
+
+**What breaks.** TalkBack read each Notification Preferences row as "Announcements, Announcements, switch, on,
+disabled", and a Rank row during a save as "Show me on the leaderboard, Show me on the leaderboard, …". A screen-reader
+user also lost focus on a Rank row when they flipped it: the row's node was destroyed and rebuilt twice per save.
+
+**Root cause.** The disabled branch of `SettingsSwitchRow` put `label:` on a `Semantics` whose own `Text(label)` merged
+into the same node. The enabled and disabled branches were two different widget trees, so a save that disabled the row
+for the length of the request replaced its semantics node, and then replaced it again.
+
+**Why tests missed it.** The test "each announces itself disabled, with a reason" matched only the enabled state and
+the hint, not the label. No test compared a row's node before, during and after a save.
+
+**Fix.** One tree for every state: `MergeSemantics` > `Semantics(toggled, enabled, hint)` > `IgnorePointer` >
+`Opacity`, with the `InkWell` only when enabled. Pinned by "a disabled row says its label ONCE" and "a save keeps the
+row's one node" in `settings_frame_test.dart`.
+
 ## BUG-019 ✅ The quiz's "<" button drew its arrow at about half the frame's size
 
 **Status:** FIXED 2026-09-29 (API→UI Wave 22). Found by a read-only review lens on the flashcards study screen, which

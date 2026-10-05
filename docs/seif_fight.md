@@ -1190,8 +1190,8 @@ a palette and we will build it as one. If it is a third palette, it needs tokens
 
 **Where:** Setting (`176:1840`) draws a single **Show Rank** toggle.
 **What:** `PATCH /me` accepts **`leaderboardVisible`** (am I listed at all) and **`scoreHidden`**
-(listed, but with my score suppressed) — `openapi.yaml:620-621`, defaulted `true`/`false` by
-adr-023 at `:1380-1382`. They answer different questions and they default differently. One switch
+(listed, but with my score suppressed) — `openapi.yaml:846-847` at the 3.23.0-m1 pin (`:620-621` when
+filed), defaulted `true`/`false` by adr-023 at `:2481-2485` (was `:1380-1382`). They answer different questions and they default differently. One switch
 cannot express two independent booleans, and mapping one control onto both would mean **silently
 choosing a privacy policy on behalf of a minor**.
 
@@ -1201,15 +1201,25 @@ sending only its own field. Also in `DESIGN_ISSUES.md` #46.
 **Ask (designer):** confirm two rows is right, or tell us which single policy the one switch was
 meant to express.
 
+**2026-09-29 (API→UI Wave 21): the contract has moved under this entry.** Since adr-111, **both**
+toggles take a student off every board: a `scoreHidden` student's row "is absent entirely"
+(`openapi.yaml:2076-2083`, `:2814-2822`). The difference left is the student's own rank: with
+`leaderboardVisible: false` they still get it, but with `scoreHidden: true` `GET /leaderboard/me`
+answers `403 score_hidden_leaderboard_unavailable` (`:2181-2183`, `:2236`). The "listed, but with my
+score suppressed" reading above is therefore stale, and so is the app's help line for "Hide my
+points" (KNOWN_BUGS **BUG-017**). The designer ask stands. Whether the two switches are still worth
+showing separately is a product question for the owner.
+
 ## S28. 🟠 Notification Preferences — four toggles, nothing stores them
 
 **Where:** Setting (`176:1840`) — Announcements · Promotions · Support · System.
 **What:** nothing in the contract persists a notification preference. `PUT /me/fcm-token` is a
-**device token**, not a preference set, and it is `draft` besides.
+**device token**, not a preference set. It is `x-stability: stable` (`openapi.yaml:891-894`); this entry
+called it `draft` until 2026-09-29.
 
-**What we built:** all four render **disabled and off**. Off rather than on because any value we
+**What we built:** all four render **disabled**. They first shipped off, because any value we
 displayed would be a state we invented; a switch that slides and then forgets is worse than one
-that visibly cannot move.
+that visibly cannot move. They now render **ON**, the frame's state (`DESIGN_ISSUES.md` #48).
 
 **Ask:** if notification preferences are milestone 1, they need somewhere to live. The natural home
 is an object on `PATCH /me` beside the privacy toggles — same kind of per-student setting, same

@@ -105,6 +105,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.avatarBadgeGlyph,
     required this.avatarSheetHandle,
     required this.avatarSheetDivider,
+    required this.settingsRowLabel,
+    required this.settingsToggleOnTrack,
+    required this.settingsToggleOffTrack,
+    required this.settingsToggleKnob,
     required this.flashcardProgressFill,
     required this.flashcardCardFill,
     required this.flashcardCardText,
@@ -838,6 +842,26 @@ class AppColors extends ThemeExtension<AppColors> {
   /// dp, the same on both canvases (`216:3343`, `337:8137`). API→UI Wave 20.
   final Color avatarSheetDivider;
 
+  /// A Settings row's label ("Show Rank", "announcements"): light `#384F47`
+  /// (`642:8524`, `176:2393`), dark `#FCFBF9` (`642:8586`, `337:8198`), Inter
+  /// Regular 16 on both. It was [textPrimary] at `h3` until API→UI Wave 21.
+  final Color settingsRowLabel;
+
+  /// The Settings switch's track when ON — the frame's `Button` (`642:8525`,
+  /// `176:2394`), a 48 x 24 stadium in `#AE87E7` on BOTH canvases (`642:8587`,
+  /// `337:8199`). API→UI Wave 21; it was Flutter's stock `Switch` before.
+  final Color settingsToggleOnTrack;
+
+  /// The switch's track when OFF. **Not designed**: every frame draws the
+  /// switch ON. `#B3B3B3` is [mutedText]'s value — the app's inactive grey,
+  /// the same on both canvases — used as a stand-in until the designer draws
+  /// the OFF state (owner ruling 2026-09-29, docs/DESIGN_ISSUES.md #107).
+  final Color settingsToggleOffTrack;
+
+  /// The switch's knob: 16 dp, `#FFFFFF` on both canvases (`642:8526`,
+  /// `642:8588`). API→UI Wave 21.
+  final Color settingsToggleKnob;
+
   // --- Flashcards (API→UI Wave 22) ------------------------------------------
   //
   // The study screen `225:5582` (light) / `337:14475` (dark) shares the quiz's
@@ -1504,6 +1528,10 @@ class AppColors extends ThemeExtension<AppColors> {
     avatarBadgeGlyph: Brand.greenPrimary, // #384F47 — Figma 176:1347
     avatarSheetHandle: Color(0xFF000000), // Figma 216:3342
     avatarSheetDivider: Color(0x994B675E), // #4B675E @60% — Figma 216:3343
+    settingsRowLabel: Brand.greenPrimary, // #384F47 — Figma 642:8524
+    settingsToggleOnTrack: Brand.purplePrimary, // #AE87E7 — Figma 642:8525
+    settingsToggleOffTrack: Color(0xFFB3B3B3), // not designed — see the field
+    settingsToggleKnob: Color(0xFFFFFFFF), // Figma 642:8526
     flashcardProgressFill: Color(0xFF5A7F73), // Figma 225:5616
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 247:3260 — same in dark
     flashcardCardText:
@@ -1706,6 +1734,10 @@ class AppColors extends ThemeExtension<AppColors> {
     avatarBadgeGlyph: Color(0xFFFCFBF9), // Figma 337:7926
     avatarSheetHandle: Color(0xFFFCFBF9), // Figma 337:8136
     avatarSheetDivider: Color(0x994B675E), // Figma 337:8137 — same as light
+    settingsRowLabel: Color(0xFFFCFBF9), // Figma 642:8586
+    settingsToggleOnTrack: Brand.purplePrimary, // #AE87E7 — Figma 642:8587
+    settingsToggleOffTrack: Color(0xFFB3B3B3), // not designed — same as light
+    settingsToggleKnob: Color(0xFFFFFFFF), // Figma 642:8588
     flashcardProgressFill: Brand.purplePrimary, // #AE87E7 — Figma 349:15348
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 337:14513 — stays light
     flashcardCardText: Brand.greenPrimary, // #384F47 — Figma 337:14513 (text)
@@ -1907,6 +1939,10 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? avatarBadgeGlyph,
     Color? avatarSheetHandle,
     Color? avatarSheetDivider,
+    Color? settingsRowLabel,
+    Color? settingsToggleOnTrack,
+    Color? settingsToggleOffTrack,
+    Color? settingsToggleKnob,
     Color? flashcardProgressFill,
     Color? flashcardCardFill,
     Color? flashcardCardText,
@@ -2095,6 +2131,12 @@ class AppColors extends ThemeExtension<AppColors> {
       avatarBadgeGlyph: avatarBadgeGlyph ?? this.avatarBadgeGlyph,
       avatarSheetHandle: avatarSheetHandle ?? this.avatarSheetHandle,
       avatarSheetDivider: avatarSheetDivider ?? this.avatarSheetDivider,
+      settingsRowLabel: settingsRowLabel ?? this.settingsRowLabel,
+      settingsToggleOnTrack:
+          settingsToggleOnTrack ?? this.settingsToggleOnTrack,
+      settingsToggleOffTrack:
+          settingsToggleOffTrack ?? this.settingsToggleOffTrack,
+      settingsToggleKnob: settingsToggleKnob ?? this.settingsToggleKnob,
       flashcardProgressFill:
           flashcardProgressFill ?? this.flashcardProgressFill,
       flashcardCardFill: flashcardCardFill ?? this.flashcardCardFill,
@@ -2465,6 +2507,26 @@ class AppColors extends ThemeExtension<AppColors> {
       avatarSheetDivider: Color.lerp(
         avatarSheetDivider,
         other.avatarSheetDivider,
+        t,
+      )!,
+      settingsRowLabel: Color.lerp(
+        settingsRowLabel,
+        other.settingsRowLabel,
+        t,
+      )!,
+      settingsToggleOnTrack: Color.lerp(
+        settingsToggleOnTrack,
+        other.settingsToggleOnTrack,
+        t,
+      )!,
+      settingsToggleOffTrack: Color.lerp(
+        settingsToggleOffTrack,
+        other.settingsToggleOffTrack,
+        t,
+      )!,
+      settingsToggleKnob: Color.lerp(
+        settingsToggleKnob,
+        other.settingsToggleKnob,
         t,
       )!,
       flashcardProgressFill: Color.lerp(

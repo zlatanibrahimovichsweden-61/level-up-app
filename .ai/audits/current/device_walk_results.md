@@ -1324,6 +1324,63 @@ font scale 1.0 (read only), portrait, no call. Auto-rotate read 0 at the start a
 walk sets it (as in the Wave 19 walk, it turned on across the walk; the launches used `monkey`, the one common step),
 so it was left as it is. `/sdcard/ui.xml` and the capture file removed from the phone.
 
+## Wave 21 — Settings — WALK 2026-09-29
+
+Owner `WALK`. Pixel 8 (`45131FDJH0009G`, 2.625 px/dp, status bar 132 px = 50.29 dp). `flutter build apk --debug -t
+lib/main_mock.dart` with Wave 21 (validate 1744/0/0), a plain build (`main_mock.dart` blob `f189786`, untouched),
+launched with `am start`. School student "طالب تجريبي" (OTP `000000`). Path: light EN (Settings; each Rank switch
+flipped, one flip screen-recorded; back to Profile and reopened), dark EN (Settings → Mode), dark AR and light AR
+(Settings → Languages, Mode), English + dark then `am force-stop` + `am start` (log in, Home, Settings), a tap on a
+disabled notification row. Values from the dumps (`w19dump.py`), the pixel tool `w20px.py` and the recording's frames,
+re-measured independently by two read-only Sonnet verifiers. Every tap went through the guard (idle call state, the app
+in front). Evidence: scratchpad `walk21/` (`01`–`13`, their dumps, `f1_flip_on_masked.mp4` + `f1frames/`,
+`logcat_*.txt`, `claims.md`, `verify.json`).
+
+| # | Criterion | Result | Evidence |
+| --- | --- | --- | --- |
+| F1 | Rank toggles PATCH each boolean | **PASS** | "Show me on the leaderboard" ON → OFF (`02`) and back; "Hide my points" OFF → ON (`03`); back to Profile and reopened: both as set (`04`). In the recording the other switch never moves. The body (one key) is test-level: bodies are never logged |
+| F2 | no optimistic flip | **PASS** | recording (`f1frames/`): at the tap BOTH Rank switches dim (`#DBD9D7`) and the tapped one stays OFF; at 2.307 s both are live again, still OFF (the PATCH answered, `/me` re-reading); from 2.693 s it slides to ON — after the second round trip, not at the tap |
+| F3 | error keeps prior value | **N/A** | owner ruling 2026-09-29: the mock cannot fail a toggle's `PATCH /me` (airplane mode does not reach its interceptor). Test-level: `settings_screen_test.dart` "a failed save says so and does not move the switch" |
+| V1 | vs `176:1840` (light EN, `01`) | **PASS** | the frame's 25 measured to ink: bar → "Languages" cap top 24.4, baseline → track 25.3, track → "Mode" cap top 24.4, baseline → card 25.3, card → "Rank" 24.8, → card 25.3, card → "Notification Preferences" 25.0, → card 25.0 (the headings' ink ~0.3 above layout, a whole-pixel baseline); headings' ink from x 21.3 (the box on the card's edge); rows 52 (dump 51.8 / 52.2), starting 0.5 in; the switch 48.0 × 24.0 `#AE87E7`, knob `#FFFFFF` 16 × 16, 4.2 from the end, centred, the switch ending 16.5 in from the card's outer edge; OFF `#B3B3B3`, knob 3.8 from the left end; labels `#384F47` exact; the notification switches dimmed (`#D9C7F1`, 45%). Arabic light (`07`): the switch 36.5–84.4, its ON knob 64.6–80.6 (the frame's `549:21822` 36.5, `549:21823` 64.5–80.5) |
+| V2 | dark (`05`, vs `337:8141`) | **PASS** | canvas `#232428`, card `#242529`, no lavender edge; headings and labels `#FCFBF9`; rows on the card's edge (x 20.2); the switch 48.0 wide, 16.0 in from the card; the school back-light glowing on Notification Preferences only (B8, by design); the 25s hold (Rank baseline → card 25.3). Arabic dark (`06`): the switch 36.0–84.0, knob 64.0–80.0 — 4.0 from the RIGHT end |
+| I1 | language switch live | **PASS** | العربية → the whole screen RTL (the back chip right), English still at x 20.2–205.7 and العربية at 205.7–391.6, العربية filled (`06`); "الأوضاع" and "الترتيب" present; across a cold start (`am force-stop` + `am start`) the welcome screen is English (`09`) and Settings English with English selected (`11`) |
+| I2 | mode switch live | **PASS** | Dark → the page dark at once (`05`); Light in Arabic (`07`); across the cold start Home (`10`) and Settings (`11`) come back dark |
+| I3 | notification toggles disabled with hint | **PASS** | a tap on "Announcements" changes no pixel (`11` → `12`); each notification row ONE `Switch` node, "Announcements, Notification settings aren't available yet." (the label once — BUG-018 fixed on device), checked, `enabled=false`, `clickable=false`; the dimmed switches and labels (45%) |
+
+**Score: 7/7 = 100%** (F 2/2, F3 N/A · V 2/2 · I 3/3).
+
+Also checked:
+- Arabic against the rulings: English stays left (#108), "الأوضاع" (#110), the ON knob at the right end (#107).
+- The Rank rows are `Switch` nodes in the dumps, checkable, reporting their value; the headings are nodes of their own
+  (this uiautomator build exports no `heading` attribute, so the header flag stays test-level).
+- Logcat (flutter tag, from the pre-launch clear): one line, flutter_svg's "unhandled element <filter/>" after the cold
+  start; no error, no phone number or token. The crash buffer is empty (`logcat_crash.txt`).
+
+### Observed, not logged
+
+- **Arabic line heights.** The Rank rows are 78.9 / 79.2 tall in Arabic (72.0 in English; the help lines fall back to
+  Tajawal), and "تفضيلات الإشعارات" lays out 28.2 tall where the other Arabic headings are 24.0, so the Arabic gaps
+  around it run ~4 dp longer. The 25s are Inter's (#109 records the Tajawal caveat).
+- **The Notification caption is said five times.** The note under the card is the label of the section's list-item
+  node, and each disabled row carries it as its hint: a screen reader meets it once on the block and once per row.
+  Candidate follow-up: give the note a node of its own.
+- **One-pixel phase.** The OFF knob reads 3.8 from its end and the ON knob 4.2; the dividers render one or two pixel rows
+  depending on their sub-pixel position.
+- **The mock resets on a restart.** After the cold start the Rank switches are back to the fixture (ON / OFF): the
+  mock keeps edits in memory.
+
+### Walk-method notes (no app defect)
+
+- **A Back press after typing the OTP** left the OTP screen for the login screen (the code had not been verified).
+  The second login tapped the field, typed the code and let it verify on its own.
+- **The first recording was lost:** adb was handed a `/c/…` path it cannot read; the second used `C:/…`.
+
+### Device state after the walk
+
+Light EN on Home, signed in as the school student. Airplane mode off, Wi-Fi untouched, font scale 1.0 (read only),
+auto-rotate 0 at the start and the end, no call. `/sdcard/ui.xml`, the capture file and the recording removed from the
+phone.
+
 ## Wave 22 — Flashcards (Lectures tab → Flash Card Setup → study) — WALK 2026-09-29
 
 Owner `WALK`. Pixel 8 (`45131FDJH0009G`, 2.625 px/dp, status bar 132 px = 50.29 dp). `flutter build apk --debug -t

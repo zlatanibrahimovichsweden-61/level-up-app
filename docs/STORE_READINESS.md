@@ -30,7 +30,7 @@ Policies drift; re-verify before submission.
 | Area | Status | Blocking? |
 | --- | --- | --- |
 | Android target API (36) | 🟢 PASS (ARTEFACT VERIFIED) | — |
-| Account deletion (both stores) | 🔴 FAIL — does not exist anywhere | YES — submission blocker |
+| Account deletion (both stores) | 🔴 FAIL — no UI, route or repository method; the contract has both endpoints since adr-114 (stable) **[2026-09-29]** | YES — submission blocker |
 | Privacy policy (both stores) | 🔴 FAIL — placeholder URLs, stub screens | YES — submission blocker |
 | iOS privacy manifest | 🔴 FAIL — no PrivacyInfo.xcprivacy | YES — upload blocker |
 | iOS buildability (Podfile/Xcode 26) | 🔴 FAIL — never built | YES |
@@ -56,7 +56,7 @@ Policies drift; re-verify before submission.
 | --- | --- | --- | --- |
 | Target API 36 by 2026-08-31 (new apps/updates) [GOOGLE answer/11926878] | **PASS** | targetSdk=36, minSdk=24 — ARTEFACT VERIFIED in `build/app/intermediates/merged_manifests/release/.../AndroidManifest.xml:9` (Flutter 3.44.7 defaults) [REPO] | Keep Flutter pinned ≥ current |
 | AAB required; Play App Signing [GOOGLE] | **PARTIAL** **[2026-09-05]** | CI still builds APK only (`.github/workflows/ci.yml:377`), but the AAB is no longer unproven: `flutter build appbundle --release -t lib/main_prod.dart` was run on 2026-09-05 and produced a valid 58.6 MB bundle (single `base` module, 3 ABIs, `INTERNET` in the protobuf manifest, no staging/mock strings) [REPO, ARTEFACT] | Wire `appbundle` into CI; enroll Play App Signing at console setup |
-| Account deletion: in-app path + public web deletion URL (deadline passed 2024-05-31; phone-OTP accounts explicitly count) [GOOGLE answer/13327111] | **FAIL** | No UI row (`profile_screen.dart:184-291`), no repo method, no route, no contract endpoint (only DELETE in `contract/openapi.yaml` is `:1145` favorites), **now filed as S38** (`docs/seif_fight.md:1378-1392`, 2026-09-04) [REPO] **[2026-09-05]** | §6. Contract question is filed; build the UI shell + local wipe now |
+| Account deletion: in-app path + public web deletion URL (deadline passed 2024-05-31; phone-OTP accounts explicitly count) [GOOGLE answer/13327111] | **FAIL** | The contract now has both halves: `POST /me/deletion-request` and `DELETE /me/deletion-request`, `x-stability: stable`, adr-114, 30-day grace window (`contract/openapi.yaml:1054-1130`) [REPO] **[2026-09-29]**. Still no UI row, no route, no repository method; no design or copy exists on the Figma page (API→UI Wave 21, 2026-09-29). Earlier (2026-09-05): no contract endpoint at all, filed as S38 | Needs a design and the adr-114 D3 confirm copy, then: request + confirm, the pending-deletion cancel screen, and the `403 account_pending_deletion` route |
 | Data Safety form accurate + deletion questions [GOOGLE answer/10787469] | **PARTIAL** | Data inventory complete (§5); backend retention/deletion UNKNOWN | Draft form from §5; resolve UNKNOWNs with backend |
 | Privacy policy: live non-PDF URL in Console AND link/text in-app [GOOGLE answer/10144311] | **FAIL** | `.example` placeholders `login_screen.dart:41-44`; in-app screens render "not published" `legal_document_screen.dart:28-56`; `/legal/*` routes auth-gated `app_router.dart:44-48,70` [REPO] | BLOCKED BY EXTERNAL ASSET (legal). Un-gate routes now |
 | User Data: HTTPS, secure handling, no unexpected collection [GOOGLE] | **PASS** | HTTPS-only (`app_config.dart:44`), no cert overrides, no cleartext, Keychain/Keystore tokens, backups fully excluded (`data_extraction_rules.xml`) [REPO] | — |
@@ -142,6 +142,11 @@ biometrics, advertising ID, clipboard, SMS-read (OTP is typed manually via pinpu
   reset), route, copy in both ARB files. **BLOCKED BY CONTRACT:** the actual
   `DELETE /me` (or equivalent) call. **BLOCKED BY EXTERNAL ASSET:** the web
   deletion-request URL Play requires.
+- **[2026-09-29] The contract side is done.** `POST /me/deletion-request` (request, 30-day grace
+  window) and `DELETE /me/deletion-request` (cancel) are `x-stability: stable` (adr-114,
+  `contract/openapi.yaml:1054-1130`). What is left is the app's: a design and the adr-114 D3 confirm
+  copy (none on the Figma page, API→UI Wave 21), then the request flow, the pending-deletion cancel
+  screen and the `403 account_pending_deletion` route, plus the local wipe above.
 
 ## 7. Permissions
 
@@ -222,15 +227,15 @@ App display name decision ("Level Up App"? Android label currently `level_up_app
 | No crash/symbolication path | MEDIUM | decision §14 |
 | Under-13 registrants possible (no age floor, server "owns" rule that contract doesn't state) | HIGH | product/legal decision + seif_fight item |
 | parentPhone collected but never displayable/correctable (S20) | MEDIUM | data-subject-rights problem; already filed |
-| Push notifications planned (`PUT /me/fcm-token` draft) → will add Firebase, POST_NOTIFICATIONS, privacy-manifest changes, Data Safety changes | MEDIUM | plan declarations with the feature, not after |
+| Push notifications planned (`PUT /me/fcm-token`, stable since at least 3.23.0-m1 **[2026-09-29]**; still no preference storage, S28) → will add Firebase, POST_NOTIFICATIONS, privacy-manifest changes, Data Safety changes | MEDIUM | plan declarations with the feature, not after |
 | ~~Payments planned (`POST /checkout/sessions` draft)~~ **Historical — the path was removed at contract 2.2.0-m1 (adr-049 §3), not merely left draft.** The app is purchase-silent: no paywall, no price, no checkout of any kind; all purchases happen on the website (`x-consumers: [web]`). The Play Billing / Apple IAP digital-goods fork therefore does **not** apply to this mobile client. **Open question (not yet reviewed):** whether either store's external-purchase-link policy (Play external offers / Apple 3.1.1–3.1.3) has any bearing on an app that names a purchase-silent state with no in-app link at all — flag for a compliance read before submission. | LOW (was HIGH) | note only — there is no in-app purchase surface to route through Billing/IAP |
 | No guard against building `main_mock.dart` in release | LOW | cheap CI/guard test |
 | iOS landscape enabled, untested | LOW | lock portrait or test |
 
 ## 13. BLOCKED BY CONTRACT
 
-Account-deletion endpoint; reviewer OTP-bypass account; prod base URL; push-token
-endpoint (draft); avatar upload (draft, moderated); backend retention/deletion/log
+~~Account-deletion endpoint~~ (stable since adr-114 **[2026-09-29]**); reviewer OTP-bypass account; prod base URL;
+~~push-token endpoint (draft)~~ (stable; preferences still have no storage, S28); avatar upload (draft, moderated); backend retention/deletion/log
 answers for both privacy forms; server-side age rule confirmation.
 
 **Resolved by removal, not a contract dependency any more:** `checkout (draft)` — dropped from
@@ -251,7 +256,7 @@ purchase-silent (adr-049 §3), so there is no checkout surface left to block on.
 
 ## 15. Pre-submission checklist (living)
 
-- [ ] Account deletion: UI + local wipe (NOW) · endpoint (CONTRACT) · web URL (ASSET)
+- [ ] Account deletion: UI + local wipe (NOW, needs a design) · endpoint ✅ (stable, adr-114) · web URL (ASSET)
 - [ ] Privacy policy live URL wired in-app (un-gate `/legal/*`, replace `.example`)
 - [ ] Terms live; cookie link resolved or removed
 - [ ] Support channel real (URL/email) + shells hidden or finished

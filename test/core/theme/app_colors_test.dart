@@ -637,6 +637,67 @@ void main() {
     });
   });
 
+  group('Wave 21 Settings tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    test('the frames\' values in both palettes', () {
+      // The switch is the same on both canvases: `642:8525` / `642:8587` track,
+      // `642:8526` / `642:8588` knob.
+      for (final palette in [light, dark]) {
+        expect(palette.settingsToggleOnTrack, const Color(0xFFAE87E7));
+        expect(palette.settingsToggleKnob, const Color(0xFFFFFFFF));
+        // Not designed — the app's inactive grey, [mutedText]'s value, until
+        // the designer draws OFF (docs/DESIGN_ISSUES.md #107).
+        expect(palette.settingsToggleOffTrack, const Color(0xFFB3B3B3));
+        expect(palette.settingsToggleOffTrack, palette.mutedText);
+      }
+      expect(light.settingsRowLabel, const Color(0xFF384F47)); // 642:8524
+      expect(dark.settingsRowLabel, const Color(0xFFFCFBF9)); // 642:8586
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      expect(light.copyWith(settingsRowLabel: probe).settingsRowLabel, probe);
+      expect(
+        light.copyWith(settingsToggleOnTrack: probe).settingsToggleOnTrack,
+        probe,
+      );
+      expect(
+        light.copyWith(settingsToggleOffTrack: probe).settingsToggleOffTrack,
+        probe,
+      );
+      expect(
+        light.copyWith(settingsToggleKnob: probe).settingsToggleKnob,
+        probe,
+      );
+
+      // …and each leaves its neighbours alone.
+      final one = light.copyWith(settingsToggleOffTrack: probe);
+      expect(one.settingsToggleOnTrack, light.settingsToggleOnTrack);
+      expect(one.settingsToggleKnob, light.settingsToggleKnob);
+      expect(one.settingsRowLabel, light.settingsRowLabel);
+
+      // Three of the four are the same on both canvases, so lerping light to
+      // dark would pass with a broken lerp. Lerp towards probes instead.
+      final target = light.copyWith(
+        settingsRowLabel: probe,
+        settingsToggleOnTrack: probe,
+        settingsToggleOffTrack: probe,
+        settingsToggleKnob: probe,
+      );
+      final mixed = light.lerp(target, 1);
+      expect(mixed.settingsRowLabel, probe);
+      expect(mixed.settingsToggleOnTrack, probe);
+      expect(mixed.settingsToggleOffTrack, probe);
+      expect(mixed.settingsToggleKnob, probe);
+      final start = light.lerp(target, 0);
+      expect(start.settingsToggleOnTrack, light.settingsToggleOnTrack);
+      expect(start.settingsToggleKnob, light.settingsToggleKnob);
+    });
+  });
+
   // API→UI Wave 22: the flashcards study screen and Flash Card Setup.
   group('Wave 22 Flashcards tokens', () {
     const light = AppColors.light;
@@ -775,6 +836,7 @@ void main() {
       final one = light.copyWith(flashcardAgainFill: probe);
       expect(one.flashcardAgainGlyph, light.flashcardAgainGlyph);
       expect(one.flashcardCardFill, light.flashcardCardFill);
+      expect(one.settingsToggleKnob, light.settingsToggleKnob);
 
       // Several are identical on both canvases, so light→dark would pass with
       // a broken lerp. Lerp towards probes instead.

@@ -44,6 +44,7 @@ Future<ProviderContainer> pumpAppAt(
   String locale = 'en',
   PreferencesStore? prefs,
   bool online = true,
+  bool settle = true,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -81,10 +82,21 @@ Future<ProviderContainer> pumpAppAt(
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const LevelUpApp()),
   );
-  await tester.pumpAndSettle();
+  // [settle] false is for a request that has not answered yet: a spinner never
+  // settles, so the route transition is pumped by the clock instead.
+  Future<void> pumpOn() async {
+    if (settle) {
+      await tester.pumpAndSettle();
+    } else {
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+    }
+  }
+
+  await pumpOn();
 
   container.read(routerProvider).push(route);
-  await tester.pumpAndSettle();
+  await pumpOn();
   return container;
 }
 

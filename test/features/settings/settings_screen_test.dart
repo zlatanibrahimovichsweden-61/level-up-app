@@ -82,10 +82,10 @@ void main() {
       );
       expect(find.byKey(const Key('settings_score_hidden')), findsOneWidget);
 
-      final switches = tester.widgetList<Switch>(
+      final switches = tester.widgetList<SettingsToggle>(
         find.descendant(
           of: find.byKey(const Key('settings_leaderboard_visible')),
-          matching: find.byType(Switch),
+          matching: find.byType(SettingsToggle),
         ),
       );
       expect(switches.single.value, isTrue, reason: 'leaderboardVisible: true');
@@ -176,10 +176,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('settings_rank_error')), findsOneWidget);
-      final control = tester.widget<Switch>(
+      final control = tester.widget<SettingsToggle>(
         find.descendant(
           of: find.byKey(const Key('settings_leaderboard_visible')),
-          matching: find.byType(Switch),
+          matching: find.byType(SettingsToggle),
         ),
       );
       expect(control.value, isTrue, reason: 'still what /me last said');
@@ -454,10 +454,10 @@ void main() {
 
       verifyNever(() => repo.updateMe(any()));
       for (final key in notificationRows.keys) {
-        final control = tester.widget<Switch>(
+        final control = tester.widget<SettingsToggle>(
           find.descendant(
             of: find.byKey(Key(key)),
-            matching: find.byType(Switch),
+            matching: find.byType(SettingsToggle),
           ),
         );
         // ON is the FRAME's state (`176:1840` draws all four purple), adopted
@@ -465,7 +465,10 @@ void main() {
         // MOVE — a dead control that still slides under a finger is the thing
         // this group exists to prevent, whichever position it starts in.
         expect(control.value, isTrue, reason: '$key must not have moved');
-        expect(control.onChanged, isNull);
+        expect(
+          tester.widget<SettingsSwitchRow>(find.byKey(Key(key))).onChanged,
+          isNull,
+        );
       }
     });
 
@@ -501,7 +504,10 @@ void main() {
         TextDirection.rtl,
       );
       expect(find.text('اللغة'), findsOneWidget);
-      expect(find.text('المظهر'), findsOneWidget);
+      // The frame's word (`549:21802` "الاوضاع", spelled with its hamza) —
+      // owner ruling 2026-09-29. It read "المظهر" until API→UI Wave 21.
+      expect(find.text('الأوضاع'), findsOneWidget);
+      expect(find.text('المظهر'), findsNothing);
       expect(find.text('الترتيب'), findsOneWidget);
       expect(find.text('تفضيلات الإشعارات'), findsOneWidget);
     });

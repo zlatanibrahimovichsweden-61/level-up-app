@@ -183,9 +183,10 @@ void main() {
   });
 }
 
-/// A stand-in row. The real `SettingsSwitchRow` needs localizations and a
-/// `Switch`'s own theming; what this baseline is for is the CARD — G16's
-/// frost, the missing hairline and the back-light under them.
+/// A stand-in row. The real `SettingsSwitchRow` needs localizations; what this
+/// baseline is for is the CARD — G16's frost, the missing hairline and the
+/// back-light under them. (Re-captured in API→UI Wave 21 when the heading
+/// moved onto the card's edge and 25 above it.)
 class _Row extends StatelessWidget {
   const _Row(this.label);
 
