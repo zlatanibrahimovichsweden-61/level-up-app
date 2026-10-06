@@ -364,8 +364,8 @@ need an APNs key from the Apple developer account. *Treat push as not ready unti
 | --- | --- | --- | --- | --- |
 | **0** | Architecture & identity decision | this document, rubric, D-021 proposal, risk R-9 | — | **done 2026-10-04** |
 | **1** | Android environment architecture | `flavorDimensions("env")`, flavors `prod`/`staging`, `.stg` suffix, `resValue app_name`, label → `@string/app_name`, SDK literals, Gradle flavor ⇄ entrypoint check, guard evolution + identity guard, `ci.yml` + `tool/` updates, `pre-push` trigger list, `RELEASE_SIGNING.md` correction | D-021 (ratified 2026-10-06) | **done 2026-10-06** — BUILD + ARTEFACT on Windows; DEVICE not reached (no device attached during the wave) |
-| **2** | Flutter environment contract | boot assertion compiled `Flavor` ⇄ platform flavor, `.example`-in-prod build-time failure, `isDev` indicator (dev vs staging are now distinguishable only on screen), `main_mock` release refusal (cross-platform), per-flavor web host / redeem URL slot (§10), guard tests for each | Wave 1 | not started |
-| **3** | iOS environment architecture | two schemes `prod`/`staging`, `Debug/Release/Profile-<flavor>` configurations, per-flavor `xcconfig` with `PRODUCT_BUNDLE_IDENTIFIER` and display name, `Info.plist` reads them, deployment target 13.0 → **15.0** (×3 + `AppFrameworkInfo.plist`), Podfile generated with `platform :ios, '15.0'` and committed, `knownRegions` + `ar`, iOS half of the Firebase-slot guard | **a Mac with Xcode 26** | **blocked on this machine** — SOURCE-level authoring possible here, BUILD is not |
+| **2** | Flutter environment contract | boot assertion compiled `Flavor` ⇄ platform flavor, `.example`-in-prod build-time failure, `isDev` indicator (dev vs staging are now distinguishable only on screen), `main_mock` release refusal (cross-platform), guard tests for each. **No website/redeem URL slot** — see §10 and `RISKS.md` R-10 | Wave 1 | not started |
+| **3** | iOS environment architecture | two schemes `prod`/`staging`, `Debug/Release/Profile-<flavor>` configurations, per-flavor `xcconfig` with `PRODUCT_BUNDLE_IDENTIFIER` and display name, `Info.plist` reads them, deployment target 13.0 → **15.0** (×3 + `AppFrameworkInfo.plist`), Podfile generated with `platform :ios, '15.0'` and committed, `knownRegions` + `ar`, iOS half of the Firebase-slot guard; **input R-11:** the Xcode archive's Privacy Report is the only proof that no undeclared required-reason API remains after the `device_info_plus` replacement (`RISKS.md` R-11, reconciliation O-3) | **a Mac with Xcode 26** | **blocked on this machine** — SOURCE-level authoring possible here, BUILD is not |
 | **4** | Cross-platform validation & release safety | AAB in CI, signing-secret injection design (no secrets committed), first observed CI run (R-3), DEVICE check of both Android identities side by side, rubric re-score, final chapter report | Waves 1–2 (Android), 3 (iOS) | not started |
 
 ---
@@ -402,11 +402,17 @@ supports "not reached" rather than "rejected"; this record does not claim more t
   per-flavor configuration that **cannot ship by accident** — today the build-failing-at-runtime
   `.example` placeholder; Wave 2 makes a `.example` prod release fail at *build* time. **Do not put the
   planned URL into `app_config.dart` on the strength of this note.**
-- **Public website host:** `level-upworld.com` (decided, not live). The app opens the website's `/redeem`
-  page in the browser; after redeeming, the app re-reads `GET /api/v1/me/entitlements` on return to the
-  foreground. The URL must live in **per-flavor configuration, not hard-coded** — Wave 2 adds the slot
-  next to the base URL (the app stays purchase-silent; this is the existing website hand-off, not a
-  payment surface).
+- **Public website host and the `/redeem` hand-off — DO NOT BUILD (R-10).** Seif's Q7 note says the app
+  "opens the website's `/redeem` page in the browser" and re-reads `GET /api/v1/me/entitlements` on return,
+  with the host `level-upworld.com` (decided, not live) in per-flavor configuration. **This contradicts the
+  contract:** `contract/contract-changelog.md:360` (adr-049 §3) — the app "never carries a purchase link, and
+  never tells the student where to buy", deletes the "refetch on return from a hand-off" moment, and makes
+  `POST /subscription-codes/redemptions` the only commerce operation (redemption is an API call, not a web
+  page). The contract wins. An earlier revision of this bullet listed the slot as Wave 2 work; that was
+  wrong and is withdrawn. Recorded as **`RISKS.md` R-10 (OPEN — DECISION, owner + Seif)** and in
+  `.ai/audits/current/release_readiness_reconciliation_2026-10-06.md` O-4 / Q-B10: nothing is built until
+  Seif revises the rule in a changelog entry *and* the owner accepts the Apple 3.1.1 exposure. No
+  per-flavor URL slot for it exists or is planned in this chapter.
 - **No deep links / app links in release 1** — no `assetlinks.json`, no `apple-app-site-association`, no
   custom scheme. Nothing for the flavors to declare.
 - **No CORS, no OAuth redirect URIs** (phone + OTP only), **no id checks on API requests**, **one device per
@@ -425,6 +431,9 @@ supports "not reached" rather than "rejected"; this record does not claim more t
   chapters (`STORE_READINESS.md` scorecard).
 - Android 13+ themed icon (`<monochrome>` layer absent) — launcher-icon work, not an environment item.
 - `screen_protector` iOS 26 crash report (store audit IOS-19) — not an environment item.
+- `device_info_plus` reads a required-reason API (DiskSpace) on iOS with an empty plugin privacy manifest
+  (`RISKS.md` R-11, reconciliation O-3) — a store-readiness/privacy item owned by the device-binding code,
+  not by this chapter; Wave 3 only *proves* the outcome via the archive's Privacy Report.
 - Uninstalling the old `com.levelup.level_up_app` debug install from the test devices (it is now an
   orphan package; the new identities install beside it).
 

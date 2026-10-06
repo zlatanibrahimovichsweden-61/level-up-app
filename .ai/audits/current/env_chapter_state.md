@@ -85,6 +85,9 @@ audit → focused commit → report (with rubric score, supported versions, back
   or `resValue "flavor"` — plus the iOS equivalent later).
 - `.example`-in-prod → build-time failure; `main_mock` release refusal in Dart (cross-platform; Gradle
   already refuses it on Android); `isDev` indicator so dev and staging (same identity now) are told apart
-  on screen; per-flavor web host / `/redeem` URL slot (Seif Q7) without hard-coding; keep the planned
-  production URL **out** of the code until the contract's `servers:` carries it.
+  on screen; keep the planned production URL **out** of the code until the contract's `servers:` carries it.
+  **Withdrawn from Wave 2 (2026-10-06):** the per-flavor website / `/redeem` URL slot — it contradicts the
+  contract's purchase-silence rule (`contract-changelog.md:360`, adr-049 §3); `RISKS.md` R-10, owner + Seif
+  decision, nothing built. Wave 3 input: `RISKS.md` R-11 (`device_info_plus` required-reason API; the
+  archive's Privacy Report is the proof).
 - Decide whether `lib/main.dart` stays (it is harmless under the flavor rule; see `ENVIRONMENTS.md` §4.3).
