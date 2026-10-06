@@ -197,11 +197,20 @@ class _Stat extends StatelessWidget {
           style: AppType.labelLarge.copyWith(color: ext.cardLabel),
         ),
         const SizedBox(height: 10),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppType.displayLarge.copyWith(color: ext.cardValue),
+        // Scaled down ONLY when the column is narrower than the headline:
+        // "LEVEL 3" fits and renders at `displayLarge`; "المستوى 3" does not
+        // fit the half-width column and used to ellipsise to "المستوى…" — the
+        // level number cut off, on every Arabic Home (Fable-eye audit
+        // 2026-10-06, FE-08). The scale stays on the style; the box shrinks
+        // the paint. Recorded in docs/DESIGN_ISSUES.md #120.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: AppType.displayLarge.copyWith(color: ext.cardValue),
+          ),
         ),
       ],
     );
