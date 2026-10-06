@@ -101,7 +101,7 @@ reachable for the first time.
 
 ---
 
-## BUG-002 ⚠️ The Mistakes cards overflow at text scale 1.3 — in Arabic only
+## BUG-002 ✅ The Mistakes cards overflow at text scale 1.3 — in Arabic only
 
 **Status:** Mistakes overview **FIXED 2026-09-27 (API→UI Wave 15)**, SOURCE + test; device verification is owed
 to the Wave 15 walk (the system font scale is the owner's to change). The card now grows with its text (the frame's 89
@@ -113,6 +113,16 @@ OPEN for the Subjects grid** (`subject_card.dart:49`): the same render overflows
 render at 1.3 and 2.0, in English and Arabic with a long Arabic unit name, the rows grow (Arabic 124 at 1.3, 171 at
 2.0) and nothing overflows, before and after Wave 16's layout change. Four tests now pin it.
 Found 2026-09-12, DEVICE VERIFIED then on a Pixel 8 (Android 17, API 37).
+
+**The Subjects half — FIXED 2026-10-06 (Fable-eye audit, FE-09).** Re-measured on the emulator at 1.3 before the
+fix: "BOTTOM OVERFLOWED BY 2.7 PIXELS" on the Arabic-named card in English, and every card in Arabic (0.7 px × 5,
+5.7 px on اللغة العربية). The grid fixed the card's height from the 173/89 aspect — 78 dp on a 360 dp phone, under
+the frame's 89 — so the caption had no room once text scaled. The fix is D-018's rule, as the Mistakes card already
+had it: `SubjectCard.minHeight = 89` is a floor (`ConstrainedBox`), and `_SubjectsGrid` lays two cards a row in an
+`IntrinsicHeight` so a row takes its taller card. Tests: `subjects_screen_test.dart` — the 2-column layout re-pinned
+by geometry, and the BUG-002 matrix (en / ar × 1.3 / 2.0): no exception, every card ≥ 89, a row one height, each
+caption inside its card. DEVICE: the Subjects grid at 1.3 on the emulator after the fix, no stripe (the re-walk in
+`.ai/audits/current/fable_eye_audit_2026-10-06.md`).
 
 **What breaks.** On the Mistakes overview, the subject card's count caption is clipped by
 a `RenderFlex` overflow once the system font scale passes ~1.2. Android draws its
@@ -667,3 +677,83 @@ English card in the English app is pixel-identical to the pre-fix walk (`device_
 Mistakes) render content-language names in the app's direction by the same mechanism; they are shared screens the fix
 did not touch. And the first-strong rule reads an Arabic sentence that opens on a Latin term ("ATP هو …") as left to
 right, so its closing "." lands at the right: the quiz's rule, reused as the owner asked.
+
+## BUG-021 ✅ The nav tabs, Profile rows, the language pill and the Subjects cards were images or progress bars to TalkBack
+
+**Status:** FIXED 2026-10-06 (Fable-eye audit, FE-01 / FE-02 / FE-03 / FE-06). Found on device in the `uiautomator`
+dumps — the class the Android bridge assigns is what TalkBack announces — on the Pixel 8 and the emulator, in English
+and Arabic; DEVICE-verified after the fix (the re-walk in `fable_eye_audit_2026-10-06.md`).
+
+**What breaks.** Every bottom-nav tab was `android.widget.ImageView` with the content "Home\nHome" — an image called
+"Home, Home", never "button". The Profile rows that carry a chevron (Settings, Refer a Friend, Customer Support,
+Privacy & policy, Terms & Conditions, and the two disabled rows) were images; the language pill on Onboarding, Login,
+OTP and Success was an image with no button role; every card on Subjects was `android.widget.ProgressBar`
+("45, الأحياء, 216 / 480 questions") — BUG-011's defect, which Wave 08 fixed on `TreeListRow` and not on the card.
+
+**Root cause.** An `SvgPicture` inside a `Semantics(button)` contributes `image: true` to the merged node, and the
+bridge maps a merged image + button node to `ImageView` because it assigns the class after `Button`. The tab's own
+`Text` merged a second copy of the label. The Subjects card had no button flag at all (`ElevatedSurface` adds no
+semantics; its `InkWell` gives a tap action), so the `LinearProgressIndicator`'s value semantics named the node.
+
+**Why tests missed it.** The widget tests asserted labels and tap actions. None asserted the absence of the image flag
+or the presence of the button flag on a tab, a row, the pill or a card; BUG-013's test covers the back chip only, and
+BUG-011's covers `TreeListRow`.
+
+**Fix.** `excludeFromSemantics: true` on the decorative SVGs (`main_shell.dart`, `profile_menu_row.dart`,
+`language_pill.dart`); `ExcludeSemantics` around each tab's label `Text` (the tab's `Semantics(label)` is the one
+label); `MergeSemantics` + `Semantics(button: true)` around the Subjects card with `ExcludeSemantics` around its bar
+(the Mistakes card's and `TreeListRow`'s pattern); `Semantics(button: true)` around the pill. Tests, each asserting
+`isButton` and not `isImage` on the node and red on the old code: `main_shell_test.dart` (one node per tab, the label
+once), `profile_screen_test.dart` (five rows), `subjects_screen_test.dart` (a card is a button with an empty value),
+`shared_chrome_test.dart` (the pill).
+
+## BUG-022 ✅ The Leaderboard tab kept a stale board after a quiz when it sat on its other scope
+
+**Status:** FIXED 2026-10-06 (Fable-eye audit, FE-07). Found on the Pixel 8: a 30-question quiz, then Home read
+"1,257 / 1,500" while the tab, left on Governorate, read "10 You 1,250 pts"; a pull-down changed nothing.
+DEVICE-verified after the fix.
+
+**What breaks.** Two totals for one student on two tabs, and no way to refresh the board short of restarting.
+
+**Root cause.** Home's `TopStudentSection` listens to `/me` and, when the total moves, invalidates
+`leaderboardProvider(defaultFor(profile))` — one key of the family. The scope the tab was left on is a different
+autoDispose member, kept alive by the shell's `IndexedStack`, so it never refetched.
+
+**Why tests missed it.** "new points on /me (a finished quiz) refetch the board" held only the default scope.
+
+**Fix.** The listener invalidates the whole family (`ref.invalidate(leaderboardProvider)`). Test: "…and so does a board
+on the OTHER scope the tab may sit on" (`top_student_section_test.dart`), red on the old code.
+
+## BUG-023 ✅ The Arabic Home read "المستوى…" — the level number cut off
+
+**Status:** FIXED 2026-10-06 (Fable-eye audit, FE-08). Seen on the Pixel 8 and the emulator, light and dark, at font
+scale 1.0; DEVICE-verified after the fix.
+
+**What breaks.** The level card's headline — the one number the card exists to show — ellipsised in Arabic:
+"المستوى…" where English reads "LEVEL 3".
+
+**Root cause.** `_Stat` draws the value with `maxLines: 1, overflow: ellipsis` in a half-width `Expanded`; "المستوى 3"
+in `displayLarge` (28 / 700) is wider than that column on a phone, "LEVEL 3" is not.
+
+**Why tests missed it.** `home_screen_test.dart` looks for "LEVEL 8" in English; nothing measured the Arabic headline
+against its column, and the test font's squares would not have measured it anyway.
+
+**Fix.** The value sits in a `FittedBox(fit: scaleDown)`: whole in Arabic, untouched in English (the style keeps the
+scale; the box shrinks the paint only when the column demands it — recorded for the designer, DESIGN_ISSUES #120).
+Test: `level_card_test.dart` with the bundled fonts — whole in both locales on a 330 dp phone; English unscaled at
+360; Arabic shrinks, and by less than half. Red on the old code.
+
+## BUG-024 ✅ The board's Share was met twice, and the shells' dead button said its label twice
+
+**Status:** FIXED 2026-10-06 (Fable-eye audit, FE-04 / FE-05). Found in the device dumps; DEVICE-verified after the fix.
+
+**What breaks.** The Leaderboard header's disabled Share was two nodes at the same bounds ("Share, disabled" twice).
+Refer a Friend's "Share invite" and Customer Support's "Create Ticket" read "Share invite, Share invite, Inviting
+friends isn't available yet." — BUG-016 / BUG-018's pattern.
+
+**Root cause.** A `Semantics(label)` wrapped around an `IconButton(tooltip)` that makes its own node;
+`DisabledActionButton`'s `Semantics(label)` with its painted `Text` merging in.
+
+**Fix.** `excludeSemantics: true` on the Share wrapper (one labelled, disabled node); `ExcludeSemantics` around the
+dead button's child. Tests: `leaderboard_screen_test.dart` counts the nodes that say "Share" (one);
+`disabled_action_button_test.dart` (label once, the reason as the hint). Red on the old code.

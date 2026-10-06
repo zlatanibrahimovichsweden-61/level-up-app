@@ -30,6 +30,22 @@ Risk R-9 is mitigating. Rubric after Wave 1: see `docs/STORE_READINESS_RUBRIC.md
 
 ---
 
+## Fable-eye full audit — 2026-10-06
+
+A blind device traversal (Pixel 8 + the `Pixel_8` AVD, the mock build, every route, EN + AR, light + dark,
+font scale 1.3) by an independent eye, then a cross-check of every historical issue, then fixes. Record:
+`.ai/audits/current/fable_eye_audit_2026-10-06.md`. **Before:** the dirty Wave 21 tree committed and pushed
+as `af0eadb` + `3913f86` (checkpoint), validate 2046 / 0 / 0. **Found:** 21 (none P0 / P1); **fixed and
+DEVICE-verified:** 9 — the nav tabs, Profile rows, Subjects cards, the language pill and the dead controls
+were images / progress bars / doubled nodes to TalkBack (BUG-021, BUG-024); the Leaderboard tab kept a stale
+board after a quiz on its other scope (BUG-022); the Arabic Home headline was cut to "المستوى…" (BUG-023);
+the Subjects cards overflowed at text scale 1.3 (BUG-002's second half, closed by the D-018 rule). **Recorded
+for the owner:** DESIGN_ISSUES #120–#126. **After:** validate **2059 / 0 / 0** (+13 tests), analyze 0,
+goldens unchanged. **Owed:** the Pixel half of the re-walk (the phone locked); the Phase 0 objections about
+what the checkpoint push published (Wave 20, the forensic files) are the owner's call.
+
+---
+
 ## Verification ladder
 
 Every claim in this project carries one of these levels. They are not

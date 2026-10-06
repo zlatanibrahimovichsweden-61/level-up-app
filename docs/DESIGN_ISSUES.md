@@ -4892,6 +4892,71 @@ dark.
 
 ---
 
+## 120. 🟡 The Arabic level headline is wider than its column — scaled down, not cut
+
+> **Classification:** frame gap (Arabic Home). Fable-eye audit 2026-10-06, FE-08; BUG-023.
+
+The level card's two stat columns are half the card each (`308:4209`). "LEVEL 3" fits its column at
+`displayLarge` (28 / 700); "المستوى 3" does not fit it on a phone and the build ellipsised it to
+"المستوى…" — the level number gone — on every Arabic Home, light and dark. The headline now sits in a
+`FittedBox(scaleDown)`: the English size is untouched, the Arabic headline renders smaller only where
+the column demands it. **Ask (designer):** the Arabic frame's own answer — a smaller Arabic display
+size, a wider level column, or a shorter word than "المستوى" — so the shrink can be replaced by a rule.
+
+## 121. 🟡 Home's "See All" beside the placeholder sections is inert
+
+> **Classification:** frame gap. Fable-eye audit 2026-10-06, FE-11.
+
+Daily Tasks, Continue Learning (and Learning Tools on university) are "Coming soon" blocks, yet each
+heading carries the same "See All" as the live Top Student link, drawn identically; a tap does
+nothing. **Ask (designer / owner):** hide the link while a section is a placeholder, or draw it dimmed.
+
+## 122. 🟡 The "+20 ▾" dial-code chevron promises a picker it does not open
+
+> **Classification:** frame gap. Fable-eye audit 2026-10-06, FE-12; the #6 family.
+
+Login's phone field and the registration parent's-number field draw the frame's flag, "+20" and a
+dropdown chevron; the contract takes Egyptian numbers only, so nothing opens on a tap. **Ask
+(designer):** drop the chevron (a static country prefix), or confirm a picker is wanted and what it lists.
+
+## 123. 🟡 "Resend OTP" during the countdown is drawn in its enabled colour
+
+> **Classification:** frame-faithful, flagged. Fable-eye audit 2026-10-06, FE-13.
+
+Under the timer pill the "Resend OTP" label keeps the frame's colour while `onPressed` is null — the
+pixels are identical to the enabled state after the countdown ((174,135,231) dark, (56,79,71) light,
+measured); only the pill says it is off. `otp_screen.dart`'s `_ResendRow` does this on purpose. **Ask
+(designer):** a disabled treatment for the label, or confirm the pill alone is the signal.
+
+## 124. 🟡 The Leaderboard tab root draws a Back chip that goes Home
+
+> **Classification:** confirm. Fable-eye audit 2026-10-06, FE-14.
+
+The board frame draws the chevron; on the tab root it switches to the Home tab. It is live, unlike
+the Subjects root chip BUG-010 removed. **Ask (owner):** keep (a way back to Home from the board) or
+drop it on the tab root, as Subjects did.
+
+## 125. 🟡 Text scale 1.3: "Leaderbo…" in the nav bar, the podium names crowd
+
+> **Classification:** the RESPONSIVE queue (no `textScaler` clamp, 0 / 12 applied). Fable-eye audit
+> 2026-10-06, FE-16.
+
+At 1.3 the nav label ellipsises to "Leaderbo…" (11 px → 14.3 in an 82 dp column) and the podium's
+three names touch, the winner's ellipsised. Settings, Profile, Mistakes and (now) Subjects wrap or
+grow cleanly at 1.3 and 2.0. **Ask (owner):** the clamp in `docs/RESPONSIVE.md` Rule 4, or a narrower
+nav style at large scales.
+
+## 126. 🟡 Transitions and copy nobody drew: a round's end, Close, "Welcome back,"
+
+> **Classification:** confirm. Fable-eye audit 2026-10-06, FE-17 / FE-18 / FE-19.
+
+- The last flashcard's "Got it" pops straight back to Setup — no completion state (#119's ruling), where
+  a quiz ends on a result screen.
+- ✕ mid-round leaves at once; the quiz's ✕ asks "Leave this quiz?". Nothing is lost (grades save per
+  card), so the difference is consistency, not data.
+- A brand-new student lands on Home to "Welcome back," (the frame's copy).
+**Ask (owner / designer):** whether any of the three should change.
+
 # Appendix — edit4's open ledger, as of 2026-09-20
 
 Everything the quiz/leaderboard elevation wave could not close by itself, in one
