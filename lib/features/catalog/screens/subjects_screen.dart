@@ -247,21 +247,36 @@ class _SubjectsGrid extends StatelessWidget {
       return CatalogMessage(icon: Icons.search_off, text: noMatchMessage);
     }
 
-    return GridView.builder(
+    // Two cards a row, each row as tall as its taller card — the Mistakes
+    // overview's layout (D-018), here for BUG-002's second half: a GridView
+    // with a fixed 173/89 aspect capped the card at 78 dp on a 360 dp phone,
+    // and the caption overflowed from text scale 1.3 (Fable-eye audit
+    // 2026-10-06, FE-09). The frame's 89 is the card's floor, never its cap.
+    final rows = (subjects.length + 1) ~/ 2;
+    return ListView.separated(
       padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 18,
-        crossAxisSpacing: 16.5,
-        childAspectRatio: SubjectCard.aspectRatio,
-      ),
-      itemCount: subjects.length,
-      itemBuilder: (context, index) {
-        final subject = subjects[index];
-        return SubjectCard(
-          subject: subject,
-          // The ONE tree fetch for this subject starts here.
-          onTap: () => context.go('/learn/subject/${subject.id}'),
+      itemCount: rows,
+      separatorBuilder: (_, _) => const SizedBox(height: 18),
+      itemBuilder: (context, row) {
+        Widget cell(int index) {
+          if (index >= subjects.length) return const SizedBox.shrink();
+          final subject = subjects[index];
+          return SubjectCard(
+            subject: subject,
+            // The ONE tree fetch for this subject starts here.
+            onTap: () => context.go('/learn/subject/${subject.id}'),
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: cell(row * 2)),
+              const SizedBox(width: 16.5),
+              Expanded(child: cell(row * 2 + 1)),
+            ],
+          ),
         );
       },
     );
@@ -279,10 +294,12 @@ class _SubjectsSkeleton extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 18,
         crossAxisSpacing: 16.5,
-        childAspectRatio: SubjectCard.aspectRatio,
+        // The card's height at the default text scale, so the page does not
+        // jump when the data lands.
+        mainAxisExtent: SubjectCard.minHeight,
       ),
       itemCount: 6,
-      itemBuilder: (_, _) => const CatalogBlock(height: 89),
+      itemBuilder: (_, _) => const CatalogBlock(height: SubjectCard.minHeight),
     );
   }
 }

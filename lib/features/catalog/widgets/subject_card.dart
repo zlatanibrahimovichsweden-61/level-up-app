@@ -30,8 +30,16 @@ class SubjectCard extends StatelessWidget {
   final Subject subject;
   final VoidCallback onTap;
 
-  /// Figma card 173 × 89.
-  static const aspectRatio = 173 / 89;
+  /// Figma card 173 × 89. The FLOOR, not the height: the card grows with its
+  /// text and the grid gives a row its taller card — the rule D-018 set for
+  /// the Mistakes card, applied here for BUG-002's second half (Fable-eye
+  /// audit 2026-10-06, FE-09). At the old fixed 173/89 aspect the card was
+  /// 78 tall on a 360 dp phone and its caption overflowed from text scale 1.3
+  /// (2.7 px in English, every card in Arabic).
+  static const minHeight = 89.0;
+
+  /// The frame's inset (`135:618`): 9 at the sides, 11 top and bottom.
+  static const _padding = EdgeInsetsDirectional.fromSTEB(9, 11, 9, 11);
 
   @override
   Widget build(BuildContext context) {
@@ -40,54 +48,79 @@ class SubjectCard extends StatelessWidget {
     final elevation = Theme.of(context).extension<AppElevation>()!;
     final counter = subject.questionCounter;
 
-    return ElevatedSurface(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.7)),
-      color: ext.subjectCardFill,
-      shadows: elevation.subjectCardShadows,
-      onTap: onTap,
-      padding: const EdgeInsetsDirectional.fromSTEB(9, 11, 9, 11),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  // Already in the content language (adr-018) — rendered
-                  // verbatim, never looked up in the ARB.
-                  subject.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppType.h3.copyWith(color: ext.subjectCardTitle),
-                ),
+    // `MergeSemantics` + `button: true`, the Mistakes card's and TreeListRow's
+    // fix: `ElevatedSurface` adds no semantics and its `InkWell` gives a tap
+    // ACTION, not the button FLAG, so the bar's own progress semantics won the
+    // merge and TalkBack read every card as a PROGRESS BAR (Fable-eye audit
+    // 2026-10-06, FE-03). The bar is display-only and is excluded below.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: ElevatedSurface(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.7),
+          ),
+          color: ext.subjectCardFill,
+          shadows: elevation.subjectCardShadows,
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: minHeight),
+            child: Padding(
+              padding: _padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          // Already in the content language (adr-018) — rendered
+                          // verbatim, never looked up in the ARB.
+                          subject.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppType.h3.copyWith(
+                            color: ext.subjectCardTitle,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        forwardChevron,
+                        size: 16,
+                        color: ext.subjectCardChevron,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Mirrors itself under RTL via Directionality, so the bar fills
+                  // from the correct edge in Arabic for free.
+                  ExcludeSemantics(
+                    child: LinearProgressIndicator(
+                      value: counter.fraction,
+                      minHeight: 4,
+                      backgroundColor: ext.catalogTrack,
+                      // Lavender on BOTH canvases and both tracks (`135:631`,
+                      // `404:6989`, `337:5745`) — not the theme primary, which is
+                      // green in light.
+                      color: ext.subjectCardProgress,
+                      borderRadius: BorderRadius.circular(52),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    l10n.questionsCount(counter.answered, counter.total),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    // The frame specifies 8.56dp; raised to 10 — 8.5dp is below any
+                    // readable minimum on a real phone. Flagged to the designer.
+                    style: AppType.captionSmall.copyWith(color: ext.cardLabel),
+                  ),
+                ],
               ),
-              Icon(forwardChevron, size: 16, color: ext.subjectCardChevron),
-            ],
+            ),
           ),
-          const SizedBox(height: 10),
-          // Mirrors itself under RTL via Directionality, so the bar fills
-          // from the correct edge in Arabic for free.
-          LinearProgressIndicator(
-            value: counter.fraction,
-            minHeight: 4,
-            backgroundColor: ext.catalogTrack,
-            // Lavender on BOTH canvases and both tracks (`135:631`,
-            // `404:6989`, `337:5745`) — not the theme primary, which is
-            // green in light.
-            color: ext.subjectCardProgress,
-            borderRadius: BorderRadius.circular(52),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            l10n.questionsCount(counter.answered, counter.total),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            // The frame specifies 8.56dp; raised to 10 — 8.5dp is below any
-            // readable minimum on a real phone. Flagged to the designer.
-            style: AppType.captionSmall.copyWith(color: ext.cardLabel),
-          ),
-        ],
+        ),
       ),
     );
   }

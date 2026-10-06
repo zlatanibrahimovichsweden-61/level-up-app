@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/router/app_router.dart';
@@ -41,11 +42,91 @@ void main() {
       expect(find.text('Subjects'), findsWidgets);
       expect(find.byType(SubjectCard), findsNWidgets(3));
 
-      final grid = tester.widget<GridView>(find.byType(GridView));
-      final delegate =
-          grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
-      expect(delegate.crossAxisCount, 2);
+      // Two a row, start to end, the third below. (The fixed-aspect GridView
+      // became rows that grow with their text — BUG-002 / FE-09.)
+      final cards = find.byType(SubjectCard);
+      final first = tester.getRect(cards.at(0));
+      final second = tester.getRect(cards.at(1));
+      final third = tester.getRect(cards.at(2));
+      expect(second.top, first.top);
+      expect(second.left, greaterThan(first.left));
+      expect(third.top, greaterThan(first.bottom));
+      expect(first.width, second.width);
     });
+
+    testWidgets('a card is ONE button node — not the progress bar it was', (
+      tester,
+    ) async {
+      // `ElevatedSurface` adds no semantics and its InkWell gives a tap
+      // ACTION, not the button FLAG, so the bar's progress semantics won the
+      // merge: TalkBack read every card as a progress bar. Fable-eye audit
+      // 2026-10-06, FE-03 (the memory's "Subjects cards still affected").
+      final handle = tester.ensureSemantics();
+      await pumpCatalogApp(tester, catalog: catalog);
+      await openLearnTab(tester);
+
+      final node = tester.getSemantics(
+        find.ancestor(
+          of: find.text('Biology'),
+          matching: find.byType(SubjectCard),
+        ),
+      );
+      expect(node.flagsCollection.isButton, isTrue, reason: 'a button');
+      expect(node.flagsCollection.isImage, isFalse, reason: 'not an image');
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+      expect(node.label.split('\n').first, 'Biology');
+      expect(node.value, isEmpty, reason: 'the bar is display-only, excluded');
+      handle.dispose();
+    });
+
+    // BUG-002's second half (FE-09): the cards overflowed from text scale 1.3
+    // (2.7 px in English, every card in Arabic) because the grid fixed their
+    // height from the 173/89 aspect — 78 dp on a 360 dp phone. The frame's 89
+    // is now a FLOOR and a row takes its taller card, as the Mistakes overview
+    // has done since D-018.
+    for (final (locale, scale) in [
+      ('en', 1.3),
+      ('ar', 1.3),
+      ('en', 2.0),
+      ('ar', 2.0),
+    ]) {
+      testWidgets('BUG-002: no overflow in $locale at ${scale}x; rows grow '
+          'together', (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await pumpCatalogApp(tester, catalog: catalog, locale: locale);
+        await openLearnTab(tester, locale: locale);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        Finder card(String name) => find.ancestor(
+          of: find.text(name),
+          matching: find.byType(SubjectCard),
+        );
+        final bio = tester.getRect(card('Biology'));
+        final chem = tester.getRect(card('الكيمياء'));
+        final phys = tester.getRect(card('Physics'));
+        expect(chem.height, bio.height, reason: 'a row shares one height');
+        expect(bio.height, greaterThanOrEqualTo(SubjectCard.minHeight));
+        expect(phys.height, greaterThanOrEqualTo(SubjectCard.minHeight));
+        if (scale >= 2) expect(bio.height, greaterThan(SubjectCard.minHeight));
+        expect(phys.top - bio.bottom, closeTo(18, 0.01));
+        // Nothing is clipped: each caption ends above its card's bottom.
+        for (final name in ['Biology', 'الكيمياء']) {
+          final caption = tester.getRect(
+            find.descendant(of: card(name), matching: find.byType(Text)).last,
+          );
+          expect(
+            caption.bottom,
+            lessThanOrEqualTo(tester.getRect(card(name)).bottom),
+          );
+        }
+      });
+    }
 
     testWidgets('each card shows its own server counter', (tester) async {
       await pumpCatalogApp(tester, catalog: catalog);
