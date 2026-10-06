@@ -757,3 +757,29 @@ friends isn't available yet." — BUG-016 / BUG-018's pattern.
 **Fix.** `excludeSemantics: true` on the Share wrapper (one labelled, disabled node); `ExcludeSemantics` around the
 dead button's child. Tests: `leaderboard_screen_test.dart` counts the nodes that say "Share" (one);
 `disabled_action_button_test.dart` (label once, the reason as the hint). Red on the old code.
+
+---
+
+## BUG-025 ✅ The OTP verify and registration submit spinners could sit for ≈38 seconds on a device-info fault
+
+**Status:** FIXED 2026-10-06 (release-readiness reconciliation), SOURCE + a mechanised guard; not reproduced on a
+device (the fault needs a Keystore or `device_info_plus` failure, which the mock and staging walks cannot cause).
+
+**What breaks.** `deviceInfoProvider` (`device_info_provider.dart`) was the one fetch-on-build provider without
+`retry: null`. Riverpod 3's default schedule retries a failed build ten times — 200 ms doubling to a 6.4 s ceiling,
+≈38 s in all — and keeps the provider in `AsyncLoading` meanwhile. `OtpNotifier.verify` and
+`RegistrationSubmitNotifier` set their busy flag and then `await ref.read(deviceInfoProvider.future)`, which only
+completes on the terminal error: the student stares at a spinner for the whole schedule before any error renders.
+
+**Root cause.** The rule was prose — `reference_providers.dart`'s banner and the catalog notifiers' `noCatalogRetry`
+— and `deviceInfoProvider` predates it; Wave 4 recorded the omission as "deliberately not done" and nothing picked
+it up (`docs/WAVE_STATUS.md`, the Wave 4 notes).
+
+**Why tests missed it.** No test fed the provider a failing build, and a provider under auto-retry looks like a
+provider that is merely loading. A rule with no test holds exactly as long as somebody remembers it.
+
+**Fix.** `retry: (_, _) => null` on `deviceInfoProvider` — and, for a uniform rule, on `loginProvider`,
+`editProfileProvider`, `quizSetupProvider` and `registrationSubmitProvider`, whose builds never fetch. The rule is now
+a guard: `asyncProvidersWithoutRetry` (`test/guards/rules.dart`) names every `FutureProvider` /
+`AsyncNotifierProvider` without `retry:`; it named those five on the old tree, and six fixture tests in
+`rules_test.dart` prove it detects, scopes to the declaration, ignores comments and skips `StreamProvider`.

@@ -46,6 +46,25 @@ what the checkpoint push published (Wave 20, the forensic files) are the owner's
 
 ---
 
+## Release-readiness reconciliation — 2026-10-06
+
+The consolidation after the Fable pass, answering "what still prevents a release, and whose is it". Record:
+`.ai/audits/current/release_readiness_reconciliation_2026-10-06.md`. **Verdict: NOT READY** — the eight store
+blockers of the 2026-10-04 re-check all stand (production host, legal copy, account deletion, the iOS
+required-reason API, the Message placeholder, reviewer login, retention facts, the web deletion URL); none is a
+Flutter defect at HEAD. **Verified today:** no upstream contract drift (`0df5cf4` == `origin/main`); the Fable
+fixes on the physical Pixel 8 (8 of 9 owed checks; 1.3 text scale stays emulator-only); a **release build of
+HEAD on a device against staging** — login, catalogue, the whole quiz loop (+2 points), the board, offline,
+sign-out — closing most of R-4 and narrowing R-8. **Fixed (red-first):** R-2 (`OtpNotifier.verify` captures
+before its first await) and BUG-025 (`deviceInfoProvider` retry), with the retry rule mechanised as a guard.
+**New risks:** R-10 (the planned "/redeem" hand-off vs the purchase-silence rule), R-11 (E-4's root cause is
+the plugin's empty privacy manifest). **For the owner:** O-1…O-15 in the record (hide the Message tab for
+release 1; the E-4 fix shape; UGC Option 0; the deletion-copy ruling; inert surfaces; minors' purpose text;
+BUG-017 wording; the Phase 0 objection). **For Seif:** Q-B1…Q-B10 (retention facts first). **Validation:**
+`validate.ps1` **2067 / 0 / 0** (2059 + 8, exactly as predicted), analyze 0; its first run also caught a test file the Fable pass committed unformatted (`disabled_action_button_test.dart`, never seen by the earlier validate because it was untracked then) — formatted in its own commit.
+
+---
+
 ## Verification ladder
 
 Every claim in this project carries one of these levels. They are not

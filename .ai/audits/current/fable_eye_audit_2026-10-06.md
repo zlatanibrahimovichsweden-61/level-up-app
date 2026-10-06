@@ -451,3 +451,39 @@ See Phase 12: 2046 → 2059 passed, 0 failed, 0 skipped, analyze 0 → 0, format
   verified before that.
 - `tool/verify_guards.ps1` was not run (no guard rule changed); the iOS build, CI and a signed release were not
   touched (R-3, R-4, R-9 unchanged).
+
+---
+
+## Phase 14 — commits and push (added 2026-10-06, after the usage-limit break)
+
+Six focused commits, each analyzed and tested in a throwaway worktree before the push (per-commit `flutter analyze`:
+"No issues found!" on every code commit; per-tree `flutter test` "All tests passed!" — `a0585eb` +93, `423a610` +23,
+`1bf749c` +23, `882c889` +3, `c4b00af` +41 targeted tests); the worktree removed; the tree clean.
+
+| Commit | Concern |
+| --- | --- |
+| `a0585eb` | fix(a11y): one button node for the nav tabs, profile rows, language pill and dead controls |
+| `423a610` | fix(catalog): the Subjects card is a button that grows with its text |
+| `1bf749c` | fix(home): a points change refetches every leaderboard scope, not one |
+| `882c889` | fix(home): the Arabic level headline renders whole instead of "المستوى…" |
+| `c4b00af` | test(theme): drop the duplicate settingsToggleKnob check from the flashcard group |
+| `f10b112` | docs(audit): record the 2026-10-06 Fable-eye full audit |
+
+Pushed `3913f86..f10b112` to `origin/merged`; local == remote == `f10b112`; peers (the API-audit fork, the identity
+session) notified and the hold released.
+
+## Phase 15 — final smoke of the pushed state (added 2026-10-06, DEVICE)
+
+Run as part of the release-readiness reconciliation (`release_readiness_reconciliation_2026-10-06.md` §15):
+
+- **The owed Pixel 8 re-walk** (the fixed tree's `app-staging-debug.apk`, installed 04:37): FE-01/02/03/04/05/06/07/08
+  reproduced on the phone exactly as on the emulator — single `Button` nodes, one label, "المستوى 3" whole,
+  "10 You 1,252 pts" on Governorate after a +2 quiz. FE-09 (text scale 1.3) stays emulator-only by the standing
+  decision not to change the owner's phone font scale.
+- **App launch, auth/session, main navigation, affected features, Arabic, dark mode, one error state, one loading
+  state, one successful flow** — all on a **release build of `f10b112`** (`--flavor staging -t lib/main_staging.dart`,
+  a scratch copy signed with the local debug key) on the `Pixel_8` AVD against **staging**: launch → login (a dead
+  stored session was rejected and landed on `/login`) → OTP `000000` on the whitelisted number → Home (skeleton →
+  content, "LEVEL 1", "31 / 500") → Learn → tree → quiz setup → a 10-question quiz (+2 → "33 / 500") → the one-row
+  board → offline ("You are offline" + Retry on the tree; the Edit Profile banner) → reconnect → sign-out → sign-in.
+  Arabic and dark mode were covered on the Pixel (the Arabic dark Home capture `x01_pixel_home_ar.png`).
