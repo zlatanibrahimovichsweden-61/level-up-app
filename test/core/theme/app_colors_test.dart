@@ -836,7 +836,7 @@ void main() {
       final one = light.copyWith(flashcardAgainFill: probe);
       expect(one.flashcardAgainGlyph, light.flashcardAgainGlyph);
       expect(one.flashcardCardFill, light.flashcardCardFill);
-      expect(one.settingsToggleKnob, light.settingsToggleKnob);
+      expect(one.flashcardCardText, light.flashcardCardText);
 
       // Several are identical on both canvases, so light→dark would pass with
       // a broken lerp. Lerp towards probes instead.
