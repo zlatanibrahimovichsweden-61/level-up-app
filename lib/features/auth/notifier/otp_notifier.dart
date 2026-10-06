@@ -100,6 +100,17 @@ class OtpNotifier extends Notifier<OtpUiState> {
   /// `registrationRequired` no tokens exist, so only the reg token is carried.
   Future<void> verify(String code) async {
     if (state.isVerifying) return;
+    // Captured BEFORE the first await (R-2 / W3-1). `otpProvider` is
+    // autoDispose: popping the OTP screen mid-verify disposes this notifier,
+    // and `Ref.read` on a disposed ref throws `UnmountedRefException`
+    // (riverpod 3.3.2, `ref.dart:232-240`). Read through `ref` after the
+    // await, a slow network plus a Back press left the code consumed on the
+    // server and no tokens written — the student signed out by their own
+    // impatience. These three outlive the screen; `deviceInfoProvider.future`
+    // is read synchronously below, before the await, and needs no capture.
+    final repository = ref.read(authRepositoryProvider);
+    final storage = ref.read(secureStorageProvider);
+    final auth = ref.read(authControllerProvider.notifier);
     state = state.copyWith(
       isVerifying: true,
       clearError: true,
@@ -107,20 +118,20 @@ class OtpNotifier extends Notifier<OtpUiState> {
     );
     try {
       final device = await ref.read(deviceInfoProvider.future);
-      final result = await ref
-          .read(authRepositoryProvider)
-          .verifyOtp(phone: args.phone, code: code, device: device);
+      final result = await repository.verifyOtp(
+        phone: args.phone,
+        code: code,
+        device: device,
+      );
       switch (result) {
         case AuthenticatedResult(:final tokens):
-          await ref
-              .read(secureStorageProvider)
-              .writeTokens(
-                access: tokens.accessToken,
-                refresh: tokens.refreshToken,
-              );
+          await storage.writeTokens(
+            access: tokens.accessToken,
+            refresh: tokens.refreshToken,
+          );
           // Flip the single source of auth truth so the router guard authorizes
           // /home (the screen still shows the success view + Continue first).
-          ref.read(authControllerProvider.notifier).markAuthenticated();
+          auth.markAuthenticated();
           // The guard goes HERE, not around the await block. The tokens are
           // already written and auth is already flipped — those side effects
           // must survive the screen being popped, or the student ends up

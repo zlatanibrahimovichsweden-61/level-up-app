@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
@@ -8,6 +10,7 @@ import 'package:level_up_app/features/auth/models/auth_result.dart';
 import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/auth/models/otp_args.dart';
 import 'package:level_up_app/features/auth/models/token_pair.dart';
+import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/auth/notifier/otp_notifier.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
 import 'package:level_up_app/features/auth/repository/device_info_provider.dart';
@@ -88,6 +91,53 @@ void main() {
     verify(
       () => storage.writeTokens(access: 'access.jwt', refresh: 'refresh.jwt'),
     ).called(1);
+  });
+
+  test('popped mid-verify → the tokens are still written and auth still '
+      'flips (R-2 / W3-1)', () async {
+    // The student presses Back while `verifyOtp` is in flight. `otpProvider`
+    // is autoDispose, so the notifier dies with its screen and a `ref.read`
+    // after that point throws `UnmountedRefException`. The server has already
+    // consumed the code, so the tokens and the auth flip must land regardless;
+    // only the UI state may be dropped.
+    final inFlight = Completer<AuthResult>();
+    when(
+      () => repo.verifyOtp(
+        phone: any(named: 'phone'),
+        code: any(named: 'code'),
+        device: any(named: 'device'),
+      ),
+    ).thenAnswer((_) => inFlight.future);
+
+    final container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(repo),
+        secureStorageProvider.overrideWithValue(storage),
+        deviceInfoProvider.overrideWith((ref) async => _device),
+      ],
+    );
+    addTearDown(container.dispose);
+    // The router watches the auth controller for the session's lifetime.
+    container.listen(authControllerProvider, (_, _) {});
+    final screen = container.listen(otpProvider(_args), (_, _) {});
+
+    final verifying = container
+        .read(otpProvider(_args).notifier)
+        .verify('482913');
+    // Past the device-info await and into the request.
+    await Future<void>.delayed(Duration.zero);
+    expect(inFlight.isCompleted, isFalse);
+    screen.close(); // Back
+    await container.pump(); // autoDispose takes the notifier
+    inFlight.complete(
+      const AuthResult.authenticated(tokens: _tokens, profile: {}),
+    );
+    await verifying;
+
+    verify(
+      () => storage.writeTokens(access: 'access.jwt', refresh: 'refresh.jwt'),
+    ).called(1);
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
   });
 
   test('registrationRequired → carries token, does NOT store tokens', () async {
