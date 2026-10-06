@@ -214,6 +214,30 @@ void main() {
       handle.dispose();
     });
 
+    testWidgets('and every row is a BUTTON to TalkBack, never an image', (
+      tester,
+    ) async {
+      // The chevron is an SvgPicture; its image semantics used to merge into
+      // the row, and Android maps a merged image+button node to ImageView —
+      // the same defect BUG-013 fixed on the back chip. Fable-eye audit
+      // 2026-10-06, FE-02.
+      final handle = tester.ensureSemantics();
+      await pumpProfileScreen(tester, profile: profileRepo());
+
+      for (final key in [
+        'profile_row_settings',
+        'profile_row_favorites',
+        'profile_row_progress',
+        'profile_row_refer',
+        'profile_row_support',
+      ]) {
+        final flags = tester.getSemantics(find.byKey(Key(key))).flagsCollection;
+        expect(flags.isButton, isTrue, reason: '$key is a button');
+        expect(flags.isImage, isFalse, reason: '$key is not an image');
+      }
+      handle.dispose();
+    });
+
     testWidgets('every live row DOES have a tap target', (tester) async {
       await pumpProfileScreen(tester, profile: profileRepo());
 

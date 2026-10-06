@@ -141,10 +141,17 @@ class _Header extends StatelessWidget {
           // `Icons.share` is the same shape from Material — three connected
           // nodes — where `Icons.ios_share` was a box-and-arrow and simply the
           // wrong icon.
+          //
+          // ONE semantics node: this one, labelled, disabled. Its child is
+          // excluded — the IconButton's own node (its tooltip, no label) used
+          // to sit beside it as a second "Share" at the same bounds, so
+          // TalkBack met the dead control twice (Fable-eye audit 2026-10-06,
+          // FE-04).
           Semantics(
             button: true,
             enabled: false,
             label: l10n.leaderboardShare,
+            excludeSemantics: true,
             child: IconButton(
               onPressed: null,
               icon: Icon(Icons.share, color: ext.mutedText),

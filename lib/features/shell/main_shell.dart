@@ -282,20 +282,28 @@ class _NavTab extends StatelessWidget {
             ),
             // BoxFit.contain, NOT a forced square: three of the five glyphs
             // have a non-square viewBox and stretch if boxed.
+            // The outer `Semantics` above carries the tab's one label and its
+            // button role. The glyph's own image semantics and the label's own
+            // text node must NOT merge into it: with them, TalkBack read every
+            // tab as an image called "Home, Home" (Fable-eye audit 2026-10-06,
+            // FE-01) — the image flag outranks the button flag on Android.
             SvgPicture.asset(
               asset,
               width: _glyphSlot,
               height: _glyphSlot,
               fit: BoxFit.contain,
+              excludeFromSemantics: true,
               colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: (selected ? AppType.navActive : AppType.navDefault)
-                  .copyWith(color: color),
+            ExcludeSemantics(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: (selected ? AppType.navActive : AppType.navDefault)
+                    .copyWith(color: color),
+              ),
             ),
           ],
         ),
@@ -346,21 +354,25 @@ class _CentreTab extends StatelessWidget {
                 color: circleFill,
                 shape: BoxShape.circle,
               ),
+              // Same as [_NavTab]: one node, one label, button role (FE-01).
               child: SvgPicture.asset(
                 asset,
                 width: _glyphSlot,
                 height: _glyphSlot,
                 fit: BoxFit.contain,
+                excludeFromSemantics: true,
                 colorFilter: ColorFilter.mode(glyphColor, BlendMode.srcIn),
               ),
             ),
             const SizedBox(height: _labelTop - _centreTop - _centreDiameter),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: (selected ? AppType.navActive : AppType.navDefault)
-                  .copyWith(color: labelColor),
+            ExcludeSemantics(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: (selected ? AppType.navActive : AppType.navDefault)
+                    .copyWith(color: labelColor),
+              ),
             ),
           ],
         ),

@@ -118,6 +118,41 @@ void main() {
     expect(shell.navigationShell.currentIndex, 0);
   });
 
+  testWidgets('each tab is ONE button node — its label once, never an image', (
+    tester,
+  ) async {
+    // The glyph is an SvgPicture and the label a Text. Both used to merge into
+    // the tab's own Semantics, so every tab was announced as an IMAGE called
+    // "Home, Home": the image flag outranks the button flag in the Android
+    // bridge. Fable-eye audit 2026-10-06, FE-01.
+    final handle = tester.ensureSemantics();
+    await pumpApp(tester);
+
+    for (final label in [
+      'Home',
+      'Leaderboard',
+      'Learn',
+      'Message',
+      'Account',
+    ]) {
+      final tab = find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.button == true &&
+            w.properties.selected != null &&
+            w.properties.label == label,
+      );
+      expect(tab, findsOneWidget, reason: '$label tab');
+      final node = tester.getSemantics(tab);
+      expect(node.label, label, reason: '"$label" must not be said twice');
+      final flags = node.flagsCollection;
+      expect(flags.isButton, isTrue, reason: '$label is a button');
+      expect(flags.isImage, isFalse, reason: '$label is not an image');
+      expect(node.value, isEmpty);
+    }
+    handle.dispose();
+  });
+
   testWidgets('Message is the last coming-soon placeholder', (tester) async {
     await pumpApp(tester);
 

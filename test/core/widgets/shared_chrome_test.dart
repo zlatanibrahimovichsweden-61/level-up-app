@@ -309,5 +309,26 @@ void main() {
       await tester.tap(find.byType(LanguagePill));
       expect(taps, 1);
     });
+
+    testWidgets('it is ONE button node labelled by its text, not an image', (
+      tester,
+    ) async {
+      // `ElevatedSurface` adds no semantics and the glyph's image semantics
+      // used to win the merge: TalkBack said "English, image" and never
+      // "button". Fable-eye audit 2026-10-06, FE-06.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        host(
+          LanguagePill(label: 'English', onTap: () {}),
+          brightness: Brightness.light,
+        ),
+      );
+
+      final node = tester.getSemantics(find.byType(LanguagePill));
+      expect(node.label, 'English');
+      expect(node.flagsCollection.isButton, isTrue, reason: 'a button');
+      expect(node.flagsCollection.isImage, isFalse, reason: 'not an image');
+      handle.dispose();
+    });
   });
 }

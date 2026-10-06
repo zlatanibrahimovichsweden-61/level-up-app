@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
@@ -258,6 +259,7 @@ void main() {
   testWidgets('share is present but inert — there is no sharing surface', (
     tester,
   ) async {
+    final handle = tester.ensureSemantics();
     givenBoard();
     await openLeaderboard(tester, me: schoolProfile());
 
@@ -265,6 +267,23 @@ void main() {
       find.widgetWithIcon(IconButton, Icons.share),
     );
     expect(share.onPressed, isNull);
+    // ONE node says "Share": the labelled, disabled wrapper. The IconButton's
+    // own node (its tooltip, no label) used to sit beside it at the same
+    // bounds, so TalkBack met the dead control twice (Fable-eye audit
+    // 2026-10-06, FE-04).
+    var saysShare = 0;
+    void walk(SemanticsNode node) {
+      if (node.label == 'Share' || node.tooltip == 'Share') saysShare++;
+      node.visitChildren((child) {
+        walk(child);
+        return true;
+      });
+    }
+
+    // From the nearest node above the screen's Scaffold, the whole board.
+    walk(tester.getSemantics(find.byType(Scaffold).first));
+    expect(saysShare, 1);
+    handle.dispose();
   });
 
   testWidgets('an empty board says so instead of showing a blank list', (

@@ -217,6 +217,11 @@ class _Chevron extends StatelessWidget {
         'assets/icons/chevron.svg',
         width: 8,
         height: 16,
+        // Decorative. Without this the chevron's image semantics merged into
+        // the row and TalkBack announced every row with one as an IMAGE, not
+        // a button (Fable-eye audit 2026-10-06, FE-02) — the same defect
+        // BUG-013 fixed on the back chip.
+        excludeFromSemantics: true,
         colorFilter: ColorFilter.mode(ext.profileRowBorder, BlendMode.srcIn),
       ),
     );

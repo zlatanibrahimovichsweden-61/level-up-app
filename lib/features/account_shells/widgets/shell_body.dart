@@ -86,25 +86,31 @@ class DisabledActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
+    // The `label:` above is the node's whole label. The painted `Text` below
+    // is excluded, or it merges in and TalkBack says the label twice
+    // ("Share invite, Share invite, …") — BUG-016 / BUG-018's pattern, found
+    // again here by the Fable-eye audit 2026-10-06 (FE-05).
     return Semantics(
       button: true,
       enabled: false,
       label: label,
       hint: disabledHint,
-      child: IgnorePointer(
-        child: Opacity(
-          opacity: kProfileDisabledOpacity,
-          child: Container(
-            height: 60,
-            alignment: Alignment.center,
-            padding: const EdgeInsetsDirectional.symmetric(horizontal: 32),
-            decoration: BoxDecoration(
-              color: cs.primary,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              label,
-              style: AppType.buttonLarge.copyWith(color: cs.onPrimary),
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: Opacity(
+            opacity: kProfileDisabledOpacity,
+            child: Container(
+              height: 60,
+              alignment: Alignment.center,
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 32),
+              decoration: BoxDecoration(
+                color: cs.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                label,
+                style: AppType.buttonLarge.copyWith(color: cs.onPrimary),
+              ),
             ),
           ),
         ),

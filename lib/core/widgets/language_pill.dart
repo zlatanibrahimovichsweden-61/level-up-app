@@ -38,39 +38,52 @@ class LanguagePill extends StatelessWidget {
     // Null in the dark canvas ON PURPOSE: the frame draws no outline there.
     final border = ext.languagePillBorder;
 
-    return ElevatedSurface(
-      shape: const StadiumBorder(),
-      height: _height,
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: _inset),
-      // `languagePillFill`, not `background`: the pill used to paint the page
-      // colour, which is why it vanished into the page on the dark canvas.
-      color: ext.languagePillFill,
-      side: border == null
-          ? null
-          : BorderSide(color: border, width: elevation.languagePillBorderWidth),
-      glass: elevation.languagePillGlass,
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // meteor-icons:language — the 文A translate mark, STROKE-drawn at
-          // 1.67742 with round caps. The hairline weight is the whole look,
-          // so it is tinted, never re-rendered as a fill.
-          SvgPicture.asset(
-            'assets/icons/language.svg',
-            width: _iconSize,
-            height: _iconSize,
-            colorFilter: ColorFilter.mode(
-              ext.languagePillContent,
-              BlendMode.srcIn,
+    // One button node labelled by the text. `ElevatedSurface` adds no
+    // semantics of its own, and the glyph's image semantics used to win the
+    // merge: TalkBack announced the pill as an IMAGE with no button role
+    // (Fable-eye audit 2026-10-06, FE-06).
+    return Semantics(
+      button: true,
+      child: ElevatedSurface(
+        shape: const StadiumBorder(),
+        height: _height,
+        padding: const EdgeInsetsDirectional.symmetric(horizontal: _inset),
+        // `languagePillFill`, not `background`: the pill used to paint the page
+        // colour, which is why it vanished into the page on the dark canvas.
+        color: ext.languagePillFill,
+        side: border == null
+            ? null
+            : BorderSide(
+                color: border,
+                width: elevation.languagePillBorderWidth,
+              ),
+        glass: elevation.languagePillGlass,
+        onTap: onTap,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // meteor-icons:language — the 文A translate mark, STROKE-drawn at
+            // 1.67742 with round caps. The hairline weight is the whole look,
+            // so it is tinted, never re-rendered as a fill.
+            SvgPicture.asset(
+              'assets/icons/language.svg',
+              width: _iconSize,
+              height: _iconSize,
+              excludeFromSemantics: true,
+              colorFilter: ColorFilter.mode(
+                ext.languagePillContent,
+                BlendMode.srcIn,
+              ),
             ),
-          ),
-          const SizedBox(width: _gap),
-          Text(
-            label,
-            style: AppType.labelLarge.copyWith(color: ext.languagePillContent),
-          ),
-        ],
+            const SizedBox(width: _gap),
+            Text(
+              label,
+              style: AppType.labelLarge.copyWith(
+                color: ext.languagePillContent,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
