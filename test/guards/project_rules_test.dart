@@ -87,6 +87,23 @@ void main() {
     );
   });
 
+  test('every async provider opts out of the automatic retry', () {
+    // Riverpod 3 retries a failed build ten times over ~38 s and shows
+    // `AsyncLoading` meanwhile: a screen awaiting `.future` spins that long
+    // before its error renders, and a dead network is hit eleven times. The
+    // rule was prose (`reference_providers.dart`'s banner, the catalog
+    // notifiers' `noCatalogRetry`) until `deviceInfoProvider` missed it and
+    // the OTP verify spinner inherited the 38 s. Mechanised 2026-10-06.
+    expect(
+      asyncProvidersWithoutRetry(sources),
+      isEmpty,
+      reason:
+          'A FutureProvider / AsyncNotifierProvider has no `retry:`. Add '
+          '`retry: (_, _) => null` — a tapped Retry button is the only retry '
+          'this app performs.',
+    );
+  });
+
   // -------------------------------------------------------------------------
   group('user-facing copy goes through AppLocalizations', () {
     // Arabic is the baseline locale here, not an edge case, so a hardcoded

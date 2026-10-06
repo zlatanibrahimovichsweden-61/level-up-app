@@ -129,6 +129,87 @@ void initState() {
     });
   });
 
+  group('async providers opt out of the automatic retry', () {
+    test('a FutureProvider and an AsyncNotifierProvider with no retry: are '
+        'flagged, whatever their modifiers', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src('final a = FutureProvider<int>((ref) async => 1);'),
+          src(
+            'final b =\n'
+            '    AsyncNotifierProvider.autoDispose.family<N, int, String>(\n'
+            '      N.new,\n'
+            '    );',
+            path: 'lib/features/y/y.dart',
+          ),
+        ]),
+        ['lib/features/x/x.dart: a', 'lib/features/y/y.dart: b'],
+      );
+    });
+
+    test('retry: anywhere inside the declaration satisfies it', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src(
+            'final a = FutureProvider<int>('
+            '(ref) async => 1, retry: (_, _) => null);',
+          ),
+          src(
+            'final b = AsyncNotifierProvider<N, int>(N.new, retry: noRetry);',
+          ),
+        ]),
+        isEmpty,
+      );
+    });
+
+    test('a retry: that belongs to the NEXT declaration does not count', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src(
+            'final a = FutureProvider<int>((ref) async => 1);\n'
+            'final b = FutureProvider<int>('
+            '(ref) async => 2, retry: (_, _) => null);',
+          ),
+        ]),
+        ['lib/features/x/x.dart: a'],
+      );
+    });
+
+    test('a comment that mentions retry: satisfies nothing', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src(
+            '// retry: (_, _) => null — documented, not done\n'
+            'final a = FutureProvider<int>((ref) async => 1);',
+          ),
+        ]),
+        ['lib/features/x/x.dart: a'],
+      );
+    });
+
+    test('a `;` inside a string literal does not end the declaration', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src(
+            "final a = FutureProvider<String>("
+            "(ref) async => 'a;b', retry: (_, _) => null);",
+          ),
+        ]),
+        isEmpty,
+      );
+    });
+
+    test('StreamProvider and a plain NotifierProvider are out of scope', () {
+      expect(
+        asyncProvidersWithoutRetry([
+          src('final a = StreamProvider<bool>((ref) => const Stream.empty());'),
+          src('final b = NotifierProvider<N, int>(N.new);'),
+        ]),
+        isEmpty,
+      );
+    });
+  });
+
   group('raw Text literals', () {
     test('flags a hardcoded string', () {
       expect(rawTextLiterals([src("Text('Retry')")]), isNotEmpty);

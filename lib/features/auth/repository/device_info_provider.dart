@@ -12,6 +12,12 @@ import '../models/device_info.dart';
 /// an optional display label for eviction messaging.
 ///
 /// Overridden in tests. Never logs any of these values.
+///
+/// `retry: null` — the project rule for every fetch-on-build provider (the
+/// guard in `test/guards/project_rules_test.dart`). Without it a Keystore or
+/// `device_info_plus` fault made Riverpod retry ten times over ~38 s, and the
+/// OTP verify and registration submit spinners, which await `.future`, sat
+/// there the whole time before any error could render (2026-10-06).
 final deviceInfoProvider = FutureProvider<DeviceInfo>((ref) async {
   final deviceId = await ref
       .watch(secureStorageProvider)
@@ -25,4 +31,4 @@ final deviceInfoProvider = FutureProvider<DeviceInfo>((ref) async {
   // Contract's platform enum is android|ios; Android is the default branch.
   final info = await plugin.androidInfo;
   return DeviceInfo(deviceId: deviceId, platform: 'android', model: info.model);
-});
+}, retry: (_, _) => null);

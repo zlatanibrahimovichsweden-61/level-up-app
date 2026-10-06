@@ -548,3 +548,71 @@ List<String> mirroredGlyphSwaps(List<Source> sources) {
           '${s.path}: Icons.${m[1]} / Icons.${m[2]}',
   ];
 }
+
+// ---------------------------------------------------------------------------
+// RULE: every async provider opts out of Riverpod 3's automatic retry.
+// ---------------------------------------------------------------------------
+
+/// `FutureProvider` / `AsyncNotifierProvider` declarations — any modifier,
+/// `.autoDispose`, `.family` or both — whose argument list carries no `retry:`.
+///
+/// Riverpod 3 retries a failed `build` on its own: ten times, 200 ms doubling
+/// to a 6.4 s ceiling, about thirty-eight seconds in all, holding the provider
+/// in `AsyncLoading` the whole time. A screen that awaits `.future` sits on its
+/// spinner for that long before the error renders, and a dead network is hit
+/// eleven times. Every fetch-on-build provider here opts out with
+/// `retry: (_, _) => null` — a tapped Retry button is the only retry this app
+/// performs. That was a prose convention (`reference_providers.dart`'s banner,
+/// the catalog notifiers' `noCatalogRetry`) until `deviceInfoProvider` missed
+/// it and the OTP verify spinner inherited the thirty-eight seconds
+/// (2026-10-06). `StreamProvider` is deliberately out of scope: re-subscribing
+/// after a stream error is recovery, not a hidden error state.
+///
+/// Comment-stripped, so a doc comment that *mentions* `retry:` satisfies
+/// nothing. A declaration runs to the first `;` at bracket depth 0, so a
+/// `retry:` on the next provider does not vouch for this one.
+List<String> asyncProvidersWithoutRetry(List<Source> sources) {
+  final out = <String>[];
+  final decl = RegExp(
+    r'\b(?:final|const)\s+(\w+)\s*=\s*(?:FutureProvider|AsyncNotifierProvider)\b',
+  );
+  for (final s in sources) {
+    final code = stripComments(s.text);
+    for (final m in decl.allMatches(code)) {
+      final statement = code.substring(m.start, _statementEnd(code, m.end));
+      if (!RegExp(r'\bretry\s*:').hasMatch(statement)) {
+        out.add('${s.path}: ${m.group(1)}');
+      }
+    }
+  }
+  return out;
+}
+
+/// Index just past the `;` that ends the statement running from [from]: the
+/// first `;` at paren/brace/bracket depth 0, with string literals skipped.
+int _statementEnd(String s, int from) {
+  var depth = 0;
+  String? quote;
+  for (var i = from; i < s.length; i++) {
+    final c = s[i];
+    if (quote != null) {
+      if (c == r'\') {
+        i++;
+      } else if (c == quote) {
+        quote = null;
+      }
+      continue;
+    }
+    switch (c) {
+      case "'" || '"':
+        quote = c;
+      case '(' || '{' || '[':
+        depth++;
+      case ')' || '}' || ']':
+        depth--;
+      case ';':
+        if (depth == 0) return i + 1;
+    }
+  }
+  return s.length;
+}

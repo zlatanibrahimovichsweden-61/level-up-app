@@ -31,4 +31,6 @@ class LoginNotifier extends AsyncNotifier<OtpRequestResult?> {
 
 final loginProvider = AsyncNotifierProvider<LoginNotifier, OtpRequestResult?>(
   LoginNotifier.new,
+  // Its build never fetches; the rule is uniform (project_rules_test).
+  retry: (_, _) => null,
 );

@@ -75,4 +75,6 @@ class QuizSetupNotifier extends AsyncNotifier<Quiz?> {
 final quizSetupProvider =
     AsyncNotifierProvider.autoDispose<QuizSetupNotifier, Quiz?>(
       QuizSetupNotifier.new,
+      // Its build never fetches; the rule is uniform (project_rules_test).
+      retry: (_, _) => null,
     );

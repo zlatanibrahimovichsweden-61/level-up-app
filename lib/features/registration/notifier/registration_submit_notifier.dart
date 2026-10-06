@@ -125,4 +125,6 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
 final registrationSubmitProvider =
     AsyncNotifierProvider<RegistrationSubmitNotifier, RegistrationSubmitted?>(
       RegistrationSubmitNotifier.new,
+      // Its build never fetches; the rule is uniform (project_rules_test).
+      retry: (_, _) => null,
     );

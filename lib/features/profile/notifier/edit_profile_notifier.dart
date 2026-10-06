@@ -90,4 +90,6 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
 final editProfileProvider =
     AsyncNotifierProvider.autoDispose<EditProfileNotifier, StudentProfile?>(
       EditProfileNotifier.new,
+      // Its build never fetches; the rule is uniform (project_rules_test).
+      retry: (_, _) => null,
     );
