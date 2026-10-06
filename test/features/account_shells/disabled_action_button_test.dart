@@ -31,11 +31,7 @@ void main() {
     expect(node.hint, 'Not yet.');
     expect(
       node,
-      isSemantics(
-        isButton: true,
-        hasEnabledState: true,
-        isEnabled: false,
-      ),
+      isSemantics(isButton: true, hasEnabledState: true, isEnabled: false),
     );
     handle.dispose();
   });
