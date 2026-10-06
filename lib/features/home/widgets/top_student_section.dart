@@ -58,12 +58,18 @@ class TopStudentSection extends ConsumerWidget {
     // again — otherwise a student in the top three would read two different
     // totals for themselves on one screen. The tab shares this instance and
     // gets the fresh board too.
+    //
+    // The WHOLE family, not `leaderboardProvider(scope)`: the tab may be
+    // sitting on its other scope, and the shell's IndexedStack keeps that
+    // notifier alive — so invalidating this block's key alone left a
+    // Governorate board reading the old total after a quiz while the level
+    // card above read the new one (Fable-eye audit 2026-10-06, FE-07).
     ref.listen(meProvider.select((me) => me.value?.points.total), (
       previous,
       next,
     ) {
       if (previous != null && next != null && previous != next) {
-        ref.invalidate(leaderboardProvider(scope));
+        ref.invalidate(leaderboardProvider);
       }
     });
 

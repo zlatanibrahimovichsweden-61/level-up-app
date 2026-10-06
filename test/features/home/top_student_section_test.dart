@@ -200,6 +200,47 @@ void main() {
     await boardCalls(1);
   });
 
+  testWidgets('…and so does a board on the OTHER scope the tab may sit on', (
+    tester,
+  ) async {
+    // The tab keeps whichever scope it was left on alive inside the shell's
+    // IndexedStack. Invalidating only `defaultFor(me)` left a Governorate
+    // board reading the old total after a quiz while the level card read the
+    // new one (Fable-eye audit 2026-10-06, FE-07): the whole family goes.
+    Future<void> boardCalls(int n) async => verify(
+      () => board.getLeaderboard(
+        scope: any(named: 'scope'),
+        cursor: any(named: 'cursor'),
+        limit: any(named: 'limit'),
+      ),
+    ).called(n);
+
+    givenRanks([1, 2, 3]);
+    final container = await pump(tester);
+    // The tab on its other scope, held open as the IndexedStack would.
+    final other = container.listen(
+      leaderboardProvider(LeaderboardScope.governorate),
+      (_, _) {},
+    );
+    addTearDown(other.close);
+    await tester.pumpAndSettle();
+    await boardCalls(2);
+
+    final after = schoolProfileJson()
+      ..['points'] = <String, dynamic>{
+        'school': 2600,
+        'university': 0,
+        'total': 2600,
+      };
+    when(
+      profiles.getMe,
+    ).thenAnswer((_) async => StudentProfile.fromJson(after));
+    container.invalidate(meProvider);
+    await tester.pumpAndSettle();
+    // Both boards fetched again — Home's own scope and the tab's.
+    await boardCalls(2);
+  });
+
   // -------------------------------------------------------------------------
   group('rows · 59:2091 / 337:5461', () {
     testWidgets('the top THREE, each medal · name · points', (tester) async {
