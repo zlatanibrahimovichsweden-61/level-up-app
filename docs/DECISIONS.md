@@ -1071,3 +1071,83 @@ on a Mac. The old `com.levelup.level_up_app` install on test devices is an orpha
 the keystore remain gated on their own prerequisites (`ENVIRONMENTS.md` §7, §10).
 
 **Revisit when:** never for Q1 after the first store upload (irreversible); Q2–Q3 when an environment is added.
+
+---
+
+## Completion program — release 1 (2026-10-09)
+
+The owner's 2026-10-09 brief answered the three blocking questions of the pre-execution discovery
+(`.ai/audits/current/PRE_EXECUTION_DISCOVERY.md` §14: B-1 pin, B-2 scope, B-3 protocol). Live program state:
+`.ai/audits/current/completion/COMPLETION_STATE.md`.
+
+### D-022 · The completion program builds against contract `eddb6ac` (3.46.0-m1)
+
+**Feature:** Completion program (CW01) · **Date:** 2026-10-09 · **Status:** **Accepted — not yet applied (CW01)** ·
+**Raised by:** discovery B-1; **decided by** the owner
+
+**Context.** Three contract states coexist: committed pin `0df5cf4` (3.28.0-m1, `03fd7cf`); an uncommitted working-tree
+re-vendor to `65245be` (3.38.0-m1, blob-identical to upstream); upstream HEAD `eddb6ac` (3.46.0-m1, mirrored
+2026-10-08T14:56Z from backend `a158daa`, which staging's `/health/version` also reports). At `eddb6ac`: 86 operations,
+all stable, 4 web-only → **82 app-buildable** (PyYAML census, 2026-10-09). An operation is app-buildable when it is
+stable and **not** `x-consumers: [web]`; an absent `x-consumers` means mobile (`contract-changelog.md@eddb6ac` ~:586).
+A BUILD dry run of HEAD `8e641e9` + the `eddb6ac` files passed: analyze 0, contract guard 14/14, 2067/0, guards 122
+(`.ai/audits/current/completion/00_BASELINE.md` §9).
+
+**Options.** (a) stay on `0df5cf4`; (b) commit `65245be`; (c) re-vendor to upstream HEAD.
+
+**Decision.** (c) — `eddb6ac`. `git ls-remote` is re-run immediately before CW01; if upstream has moved, the new commit
+and version are reported to the owner and the target does **not** move silently. The re-vendor is its own isolated
+change set (contract files + `SOURCE.md` + guard alignment only); `contract/` is edited by nothing else. During it the
+false sentence at `contract/SOURCE.md:17` ("CRLF exactly as upstream stores them") is corrected — upstream blobs are LF.
+
+**Consequences.** Opens chat, push registration, inbox, friends, support (+photos), custom avatars, recovery, track
+transfer, referral, quiz history/favourites. `verifyOtp` gains `403 account_banned` (3.42, behavioural — CW02). The
+3.11.0-m1 `retakeWrong` behavioural change stays dormant while the app sends `normal` only.
+
+**Revisit when:** upstream moves before CW01 starts, or Seif announces a release-1 contract freeze.
+
+### D-023 · Release 1 includes push, chat, the notifications inbox and the Message tab; deletion and banned handling are required
+
+**Feature:** Completion program (CW04–CW13) · **Date:** 2026-10-09 · **Status:** **Accepted — not built** ·
+**Raised by:** discovery B-2; **decided by** the owner
+
+**Decision.** Release 1 includes **push notifications, text chat, the notifications inbox and the Message tab**. None of
+the four is hidden or dropped to shrink scope. **Account deletion** (request, confirm, cancel, the pending-deletion
+state) and **banned-account handling** are required, not deferred; their missing designs and details are requested,
+not guessed.
+
+**Rulings that travel with the scope.** Purchase silence stands (D-015, adr-049 §3) — the only exception is the
+contract-verbatim "Subscribe to get step-by-step explanations". Chat is text-only under the current contract. No camera
+permission and no camera flow. Support attachments follow the contract (JPEG/PNG/WebP and its limits), not Figma's
+PDF/10 MB. The student's own leaderboard rank is not shown. Presigned storage uploads use an isolated plain HTTP client,
+never the signed-in Dio client (its auth interceptor would send the bearer token to the storage host).
+
+**Still open (not decided here).** Referral reward copy (contract: +10 to the inviter only; Figma: 500 to both) — owner
+ruling. Deletion confirm copy — awaits a Seif-approved variant without "paid"/"refund". The Message tab's content
+(inbox, chat, or both) — owner + designer. Firebase project ownership and the R-9 registration gate — owner; nothing is
+registered in any console without explicit authorisation.
+
+**Revisit when:** the owner changes the release-1 scope, or a store review forces it.
+
+### D-024 · The completion program runs as owner-gated waves with fixed roles and stable IDs
+
+**Feature:** Completion program (all waves) · **Date:** 2026-10-09 · **Status:** **Accepted — in force** ·
+**Raised by:** discovery B-3; **decided by** the owner
+
+**Decision.**
+- **Roles.** Opus plans and formulates; Sonnet implements and runs subagents (fallback order Opus 4.8 → 4.7 → 4.6 only
+  when Sonnet is unavailable or demonstrably unsuitable, reported); Fable audits at agreed checkpoints only.
+- **Cycle.** `START WAVE <ID>` → IMPLEMENT → VALIDATE → REVIEW → owner decision → `NEXT WAVE`. Nothing auto-advances.
+  Owner verbs: `FORMULATE`, `START WAVE <ID>`, `REVIEW`, `NEXT WAVE`, `WALK`, `STOP`.
+- **Wave kinds.** A wave may be a multi-screen flow (when splitting would leave an unusable app), a non-screen
+  engineering wave, an environment/iOS/release wave, or an integration/store wave.
+- **IDs.** Completion waves `CW00`–`CW20` are stable and never renumbered; splits/reorders are recorded with a reason.
+  Historical "Wave 01–22", "Env Wave 1–4" and discovery tracks `T01`–`T21` keep their names and are cross-referenced.
+- **Git.** No commit or push without an explicit owner request; never force-push; `dev` frozen; `main` only by
+  `--ff-only` on the owner's word; `backup/2026-08-22-dirty-tree` preserved; never `git add -A` while `contract/` is dirty.
+- **State.** `.ai/audits/current/completion/COMPLETION_STATE.md` is the live record; `wave_state.md` is closed history
+  of the 22-wave API→UI workflow. Checkpoint the state file before context reaches ~40–45%.
+
+**Consequences.** The `NEXT`/`WALK`/`FORMULATE` control rules in `wave_state.md` govern the closed 22-wave list only.
+
+**Revisit when:** the owner changes the protocol.

@@ -33,4 +33,4 @@ folder and rename if needed so the names match the table exactly (e.g. the stati
 - Arabic coverage: Inter has no Arabic glyphs; `app_theme.dart` falls Arabic back to
   Tajawal automatically.
 
-After adding the files: `flutter pub get` then `flutter run -t lib/main_dev.dart`.
+After adding the files: `flutter pub get` then `flutter run --flavor staging -t lib/main_dev.dart`.

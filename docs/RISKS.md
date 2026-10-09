@@ -4,7 +4,7 @@ Live risks only. A risk leaves this file when it is closed by evidence, not when
 it stops being mentioned. Every entry has an owner and a next action — an item
 with neither is not a risk, it is a wish.
 
-**Last reviewed:** 2026-10-06 (release-readiness reconciliation — `.ai/audits/current/release_readiness_reconciliation_2026-10-06.md`)
+**Last reviewed:** 2026-10-09 (completion-program baseline — `.ai/audits/current/completion/00_BASELINE.md`; R-3, R-8, R-9 updated). Previously 2026-10-06 (release-readiness reconciliation — `.ai/audits/current/release_readiness_reconciliation_2026-10-06.md`)
 
 Severity reflects **impact × likelihood of going unnoticed**. A defect nothing
 can detect ranks above a louder one that any gate would catch.
@@ -52,15 +52,15 @@ premise was right. Status stays **OPEN — MEDIUM** until the fix and its test l
 
 ---
 
-## R-3 · CI has never been observed running
+## R-3 · CI observed on the push path; the main-only release gate has not run in its flavored form — **NARROWED 2026-10-09**
 
 | | |
 | --- | --- |
-| **Impact** | The whole Wave-2 enforcement layer is statically verified only. `subosito/flutter-action` accepting `3.44.7` is unproven. A workflow that fails on first run teaches the team to ignore CI. |
-| **Evidence** | `origin/dev` is 6 commits behind local. No Actions run has been inspected. |
+| **Impact** | `analyze + test` is proven by use on `merged`. No run has exercised `build-release-apk` (push to `main` only) in its current flavored form (`--flavor prod -t lib/main_prod.dart`): the only two `main` runs (`f987f20` 2026-09-19, `e71e9a1` 2026-09-20) predate the flavors (`2dfd969`, 2026-10-06). A step that fails on its first run teaches the team to ignore CI. |
+| **Evidence** | `gh run list`, 2026-10-09: 15 runs, 2026-08-15 → 2026-10-06 — 14 success, 1 failure (`f10b112`, 2026-10-06, format check: a file committed unformatted, fixed in `56f74e7`). By branch: `merged` 11 success + 1 failure, `main` 2 success, `dev` 1 success. Latest `merged` run `c87b90a`: success. `8e641e9` is unpushed, so it has no run. |
 | **Owner** | Developer |
-| **Next action** | Push when ready, then read the `analyze + test` job. Watch two steps: *Read pinned Flutter version* (should echo `3.44.7`) and *Set up Flutter*. |
-| **Status** | **OPEN — accepted by choice.** The developer has deferred pushing; this is a known, deliberate gap, not neglect. |
+| **Next action** | When `main` is next promoted (`--ff-only`, on the owner's word), read the release compile gate job once — the first observation of its flavored form. Read CI after every authorised push. |
+| **Status** | **OPEN — NARROWED 2026-10-09.** ~~CI has never been observed running~~ — false since 2026-08-15. Remaining gap: the flavored release gate on `main`. |
 
 Expect the advisory `goldens` job to be **red** — baselines are local-Windows,
 the runner is a different Windows. That is designed behaviour, not a regression.
@@ -119,7 +119,7 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 
 | | |
 | --- | --- |
-| **Impact** | Base URLs are `TBD.example`. Every test has only ever met mocktail stubs or `mock_backend.dart`, which cannot produce 401s, 5xx, timeouts or malformed bodies. |
+| **Impact** | The production base URL is still the fail-closed placeholder `https://TBD.example/api/v1` (`app_config.dart:54`); staging is real (`:44`) and the planned `api.level-upworld.com` did not resolve on 2026-10-09. Every test has only ever met mocktail stubs or `mock_backend.dart`, which cannot produce 401s, 5xx, timeouts or malformed bodies. |
 | **Evidence** | **2026-09-04:** same harness against staging `78c6e5d` — **13 of 21** decoded: `GET /catalog/subjects` is deployed and answers `200 []` (contract-legal — the test account is school-track, and school subjects are never release-gated (adr-073, `openapi.yaml:795-799`), so the empty result means no subjects are seeded under its (education system, stage) cohort, not an unreleased term); `PATCH /me` 405 and `/me/entitlements` 404 unchanged between the `0b53cdc` and `78c6e5d` builds (the 404s were also seen at `fbab748` by curl on 2026-08-21; the 405 was first recorded at `0b53cdc`); 6 still unreachable behind the empty catalog (tree, the quiz loop, explanation). `.ai/audits/current/smoke-staging-2026-09-04.md`. **2026-08-23:** `tool/smoke/real_api_smoke_test.dart` against staging `0b53cdc` — 12 of 21 stable operations decoded through the real seam (all `/reference/*`, the OTP walk, `GET /me`, refresh, logout); 3 answered with a typed server state (`PATCH /me` 405, `/me/entitlements` 404, `/catalog/subjects` 404 — `seif_fight.md` S37); 6 unreachable behind the catalog 404. No untyped error leaked. F-7-01 closed in `068390d`. The `TBD.example` placeholder was replaced earlier (`app_config.dart:43`). |
 | **Owner** | Backend partner + engineering |
 | **Next action** | Seif: deploy `PATCH /me` and `/me/entitlements` (S37 — two left), and seed subjects for the school (education system, stage) cohort of `+2010000000001` — or register a university test account, for which "seed a released term" is the right ask — so `POST /quizzes` has questions to draw (S37 ask 2). Then re-run the harness — the quiz loop, explanation 202 and register arm are the untested remainder, and the `finish` body is the first chance to see the 3.0.0-m1 `QuizSummary` on the wire (the client accepts both shapes, so nothing waits on it). Checklist steps 5 (short-lived token → 401 pipeline) and 9 (forced 500/429) still need Seif's cooperation. |
@@ -127,14 +127,14 @@ the runner is a different Windows. That is designed behaviour, not a regression.
 
 ---
 
-## R-9 · One platform identity for all environments; production id never ratified
+## R-9 · iOS still carries the template platform identity (Android ratified and applied)
 
 | | |
 | --- | --- |
-| **Impact** | Staging and production share `com.levelup.level_up_app` / `com.levelup.levelUpApp`; a tester cannot hold both on one phone, and a wrong-environment build is indistinguishable by package name or on screen (`isDev` is dead code). The id becomes permanent at the first Play upload or Apple App ID registration and keys every later Firebase registration. Nobody has confirmed the template strings are the ones the business wants. |
+| **Impact** | *(Updated 2026-10-09.)* The ids are ratified (D-021: `com.levelupworld.app` / `.stg`) and applied on Android (`build.gradle.kts:55,69-77`, guarded by `test/guards/android_identity_test.dart`), so the two Android builds coexist on one phone with different labels. iOS is untouched: `PRODUCT_BUNDLE_IDENTIFIER` is still the template `com.levelup.levelUpApp` (`project.pbxproj:371,550,572`), one scheme, deployment target 13.0 where D-021 Q4 ratified 15.0. A wrong-environment build is still indistinguishable on screen (`AppConfig.isDev` is read by nothing: `app_config.dart:13,18,33`). The only AAB on disk (2026-10-04) carries the dropped id `com.levelup.level_up_app` — never upload it. The id becomes permanent at the first Play upload or Apple App ID registration and keys every later Firebase registration. Nobody has confirmed the template strings are the ones the business wants. |
 | **Evidence** | `android/app/build.gradle.kts:42-43` (template TODO + id); `project.pbxproj:371,550,572`; no `productFlavors` ever (`git log -S`); one Xcode scheme; `.ai/audits/current/app_identity_environment_audit_2026-10-04.md`; flagged before by F-9-08 (2026-08-14), BS-D-09 / BS-C-13 (2026-09). |
 | **Owner** | Product owner (decision D-021) · engineering (Waves 1–3 of the Environment & Architecture chapter) |
-| **Next action** | ~~Owner answers D-021~~ **done 2026-10-06** (`com.levelupworld.app` / `.stg`). ~~Wave 1 Android flavors~~ **done 2026-10-06**, ARTEFACT-verified (`aapt2 dump badging` on both release APKs). Remaining: Wave 3 — iOS schemes and bundle ids on a Mac with Xcode 26; a DEVICE check of the two Android identities side by side (Wave 4). Nothing may be uploaded to any store track or registered with Firebase before the client's accounts and the Firebase ownership question are settled (`ENVIRONMENTS.md` §7, §10). |
+| **Next action** | ~~Owner answers D-021~~ **done 2026-10-06** (`com.levelupworld.app` / `.stg`). ~~Wave 1 Android flavors~~ **done 2026-10-06**, ARTEFACT-verified (`aapt2 dump badging` on both release APKs). Remaining: CW03 (Env Wave 3) — iOS schemes, bundle ids and 15.0 on a Mac with Xcode 26, after checking the actual Xcode project structure (owner, 2026-10-09); a DEVICE check of the two Android identities side by side (CW19, was Env Wave 4). Nothing may be uploaded to any store track or registered with Firebase before the client's accounts and the Firebase ownership question are settled (`ENVIRONMENTS.md` §7, §10). |
 | **Status** | **OPEN — MITIGATING.** Opened 2026-10-04; identity ratified and the Android half implemented 2026-10-06. iOS still carries the template id `com.levelup.levelUpApp` in one scheme. Closes when iOS carries the ratified ids at BUILD level on a Mac. |
 
 ---

@@ -1835,3 +1835,23 @@ from the Wave 19 review, a Retry on the profile still loading when the profile i
 answer and replaces it (pre-existing, probe-proven, not recorded in KNOWN_BUGS); the task chip on other notifiers'
 disposal flag. Wave 22 is the last of the 22 formulated waves: what follows is the owner's call; a walk only on `WALK`; the wave list changes only on
 `FORMULATE`. Never auto-advance.
+
+---
+
+## Amendment 2026-10-09 (append-only) — completion-program pointer; stale lines superseded
+
+This file is the closed record of the 22 API→UI waves and is not rewritten. Where it disagrees with this block, this
+block wins.
+
+- **Live state moved.** Everything after Wave 22 is tracked in `.ai/audits/current/completion/COMPLETION_STATE.md`
+  (completion waves CW00–CW20). Protocol: `docs/DECISIONS.md` D-024; contract target: D-022 (`eddb6ac`, 3.46.0-m1);
+  release-1 scope: D-023. The "Control rules in force" above govern the closed 22-wave list only; the completion
+  program's verbs are `FORMULATE`, `START WAVE <ID>`, `REVIEW`, `NEXT WAVE`, `WALK`, `STOP`.
+- **"Waves 20 and 21 are not committed" is stale** (the Next-action row, the Branch/HEAD row and the closing
+  Next-action text). Wave 20 is `fa88b3a`, Wave 21 is `af0eadb`; both are ancestors of `origin/merged` (verified
+  2026-10-09 with `git merge-base --is-ancestor`).
+- **Contract mentions are stale.** Committed pin `0df5cf4` (3.28.0-m1); the working tree holds an uncommitted
+  re-vendor to `65245be` (3.38.0-m1); the target is `eddb6ac` (3.46.0-m1), applied by CW01.
+- **Baseline 2026-10-09** (`completion/00_BASELINE.md`): `merged` @ `8e641e9`, one docs-only commit ahead of
+  `origin/merged` (`c87b90a`, CI green). Format 0 changed / 369, analyze 0, **2067 passed / 0 failed**, guards 122.
+- **The historical Wave 03 (School registration) walk is still owed**; it is an RC gate item of CW19/CW20.

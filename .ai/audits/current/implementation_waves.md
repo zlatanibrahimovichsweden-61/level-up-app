@@ -17,7 +17,7 @@ acceptance percentage.
    **OVERALL: PASS** with a test count ≥ the previous wave's (baseline **1429**).
 4. Every ruled divergence goes into `docs/DESIGN_ISSUES.md` in the same wave; product/contract
    questions go to the owner or `docs/seif_fight.md`. Never invent a value.
-5. WALK only on the user's `WALK`: `flutter build apk --debug -t lib/main_mock.dart`, `adb install -r`,
+5. WALK only on the user's `WALK`: `flutter build apk --debug --flavor staging -t lib/main_mock.dart` (Gradle refuses a flavorless build since `2dfd969`; it installs as `com.levelupworld.app.stg`), `adb install -r`,
    OTP `000000` = school, `111111` = university; tap coordinates from a `uiautomator` dump; no
    hardware BACK (kills the app). Quiz and Review set FLAG_SECURE (screencap is black by design):
    the walk may override `screenProtectionProvider` **in `lib/main_mock.dart` only, locally, reverted

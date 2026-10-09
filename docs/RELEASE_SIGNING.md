@@ -20,7 +20,7 @@ It fails **closed**. An unsigned APK is obvious and refuses to install; a debug-
 looks fine and is the actual problem. Do not "fix" a failing release build by pointing
 `signingConfig` back at the debug config.
 
-Debug and profile builds are unaffected — `flutter run` still works with no keystore.
+Debug and profile builds are unaffected — `flutter run --flavor staging -t lib/main_staging.dart` still works with no keystore.
 
 ## One-time setup (per person who ships builds)
 

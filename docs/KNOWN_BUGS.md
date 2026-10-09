@@ -18,7 +18,7 @@ fork) navigates to `/register` and immediately paints Flutter's red ErrorWidget.
 the track picker, and both Day-3 track-detail screens are therefore **unreachable on a real
 device**. The `authenticated` fork (existing account → `/home`) is unaffected.
 
-**Reproduce:** run the mock harness (`flutter run -t lib/main_mock.dart`), enter any valid
+**Reproduce:** run the mock harness (`flutter run --flavor staging -t lib/main_mock.dart`), enter any valid
 phone, then enter any 6-digit code OTHER than `000000`.
 
 **Root cause (pre-fix code, kept for the record):**
