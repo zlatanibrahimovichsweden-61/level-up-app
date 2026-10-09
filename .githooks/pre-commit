@@ -25,7 +25,9 @@
 # -------
 # Git for Windows runs this under its bundled `sh`, so `#!/bin/sh` is correct
 # and no chmod / .sh extension is needed. `flutter` and `dart` resolve to the
-# POSIX launcher scripts in flutter/bin, which work under Git Bash.
+# POSIX launcher scripts in flutter/bin, but on MINGW those `exec` flutter.bat
+# and dart.bat, so every call is bounded by cmd.exe's 8191-char command line.
+# That is why both xargs calls below are batched with `-s` (see step 1).
 #
 # SAFETY
 # ------
@@ -65,8 +67,24 @@ echo "pre-commit: $count staged Dart file(s)"
 fail=0
 
 # --- 1. format ---------------------------------------------------------------
+# Batched with -s. Under Git Bash `dart` and `flutter` are bash scripts that
+# exec dart.bat / flutter.bat on MINGW, so every call goes through cmd.exe and
+# its 8191-char line limit, far below the ~23k xargs assumes. Unbatched, a
+# commit staging roughly 170+ files (~8k chars of paths) died with "The command
+# line is too long." in both steps even when every file was clean. Measured
+# 2026-09-27 on this machine: dart passes at -s 8100 and fails at 8200; flutter
+# passes at 7950 and fails at 8000 ("The input line is too long."), because
+# flutter.bat expands FLUTTER_ROOT into its line four times and dart.bat twice.
+# 7000 leaves headroom under both for a longer FLUTTER_ROOT. tool/validate.sh
+# uses the same value; keep them in step.
+#
+# Batching must not hide a failure. xargs runs every batch and exits 123 if ANY
+# of them exited 1-125 (124 if one exited 255, which also stops the remaining
+# batches; 125-127 if one was killed or could not run), so `if ! xargs ...`
+# still means "some batch failed". A shell loop over batches would keep only
+# the LAST batch's status; do not write one.
 echo "pre-commit: dart format"
-if ! xargs -0 -r dart format --output=none --set-exit-if-changed -- < "$tmp"; then
+if ! xargs -0 -r -s 7000 dart format --output=none --set-exit-if-changed -- < "$tmp"; then
   echo ""
   echo "  FIX: dart format <the files above>   then: git add -u"
   fail=1
@@ -76,8 +94,16 @@ fi
 # Scoped to the staged files. The analysis server still resolves the whole
 # package (unavoidable), but it only REPORTS on what you touched, so a
 # pre-existing warning in a file you did not open cannot block you.
+#
+# Batched with the same -s as step 1; flutter.bat is the tighter of the two
+# launchers. Splitting does not change the verdict. flutter_tools hands each
+# path to the analysis server as its own workspace folder, resolved against the
+# whole package on disk, so a file gets the same diagnostics whichever batch it
+# lands in. And a batch exits non-zero on any fatal issue it reports, so the
+# hook fails exactly when the unbatched run would have. The cost is one server
+# start per batch, and one "N issues found" summary per batch.
 echo "pre-commit: flutter analyze (staged files)"
-if ! xargs -0 -r flutter analyze --no-pub -- < "$tmp"; then
+if ! xargs -0 -r -s 7000 flutter analyze --no-pub -- < "$tmp"; then
   echo ""
   echo "  FIX: resolve the diagnostics above."
   fail=1

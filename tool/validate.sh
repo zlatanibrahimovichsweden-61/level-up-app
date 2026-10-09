@@ -136,7 +136,19 @@ fmt_count="$(tr -dc '\0' < "$tmp/dartfiles.z" | wc -c | tr -d ' ')"
 
 fence_open text
 printf 'checking %s hand-written Dart files\n\n' "$fmt_count" >> "$body"
-xargs -0 -r dart format --output=none --set-exit-if-changed -- \
+# Batched with -s. Under Git Bash `dart` is flutter/bin/dart, a bash script
+# that execs dart.bat on MINGW, so every call goes through cmd.exe and its
+# 8191-char command-line limit, far below the ~23k xargs assumes. One unbatched
+# call over ~280 paths (~13k chars) died with "The command line is too long."
+# and reported format FAIL on a fully formatted tree. Measured 2026-09-27:
+# -s 8100 passes, -s 8200 fails; 7000 leaves headroom for a longer FLUTTER_ROOT,
+# which dart.bat expands into the line twice.
+#
+# Batching must not hide a failure. xargs runs every batch and exits 123 if ANY
+# of them exited 1-125 (124-127 for a batch that died or could not start), so a
+# non-zero fmt_rc still means "some batch reported changes or errored". A shell
+# loop over batches would keep only the LAST batch's status; do not write one.
+xargs -0 -r -s 7000 dart format --output=none --set-exit-if-changed -- \
   < "$tmp/dartfiles.z" >> "$body" 2>&1
 fmt_rc=$?
 fence_close
@@ -146,8 +158,17 @@ if [ $fmt_rc -eq 0 ]; then
 else
   fmt_status="FAIL"
   overall=1
-  printf '\n**Files above need `dart format`.** Fix with:\n\n' >> "$body"
-  printf '```sh\ndart format $(git ls-files "*.dart" | grep -vE "\\.(freezed|g)\\.dart$")\n```\n' >> "$body"
+  printf '\n**Format check failed (exit %s).** Files listed above need `dart format`;\nany other output above is a batch that errored. Fix formatting with:\n\n' "$fmt_rc" >> "$body"
+  # The hint must be as safe as the check it follows: NUL-delimited, the same
+  # exclusions, and batched with the same -s. The old `dart format $(git
+  # ls-files ...)` split paths on whitespace, missed the l10n exclusion, and on
+  # Windows hit the same cmd.exe limit as the unbatched check did. Passed as a
+  # %s argument so printf does not reinterpret its backslashes. The printed
+  # text is code to the NUL-safety guard in test/guards/workflow_test.dart,
+  # which is why it reads `xargs -0`.
+  printf '```sh\n%s\n```\n' \
+    "git ls-files -z '*.dart' | grep -zZv -e '\\.freezed\\.dart\$' -e '\\.g\\.dart\$' -e '^lib/l10n/app_localizations' | xargs -0 -r -s 7000 dart format --" \
+    >> "$body"
 fi
 
 # ---------------------------------------------------------------------------
