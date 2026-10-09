@@ -16,10 +16,10 @@
 /// `lib/core` knows this file exists; injection happens through a single
 /// `dioProvider` override in that entrypoint's `ProviderScope`.
 ///
-/// Shapes are taken from `contract/openapi.yaml` (pinned `f462968`,
-/// v3.27.0-m1 — see `contract/SOURCE.md`) so the canned JSON parses into the
-/// REAL freezed models — if a model changes and the mock stops parsing, that is
-/// the harness doing its job.
+/// Shapes are taken from `contract/openapi.yaml` (written against `f462968`,
+/// v3.27.0-m1; the pin has moved since — `contract/SOURCE.md` names the
+/// current one) so the canned JSON parses into the REAL freezed models — if a
+/// model changes and the mock stops parsing, that is the harness doing its job.
 ///
 /// The harness is deliberately STRICT where the server is strict, not merely
 /// permissive: it rejects `schoolName` and both-cities the way the contract has

@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.28.0-m1
+  version: 3.46.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -94,7 +94,7 @@ info:
 
 
     **Staging test numbers:** reserved fake numbers (+20100000000xx) are whitelisted in staging
-    config only — fixed OTP `000000`, no SMS/WhatsApp ever sent, rate limits identical to prod
+    config only — fixed OTP `000000`, no SMS ever sent, rate limits identical to prod
     (so throttle/lock states are testable). Absent from production configuration. See security.md.
 
 
@@ -133,8 +133,21 @@ tags:
   - name: support
     description: >
       The student's own support tickets — create, list, read the thread, reply (adr-009, spec-045
-      Group A). Text only; attachments follow in their own spec, and student support does not launch
-      until they ship (adr-187). Every operation here is `draft`.
+      Group A). Text only for launch (Seif 2026-10-07, amending adr-187): attachments arrive later as
+      an additive change in their own spec. Every operation here is `stable`.
+  - name: social
+    description: >
+      The student's friend graph — friend requests, friends, suggestions, exact phone lookup, and a
+      peer block (spec-042, adr-185). Owner-only: no operation reads another student's graph. Free
+      for every student. No chat, photos or streaks here. Every operation here is `stable`.
+  - name: chat
+    description: >
+      One-to-one friend TEXT chat (spec-055, adr-196). One conversation per friendship: it exists from
+      the moment two students become friends and is deleted, with every message, on unfriend, block
+      or Track transfer. A message expires 24 hours after the recipient reads it or 30 days after it
+      is sent, whichever is first. Every state change is REST; the `chat` SignalR hub
+      (`realtime.md`, also `stable`) only pushes. No photo, voice, group chat or streaks. Every
+      operation here is `stable`.
 paths:
   /auth/otp/request:
     post:
@@ -142,10 +155,10 @@ paths:
       x-stability: stable
       x-consumers: [mobile, web]
       operationId: requestOtp
-      summary: Send a login OTP to a phone (SMS with WhatsApp failover)
+      summary: Send a login OTP to a phone (SMS)
       description: >
         Always `202` for a well-formed phone, whether or not an account exists (anti-enumeration).
-        Server picks the channel and fails over SMS↔WhatsApp; the client is not told which.
+        Delivered by SMS; the client is not told the provider.
       security: []
       requestBody:
         required: true
@@ -214,6 +227,9 @@ paths:
         '400':
           description: "`otp_invalid` · `otp_expired` · `validation_failed`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_banned` — the code was verified, but the account has been banned by Support; the code is consumed and no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
           description: "`otp_throttled` (attempt lockout)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -247,8 +263,8 @@ paths:
       summary: Send a REDEMPTION-purpose OTP to a phone (adr-171 D3.2)
       description: >
         Always `202` for a well-formed phone, whether or not an account exists (anti-enumeration) —
-        the body is two constants and never varies by phone. Server picks the channel and fails over
-        SMS↔WhatsApp; the client is not told which.
+        the body is two constants and never varies by phone. Delivered by SMS; the client is not told
+        the provider.
 
 
         The code this mints is **purpose-bound**: it can only ever become a redemption session. It
@@ -287,7 +303,7 @@ paths:
           description: "`validation_failed` (malformed phone, or a property this schema does not declare)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled` (cooldown or per-identifier/IP limit)"
+          description: "`otp_throttled` (60-second resend cooldown, the 15-minute phone lock, or the per-address limit shared with `verifyRedemptionSessionOtp`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/redemption-session/otp/verify:
     post:
@@ -351,8 +367,11 @@ paths:
             AND an unknown phone, indistinguishably; `otp_expired` covers never-requested, expired,
             already-consumed, and a code minted for sign-in rather than for redemption.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_banned` — the code was verified, but the account has been banned by Support; the code is consumed and no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled` (attempt lockout)"
+          description: "`otp_throttled` (the 15-minute phone lock after 5 failed verifies, or the per-address limit shared with `requestRedemptionSessionOtp`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/register:
     post:
@@ -367,6 +386,9 @@ paths:
         required (adr-028 — registration is never blocked by a missing city row); `schoolId` is
         optional for every school-track student, Egypt included, and free-text `schoolName` does
         not exist on this contract. Must be called from the same device that verified the OTP.
+
+        `inviteCode` (optional, spec-047, `stable` since 3.44.0-m1): a friend's Refer a Friend code. It never fails
+        registration — see `inviteCodeApplied` on the 201 response.
       security: []
       requestBody:
         required: true
@@ -440,7 +462,7 @@ paths:
   /auth/recovery/start:
     post:
       tags: [auth]
-      x-stability: draft
+      x-stability: stable
       operationId: startRecovery
       summary: "Recovery step 1: look up the account, send OTP to the parent phone (masked)"
       description: >
@@ -485,7 +507,7 @@ paths:
   /auth/recovery/verify-parent:
     post:
       tags: [auth]
-      x-stability: draft
+      x-stability: stable
       operationId: verifyParentOtp
       summary: "Recovery step 2: verify the parent-phone OTP"
       security: []
@@ -516,13 +538,16 @@ paths:
         '401':
           description: "`registration_token_invalid` (rebind/recovery token expired — restart)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_banned` — the code was verified, but the account has been banned by Support; no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
           description: "`otp_throttled`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/recovery/new-phone:
     post:
       tags: [auth]
-      x-stability: draft
+      x-stability: stable
       operationId: submitNewPhone
       summary: "Recovery step 3: submit the NEW phone — OTP is sent to it"
       description: >
@@ -565,7 +590,7 @@ paths:
   /auth/recovery/confirm:
     post:
       tags: [auth]
-      x-stability: draft
+      x-stability: stable
       operationId: confirmRecovery
       summary: "Recovery step 4: verify new-phone OTP — rebinds phone + device, resets THE single session"
       description: >
@@ -591,10 +616,13 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AuthenticatedResult' }
         '400':
-          description: "`otp_invalid` · `otp_expired`"
+          description: "`otp_invalid` · `otp_expired` · `validation_failed` (a malformed `device`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`registration_token_invalid`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_banned` — the code was verified, but the account has been banned by Support; no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
           description: "`otp_throttled`"
@@ -746,6 +774,90 @@ paths:
         '429':
           description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /reference/terms:
+    get:
+      tags: [reference]
+      x-stability: stable
+      x-consumers: [web]
+      operationId: listTerms
+      summary: The global academic terms (today exactly two) — ids for the University scope cascade
+      description: >
+        Returns every row of the global Term lookup (adr-036 §1: a small fixed set, never per university,
+        faculty or year, and carrying no dates), ordered by the lookup's own display order. Clients read
+        Term ids from here and MUST NOT hard-code them; they are the ids `listUniversitySubjects`
+        (admin surface) accepts as `termId`. Terms are not nested under a university/faculty/year; the
+        same list applies at every Year (spec-041, adr-182 R5).
+      security: []
+      responses:
+        '200':
+          description: Bare array (closed set), like /reference/education-systems.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:     { $ref: '#/components/schemas/Uuid' }
+                    number: { type: integer, example: 1, description: The term ordinal (unique). }
+                    nameEn: { type: string }
+                    nameAr:
+                      type: [string, "null"]
+                      description: Optional on the entity (unlike university/faculty names).
+                  required: [id, number, nameEn, nameAr]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /reference/legal-documents/{document}:
+    get:
+      tags: [reference]
+      x-stability: stable
+      x-consumers: [mobile, web]
+      operationId: getLegalDocument
+      summary: The approved Terms of Use or Privacy Policy text, in Arabic or English, for the current Terms version
+      description: >-
+        Public (no sign-in): the app shows it during registration and from settings, so the text is
+        rendered IN the app rather than by opening a browser (Seif 2026-10-07). `version` always equals
+        the server's current Terms version — the value `getTermsAcceptance` returns as `currentVersion`
+        and `acceptTerms` records — so what the student reads is what they accept.
+        `contentMarkdown` is the approved text verbatim (Markdown, including its own `# ` title line);
+        `title` is that heading's text. Cacheable: `Cache-Control: public, max-age=3600` and a strong
+        `ETag`; send `If-None-Match` to get `304`. When no Terms version is configured the feature is
+        inert and the answer is `404 legal_document_unavailable` — never an empty 200. Under the
+        `/reference` per-address limit.
+      security: []
+      parameters:
+        - { name: document, in: path, required: true, schema: { type: string, enum: [terms, privacy] } }
+        - { name: language, in: query, required: true, schema: { type: string, enum: [ar, en] } }
+        - { name: If-None-Match, in: header, required: false, schema: { type: string } }
+      responses:
+        '200':
+          description: The document.
+          headers:
+            ETag: { schema: { type: string } }
+            Cache-Control: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document: { type: string, enum: [terms, privacy] }
+                  version: { type: string, maxLength: 32 }
+                  language: { type: string, enum: [ar, en] }
+                  title: { type: string }
+                  contentMarkdown: { type: string }
+                required: [document, version, language, title, contentMarkdown]
+        '304':
+          description: Not modified (the `If-None-Match` ETag matches); carries `ETag` and `Cache-Control`, no body.
+        '400':
+          description: "`validation_failed` — field errors on `document` and/or `language` (exact lowercase values only)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`legal_document_unavailable` — no Terms version is configured, so no approved text is served"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — the `/reference` per-address limit; honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/universities:
     get:
       tags: [reference]
@@ -836,7 +948,8 @@ paths:
       summary: Update editable fields (name, email, default avatar, privacy toggles)
       description: >
         Privacy toggles per adr-023 — both default to visible; enforcement is server-side.
-        Custom avatar upload is the separate PUT /me/avatar (moderated).
+        Custom avatar upload is the separate PUT /me/avatar (moderated). Choosing `avatarId` (a default
+        avatar) also REPLACES an active custom avatar, whose photo is deleted (spec-070).
       requestBody:
         required: true
         content:
@@ -865,9 +978,24 @@ paths:
   /me/avatar:
     put:
       tags: [profile]
-      x-stability: draft
+      x-stability: stable
       operationId: uploadCustomAvatar
-      summary: Upload a custom avatar (SafeSearch-moderated, adr-021 pipeline)
+      summary: Upload a custom avatar (verified, metadata-stripped and safety-checked before it is public)
+      description: >
+        spec-070. Replaces the student's avatar with their own photo, published as a PUBLIC image behind the
+        CDN and shown wherever avatars show: the profile, friends, the leaderboard and chat. Send exactly ONE
+        multipart part named `image` — JPEG, PNG or WebP, at most 2,097,152 bytes (2 MiB), each side 128 to
+        4,096 px, at most 16,000,000 pixels, not animated, nothing after the image's end. The part's
+        Content-Type and file name are ignored: the bytes decide. Crop to a square and upload it upright
+        (PNG and WebP orientation metadata is not kept).
+
+
+        Before anything is stored the server checks the image, strips its metadata WITHOUT re-encoding the
+        pixels (no GPS, device, time, thumbnail or XMP survives; a JPEG keeps only its orientation) and runs
+        a safety check. If any step refuses, nothing is stored and the previous avatar stays. On success the
+        answer is the new public URL — **every upload gets a NEW URL** (never cache by the old one) — and the
+        previous custom photo is deleted. Clients must not assume the default-avatar host: the URL is on the
+        avatars CDN host.
       requestBody:
         required: true
         content:
@@ -875,23 +1003,59 @@ paths:
             schema:
               type: object
               properties:
-                image: { type: string, format: binary, description: JPEG/PNG/WebP ≤ 5 MB. }
+                image: { type: string, format: binary, description: "JPEG/PNG/WebP, at most 2,097,152 bytes, 128–4,096 px a side, not animated." }
               required: [image]
       responses:
         '200':
-          description: Accepted and set.
+          description: Accepted, published and set.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  avatarUrl: { type: string, format: uri }
+                  avatarUrl: { type: string, format: uri, description: "The new public CDN URL. Contains no identity; changes on every upload." }
                 required: [avatarUrl]
-        '422':
-          description: "`image_rejected_by_moderation`"
+        '400':
+          description: "`validation_failed` — not exactly one multipart part named `image` (field map in `errors`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114). · `terms_acceptance_required` — the caller has not accepted the current Terms; photo uploads need it."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '413':
+          description: "`image_too_large` — the image part is over 2,097,152 bytes. The server stops reading at the limit."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '422':
+          description: "`image_content_invalid` — not an acceptable still JPEG, PNG or WebP within the limits (one answer for every cause). · `image_rejected_by_moderation` — the safety check refused the photo: show \"this photo can't be used\". Either way nothing was stored and the avatar is unchanged."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 5 uploads per student per hour, and after 3 refused photos in an hour every upload is refused until the hour clears. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '503':
+          description: "`image_upload_unavailable` — storage or the safety check is not configured, down, timed out or gave no usable answer (never treated as a pass). Nothing was stored; the avatar is unchanged. Try later."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    delete:
+      tags: [profile]
+      x-stability: stable
+      operationId: removeCustomAvatar
+      summary: Remove the custom avatar (back to the chosen default)
+      description: >
+        spec-070. Removes the student's custom photo; the profile, friends, leaderboard and chat show the
+        default avatar the student last chose (or the server default). The public file is deleted (CDN edge
+        copies expire within an hour). **Idempotent:** `204` when there is no custom avatar.
+      responses:
+        '204':
+          description: Removed (or there was none).
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — shares the profile-write budget. Honour `Retry-After`."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/fcm-token:
     put:
@@ -1001,7 +1165,36 @@ paths:
             substitute `data`. Branch on `hasMore`, never on `items.length`. `category` is derived
             server-side from `kind`. Clients MUST ignore an item whose `kind` they do not recognise,
             and MUST ignore an unknown `category` value, so new values can be added without a
-            breaking change.
+            breaking change. **The one exception to the localization contract is `kind:
+            announcement`** (`category: announcements`, spec-052): its `data` always carries exactly
+            five keys — `announcementId`, `titleAr`, `titleEn`, `bodyAr`, `bodyEn` — and the four
+            text values ARE display text, written by an Admin. Show `titleAr`/`bodyAr` when the UI
+            is in Arabic and `titleEn`/`bodyEn` when it is in English, render them as **plain text**
+            (keep line breaks), and **never auto-link** anything in them. The localization contract
+            stands for every other kind. **`kind: moderation_warning`** (`category: system`,
+            spec-062) is a fixed warning from Support after a report about content from the
+            student's account; its `data` is always empty (no student text, no reporter, no staff
+            name). Render this approved copy (approved in writing by the client, 2026-10-07) in the
+            UI language. EN title: "A message about your account". EN body: "We received a report
+            about content from your account that does not follow the Level Up community rules. This
+            is a warning. Please keep your messages and photos respectful. If this happens again,
+            your account may be banned. If you think this is a mistake, contact Support from the
+            app." AR title: "رسالة بخصوص حسابك". AR body: "وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع
+            قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا
+            تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل
+            التطبيق."
+            **`kind: support_ticket_replied`** (`category: support`, spec-045 Group C): Customer Service
+            or an Admin replied to one of the caller's support tickets. Its `data` always carries
+            exactly two keys — `ticketId` (open the ticket with `getMySupportTicket`) and `reference`
+            (the ticket's `TK-…` label, for display only) — and never any reply text or staff name.
+            One item per staff reply; the student's own messages produce none. Such an item may also
+            be sent as a push notification once push delivery is enabled. Push delivery is not
+            enabled in any environment today.
+            **`kind: academic_year_opened`** (`category: system`, spec-068): an Admin opened a new
+            academic year for the caller's track. Its `data` always carries exactly two keys —
+            `track` (`school` or `university`) and `academicYear` (`YYYY/YYYY`, e.g. `2026/2027`) —
+            as localization parameters, not display text. One item per opening; it may also arrive as
+            a push of the same kind, which carries neither key (`realtime.md` § Push notifications).
           content:
             application/json:
               schema:
@@ -1015,7 +1208,7 @@ paths:
                           type: object
                           properties:
                             notificationId: { $ref: '#/components/schemas/Uuid' }
-                            kind:      { type: string, enum: [enrolment_opened] }
+                            kind:      { type: string, enum: [enrolment_opened, announcement, moderation_warning, support_ticket_replied, academic_year_opened] }
                             category:  { type: string, enum: [system, announcements, support] }
                             data:      { type: object, additionalProperties: { type: string } }
                             createdAt: { type: string, format: date-time }
@@ -1138,6 +1331,77 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/track-transfer:
+    post:
+      tags: [profile]
+      x-stability: stable
+      operationId: transferToUniversity
+      summary: Track transfer — move the caller from the School track to the University track, once (spec-059)
+      description: >
+        Moves the **caller's own** account from the School track to the University track. There is
+        no id parameter: the student is taken from the access token. The student picks the
+        university, faculty and study year inside the transfer flow, from the same lists and with the
+        same rules as University registration (`/reference/universities`), and confirms twice on the
+        client. `acknowledgeIrreversible: true` is that confirmation on the wire.
+
+
+        **Permanent, and once only.** There is no way back to the School track, not even through
+        Customer Service or an Admin, and a student who has transferred can never transfer again.
+        The confirm copy must say so plainly.
+
+
+        **Who may transfer.** Only a School student whose current stage is `secondary3` (the final
+        school year, for every education system). Every other School student gets
+        `403 track_transfer_not_eligible`. Until year progression is built, only students who
+        registered at `secondary3` can reach that stage, so only they can transfer — a stated
+        launch limitation.
+
+
+        **What changes, in one step.** The School enrolment closes and the University enrolment
+        opens in the same server transaction, so no client ever observes the account between
+        tracks. Points, level and badges are unchanged: `schoolPoints` stays, `universityPoints`
+        starts where it is, `totalPoints` carries. The subscription and the privacy toggles carry.
+        The friend list and pending friend requests start fresh (blocks stay). The student leaves
+        the school leaderboards and joins their university cohort board and the global board. Show
+        the University disclosure on the confirm screen: on the University track the parent number
+        is kept only for account recovery, and the parent no longer receives reports.
+
+
+        **Order of refusals.** `403 account_pending_deletion` first, then
+        `409 track_transfer_not_allowed`, then `403 track_transfer_not_eligible`, then
+        `400 validation_failed` for the body. A refused call changes nothing. An answer submitted
+        after the transfer to a quiz that was started on the School track is refused by
+        `submitAnswer` with `403 insufficient_scope`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                universityId: { $ref: '#/components/schemas/Uuid' }
+                facultyId: { $ref: '#/components/schemas/Uuid', description: Must be a faculty of `universityId`. }
+                studyYearId: { $ref: '#/components/schemas/Uuid', description: "Must be an `active` study year of `facultyId`, exactly as `UniversityRegistration` (`soon` → `validation_failed`). Any active year may be chosen, not only the first." }
+                acknowledgeIrreversible: { type: boolean, const: true, description: "Must be `true` — the client's confirmation that the transfer is permanent. Missing or `false` → `validation_failed` naming this property." }
+              required: [universityId, facultyId, studyYearId, acknowledgeIrreversible]
+      responses:
+        '200':
+          description: Transferred. The caller's refreshed profile, now on the University track — the same schema as `getMyProfile`, so the client re-renders without a second call.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StudentProfile' }
+        '400':
+          description: "`validation_failed` — `errors` names the field: an id that is missing or not a UUID, an unknown university, a faculty outside the university, a study year that is not an `active` year of that faculty, or `acknowledgeIrreversible` missing or not `true`. Nothing was written."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — the account is inside the 30-day deletion grace window (adr-114), and this operation is not on that window's allowlist. · `track_transfer_not_eligible` — the caller is on the School track but not at the final school stage (`secondary3`). **Read `code` to tell them apart.** Nothing was written."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`track_transfer_not_allowed` — the caller is already on the University track: registered there, or already transferred. A transfer happens once and never reverses. Nothing was written; re-read `GET /me`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/entitlements:
     get:
       tags: [entitlements]
@@ -1162,6 +1426,33 @@ paths:
                 required: [items]
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/invite:
+    get:
+      tags: [profile]
+      x-stability: stable
+      operationId: getMyInvite
+      summary: The caller's own Refer a Friend code and its two counts
+      description: >
+        spec-047. The caller's invite code — created on the first call, one per student, never
+        changes and cannot be regenerated (R9) — and two counts (R8): how many new accounts
+        registered with it (`friendsJoined`) and the points it has earned the caller
+        (`pointsEarned`). The rule (adr-185 D9): the student who shares the code earns +10 points
+        once for each new, OTP-verified account that registers with it, in their current Track's
+        points; the new student earns no referral points; there is no credit while the sharer has
+        no active enrolment. Never lists who joined. Takes no id — always the caller's own. Share the
+        code however the app lets the student share text; there is no invite link and no web page.
+      responses:
+        '200':
+          description: The caller's invite code and counts.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyInvite' }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/mistakes:
     get:
@@ -1390,7 +1681,7 @@ paths:
   /catalog/modules:
     get:
       tags: [catalog]
-      x-stability: draft
+      x-stability: stable
       operationId: listModules
       summary: The picker's module grouping — an ADMIN-OWNED OVERLAY, never a scope (adr-036 §3)
       description: >
@@ -1407,9 +1698,9 @@ paths:
         the "All subjects" view permanently; a module-only picker would silently hide content.
 
 
-        `x-stability: draft` — the module overlay is not implemented yet and `subjectIds` may become
-        embedded subject objects. Build the "All subjects" view (stable) first; do not ship a
-        module-only picker against this shape.
+        `x-stability: stable` as of `3.37.0-m1` — the module overlay is served (spec-051) and
+        `subjectIds` is the published shape. Keep the "All subjects" view: a module groups subjects
+        and never hides one, so do not ship a module-only picker.
       responses:
         '200':
           description: Bare array (closed per-student set), possibly EMPTY. Order by `displayOrder`, then `name`.
@@ -1432,6 +1723,52 @@ paths:
                   required: [id, name, displayOrder, subjectIds]
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/quiz-summary:
+    get:
+      tags: [quiz]
+      x-stability: stable
+      operationId: getMyQuizSummary
+      summary: The Profile "Solved Questions" number — distinct questions the caller has ever answered correctly
+      description: >
+        One server-computed integer for the Profile question tile (spec-060). Server-derived scope
+        only: the caller comes from the token; there is no id in the path, the query string or a
+        header.
+
+
+        **What it counts.** `solvedQuestions` is the number of DISTINCT questions the caller has
+        answered correctly at least once, in any quiz, finished or not. Answering the same question
+        correctly again in a later quiz does not add to it; a wrong answer adds nothing.
+
+
+        **Scope is lifetime, across every track.** It is not narrowed to the active track and it
+        survives a Track transfer. A question that is later deleted from the catalogue still counts:
+        the number never shrinks.
+
+
+        🔴 **This is NOT `QuestionCounter.answered`** and must not be reconciled with it, summed from
+        it, or derived from `finishQuiz`'s `answeredCount` or from Mistakes. Those are different
+        numbers with different meanings. Flashcards never count.
+      responses:
+        '200':
+          description: The caller's own count. `0` for a student who has solved nothing yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  solvedQuestions: { type: integer, minimum: 0 }
+                required: [solvedQuestions]
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: >
+            `account_pending_deletion` — the caller's account is inside the 30-day deletion grace
+            window, during which every authenticated endpoint but four is unavailable (adr-114);
+            this operation is not on that allowlist, so the refusal happens before anything is
+            counted. Route to the cancel screen from the same global interceptor that already
+            handles this code elsewhere; do not log out and do not retry.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /quizzes:
     post:
@@ -1536,9 +1873,16 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     get:
       tags: [quiz]
-      x-stability: draft
+      x-stability: stable
       operationId: listQuizHistory
-      summary: Full quiz history (adr-017), newest first, cursor-paginated
+      summary: The caller's FINISHED quizzes (adr-017, adr-216), newest started first, cursor-paginated
+      description: >-
+        The caller's own quizzes only — the student is taken from the access token; there is no id in
+        the path or query. Only FINISHED quizzes are listed; an open quiz appears the moment it is
+        finished. Ordered by when the quiz was started, newest first, with the quiz id as tie-break
+        (the item exposes `finishedAt`, not the start time). Pages of `limit` (1–100) with an opaque
+        `nextCursor`. Not release-gated and not entitlement-gated: a student who left a Track still
+        sees their history.
       parameters:
         - { $ref: '#/components/parameters/Cursor' }
         - { $ref: '#/components/parameters/Limit' }
@@ -1555,13 +1899,16 @@ paths:
                       items:
                         type: array
                         items: { $ref: '#/components/schemas/QuizHistoryItem' }
+        '400':
+          description: "`validation_failed` (malformed `cursor`, or `limit` outside 1–100)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /quizzes/{quizId}:
     get:
       tags: [quiz]
-      x-stability: draft
+      x-stability: stable
       operationId: getQuizReview
       summary: Review a FINISHED quiz — questions, the student's answers, and the correct answer for every answered question
       description: >-
@@ -1755,7 +2102,7 @@ paths:
   /questions/{questionId}/favorite:
     put:
       tags: [quiz]
-      x-stability: draft
+      x-stability: stable
       operationId: addFavorite
       summary: Favorite a question (idempotent)
       parameters:
@@ -1767,7 +2114,7 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     delete:
       tags: [quiz]
-      x-stability: draft
+      x-stability: stable
       operationId: removeFavorite
       summary: Unfavorite (idempotent)
       parameters:
@@ -1780,7 +2127,7 @@ paths:
   /me/favorites:
     get:
       tags: [quiz]
-      x-stability: draft
+      x-stability: stable
       operationId: listFavorites
       summary: The favorites pool (cursor-paginated) — also a quiz-build source (mode=favorites)
       parameters:
@@ -1965,7 +2312,7 @@ paths:
       tags: [commerce]
       x-stability: stable
       x-consumers: [web]   # adr-049 §4 — the app never mentions voucher redemption
-      x-behaviour-changed: 3.21.0-m1
+      x-behaviour-changed: 3.32.0-m1
       operationId: redeemSubscriptionCode
       summary: Redeem a prepaid subscription code (adr-016 — single-use, 4-month, atomic)
       description: >
@@ -1980,26 +2327,39 @@ paths:
         byte-unchanged; what moved is that the old answer told the student their redemption had
         *already completed* and sent them to read a grant that did not exist yet. **It is not a
         `409`** — `409` is `code_already_redeemed` on this operation and reusing it would put two
-        causes behind one code again. On `redemption_in_progress`: wait, then read `GET
-        /me/entitlements`. Do not re-submit — a second submission cannot win and it is counted
-        against the attempt limit.
+        causes behind one code again. **Corrected in 3.32.0-m1:** `redemption_in_progress` means a
+        submission for this session has **not been recorded as finished** — usually it is still
+        running; rarely it finished but its completion could not be recorded, so something may
+        already be granted. On `redemption_in_progress`: wait, then read `GET /me/entitlements`. Do
+        not re-submit — a second submission cannot win and it is counted against the attempt limit.
 
 
         **BEHAVIOURAL CHANGE in 3.20.0-m1 (adr-171 D7.3), restated because it still stands — the
         schema did not move, the MEANING did.** Re-posting a code **that this same student already
-        redeemed** replays the original success: `201` with the entitlement state that code funded,
-        exactly as the first call returned it. It used to answer `409 code_already_redeemed`. A code
-        still funds exactly one grant — the replay writes nothing — and a **different** student
-        posting a spent code still receives `409 code_already_redeemed`, byte-identical to before.
+        redeemed** is answered as a replay of their own redemption: `201` with the student's
+        **current** entitlement state for the type that code funded, recomputed now. **Corrected in
+        3.32.0-m1:** it is not a copy of the first response, so it can differ from it — for example
+        the entitlement may have been extended, or may have lapsed since. It used to answer `409
+        code_already_redeemed`. A code still funds exactly one grant — the replay writes nothing —
+        and a **different** student posting a spent code still receives `409
+        code_already_redeemed`, byte-identical to before.
 
 
-        🔴 **WHICH SESSION replays, corrected in 3.21.0-m1 — the 3.20.0-m1 entry did not say, and
-        the difference decides what you build.** The `201` replay above is reached by an **app
-        session**. On the **web redemption session** — the only consumer this operation declares —
-        it is **NOT reachable**: that session spends its one redemption and then refuses this
-        operation with `403 redemption_scope_only` for the rest of its ten minutes, before the
-        replay path is ever entered. **Web: do not build a re-submit-is-safe retry. Your recovery
-        is `GET /me/entitlements`, which that session keeps answering, and it is the only one.**
+        🔴 **WHICH SESSION replays — corrected in 3.21.0-m1 and again in 3.32.0-m1; the
+        difference decides what you build.** Within **one** web redemption session the replay is
+        never reached: that session spends its one redemption and then refuses this operation with
+        `403 redemption_scope_only` for the rest of its ten minutes, before the replay path is
+        entered. A **new** web redemption session (a fresh OTP verify) does reach it: the same
+        student re-entering the same code there is answered with the `201` above.
+
+
+        **Web: never re-submit automatically, at any layer (adr-171 D7.1). After an unknown
+        outcome (a `500`, a timeout or a dropped connection), first read `GET /me/entitlements`
+        (D7.4). It shows current access, not proof that this code was used. If the student chooses
+        to start again, re-entering the same code in a NEW redemption session is safe: it returns
+        `201` (a replay of their own earlier redemption, or a first redemption if the earlier one
+        never committed) or `409` if another student holds it. It never grants twice. Within ONE
+        session, a submission after one that reached its commit is refused `403`.**
 
 
         **Why the client must care.** A response lost in flight after the server committed used to
@@ -2044,16 +2404,19 @@ paths:
 
 
             `redemption_scope_only` — the caller holds a redemption-scoped web session whose one
-            redemption has **already COMMITTED** (adr-171 D3.7). The session stays alive and
-            read-only until its ten minutes elapse: read `GET /me/entitlements` to see what was
-            granted. Do **not** re-submit and do **not** ask the student to re-type the code.
+            redemption **reached its commit** (adr-171 D3.7); it almost always committed, and if the
+            commit itself failed it may not have — read `GET /me/entitlements` to see what was
+            granted. The session stays alive and read-only until its ten minutes elapse. Do **not**
+            re-submit and do **not** ask the student to re-type the code.
 
 
-            `redemption_in_progress` — a submission for this session is **running right now** and
-            nothing has been granted yet. Wait for it, then read `GET /me/entitlements`. Do **not**
-            re-submit: a second submission cannot win, and it is counted against the `429` attempt
-            limit below. **This was previously `redemption_scope_only` too**, which told the student
-            their redemption had finished when it had not.
+            `redemption_in_progress` — a submission for this session has **not been recorded as
+            finished**: usually it is still running; rarely it finished but its completion could not
+            be recorded, so something may already be granted. Wait, then read `GET
+            /me/entitlements`. Do **not** re-submit: a second submission cannot win, and it is
+            counted against the `429` attempt limit below. **This was previously
+            `redemption_scope_only` too**, which told the student their redemption had finished
+            when it had not.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '409':
           description: >-
@@ -2071,24 +2434,34 @@ paths:
         '500':
           description: >-
             `internal_error` — **declared in 3.21.0-m1. The operation has always been able to answer
-            it; the contract did not say so** (adr-174 D3.1). The session store was unreachable, so
-            this request **granted nothing and consumed no code** — it fails closed and mutates
-            nothing (adr-171 D7.5). The student's code is untouched and still redeemable.
+            it; the contract did not say so** (adr-174 D3.1). **Corrected in 3.32.0-m1: a `500` here
+            has more than one cause and the client cannot tell them apart, so treat every `500` —
+            and every timeout or dropped connection on this call — as an UNKNOWN outcome.** If the
+            session store was unreachable, the request failed closed and mutated nothing (adr-171
+            D7.5). But a `500` can also follow the redemption being saved — for example the commit
+            went through and only its acknowledgement was lost — and then the grant may be durable
+            even though the response says `internal_error`.
 
 
-            🔴 **What to tell the student, and what NOT to.** Never say the code may have been used:
-            it was not. Neutral, actionable copy only, under the app's vocabulary rules (no price,
-            no "buy", no "purchase", no "payment", no provider name).
+            🔴 **Recovery, and what to tell the student.** Read `GET /me/entitlements`: it shows the
+            student's current access, which is not proof of what happened to this code. Build an
+            unknown-outcome state with neutral, actionable copy that sends the student to check their
+            current access; the contract does not prescribe the words. Keep adr-171 D7.8's rule —
+            never tell the student their code may have been used — and the app's vocabulary rules
+            (no price, no "buy", no "purchase", no "payment", no provider name).
 
 
-            🔴 **Retry guidance, corrected in 3.21.0-m1** (adr-174 D3.2/D3.3). Earlier copy said to
-            *retry after the store recovers*. That is not literally available: the redemption
-            session, its OTP and the per-request check are all held in the same store behind a
-            ten-minute lifetime, so a long outage means **start the redemption again from the
-            beginning**, not resume. And **do not retry in a loop** — the `429` attempt limit above
-            is enforced in the API process, keeps counting straight through the outage, and an
-            obedient retry loop will spend the student's attempts and earn a `429` the moment the
-            store comes back. **Try once more after a moment; if it keeps failing, start again.**
+            🔴 **Retry guidance, corrected in 3.21.0-m1 and again in 3.32.0-m1** (adr-174
+            D3.2/D3.3). Earlier copy said to *retry after the store recovers*. That is not literally
+            available: the redemption session, its OTP and the per-request check are all held in the
+            same store behind a ten-minute lifetime, so a long outage means **start the redemption
+            again from the beginning**, not resume. And **do not retry in a loop** — the `429`
+            attempt limit above is enforced in the API process, keeps counting straight through the
+            outage, and an obedient retry loop will spend the student's attempts and earn a `429` the
+            moment the store comes back. **Do not retry automatically; read `GET /me/entitlements`
+            first; try once more only on the student's action, then start again** (adr-174 D3.2).
+            Starting again is safe: re-entering the same code in a new redemption session never
+            grants twice (see the operation description).
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /leaderboard:
     get:
@@ -2104,17 +2477,20 @@ paths:
         BOTH adr-023 privacy toggles remove a student from this board (adr-111): a student with
         `leaderboardVisible: false` AND a student with `scoreHidden: true` are excluded before
         ranking, so *visible* here means NEITHER invisible NOR score-hidden. Peer ranks are
-        therefore DENSE over visible students. Since 3.2.0-m1, board rank and self-rank are
-        computed over the same visible population and agree by construction. A score-hidden
+        therefore DENSE over visible students. Each caller's board ALSO excludes every student
+        blocked in either direction between them and the caller (adr-185 D8), exactly as an
+        invisible student is excluded, so ranks stay dense from the caller's point of view and a
+        block never shows as a gap. Since 3.2.0-m1, board rank and self-rank are
+        computed over the same caller-visible population and agree by construction. A score-hidden
         student is never rendered with a blanked score — the row is absent entirely, which is why
         `points` stays required on `LeaderboardEntry`. The exclusion is unconditional and applies
         to the CALLER too: a score-hidden or invisible caller does not appear on their own page.
         An INVISIBLE caller reads their own standing from `/leaderboard/me`, which since 3.2.0-m1
         ranks over this same visible population; a SCORE-HIDDEN caller gets `403` there and has no
         self-rank to render at all (adr-113).
-        BOUNDED LIST (new in 3.4.0-m1): this endpoint renders AT MOST THE TOP 200 visible students
+        BOUNDED LIST (new in 3.4.0-m1): this endpoint renders AT MOST THE TOP 200 students visible to the caller
         across a complete page-walk. It is a bound on rows emitted — not on the board and not on the
-        ranking. `rank` still means the student's exact position in the visible population, so the
+        ranking. `rank` still means the student's exact position in the caller-visible population, so the
         last row you can ever reach is `rank: 200`.
         `hasMore: false` therefore has TWO causes now — the end of the visible board, OR the 200-row
         limit — and a client cannot tell them apart, nor does it need to: either way there is no
@@ -2203,7 +2579,8 @@ paths:
       operationId: getMyRank
       summary: Self-rank — computed over the VISIBLE leaderboard population (adr-113)
       description: >
-        The caller's own position among the students a board actually shows. Since adr-113 this is
+        The caller's own position among the students the caller's board actually shows (students blocked
+        either way with the caller are excluded, adr-185 D8). Since adr-113 this is
         the SAME population `GET /leaderboard` pages, so `rank` here and the caller's rank there
         agree — they used to be able to disagree, and differencing them recovered how many students
         the board was hiding. A caller with `leaderboardVisible: false` still gets a rank: their
@@ -2231,7 +2608,8 @@ paths:
                     minimum: 1
                     example: 1234
                     description: >
-                      1-based position among VISIBLE students, ordered exactly as GET /leaderboard
+                      1-based position among the students VISIBLE to the caller (blocked either way excluded,
+                      adr-185 D8), ordered exactly as GET /leaderboard
                       orders them. Changed in 3.2.0-m1 — it was the position on the unfiltered board.
                       Guaranteed `>= 1` and `<= boardSize + 1` on every 200, bounded at the response
                       boundary since 3.9.0-m1 (adr-120). The upper bound is a relationship between
@@ -2246,7 +2624,8 @@ paths:
                     type: integer
                     minimum: 0
                     description: >
-                      Number of VISIBLE students on the board. Changed in 3.2.0-m1 — it was the
+                      Number of students on the board VISIBLE to the caller (not invisible, not score-hidden, not
+                      blocked either way with the caller, adr-185 D8). Changed in 3.2.0-m1 — it was the
                       unfiltered total, so this number is now SMALLER for any board holding a
                       student who has opted out. It is the TOTAL visible population and MAY EXCEED
                       the number of rows `GET /leaderboard` will ever render (200) — it is not a
@@ -2275,15 +2654,22 @@ paths:
   /support/tickets:
     post:
       tags: [support]
-      x-stability: draft
+      x-stability: stable
       operationId: createSupportTicket
-      summary: File a support ticket (subject + details, text only)
+      summary: File a support ticket (subject + details, optionally up to 3 photos)
       description: >
         Opens a ticket owned by the caller, status `open`. `details` is the ticket's opening text; it
         is NOT repeated as the first thread message (the thread holds replies only). Both fields are
         trimmed server-side, and the limits apply to the trimmed value: `subject` 1–120 characters,
-        `details` 1–4000. No attachment field exists and none is reserved — attachments arrive
-        additively in their own spec (adr-187). No category or priority is accepted (spec-045 D3).
+        `details` 1–4000. No category or priority is accepted (spec-045 D3).
+
+
+        **Photos (spec-067, additive).** The optional `attachmentIds` (at most 3, no repeats) attaches
+        photos the caller uploaded and completed with `createSupportAttachmentUpload` +
+        `completeSupportAttachment`; they become the ticket's opening photos and are returned in
+        `attachments`. Every id must be the caller's own, `ready`, not yet attached and younger than 24
+        hours — otherwise NOTHING is written (no ticket) and the answer is `404 attachment_not_found`.
+        Photos are gated on the current Terms (`403 terms_acceptance_required`); a text-only ticket never is.
       requestBody:
         required: true
         content:
@@ -2296,20 +2682,26 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SupportTicket' }
         '400':
-          description: "`validation_failed` — `subject` or `details` missing, empty after trimming, or over its limit (field map in `errors`)"
+          description: "`validation_failed` — `subject` or `details` missing, empty after trimming, or over its limit; or `attachmentIds` holds more than 3 ids or repeats one (field map in `errors`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '403':
-          description: "`account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114). Support is NOT one of the four: route to the cancel screen, do not log out and do not retry."
+          description: "`account_pending_deletion` — the caller's account is inside the 30-day deletion grace window, during which every authenticated endpoint but four is unavailable (adr-114). Support is NOT one of the four: route to the cancel screen, do not log out and do not retry. · `terms_acceptance_required` (spec-067) — the request carries `attachmentIds` and the caller has not accepted the current Terms; send it again without photos, or accept the Terms first. Never returned for a text-only ticket."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`attachment_not_found` (spec-067) — an id in `attachmentIds` is unknown, malformed, another student's, not `ready`, already attached or older than 24 hours (one answer for all). No ticket was created."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`attachment_limit_reached` (spec-067) — the photos would take the ticket over 10. No ticket was created."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
           description: "`rate_limited` — at most 5 ticket creates per student per day. Honour `Retry-After`. Replies have their own, separate budget."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     get:
       tags: [support]
-      x-stability: draft
+      x-stability: stable
       operationId: listMySupportTickets
       summary: The caller's own tickets, most recently active first (cursor-paginated)
       description: >
@@ -2344,7 +2736,7 @@ paths:
   /support/tickets/{ticketId}:
     get:
       tags: [support]
-      x-stability: draft
+      x-stability: stable
       operationId: getMySupportTicket
       summary: One of the caller's own tickets
       parameters:
@@ -2367,7 +2759,7 @@ paths:
   /support/tickets/{ticketId}/messages:
     get:
       tags: [support]
-      x-stability: draft
+      x-stability: stable
       operationId: listMySupportTicketMessages
       summary: A ticket's thread, oldest first (cursor-paginated)
       description: >
@@ -2405,13 +2797,20 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
     post:
       tags: [support]
-      x-stability: draft
+      x-stability: stable
       operationId: postMySupportTicketMessage
       summary: Reply on one of the caller's own open tickets
       description: >
         Appends a reply to the thread and moves the ticket's `lastActivityAt` to the reply's
         `createdAt`. `body` is trimmed server-side and must be 1–4000 characters after trimming. A
         closed ticket takes no reply and cannot be reopened; the student files a new ticket instead.
+
+
+        **Photos (spec-067, additive).** The optional `attachmentIds` (at most 3, no repeats) sends
+        completed photos with the reply; with at least one photo, `body` may be an EMPTY string (a
+        photo-only reply). A ticket holds at most 10 photos. Check order: ownership (`404 not_found`),
+        closed (`409 ticket_closed`), then the photo checks (`403 terms_acceptance_required`,
+        `409 attachment_limit_reached`, `404 attachment_not_found`). A refused photo check writes NO reply.
       parameters:
         - { name: ticketId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       requestBody:
@@ -2426,7 +2825,354 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SupportTicketMessage' }
         '400':
-          description: "`validation_failed` — `body` missing, empty after trimming, or over 4000 characters (field map in `errors`)"
+          description: "`validation_failed` — `body` missing, over 4000 characters, or empty after trimming with no `attachmentIds`; or `attachmentIds` holds more than 3 ids or repeats one (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen. · `terms_acceptance_required` (spec-067) — the reply carries `attachmentIds` and the caller has not accepted the current Terms; a text reply is never gated."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_found` — no such ticket for this caller (unknown, malformed and foreign ids are indistinguishable). · `attachment_not_found` (spec-067) — an id in `attachmentIds` is unknown, malformed, another student's, not `ready`, already attached or older than 24 hours; no reply was written."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`ticket_closed` — the caller's own ticket is closed and takes no reply. There is no reopen: offer to file a new ticket. Checked after ownership, so this never describes someone else's ticket. · `attachment_limit_reached` (spec-067) — the photos would take the ticket over 10; no reply was written."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 60 replies per student per hour. Honour `Retry-After`. Ticket creation has its own, separate budget."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/attachments:
+    post:
+      tags: [support]
+      x-stability: stable
+      operationId: createSupportAttachmentUpload
+      summary: Start a support-photo upload (presigned PUT into private storage)
+      description: >
+        spec-067. Step 1 of attaching a photo. Declare the photo — its `contentType` (JPEG, PNG or WebP),
+        its exact `sizeBytes` (at most 7,000,000) and the lowercase-or-uppercase hex SHA-256 of its bytes —
+        and receive an `attachmentId` plus a presigned `upload`: PUT the bytes to `upload.url` with
+        EXACTLY the headers in `upload.headers` (they are signed; a missing or changed header fails), before
+        `upload.expiresAt` (at most 15 minutes). The bytes go straight to storage, never through the API.
+        Then call `completeSupportAttachment`. Nothing is visible to anyone until that call verifies and
+        scans the photo.
+
+
+        Downscale before uploading (about 2048 px on the long edge, JPEG) so a photo stays well under the
+        cap. A student may hold at most 10 photos that are not yet attached to a ticket; an unattached
+        photo is deleted 24 hours after this call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSupportAttachmentUploadRequest' }
+      responses:
+        '201':
+          description: Created. No `Location` header. The upload URL is a short-lived write capability for this one photo — never log or share it.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportAttachmentUpload' }
+        '400':
+          description: "`validation_failed` — `contentType` not one of the three, `sizeBytes` missing or below 1, or `sha256` not 64 hex characters (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114). · `terms_acceptance_required` — the caller has not accepted the current Terms; photos need it, text support does not."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`attachment_limit_reached` — the caller already holds 10 photos that are not attached to a ticket. Attach or wait for them to expire (24 hours)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '413':
+          description: "`image_too_large` — `sizeBytes` is above 7,000,000."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 photo uploads per student per hour. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '503':
+          description: "`image_upload_unavailable` — photo storage is not configured or not reachable. Try later; text support still works."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/attachments/{attachmentId}/complete:
+    post:
+      tags: [support]
+      x-stability: stable
+      operationId: completeSupportAttachment
+      summary: Verify and safety-check an uploaded support photo
+      description: >
+        spec-067. Step 2, after the PUT. The server checks the stored bytes — size, SHA-256, real type
+        (magic bytes, so the declared `contentType` must be true), readable dimensions (at most 50
+        megapixels), not animated — and then checks the photo with Google SafeSearch. On success the photo
+        is `ready` and can be sent with `createSupportTicket` or `postMySupportTicketMessage` (within 24
+        hours). Idempotent once `ready`: a repeat call returns the same photo.
+
+
+        🔴 **A refused photo is gone.** After `413` or either `422` the photo has been deleted and the id is
+        dead — nothing is kept and no one ever sees it; to try again, start a fresh upload. A `503` keeps the
+        upload: retry this call later. No body.
+      parameters:
+        - { name: attachmentId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: The verified photo, `ready`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SupportAttachment' }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`attachment_not_found` — unknown, malformed, another student's, or already refused (one answer)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '413':
+          description: "`image_too_large` — the stored object is above 7,000,000 bytes. The photo was deleted; start a fresh upload."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '422':
+          description: "`image_content_invalid` — the stored bytes are not the declared photo (wrong type, size or digest, unreadable or out-of-range dimensions, animated); one answer for every cause. · `image_rejected_by_moderation` — the photo was flagged by the safety check: show \"this photo can't be sent\". Either way the photo was deleted; start a fresh upload."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 completes per student per hour, and after 5 refused photos (422) in an hour every complete is refused until the hour clears. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '503':
+          description: "`image_upload_unavailable` — storage or the safety check is not configured, down, timed out or gave no usable answer (never treated as a pass). The upload is kept: retry this call later. Text support still works."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /support/tickets/{ticketId}/attachments/{attachmentId}/content:
+    get:
+      tags: [support]
+      x-stability: stable
+      operationId: getMySupportAttachmentContent
+      summary: The bytes of one photo on one of the caller's own tickets
+      description: >
+        spec-067. Streams the photo itself (`image/jpeg`, `image/png` or `image/webp`) with
+        `X-Content-Type-Options: nosniff` and `Cache-Control: private, max-age=3600`. There is no URL for a
+        photo anywhere: this authenticated call is the only way to read one. Before any byte is sent the
+        server re-reads and re-hashes the photo; if it is not the photo that was checked, nothing is sent
+        and the answer is `410`. Send `Accept: image/*, application/problem+json` so an error body keeps its
+        `code`.
+      parameters:
+        - { name: ticketId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { name: attachmentId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: The photo's bytes.
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`not_found` — no such ticket for this caller (unknown, malformed and foreign ids are indistinguishable). · `attachment_not_found` — the ticket is the caller's but this photo is not on it."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '410':
+          description: "`attachment_gone` — the photo existed but is expired (90 days after the ticket closed), was removed by Customer Service at the student's request, or failed its integrity check. Show \"attachment expired\" / \"removed\"."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 300 photo reads per student per hour. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '503':
+          description: "`image_upload_unavailable` — photo storage is not configured or not reachable. Try later."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friends:
+    get:
+      tags: [social]
+      x-stability: stable
+      operationId: listMyFriends
+      summary: The caller's own friends (cursor-paginated)
+      description: >
+        The caller's friends only — there is no operation that lists another student's friends
+        (spec-042 G4). Ordered by `name`, ties broken by `studentId`; pages of 20 (this operation
+        takes no `limit`). A friend whose account is pending deletion or erased is not listed.
+        `points` is omitted when the friend hides their score (adr-023/111/113).
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of the caller's friends.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/Friend' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friends/{studentId}:
+    delete:
+      tags: [social]
+      x-stability: stable
+      operationId: removeFriend
+      summary: Remove a friend
+      description: >
+        Ends the friendship between the caller and `studentId`. Idempotent: `204` whether or not the
+        friendship existed, so the answer never reveals anything about `studentId`. The removed
+        student is not notified.
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '204':
+          description: Not (or no longer) friends.
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds (shared by every friend, request and block write). Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friends/suggestions:
+    get:
+      tags: [social]
+      x-stability: stable
+      operationId: listFriendSuggestions
+      summary: Students from the caller's own cohort to add (cursor-paginated, bounded)
+      description: >
+        Same Track and same cohort as the caller, resolved server-side from the caller's own active
+        enrolment (never from input): school = same country, governorate, stage and education
+        system, ranked same school first; university = same university, faculty and study year.
+        Never includes the caller, their friends, anyone with a pending request either way, anyone
+        blocked either way, or a pending-deletion account. Bounded: at most 100 students in total
+        across all pages (`hasMore: false` after the 100th). A caller with no active enrolment gets
+        an empty page. Cards carry no points, level or phone digits (adr-185 D4/D5).
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of suggested students.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/StudentCard' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friends/phone-lookup:
+    post:
+      tags: [social]
+      x-stability: stable
+      operationId: lookupStudentByPhone
+      summary: Find one student by their exact full phone number
+      description: >
+        Exact full-E.164 match only — no prefix, suffix or partial search. The number travels in the
+        body, and is never logged or echoed. `student` is `null` for no match, for the caller's own
+        number, for a student blocked either way, for a pending-deletion account and for a student
+        on the other Track — and those cases are indistinguishable (adr-185 D3). The card carries no
+        phone digits (adr-185 D4).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhoneLookupRequest' }
+      responses:
+        '200':
+          description: The matching student's card, or `null`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PhoneLookupResult' }
+        '400':
+          description: "`validation_failed` — `phone` missing or not a full E.164 number (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 10 lookups per student per hour. Honour `Retry-After`. This budget is separate from the social write budget."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friend-requests:
+    get:
+      tags: [social]
+      x-stability: stable
+      operationId: listMyFriendRequests
+      summary: The caller's own incoming or outgoing pending friend requests (cursor-paginated)
+      description: >
+        `direction` is required. Newest first (`createdAt` descending, ties broken by `requestId`
+        descending); pages of 20 (no `limit`). `student` is the other party. A request whose other
+        party is pending deletion is not listed.
+      parameters:
+        - name: direction
+          in: query
+          required: true
+          schema: { type: string, enum: [incoming, outgoing] }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of the caller's pending requests in that direction.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FriendRequest' }
+        '400':
+          description: "`validation_failed` — `direction` missing or not `incoming`/`outgoing`, or a malformed `cursor` (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    post:
+      tags: [social]
+      x-stability: stable
+      operationId: sendFriendRequest
+      summary: Send a friend request (or accept theirs, if they already asked)
+      description: >
+        Creates a pending request from the caller to `studentId`. If `studentId` already has a
+        pending request to the caller, that request is accepted instead: `201` with `status:
+        accepted` and the new `friend` (adr-185 D7). There is no friend, pending or daily count cap.
+        The recipient is not notified (no push or inbox item in this version).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentIdBody' }
+      responses:
+        '201':
+          description: "`pending` (with `request`) or `accepted` (with `friend`). No `Location` header."
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SendFriendRequestResult' }
+        '400':
+          description: "`validation_failed` — `studentId` missing or not a UUID (field map in `errors`)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
@@ -2435,13 +3181,682 @@ paths:
           description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '404':
-          description: "`not_found` — no such ticket for this caller (unknown, malformed and foreign ids are indistinguishable)."
+          description: "`friend_target_unavailable` — the student cannot be sent a request. An unknown id, the caller's own id, a pending-deletion account, a student on the other Track and a student blocked either way all return this identical body, so it never reveals which."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '409':
-          description: "`ticket_closed` — the caller's own ticket is closed and takes no reply. There is no reopen: offer to file a new ticket. Checked after ownership, so this never describes someone else's ticket."
+          description: "`already_friends` — the two students are already friends · `friend_request_already_pending` — the caller already has a pending request to this student"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`rate_limited` — at most 60 replies per student per hour. Honour `Retry-After`. Ticket creation has its own, separate budget."
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friend-requests/{requestId}:
+    delete:
+      tags: [social]
+      x-stability: stable
+      operationId: cancelFriendRequest
+      summary: Cancel a friend request the caller sent
+      description: Sender only. Deletes the pending request.
+      parameters:
+        - { name: requestId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '204':
+          description: Cancelled.
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`friend_request_not_found` — no such pending request SENT BY THIS CALLER. Unknown, malformed, already-answered and other students' request ids are the same answer."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friend-requests/{requestId}/accept:
+    post:
+      tags: [social]
+      x-stability: stable
+      operationId: acceptFriendRequest
+      summary: Accept a friend request the caller received
+      description: >
+        Recipient only. Creates the friendship and deletes the request. The sender's eligibility is
+        re-checked at accept time (not blocked either way, not pending deletion, same Track); if it
+        no longer holds, the request is deleted and `404 friend_target_unavailable` is returned.
+      parameters:
+        - { name: requestId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '200':
+          description: The new friend.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Friend' }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`friend_request_not_found` — no such pending request RECEIVED BY THIS CALLER (unknown, malformed, already-answered and other students' ids are the same answer) · `friend_target_unavailable` — the sender can no longer be befriended; the request has been deleted"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friend-requests/{requestId}/decline:
+    post:
+      tags: [social]
+      x-stability: stable
+      operationId: declineFriendRequest
+      summary: Decline a friend request the caller received
+      description: >
+        Recipient only. Deletes the request; the sender is not notified and may send again, with no
+        cooldown (adr-185 D7). To stop further requests, block the student.
+      parameters:
+        - { name: requestId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '204':
+          description: Declined.
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`friend_request_not_found` — no such pending request RECEIVED BY THIS CALLER (unknown, malformed, already-answered and other students' ids are the same answer)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /blocks:
+    get:
+      tags: [social]
+      x-stability: stable
+      operationId: listMyBlocks
+      summary: The students the caller has blocked (cursor-paginated)
+      description: >
+        The caller's own blocks only. Most recently blocked first; pages of 20 (no `limit`). A
+        blocked student whose account is pending deletion or erased is not listed. Nor is a blocked
+        student who is now on the other Track: the block is kept and keeps its effect, and the student
+        is listed again if the two share a Track. An omitted row is skipped and never counted, so a page
+        carries 20 items unless it is the last.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Page of blocked students.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/StudentCard' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    post:
+      tags: [social]
+      x-stability: stable
+      operationId: blockStudent
+      summary: Block a student
+      description: >
+        Silent and idempotent. Removes any friendship and any pending request between the two
+        students, in either direction; while the block exists neither student can find, request or
+        list the other (adr-185 D8). Always `204` — including for an unknown id (nothing is stored)
+        and for a student on the other Track — so the answer never reveals whether a student exists
+        or which Track they are on. A block of a student on the other Track is stored but hidden
+        (adr-212): `listMyBlocks` omits it, and it takes effect once the two students share a Track,
+        so a later Track transfer cannot undo it. The blocked student is not notified. Blocking is
+        free for every student.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentIdBody' }
+      responses:
+        '204':
+          description: Blocked (or nothing to block).
+        '400':
+          description: "`validation_failed` — `studentId` missing or not a UUID (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /blocks/{studentId}:
+    delete:
+      tags: [social]
+      x-stability: stable
+      operationId: unblockStudent
+      summary: Unblock a student
+      description: >
+        Idempotent: `204` whether or not a block existed. Unblocking restores nothing — no
+        friendship and no request comes back.
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      responses:
+        '204':
+          description: Not (or no longer) blocked.
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 social writes per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations:
+    get:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.43.0-m1'
+      operationId: listConversations
+      summary: The caller's own conversations (cursor-paginated)
+      description: >
+        Every conversation the caller takes part in, one per friendship, ordered by `lastActivityAt`
+        descending, ties broken by `conversationId` descending. A conversation exists from the moment
+        the two students become friends, so a new friendship appears here with `lastMessage: null`
+        and `unreadCount: 0`. A conversation whose friendship ended (unfriend, block, Track transfer)
+        is gone, never listed. The one exception is a peer whose account was ERASED: the
+        conversation stays readable with `peer.studentId: null` and `canSend: false` until its
+        messages expire (adr-196 D3). `lastMessage` is the newest message the caller can still see
+        (expired messages are never returned). No streak counter is carried (adr-196 G-3).
+        Since `3.43.0-m1`, `lastMessage` may be a forwarded-question card (`kind: forwardedQuestion`) — see `ChatMessage`.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Page of the caller's conversations.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/ConversationSummary' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` or a `limit` outside 1–100 (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations/{conversationId}/messages:
+    get:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.43.0-m1'
+      operationId: listConversationMessages
+      summary: A conversation's messages, newest first (cursor-paginated)
+      description: >
+        Newest first (`messageId` descending — ids are time-ordered UUIDv7). Expired messages are
+        never returned: a message expires 24 hours after the recipient read it, or 30 days after it
+        was sent, whichever is first (adr-196 D1) — drop from local state any message this operation
+        no longer returns. 🔴 **An unknown id, a conversation the caller is not in, and a
+        conversation whose friendship ended (unfriend, block, Track transfer) are one identical
+        `404 conversation_not_found`** — never infer a block from it (adr-196 G-5).
+        Since `3.43.0-m1`, an item may be a forwarded-question card (`kind: forwardedQuestion`, `body: null`) — see `ChatMessage` and `ForwardedQuestionCard`. Cards expire, paginate and count as unread exactly like text messages.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Page of the conversation's messages.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/ChatMessage' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` or a `limit` outside 1–100 on the caller's own conversation (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` — unknown, malformed, not the caller's, or ended; all indistinguishable (adr-196 G-5)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    post:
+      tags: [chat]
+      x-stability: stable
+      operationId: sendChatMessage
+      summary: Send a text message to the friend this conversation belongs to
+      description: >
+        `body` is trimmed server-side and must be 1–500 **Unicode scalar values** after trimming
+        (adr-196 D8). 🔴 The schema's `maxLength: 500` is advisory: some tools count UTF-16 code
+        units, the server counts scalar values, so an emoji outside the Basic Multilingual Plane
+        counts as ONE. **Idempotent by `clientMessageId`:** generate a fresh UUID per message and
+        re-send the SAME one on retry. A replay returns `200` with the message as originally stored
+        — the replayed `body` is not compared — and never creates a second row. A replay is a read:
+        if that message has since expired, or you deleted it for yourself (`scope=me`), the replay is
+        `400 validation_failed` on `clientMessageId` and returns no message. Sending needs a live
+        friendship: after the peer's account was erased (`canSend: false`) this is
+        `404 conversation_not_found`. Sending to a friend whose account is pending deletion is
+        allowed.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendChatMessageRequest' }
+      responses:
+        '200':
+          description: A replay of an already-stored `clientMessageId` — the original message, unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '201':
+          description: Sent. No `Location` header.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '400':
+          description: "`validation_failed` — `clientMessageId` missing or not a UUID, or `body` missing, empty after trimming, or over 500 Unicode scalar values (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` — unknown, malformed, not the caller's, ended, or read-only after the peer's erasure; all indistinguishable (adr-196 G-5)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 45 sends per student per 60 seconds (adr-196 D8). Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations/{conversationId}/messages/{messageId}:
+    patch:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.43.0-m1'
+      operationId: editChatMessage
+      summary: Edit one of the caller's own messages, within 10 seconds of sending
+      description: >
+        Sender only, at most 10 seconds after `sentAt` (server clock), and never on a message
+        deleted for everyone (adr-196 D6). `body` follows `sendChatMessage`'s rule (1–500 Unicode
+        scalar values after trimming). The peer sees the new body and `editedAt`; earlier bodies are
+        kept server-side until the message expires, so a report still captures them.
+        A forwarded-question card has no body and is never editable: `409 message_edit_window_closed`.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { name: messageId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EditChatMessageRequest' }
+      responses:
+        '200':
+          description: Edited.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '400':
+          description: "`validation_failed` — `body` missing, empty after trimming, or over 500 Unicode scalar values (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` (as on `sendChatMessage`) · `message_not_found` — no such unexpired message in this conversation that the caller sent."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`message_edit_window_closed` — more than 10 seconds since `sentAt`, or the message was deleted for everyone. Also returned for a forwarded-question card, which is never editable (spec-056)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 chat writes (edit, delete, read, reports) per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+    delete:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.43.0-m1'
+      operationId: deleteChatMessage
+      summary: Delete one of the caller's own messages, for everyone (within 60 seconds) or for the caller only
+      description: >
+        Sender only (adr-196 D6). `scope=everyone` is allowed at most 60 seconds after `sentAt`
+        (server clock): both participants then see a tombstone (`body: null`,
+        `deletedForEveryone: true`); the stored text is kept server-side until the message expires,
+        so the recipient can still report it. `scope=me` is allowed at any time and hides the message
+        from the caller only — the recipient's view is unchanged. Idempotent: repeating a delete that
+        already took effect is `204`.
+        Deleting a forwarded-question card for everyone (same 60-second window) also withdraws it: the friend can no longer answer it and the question may be forwarded to them again. A friend-streak step already taken stays, and the forward still counts toward today's limit.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { name: messageId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - name: scope
+          in: query
+          required: true
+          schema: { type: string, enum: [everyone, me] }
+      responses:
+        '204':
+          description: Deleted (or already deleted) in the requested scope.
+        '400':
+          description: "`validation_failed` — `scope` missing or not `everyone` / `me` (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` (as on `sendChatMessage`) · `message_not_found` — no such unexpired message in this conversation that the caller sent."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`message_delete_window_closed` — `scope=everyone` more than 60 seconds after `sentAt`. `scope=me` is still available."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 chat writes (edit, delete, read, reports) per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations/{conversationId}/read:
+    put:
+      tags: [chat]
+      x-stability: stable
+      operationId: markConversationRead
+      summary: Advance the caller's read cursor (drives the peer's Seen and the caller's unread count)
+      description: >
+        Moves the caller's read position to `lastReadMessageId`, which must be an unexpired message
+        of this conversation. **The cursor only moves forward:** an id older than the current cursor
+        is a `204` no-op. Advancing marks the peer's messages up to the cursor as read by the caller;
+        each of those then expires 24 hours later (adr-196 D1). The peer sees the cursor as
+        `peerLastReadMessageId` ("Seen").
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarkConversationReadRequest' }
+      responses:
+        '204':
+          description: The cursor is at or past `lastReadMessageId`.
+        '400':
+          description: "`validation_failed` — `lastReadMessageId` missing or not a UUID (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` (as on `sendChatMessage`) · `message_not_found` — `lastReadMessageId` is not an unexpired message of this conversation."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 chat writes (edit, delete, read, reports) per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /message-reports:
+    post:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.43.0-m1'
+      operationId: reportChatMessage
+      summary: Report a message the caller received
+      description: >
+        Recipient only: a student cannot report their own message. Messages deleted for everyone
+        and edited messages are reportable — the server keeps an evidence copy of the stored text and
+        every earlier version, which the message's own expiry and the conversation's deletion never
+        remove (adr-196 D4). There are no reasons and no free text. Idempotent: a repeat report of
+        the same message is also `202` and stores nothing new. **Report before block:** block
+        deletes the conversation, so an app offering "report and block" calls this first.
+        A forwarded-question card cannot be reported — its content comes from the question bank, not from the friend: `404 message_not_found`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportChatMessageRequest' }
+      responses:
+        '202':
+          description: Reported (or already reported).
+        '400':
+          description: "`validation_failed` — `conversationId` or `messageId` missing or not a UUID (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`message_not_found` — no such unexpired message, received by the caller, in a conversation the caller is in (unknown, foreign, own and expired messages are indistinguishable). A forwarded-question card is also `message_not_found` (spec-056)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 chat writes (edit, delete, read, reports) per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /student-reports:
+    post:
+      tags: [chat]
+      x-stability: stable
+      operationId: reportStudent
+      summary: Report a student
+      description: >
+        🔴 **`202` for every well-formed id** — an unknown id, the caller's own id, a blocked student
+        and a student on the other Track all get the identical answer, so this is not an existence
+        oracle (adr-196 D4). A report is stored only for a real, different student, at most once per
+        (reporter, reported); a repeat stores nothing. No content is attached.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentIdBody' }
+      responses:
+        '202':
+          description: Accepted.
+        '400':
+          description: "`validation_failed` — `studentId` missing or not a UUID (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — at most 30 chat writes (edit, delete, read, reports) per student per 60 seconds. Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations/{conversationId}/forwarded-questions:
+    post:
+      tags: [chat]
+      x-stability: stable
+      x-behaviour-changed: '3.45.0-m1'
+      operationId: forwardQuestion
+      summary: Forward a question the caller has answered to the friend this conversation belongs to, as a card
+      description: >
+        spec-056 / adr-219. Creates ONE chat message of `kind: forwardedQuestion` in this
+        conversation and returns it. Only a question the caller has already answered in one of their
+        own quizzes, on their current Track, can be forwarded (FS-7); every other id is one identical
+        `422 question_not_forwardable`. The card follows every chat rule: it expires like a text
+        message (adr-196 D1), it disappears with the conversation when the friendship ends, the
+        friend receives `messageCreated` on the `chat` hub, and a push request of kind
+        `ChatMessageReceived` is made exactly as for a text message (inert until push delivery is
+        enabled). 🔴 **A forward never reveals anything about the friend's plan:** it succeeds or
+        fails the same way whether or not the friend holds a `baseSubscription` — a free-plan friend
+        can open and answer the card too (Seif 2026-10-07; see `answerForwardedQuestion`).
+        **Idempotent by `clientMessageId`**, with exactly `sendChatMessage`'s replay rule: a replay
+        returns `200` with the message that `clientMessageId` originally created (the replayed
+        `questionId` is not compared), never creates a second card and never counts against the
+        daily limit; a replay of a message that has since expired or that you deleted for yourself
+        is `400 validation_failed` on `clientMessageId`. Limits: at most 100 forwards per student
+        per Africa/Cairo calendar day (FS-8); you cannot send the same question to the same friend
+        again while YOUR earlier card for it is still unanswered (since 3.45.0-m1 this is per sender:
+        another friend's unanswered card for the same question never blocks your forward, and the
+        friend can then hold one card per forwarding friend); and each forward also spends one unit
+        of the `sendChatMessage` budget (45 per 60 s, shared).
+        Checked in this order: `400`, `404`, the replay `200`, `422`, `409`, `429`.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ForwardQuestionRequest' }
+      responses:
+        '200':
+          description: A replay of an already-stored `clientMessageId` — the original message, unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '201':
+          description: Forwarded. The card as the caller (the forwarder) sees it. No `Location` header.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatMessage' }
+        '400':
+          description: "`validation_failed` — `clientMessageId` or `questionId` missing or not a UUID, or a replay of a message that is no longer visible to the caller (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` — unknown, malformed, not the caller's, ended, or read-only after the peer's erasure; all indistinguishable (adr-196 G-5)."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '409':
+          description: "`forwarded_question_already_pending` — you already sent this question to this friend and that card is still unanswered (since 3.45.0-m1 only YOUR own earlier card counts; another friend's card for the same question never causes this). Nothing was written."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '422':
+          description: "`question_not_forwardable` — the question is unknown, not yet answered by the caller, or not on the caller's current Track; all indistinguishable. Nothing was written. (A `questionId` that is not a UUID is the `400` above.)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`forward_daily_limit_reached` — 100 forwards already today (Africa/Cairo day); `Retry-After` = seconds until the next Cairo midnight. · `rate_limited` — the shared 45-per-60-s chat send budget (adr-196 D8); honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /conversations/{conversationId}/messages/{messageId}/answer:
+    post:
+      tags: [chat]
+      x-stability: stable
+      operationId: answerForwardedQuestion
+      summary: Answer a forwarded-question card the friend sent the caller
+      description: >
+        spec-056 / adr-203 / adr-204 / adr-219. Recipient only, one committed answer per card.
+        Grading is server-side. The response carries the card in the caller's own view, now with
+        `selectedOptionId`, `correct` and `correctOptionId` (FS-6: revealed only after the commit),
+        and the pair's friend streak. **Any committed answer, right or wrong, advances the friend
+        streak** — at most once per friend pair per Africa/Cairo day, in either direction (adr-203);
+        a second answer the same day leaves the count unchanged. **Points (Seif 2026-10-07):** a
+        correct answer earns **+1** into the pool of the card's Track, but only the FIRST time the
+        caller answers that question correctly through any forwarded card — a question forwarded to
+        the caller again, by the same or another friend, never pays twice; a wrong answer earns 0.
+        The award is made server-side with an audit ledger row, after the answer is stored; the
+        response carries no points field, so re-read the caller's standing where points are shown.
+        **Free plan (Seif 2026-10-07):** a student without an active `baseSubscription` can open and
+        answer a card; each answer spends one unit of the weekly 50-question allowance (nothing if
+        that question was already delivered to them this week), and an exhausted allowance is
+        `403 weekly_question_limit_reached` with nothing written. **Idempotent:** once the card is
+        answered, every later call returns `200` with the ORIGINAL result and the current streak; the
+        replayed `optionId` is not compared, the streak never moves twice, no allowance unit is
+        spent again and no point is awarded twice. The friend receives `forwardedQuestionAnswered`
+        (their own view: answered and right/wrong only) and both of you receive
+        `friendStreakChanged` when the streak took today's step. Checked in this order: `400`
+        (shape), `404 conversation_not_found`, `404 message_not_found`, replay `200`,
+        `404 message_not_found` (the question can no longer be shown), `400` (option), `403
+        weekly_question_limit_reached`, then the answer.
+      parameters:
+        - { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+        - { name: messageId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AnswerForwardedQuestionRequest' }
+      responses:
+        '200':
+          description: Answered (or the original result on a replay).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AnswerForwardedQuestionResult' }
+        '400':
+          description: "`validation_failed` — `optionId` missing, not a UUID, or not one of this question's options (field map in `errors`)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`weekly_question_limit_reached` — the caller is on the free plan and this week's 50-question allowance is used up; nothing was written, and the card can be answered once the allowance resets at the start of the next Africa/Cairo week. · `account_pending_deletion` — inside the deletion grace window (adr-114). Read `code`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '404':
+          description: "`conversation_not_found` — unknown, malformed, not the caller's, or ended (adr-196 G-5). · `message_not_found` — unknown id, not a forwarded-question card, a card the caller sent, deleted for everyone, expired, or its question can no longer be shown; all indistinguishable."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '429':
+          description: "`rate_limited` — the chat write budget (30 per 60 s per student). Honour `Retry-After`."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /friend-streaks:
+    get:
+      tags: [social]
+      x-stability: stable
+      operationId: listMyFriendStreaks
+      summary: The caller's live friend streaks (cursor-paginated)
+      description: >
+        adr-203: one combined friend-streak counter per friend pair (the flame count on the
+        conversation row). A forwarded-question answer by either friend takes the pair's step for
+        the day; at most one step per pair per Africa/Cairo calendar day; a Cairo day with no step
+        breaks the streak to 0 (no grace). **Only live streaks are listed:** a pair appears when its
+        last step was today or yesterday (Cairo); every other friend has no streak — render none. A
+        streak ends for good when the friendship ends (unfriend, block, Track transfer) and is not
+        restored on re-friending. Only the two friends ever see their streak (FS-9); no other
+        operation returns it. Ordered by `friendStudentId` ascending.
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200':
+          description: Page of the caller's live friend streaks.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPage'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items: { $ref: '#/components/schemas/FriendStreak' }
+        '400':
+          description: "`validation_failed` — a malformed `cursor` or a `limit` outside 1–100 (field map in `errors`); request page one again"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
 components:
   securitySchemes:
@@ -2465,7 +3880,14 @@ components:
   schemas:
     ProblemDetails:
       type: object
-      description: RFC 9457 + Level Up extensions (ADR-026 §5). EVERY non-2xx body has this shape.
+      description: >-
+        RFC 9457 + Level Up extensions (ADR-026 §5). Error responses the API writes normally have
+        this shape. Some failures carry no body, or a body without `code`: a failure while the
+        response is being written, a host shutdown, a request whose `Accept` excludes JSON, a
+        non-API endpoint such as `/health/ready`, or a proxy/edge response such as
+        `502`/`503`/`504`. A non-2xx without a parsable body and `code` is an unknown outcome;
+        treat it like `internal_error`. Send `Accept: application/json` (or
+        `application/problem+json`).
       properties:
         type: { type: string }
         title: { type: string, description: Developer-facing English. Never shown to users. }
@@ -2489,16 +3911,29 @@ components:
     SupportTicketStatus:
       type: string
       description: >
-        `open` or `closed` today. **Clients MUST tolerate an unknown `status` value**: more statuses
+        `open`, `in_progress`, `pending` or `closed` today. `in_progress` and `pending` are set only
+        by Customer Service (spec-045 P-1); a student never chooses a status, and a reply from either
+        side never changes it. `closed` is final: there is no reopen.
+
+
+        **Clients MUST tolerate an unknown `status` value**: more statuses
         may be added later without a version break (spec-045 D4), so treat any value you do not
         recognise as "in progress — not closed" rather than failing to parse the ticket. Only
         `closed` means the ticket takes no reply.
       example: open
+    SupportTicketReference:
+      type: string
+      description: >
+        The human-readable ticket number the student can quote to Customer Service, formatted `TK-{n}`
+        with no padding (spec-045 P-5). **A display label, never an id**: it is not accepted as a path
+        parameter anywhere, and `ticketId` stays the only handle the API takes.
+      example: TK-123
     SupportTicketSummary:
       type: object
       description: One row of the caller's ticket list.
       properties:
         ticketId: { $ref: '#/components/schemas/Uuid' }
+        reference: { $ref: '#/components/schemas/SupportTicketReference' }
         subject: { type: string }
         status: { $ref: '#/components/schemas/SupportTicketStatus' }
         createdAt: { type: string, format: date-time }
@@ -2506,14 +3941,16 @@ components:
           type: string
           format: date-time
           description: The ticket's creation or its latest reply, whichever is later — the list's sort key.
-      required: [ticketId, subject, status, createdAt, lastActivityAt]
+      required: [ticketId, reference, subject, status, createdAt, lastActivityAt]
     SupportTicket:
       type: object
       description: >
-        One of the caller's tickets. `details` is the opening text. No category, priority, assignee or
-        human-readable reference is exposed (spec-045 D3/D10); any later one arrives additively.
+        One of the caller's tickets. `details` is the opening text. No category, priority or assignee is
+        exposed (spec-045 D3); the human-readable `reference` is (spec-045 P-5). Any later field arrives
+        additively.
       properties:
         ticketId: { $ref: '#/components/schemas/Uuid' }
+        reference: { $ref: '#/components/schemas/SupportTicketReference' }
         subject: { type: string }
         details: { type: string }
         status: { $ref: '#/components/schemas/SupportTicketStatus' }
@@ -2523,7 +3960,11 @@ components:
           type: [string, "null"]
           format: date-time
           description: When the ticket was closed; `null` while it is not closed.
-      required: [ticketId, subject, details, status, createdAt, lastActivityAt, closedAt]
+        attachments:
+          type: array
+          description: The ticket's OPENING photos (spec-067), oldest first; empty when none. Photos sent with replies are on those replies.
+          items: { $ref: '#/components/schemas/SupportAttachment' }
+      required: [ticketId, reference, subject, details, status, createdAt, lastActivityAt, closedAt, attachments]
     SupportTicketMessage:
       type: object
       description: >
@@ -2532,20 +3973,85 @@ components:
       properties:
         messageId: { $ref: '#/components/schemas/Uuid' }
         authorKind: { type: string, enum: [student, staff] }
-        body: { type: string }
+        body: { type: string, description: "May be an empty string on a photo-only student reply (spec-067)." }
         createdAt: { type: string, format: date-time }
-      required: [messageId, authorKind, body, createdAt]
+        attachments:
+          type: array
+          description: The photos sent with this reply (spec-067), oldest first; empty when none, and always empty on a staff reply.
+          items: { $ref: '#/components/schemas/SupportAttachment' }
+      required: [messageId, authorKind, body, createdAt, attachments]
     CreateSupportTicketRequest:
       type: object
       properties:
         subject: { type: string, minLength: 1, maxLength: 120, description: Trimmed server-side; the limits apply after trimming. }
         details: { type: string, minLength: 1, maxLength: 4000, description: Trimmed server-side; the limits apply after trimming. }
+        attachmentIds:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          description: Optional (spec-067). Up to 3 of the caller's own `ready`, unattached photos, as their `attachmentId`s.
+          items: { $ref: '#/components/schemas/Uuid' }
       required: [subject, details]
     PostSupportTicketMessageRequest:
       type: object
       properties:
-        body: { type: string, minLength: 1, maxLength: 4000, description: Trimmed server-side; the limits apply after trimming. }
+        body:
+          type: string
+          maxLength: 4000
+          description: >
+            Trimmed server-side; the limits apply after trimming. 1–4000 characters, except that it may be
+            an EMPTY string when `attachmentIds` holds at least one photo (spec-067 photo-only reply).
+        attachmentIds:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          description: Optional (spec-067). Up to 3 of the caller's own `ready`, unattached photos, as their `attachmentId`s.
+          items: { $ref: '#/components/schemas/Uuid' }
       required: [body]
+    SupportAttachment:
+      type: object
+      description: >
+        One support photo (spec-067). No digest, storage key or URL is ever returned: read the bytes with
+        `getMySupportAttachmentContent`. A student cannot delete a photo; they ask Customer Service in a reply.
+      properties:
+        attachmentId: { $ref: '#/components/schemas/Uuid' }
+        contentType: { type: string, description: "`image/jpeg`, `image/png` or `image/webp` — the verified type." }
+        sizeBytes: { type: integer, format: int64, minimum: 1 }
+        status:
+          type: string
+          description: >
+            `ready`, `expired` (deleted 90 days after the ticket closed) or `removed` (removed by Customer
+            Service, or failed its integrity check) today. **Clients MUST tolerate an unknown value** and treat
+            it as "not available".
+          example: ready
+        createdAt: { type: string, format: date-time }
+      required: [attachmentId, contentType, sizeBytes, status, createdAt]
+    CreateSupportAttachmentUploadRequest:
+      type: object
+      properties:
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp], description: The photo's real type; it is verified against the bytes. }
+        sizeBytes: { type: integer, format: int64, minimum: 1, maximum: 7000000, description: "The exact byte length of what will be PUT. Above 7,000,000 is `413 image_too_large`." }
+        sha256: { type: string, pattern: '^[0-9a-fA-F]{64}$', description: The hex SHA-256 of exactly the bytes that will be PUT. }
+      required: [contentType, sizeBytes, sha256]
+    SupportAttachmentUpload:
+      type: object
+      description: The `createSupportAttachmentUpload` answer — the photo's id and where to PUT its bytes.
+      properties:
+        attachmentId: { $ref: '#/components/schemas/Uuid' }
+        upload:
+          type: object
+          properties:
+            method: { type: string, enum: [PUT] }
+            url: { type: string, format: uri, description: A presigned, short-lived write URL for this one private object. Never log or share it. }
+            headers:
+              type: object
+              additionalProperties: { type: string }
+              description: >
+                Send EVERY header here verbatim with the PUT (`Content-Type`, `Content-Length`,
+                `x-amz-checksum-sha256`, `x-amz-acl`); they are part of the signature.
+            expiresAt: { type: string, format: date-time, description: The URL stops working at this instant (at most 15 minutes after issue). }
+          required: [method, url, headers, expiresAt]
+      required: [attachmentId, upload]
     Uuid:
       type: string
       format: uuid
@@ -2578,6 +4084,13 @@ components:
         result: { type: string, enum: [authenticated] }
         tokens: { $ref: '#/components/schemas/TokenPair' }
         profile: { $ref: '#/components/schemas/StudentProfile' }
+        inviteCodeApplied:
+          type: boolean
+          description: >
+            Only on `completeRegistration`, and only when the request carried `inviteCode` — absent
+            otherwise and absent on every other operation that returns this schema. `true`: the code was
+            recognised and the student who shared it is recorded as your inviter. `false`: the code was
+            not used; your account was created anyway. Never says why, and never names the inviter.
       required: [result, tokens, profile]
     RegistrationRequiredResult:
       type: object
@@ -2628,6 +4141,15 @@ components:
         parentPhone: { $ref: '#/components/schemas/Phone' }
         email: { type: string, format: email, description: "Optional — receipts/notifications only, never login (adr-019)." }
         avatarId: { $ref: '#/components/schemas/Uuid', description: One of the 20 defaults; omit for server default. }
+        inviteCode:
+          type: string
+          description: >
+            OPTIONAL (spec-047; `stable` since 3.44.0-m1). The code a friend
+            shared from their Refer a Friend screen (`getMyInvite`). Case, spaces and hyphens are
+            ignored. It NEVER fails registration: an unknown, malformed or unusable code still creates
+            the account, and `inviteCodeApplied: false` says so (with no reason). The friend who shared
+            it is credited server-side; nothing about them is returned to you. Only a string is
+            accepted (any other JSON type is `validation_failed`).
       required: [track, registrationToken, device, name, dateOfBirth, countryCode, stage, educationSystem, parentPhone]
       anyOf:
         - required: [cityId]
@@ -2654,10 +4176,39 @@ components:
         parentPhone: { $ref: '#/components/schemas/Phone' }
         email: { type: string, format: email }
         avatarId: { $ref: '#/components/schemas/Uuid' }
+        inviteCode:
+          type: string
+          description: >
+            OPTIONAL (spec-047; this field is `draft` — send it only once it is `stable`, because an
+            older backend refuses unknown properties with `validation_failed`). The code a friend
+            shared from their Refer a Friend screen (`getMyInvite`). Case, spaces and hyphens are
+            ignored. It NEVER fails registration: an unknown, malformed or unusable code still creates
+            the account, and `inviteCodeApplied: false` says so (with no reason). The friend who shared
+            it is credited server-side; nothing about them is returned to you. Only a string is
+            accepted (any other JSON type is `validation_failed`).
       required: [track, registrationToken, device, name, dateOfBirth, universityId, facultyId, studyYearId, governorateId, parentPhone]
       anyOf:
         - required: [cityId]
         - required: [cityName]
+    MyInvite:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^[0-9A-HJKMNP-TV-Z]{8}$'
+          description: Eight characters (digits and capital letters without I, L, O, U). Show it exactly; input elsewhere is case-insensitive.
+        friendsJoined:
+          type: integer
+          minimum: 0
+          description: New accounts that registered with this code. Stays counted if that student later deletes their account.
+        pointsEarned:
+          type: integer
+          minimum: 0
+          description: >
+            Points this code has earned the caller (10 per credited friend). It can be lower than
+            10 × friendsJoined (no credit while the caller had no active enrolment), and a new credit
+            appears a few moments after the friend registers (it is applied in the background).
+      required: [code, friendsJoined, pointsEarned]
     NamedRef:
       type: object
       description: Generic bilingual reference row (governorate, city, school).
@@ -2679,8 +4230,13 @@ components:
           type: object
           properties:
             type: { type: string, enum: [default, custom] }
-            id: { $ref: '#/components/schemas/Uuid', description: Present for default avatars. }
-            url: { type: string, format: uri }
+            id: { $ref: '#/components/schemas/Uuid', description: Present for default avatars; absent for `custom`. }
+            url:
+              type: string
+              format: uri
+              description: >
+                For `custom` (spec-070) the student's own photo on the avatars CDN — a NEW url on every upload, so
+                never cache by url across uploads; clients must not assume the default-avatar host.
           required: [type, url]
         geography:
           type: object
@@ -2711,9 +4267,11 @@ components:
               enum: [active, inactive]
               description: >
                 adr-165 D7 — the ACTUAL parent-report status. `active` only once parent-report delivery is
-                switched on; `inactive` otherwise. There is deliberately no pending state: no parent-side
-                opt-in exists, so there is nothing to pend on. School track only; the whole `school` block is
-                null for university students.
+                switched on AND the delivery mode is `Production`; `inactive` otherwise. An `Allowlisted`
+                (staging) run reports `inactive` even with delivery switched on, so it can never tell a household
+                that reports are live. There is deliberately no pending state: no parent-side opt-in exists, so
+                there is nothing to pend on. School track only; the whole `school` block is null for university
+                students.
           required: [stage, educationSystem]
         university:
           type: [object, "null"]
@@ -3050,7 +4608,7 @@ components:
       type: object
       properties:
         id: { $ref: '#/components/schemas/Uuid' }
-        subjectName: { type: string }
+        subjectName: { type: string, description: "The CURRENT subject name for a normal-mode quiz; an empty string for retakeWrong and favorites quizzes (they span subjects) and when the subject can no longer be resolved." }
         scopeName: { type: string }
         mode: { type: string, enum: [normal, retakeWrong, favorites] }
         score: { type: integer }
@@ -3083,15 +4641,16 @@ components:
     LeaderboardEntry:
       type: object
       description: >-
-        Privacy-filtered (adr-023, adr-111): neither invisible students nor score-hidden students
-        ever appear. Every row that IS emitted shows points — suppression removes the row, not the
+        Privacy-filtered (adr-023, adr-111): neither invisible students, score-hidden students,
+        nor students blocked in either direction with the caller (adr-185 D8) ever appear. Every row that IS emitted shows points — suppression removes the row, not the
         score — which is why `points` is required.
       properties:
         rank:
           type: integer
           description: >-
             Dense rank over VISIBLE students, where *visible* means NEITHER `leaderboardVisible:
-            false` NOR `scoreHidden: true` (adr-111). Excluded students are removed from the rank
+            false` NOR `scoreHidden: true` (adr-111), and not blocked in either direction with the caller
+            (adr-185 D8). Excluded students are removed from the rank
             population, so the ranks around them close and leave no gap. It is the student's exact
             position in that population, NOT a position within the page — so on a board with more
             than 200 visible students the last row this endpoint will ever render is `rank: 200`.
@@ -3103,3 +4662,274 @@ components:
         points: { type: integer }
         isMe: { type: boolean }
       required: [rank, studentId, name, avatarUrl, points, isMe]
+    StudentCard:
+      type: object
+      description: >
+        Another student as the friend-graph surfaces show them — suggestions, phone lookup, requests
+        and blocks. Name and avatar only: never points, level or any phone digits (adr-185 D4/D5).
+      properties:
+        studentId: { $ref: '#/components/schemas/Uuid' }
+        name: { type: string }
+        avatarUrl: { type: string, format: uri }
+      required: [studentId, name, avatarUrl]
+    Friend:
+      type: object
+      description: One of the caller's friends.
+      properties:
+        studentId: { $ref: '#/components/schemas/Uuid' }
+        name: { type: string }
+        avatarUrl: { type: string, format: uri }
+        level:
+          type: integer
+          description: The friend's level — the same number the friend sees as `level` on their own `GET /me`.
+        points:
+          type: integer
+          description: >
+            The friend's points on their current Track (`school` or `university` pool, as their own
+            `GET /me` shows it). OMITTED when the friend has `scoreHidden` (adr-023/111/113), and
+            omitted whenever that setting cannot be read.
+        friendsSince: { type: string, format: date-time }
+      required: [studentId, name, avatarUrl, level, friendsSince]
+    FriendRequest:
+      type: object
+      description: One pending friend request, seen from the caller's side.
+      properties:
+        requestId: { $ref: '#/components/schemas/Uuid' }
+        direction:
+          type: string
+          enum: [incoming, outgoing]
+          description: "`incoming` — sent to the caller; `outgoing` — sent by the caller."
+        student: { $ref: '#/components/schemas/StudentCard' }
+        createdAt: { type: string, format: date-time }
+      required: [requestId, direction, student, createdAt]
+    SendFriendRequestResult:
+      type: object
+      description: >
+        `pending` — the request was created and `request` is present. `accepted` — the other student
+        had already asked, so the two are now friends and `friend` is present (adr-185 D7).
+      properties:
+        status: { type: string, enum: [pending, accepted] }
+        request: { $ref: '#/components/schemas/FriendRequest' }
+        friend: { $ref: '#/components/schemas/Friend' }
+      required: [status]
+    PhoneLookupRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          pattern: '^\+[1-9]\d{7,14}$'
+          description: The full E.164 number, e.g. `+201001234567`. Exact match only.
+      required: [phone]
+    PhoneLookupResult:
+      type: object
+      properties:
+        student:
+          oneOf:
+            - $ref: '#/components/schemas/StudentCard'
+            - type: 'null'
+          description: The matching student, or `null` (see `lookupStudentByPhone`).
+      required: [student]
+    StudentIdBody:
+      type: object
+      properties:
+        studentId: { $ref: '#/components/schemas/Uuid' }
+      required: [studentId]
+    ChatPeer:
+      type: object
+      description: >
+        The other participant of a conversation — the `StudentCard` shape, so never any phone digits
+        (adr-185 D4). `studentId: null` means the peer's account was erased (adr-196 D3); `name` and
+        `avatarUrl` are then null too, and the conversation is read-only (`canSend: false`). `name`
+        and `avatarUrl` are also null while the peer cannot be shown (for example, their account is
+        pending deletion); `studentId` is still set and sending still works.
+      properties:
+        studentId: { type: [string, "null"], format: uuid }
+        name: { type: [string, "null"] }
+        avatarUrl: { type: [string, "null"], format: uri }
+      required: [studentId, name, avatarUrl]
+    ChatMessage:
+      type: object
+      description: >
+        One message: a text message (`kind: text`) or a forwarded-question card
+        (`kind: forwardedQuestion`, spec-056, `stable` since 3.44.0-m1). `body` is null when
+        `deletedForEveryone` is true (a tombstone) and is ALWAYS null for a card. A message is also
+        a tombstone, with the same shape, when Support removed it after a report (spec-062
+        `removeContent`); the client cannot tell the two apart and must not try. A message the caller
+        no longer receives from `listConversationMessages` has expired — drop it.
+      properties:
+        messageId: { $ref: '#/components/schemas/Uuid' }
+        conversationId: { $ref: '#/components/schemas/Uuid' }
+        sentByMe: { type: boolean }
+        kind:
+          type: string
+          enum: [text, forwardedQuestion]
+          description: >
+            Branch on this first. New values may be added; render an unknown `kind` as a neutral
+            "this message isn't supported in your version of the app" bubble — never as text and never
+            as a crash.
+        body:
+          type: [string, "null"]
+          maxLength: 500
+          description: At most 500 Unicode scalar values (the server's count; `maxLength` is advisory — see `sendChatMessage`). Null for a tombstone and for every card.
+        forwardedQuestion:
+          oneOf:
+            - $ref: '#/components/schemas/ForwardedQuestionCard'
+            - type: 'null'
+          description: Set exactly when `kind` is `forwardedQuestion` and the message is not deleted for everyone; null otherwise.
+        sentAt: { type: string, format: date-time }
+        editedAt: { type: [string, "null"], format: date-time }
+        deletedForEveryone: { type: boolean }
+      required: [messageId, conversationId, sentByMe, kind, body, forwardedQuestion, sentAt, editedAt, deletedForEveryone]
+    ForwardQuestionRequest:
+      type: object
+      properties:
+        clientMessageId:
+          $ref: '#/components/schemas/Uuid'
+          description: Generated by the app, one per forward, and re-sent unchanged on every retry (idempotency key; the same key space as `sendChatMessage`).
+        questionId:
+          $ref: '#/components/schemas/Uuid'
+          description: A question the caller has already answered in one of their own quizzes (e.g. from a quiz review), on their current Track.
+      required: [clientMessageId, questionId]
+    AnswerForwardedQuestionRequest:
+      type: object
+      properties:
+        optionId: { $ref: '#/components/schemas/Uuid' }
+      required: [optionId]
+    AnswerForwardedQuestionResult:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+          description: The answered card in the caller's own view (`selectedOptionId`, `correct` and `correctOptionId` set).
+        friendStreak:
+          oneOf:
+            - $ref: '#/components/schemas/FriendStreak'
+            - type: 'null'
+          description: >
+            The pair's live friend streak. Always set on a first answer (the answer took today's step,
+            or the pair had already taken it). Null only on a replay made after the streak has since
+            broken (no step on a later Cairo day).
+      required: [message, friendStreak]
+    ForwardedQuestionCard:
+      type: object
+      description: >
+        A question a friend forwarded (spec-056). VIEWER-SPECIFIC — computed for the student reading
+        it. Both friends see the question whenever `contentState` is `visible` (a free-plan student
+        too — Seif 2026-10-07). The FORWARDER (`sentByMe: true`) sees, after the friend answers, only
+        `answered`, `answeredAt` and `correct` (FS-6). The RECIPIENT sees `selectedOptionId` and
+        `correctOptionId` only after their own committed answer. No field ever carries the correct
+        answer before that.
+      properties:
+        questionId: { $ref: '#/components/schemas/Uuid' }
+        contentState:
+          type: string
+          enum: [visible, unavailable]
+          description: >
+            `visible` — `question` is present. `unavailable` — the question can no longer be shown;
+            render a neutral placeholder (answering it gives `404 message_not_found`). New values may
+            be added; render an unknown value as `unavailable`.
+        question:
+          oneOf:
+            - $ref: '#/components/schemas/ForwardedQuestionContent'
+            - type: 'null'
+          description: Present exactly when `contentState` is `visible`.
+        answered: { type: boolean }
+        answeredAt: { type: [string, "null"], format: date-time }
+        correct:
+          type: [boolean, "null"]
+          description: Null until the recipient answers; then whether that answer was right. Visible to both friends.
+        selectedOptionId:
+          type: [string, "null"]
+          format: uuid
+          description: The recipient's own choice — only in the recipient's view, only after answering. Always null in the forwarder's view.
+        correctOptionId:
+          type: [string, "null"]
+          format: uuid
+          description: The correct option — only in the recipient's view, only after their committed answer (spec-038 reveal rule). Always null in the forwarder's view.
+      required: [questionId, contentState, question, answered, answeredAt, correct, selectedOptionId, correctOptionId]
+    ForwardedQuestionContent:
+      type: object
+      description: The question as the quiz shows it, WITHOUT the answer. Option ids are the ones `answerForwardedQuestion` accepts.
+      properties:
+        text: { type: string, description: Plain text; only <u>…</u> markup allowed. }
+        imageUrl: { type: [string, "null"], format: uri, description: "Same rule as `QuizQuestion.imageUrl`." }
+        options:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            properties:
+              id: { $ref: '#/components/schemas/Uuid' }
+              text: { type: string }
+            required: [id, text]
+      required: [text, imageUrl, options]
+    FriendStreak:
+      type: object
+      description: >
+        The one combined friend streak (adr-203) between the caller and one friend. Only the two
+        friends ever see it (FS-9).
+      properties:
+        friendStudentId: { $ref: '#/components/schemas/Uuid' }
+        conversationId: { $ref: '#/components/schemas/Uuid', description: The pair's conversation — match it to `ConversationSummary.conversationId` to draw the flame. }
+        count: { type: integer, minimum: 1, description: Consecutive Africa/Cairo days with a step, including today if `stepTakenToday`. }
+        stepTakenToday:
+          type: boolean
+          description: True when the pair already took today's step (Cairo). False means the streak is alive from yesterday and breaks at the next Cairo midnight without a step today.
+      required: [friendStudentId, conversationId, count, stepTakenToday]
+    ConversationSummary:
+      type: object
+      description: One conversation in the caller's list. No streak counter (adr-196 G-3).
+      properties:
+        conversationId: { $ref: '#/components/schemas/Uuid' }
+        peer: { $ref: '#/components/schemas/ChatPeer' }
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/ChatMessage'
+            - type: 'null'
+          description: The newest message the caller can still see, or null when there is none.
+        unreadCount:
+          type: integer
+          minimum: 0
+          description: The peer's unexpired messages the caller has not read yet.
+        peerLastReadMessageId:
+          type: [string, "null"]
+          format: uuid
+          description: The peer's read cursor — every message up to and including this id is "Seen". Null when the peer has read nothing.
+        canSend:
+          type: boolean
+          description: False only when the peer's account was erased (read-only until the messages expire).
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: The newest message's `sentAt`, or when the conversation began if it has never had one. The list's sort key.
+      required: [conversationId, peer, lastMessage, unreadCount, peerLastReadMessageId, canSend, lastActivityAt]
+    SendChatMessageRequest:
+      type: object
+      properties:
+        clientMessageId:
+          $ref: '#/components/schemas/Uuid'
+          description: Generated by the app, one per message, and re-sent unchanged on every retry (idempotency key).
+        body:
+          type: string
+          maxLength: 500
+          description: 1–500 Unicode scalar values after trimming.
+      required: [clientMessageId, body]
+    EditChatMessageRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          maxLength: 500
+          description: 1–500 Unicode scalar values after trimming.
+      required: [body]
+    MarkConversationReadRequest:
+      type: object
+      properties:
+        lastReadMessageId: { $ref: '#/components/schemas/Uuid' }
+      required: [lastReadMessageId]
+    ReportChatMessageRequest:
+      type: object
+      properties:
+        conversationId: { $ref: '#/components/schemas/Uuid' }
+        messageId: { $ref: '#/components/schemas/Uuid' }
+      required: [conversationId, messageId]

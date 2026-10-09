@@ -1082,7 +1082,7 @@ The owner's 2026-10-09 brief answered the three blocking questions of the pre-ex
 
 ### D-022 · The completion program builds against contract `eddb6ac` (3.46.0-m1)
 
-**Feature:** Completion program (CW01) · **Date:** 2026-10-09 · **Status:** **Accepted — not yet applied (CW01)** ·
+**Feature:** Completion program (CW01) · **Date:** 2026-10-09 · **Status:** **Accepted — applied (CW01, 2026-10-09)** ·
 **Raised by:** discovery B-1; **decided by** the owner
 
 **Context.** Three contract states coexist: committed pin `0df5cf4` (3.28.0-m1, `03fd7cf`); an uncommitted working-tree
@@ -1098,7 +1098,9 @@ A BUILD dry run of HEAD `8e641e9` + the `eddb6ac` files passed: analyze 0, contr
 **Decision.** (c) — `eddb6ac`. `git ls-remote` is re-run immediately before CW01; if upstream has moved, the new commit
 and version are reported to the owner and the target does **not** move silently. The re-vendor is its own isolated
 change set (contract files + `SOURCE.md` + guard alignment only); `contract/` is edited by nothing else. During it the
-false sentence at `contract/SOURCE.md:17` ("CRLF exactly as upstream stores them") is corrected — upstream blobs are LF.
+false sentence "CRLF exactly as upstream stores them" is corrected — upstream blobs are LF. That sentence stood at line 17
+of the 2026-10-07 working-tree edition of `contract/SOURCE.md` (the `65245be` re-vendor), which was never committed;
+no committed `SOURCE.md` ever carried it.
 
 **Consequences.** Opens chat, push registration, inbox, friends, support (+photos), custom avatars, recovery, track
 transfer, referral, quiz history/favourites. `verifyOtp` gains `403 account_banned` (3.42, behavioural — CW02). The
