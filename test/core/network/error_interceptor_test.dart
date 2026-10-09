@@ -229,4 +229,52 @@ void main() {
       expect(mapped, isA<ValidationException>());
     });
   });
+
+  /// Contract 3.32.0-m1: not every non-2xx carries a ProblemDetails body (a
+  /// failure while writing the response, a host shutdown, a proxy/edge 502/503/
+  /// 504, a non-API endpoint). These are characterisation tests of what the
+  /// interceptor already does with such a response: it is an UNKNOWN outcome,
+  /// never a crash and never mistaken for a typed failure.
+  group(
+    'a non-2xx without a parsable ProblemDetails is an unknown outcome',
+    () {
+      final unparsableBodies = <String, Object?>{
+        'a null body': null,
+        'an empty string': '',
+        'a proxy HTML page': '<html><body>502 Bad Gateway</body></html>',
+        'a JSON list': <Object?>['not', 'a', 'problem'],
+        'a map without a code': <String, Object?>{
+          'title': 'Bad Gateway',
+          'status': 502,
+        },
+        'a map with a non-string code': <String, Object?>{'code': 502},
+      };
+
+      for (final entry in unparsableBodies.entries) {
+        test('502 with ${entry.key} → ApiException(502, unknown)', () {
+          final mapped = _map(_response(502, entry.value));
+
+          expect(mapped, isA<ApiException>());
+          expect((mapped as ApiException).status, 502);
+          expect(mapped.code, 'unknown');
+        });
+      }
+
+      test('a bodyless 401 stays UnauthorizedException, code unknown', () {
+        final mapped = _map(_response(401, null));
+
+        expect(mapped, isA<UnauthorizedException>());
+        expect(mapped.code, 'unknown');
+      });
+
+      test('a bodyless 400 is NOT a ValidationException, code unknown', () {
+        final mapped = _map(_response(400, null));
+
+        expect(mapped, isA<ApiException>());
+        expect(mapped, isNot(isA<ValidationException>()));
+        expect((mapped as ApiException).status, 400);
+        expect(mapped.code, 'unknown');
+      });
+    },
+  );
 }

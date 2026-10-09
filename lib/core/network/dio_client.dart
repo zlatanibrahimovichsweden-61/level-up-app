@@ -16,7 +16,14 @@ class DioClient {
     baseUrl: AppConfig.instance.baseUrl,
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 20),
-    headers: const {'Content-Type': 'application/json'},
+    headers: const {
+      'Content-Type': 'application/json',
+      // Contract 3.32.0-m1: send Accept: application/json on every call, so the
+      // API can write its ProblemDetails body at all. A default, not a lock: a
+      // request that wants other bytes (the support-photo GET sends
+      // `image/*, application/problem+json`) overrides it per request.
+      'Accept': 'application/json',
+    },
   );
 
   static Dio create({

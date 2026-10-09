@@ -7,7 +7,15 @@ import '../exceptions.dart';
 /// notifiers turn them into `ScreenState`.
 ///
 /// TODO(contract): full mapping of error-codes.md codes lands per-feature.
-/// Every non-2xx body is RFC 9457 ProblemDetails with a stable `code`.
+///
+/// Error responses the API writes normally are RFC 9457 ProblemDetails with a
+/// stable `code`, but not every non-2xx is (contract 3.32.0-m1): a failure
+/// while the response is being written, a host shutdown, a request whose
+/// `Accept` excludes JSON, a non-API endpoint or a proxy/edge 502/503/504 can
+/// arrive with no body, or a body without `code`. That maps to code `unknown`
+/// below (a 401 stays [UnauthorizedException]). It is an UNKNOWN outcome: the
+/// contract says to treat it like `internal_error`. `DioClient` sends
+/// `Accept: application/json` on every request so the API can write its body.
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
