@@ -38,6 +38,7 @@ import 'mock_legal.dart';
 import 'mock_notifications.dart';
 import 'mock_quiz_history.dart';
 import 'mock_support.dart';
+import 'mock_terms.dart';
 
 /// Builds the Dio that replaces the real client for the mock run.
 ///
@@ -154,6 +155,10 @@ class MockBackendInterceptor extends Interceptor {
   /// for this session.
   final _support = MockSupportDesk();
 
+  /// The caller's Terms acceptance (CW04b): `GET`/`POST
+  /// /me/terms-acceptance`. Rules and state live in `mock_terms.dart`.
+  final _terms = MockTermsAcceptance();
+
   /// The friend graph and reporting (CW09 data layer): the eleven friend-graph
   /// operations other than the phone lookup, plus `POST /student-reports`.
   /// Fixtures and rules live in `mock_friends.dart`; friendships, requests,
@@ -181,6 +186,17 @@ class MockBackendInterceptor extends Interceptor {
     final body = options.data is Map
         ? Map<String, dynamic>.from(options.data as Map)
         : const <String, dynamic>{};
+
+    // ---- terms acceptance (CW04b) -----------------------------------------
+    final termsReply = _terms.handle(method, path, body);
+    if (termsReply != null) {
+      switch (termsReply) {
+        case MockTermsOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockTermsValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+      }
+    }
 
     // ---- auth -------------------------------------------------------------
     if (method == 'POST' && path == '/auth/otp/request') {
