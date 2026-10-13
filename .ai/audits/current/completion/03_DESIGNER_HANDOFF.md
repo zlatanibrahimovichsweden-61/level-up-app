@@ -75,9 +75,9 @@ Please return one table in the format of section 8. Order it P0 first, then P1, 
 | DG-12 | Block, report, unfriend, Blocked list | NEW FRAME REQUIRED (PED:1981) | - Report message: recipient only, no reasons or free text, idempotent, not on forwarded cards or own messages (`oa:3630-3640`).<br>- Report student (`oa:3667`). "Report and block" calls report first (`oa:3637`).<br>- Block confirm: removes the friendship and deletes the conversation; the other student is not told; unblock restores nothing.<br>- Unfriend confirm (not notified).<br>- Blocked list with Unblock; empty, loading, error.<br>- Result toasts.<br>- **Leaderboard rows** (peer names are user-generated content): report/block control or "Option 0" (rank, points, avatar, no names). HELD (H-21). | Thread overflow or friend card -> sheets. Blocked-list entry in Settings or Profile (designer proposes). | `reportChatMessage` oa:3630; `reportStudent` oa:3667; `blockStudent` oa:3311; `unblockStudent`; `listMyBlocks` oa:3276; `removeFriend` | Q-B9 / I-11 to Seif (PED:3783-3788); H-21 | P0 |
 | DG-13 | Push permission pre-prompt, denied state, foreground banner | NEW FRAME REQUIRED | Pre-prompt shown once: value line, Allow, Not now. OS states: not asked, granted, denied (with an "open device settings" row, not a toggle). Foreground in-app banner -> target. The 8 push strings are system-rendered from `rt:93-104` and are not designed. Timing and copy HELD (H-06). | Per owner timing -> OS prompt | `registerFcmToken` oa:1064 | I-16 | P1 |
 | DG-14 | Forwarded question | Partial: picker `171:5031` ("All" `171:5238`); rows `171:5013`, `215:2470` (PED:1986). | One friend per call (no "All"). Card, sender view: sent, then answered right or wrong only. Card, recipient view: pending -> options -> reveal selected and correct. `contentState: unavailable` placeholder (`oa:4829`). Errors: daily limit 100 per Cairo day with reset time (`ec:70`), already pending, not forwardable. Recipient allowance exhausted: limit card with no upgrade CTA. No local points; the response carries no points field (`oa:3774-3779`). Entry point HELD (H-14). | Entry NOT DRAWN -> picker -> thread | `forwardQuestion` oa:3699; `answerForwardedQuestion` oa:3766 | I-17 | P1 |
-| DG-15 | Support ticket list | Existing `178:2800` (PED:1962), redraw. University `309:8713`, `309:8915`, `309:9146`, `309:8819`, `180:7154` (PED:1962; EUM:145); per-frame mapping NOT KNOWN. | Status pills: open, in_progress, pending, closed; an unknown status reads as "in progress" (`oa:3911-3922`); remove "resolved". Label `TK-{n}` without "#". Empty, loading, error, offline, page size 20. | Profile Support row, inbox row, push tap -> list | `listMySupportTickets` oa:2705 | none | P1 |
+| DG-15 | Support ticket list | Existing `178:2800` (PED:1962), redraw. University `309:8713`, ~~`309:8915`~~, ~~`309:9146`~~, `309:8819`, `180:7154` (PED:1962; EUM:145); per-frame mapping NOT KNOWN. **Corrected 2026-10-10 (§10.1): `309:8915` is a paywall and `309:9146` a favourites list, not Support; the CW12a plan reads the other three as light School duplicates, not University twins.** | Status pills: open, in_progress, pending, closed; an unknown status reads as "in progress" (`oa:3911-3922`); remove "resolved". Label `TK-{n}` without "#". Empty, loading, error, offline, page size 20. | Profile Support row, inbox row, push tap -> list | `listMySupportTickets` oa:2705 | none | P1 |
 | DG-16 | Create ticket | Existing `178:3222`, redraw. University twins as DG-15. | Subject at most 120, details at most 4000, no category. Attachments (DG-18). Validation, submitting, 5-per-day limit state, success -> thread. | List -> create -> thread | `createSupportTicket` oa:2658 | none | P1 |
-| DG-17 | Ticket thread | Existing `178:3378`; also `178:3518`, `296:3154`. University twins as DG-15. | Student and staff bubbles (staff shown as "Customer support", no identity). Reply at most 4000, may be empty with a photo. Closed: no reopen, offer a new ticket (409 `ticket_closed`). Photo thumbnails: ready, expired, removed (copy NOT KNOWN). Remove mic `178:3471` and camera `178:3407` (DG-54). | List, inbox or push -> thread | `getMySupportTicket` oa:2740; `listMySupportTicketMessages` oa:2763; `postMySupportTicketMessage` oa:2801; `getMySupportAttachmentContent` oa:2946 | none | P1 |
+| DG-17 | Ticket thread | Existing `178:3378`; also ~~`178:3518`~~, ~~`296:3154`~~ (**not Support — a paywall and a favourites list; corrected 2026-10-10, §10.1**). University twins as DG-15. | Student and staff bubbles (staff shown as "Customer support", no identity). Reply at most 4000, may be empty with a photo. Closed: no reopen, offer a new ticket (409 `ticket_closed`). Photo thumbnails: ready, expired, removed (copy NOT KNOWN). Remove mic `178:3471` and camera `178:3407` (DG-54). | List, inbox or push -> thread | `getMySupportTicket` oa:2740; `listMySupportTicketMessages` oa:2763; `postMySupportTicketMessage` oa:2801; `getMySupportAttachmentContent` oa:2946 | none | P1 |
 | DG-18 | Support photo attach | NEW FRAME REQUIRED | Picker (gallery only, PROVISIONAL pending H-16), preparing (downscale to about 2048 px JPEG, `oa:2861`), uploading with progress, scanning, ready thumbnail. **Deselect before send:** the contract gives the student no way to delete an uploaded photo (`oa:4015`). A deselected photo stays held until it is sent or expires 24 h after the upload call, and counts toward the 10-unattached cap (`oa:2862-2863`). Failures with Retry: too large (`ec:61`), wrong type including PDF, invalid, moderation refusal "this photo can't be sent" (`ec:16`), storage unavailable 503 (text still works), limit reached, 30 uploads per hour (`oa:2891`), Terms gate (DG-07). Replacement for the `178:3368` hint is HELD (H-15). | Create or reply -> picker | `createSupportAttachmentUpload` oa:2849; `completeSupportAttachment` oa:2900 | I-15 | P1 |
 | DG-19 | Custom avatar | Existing sheet `216:3341` (dark `337:8135`, RTL `549:21753`, University `309:8194`, DI:4606). | Enable "Upload photo". Add "Remove photo" when a custom avatar exists. Gallery picker (PROVISIONAL, H-16), square crop step (upright), preview, uploading, success. Failures: too large (`oa:1028`), invalid, moderation "this photo can't be used" (`ec:16`), rate limit 5 per hour with lockout after 3 refused (`oa:1034`), 503, Terms gate. Public-CDN disclosure copy NOT KNOWN (`oa:984-986`). | Edit Profile -> sheet | `uploadCustomAvatar` oa:982; `removeCustomAvatar` oa:1042 | I-15 (minors' photos; owner/legal; H-16) | P2 |
 | DG-20 | Track transfer | Partial: dialog `180:4301` -> `180:4445` (DI:1609; WS), dark `337:7561`, RTL `549:21179` (PED:1173); Profile row `170:4921`. | University, faculty and study-year pickers; only `active` years selectable. Disclosure the contract says to state plainly (`oa:1350`, `oa:1364-1368`):<br>- permanent and once, no way back;<br>- points, level and badges carry;<br>- friends and pending requests start fresh, blocks stay;<br>- school boards are left;<br>- the parent number is kept for recovery only, and the parent stops receiving reports.<br>Second confirmation. Success; errors (not eligible, not allowed, pending deletion, offline). University Profile without the row. Eligibility display: designer proposes "hide unless eligible" or "show with not-eligible state". | Profile -> flow | `transferToUniversity` oa:1338 | I-20 copy; only School `secondary3` is eligible (`oa:1353`) | P2 |
@@ -99,7 +99,7 @@ Please return one table in the format of section 8. Order it P0 first, then P1, 
 | DG-32 | Registration | School `125:511` (dark `337:5269`); University `125:2336` (dark `337:10373`) (PED:1121). | "My city isn't listed" and "I can't find my school" states (DI:1144-1198), plus DG-06 and DG-22. | Registration | reference reads, `completeRegistration` | none | P1 |
 | DG-33 | Settings | `176:1840`; dark `337:8141`; RTL `549:21759` (WS:1606). | The Arabic frame lacks the **Rank privacy block** (two leaderboard-visibility toggles, `leaderboardVisible` and `scoreHidden`; `lib/features/settings/screens/settings_screen.dart:252-272`; DI:4735-4741). This is not a rank display. Add a Delete-account row (DG-01). | Profile -> Settings | `getMyProfile`, `updateMe` | none | P1 |
 | DG-34 | Mistakes, flashcards, edit profile | Flashcards dark `337:14475`, Arabic `549:28041`; Setup `1234:8797`. | Mistakes empty state (DI:1993-2018). Flashcard loading, empty, preview-used-up and grade-failed (DI:4868-4891). Dark and Arabic of the updated flashcard layout and of Setup (DI:4759-4806). A real University Edit Profile frame: `309:8268` copies School (FUC:137). | existing | existing | none | P2 |
-| DG-35 | Dark and RTL counterparts | Notifications, Friends, Messages, Support, Refer | Dark and Arabic (RTL) node ids are NOT KNOWN for these screens (NIN:350; PED:3940). Return them or draw them. University twins ARE recorded for the existing frames: Notifications `309:9525`, Friends `309:6906`, Refer `309:8565`, Messages (6 ids, see DG-09), Support (5 ids, see DG-15). University twins are NOT KNOWN only for the new frames. | n/a | n/a | none | P1 |
+| DG-35 | Dark and RTL counterparts | Notifications, Friends, Messages, Support, Refer | Dark and Arabic (RTL) node ids are NOT KNOWN for these screens (NIN:350; PED:3940). Return them or draw them. University twins ARE recorded for the existing frames: Notifications `309:9525`, Friends `309:6906`, Refer `309:8565`, Messages (6 ids, see DG-09), Support (5 ids, see DG-15 — **two are not Support and three are read as School duplicates; see §10.1**). University twins are NOT KNOWN only for the new frames. | n/a | n/a | none | P1 |
 | DG-36 | "Logged in on another device" | NEW FRAME REQUIRED for the default. Today it is a one-time message after a forced logout to Login. | Draw the message on Login in EN/AR, RTL, light and dark (default per N-20, PED:3986). A dedicated screen is HELD (H-12). | Any call returns 401 `session_superseded` -> Login with message | none (401 on any call) | I-21 (PED:3919-3944); N-20 | P1 |
 
 ---
@@ -283,3 +283,230 @@ Evidence level for everything here is SOURCE. All findings were applied; none wa
   | Corrections (text-only Messages, referral copy, subscription screen, photo hint, masked phone) | DG-50, DG-52, DG-55, DG-56, H-04 |
 
   No further gaps found.
+
+---
+
+## 10. Addendum 2026-10-10 — Support (CW12a) follow-up. Draft, NOT sent.
+
+*The CW12a text-ticket screens (list `178:2800`, create `178:3222`, thread `178:3378`) are built (uncommitted). This
+addendum corrects this file and adds what was never asked. It does not repeat DG-15, DG-16, DG-17, DG-35, DG-52,
+DG-53 or DG-54, which stand. Copy is the owner's (O-14): use `[[COPY: owner]]`.*
+
+*Revised 2026-10-10, second pass (§10.4): the frame correction, the dark-frame lead, the removals wording and the
+message were corrected after a read-only check against `CW12a_PLAN.md` §2 and `DESIGN_ISSUES.md` #55 / #131. The
+first draft was never sent; it is kept in `fu2_prewave/03_DESIGNER_HANDOFF.md.prewave`.*
+
+*Revised 2026-10-10, third pass (§10.5): the owner approved the Support copy (O-14) except `pending`. The message
+now carries the approved words and says how the pills are built today. Nothing was sent, and Figma was not
+opened. The second-pass text is kept in `o14_prewave/03_DESIGNER_HANDOFF.md.prewave`.*
+
+### 10.1 Correction — four frames this file maps to Support are not Support
+
+Verified by frame name and content on 2026-10-10 (CW12a_PLAN §2):
+
+| Frame | What it is |
+| --- | --- |
+| `309:8915` | "Upgrade to premium" (a paywall) |
+| `178:3518` | "Upgrade to premium", although the frame is named "Customer Support" |
+| `309:9146` | "Favorite questions", although the frame is named "Customer Support" |
+| `296:3154` | "Favorite questions", although the frame is named "Customer Support" |
+
+DG-15 lists `309:8915` and `309:9146` as Support's University twins. DG-17 lists `178:3518` and `296:3154` as thread
+frames. **Read those four ids as removed from DG-15 and DG-17.** The app is purchase-silent, so the paywall is
+never built.
+
+Three of the four are even named "Customer Support": `178:3518`, `309:9146` and `296:3154`.
+
+`309:8713`, `309:8819` and `180:7154` carry the Support frames' names. DG-15 calls them University twins, but the
+CW12a plan read them by name and content as **light School duplicates** (`180:7154` is an older thread header,
+and it has the School frames' `180:` prefix). No University (purple) Support frame is confirmed. Figma was not
+re-opened in this pass.
+
+**Dark-frame lead (not yet reconciled).** The CW12a plan says no dark Support frame exists, so dark uses stand-ins.
+But the Glass audit (`DESIGN_ISSUES.md` #55, "Recorded, not built") lists Glass on **Customer Support `337:8390`**
+(its panel `337:8543`, row G17) and on **Create Ticket**. Glass is the dark elevation, so these may be the dark
+Support frames. The message asks the designer to confirm before drawing anything new.
+
+### 10.2 New row
+
+| ID | Screen | Request | P |
+| --- | --- | --- | --- |
+| DG-63 | Support list, create, thread | (a) **Rename** `178:3518`, `309:9146` and `296:3154` (all three named "Customer Support"; `309:8915` is the other paywall frame) so nothing else maps them to Support. Confirm that `309:8713`, `309:8819` and `180:7154` are light School duplicates that can be retired, and say whether University (purple) Support frames exist. Confirm whether `337:8390` / `337:8543` and the Create Ticket Glass frame (#55) are the dark Support frames. (b) **Staff avatar:** the thread's "Customer support" author has a character avatar. Is that intended, or should it be a support glyph? (c) **Ticket-row date:** creation time or last activity? The build shows creation (`createdAt`). (d) **Type sizes off the scale:** 18.941 SemiBold, 22 Bold (heading), 20 Regular (create subtitle), 22 SemiBold (Submit), 16.632 (message name and body, SF Pro), Cairo for the hints. Move them onto the scale or add entries (DESIGN_ISSUES #131 §5). (e) **Light contrast:** details hint `#B7B7B7` on white is 2.01:1, composer hint `#A1A1A1` on white 2.58:1, create subtitle `#7C7C7C` on `#FCFBF9` 4.04:1 at 20 px regular. All are under 4.5:1 (#131 §9). (f) **Confirm removals:** "Seen" `178:3418` is not built because the contract has no read-receipt field (not a "for now"); "See All" `178:3080` is hidden in the frame and not built; the nav bar is not shown (the support route sits above the shell). The Attach box `178:3357` and its hint `178:3368` return with the photo step (CW12b; DG-18, DG-52). The camera `178:3407` and mic `178:3471` are **deleted for good**, not deferred (DG-54: no operation exists). (g) **States not drawn and specific to Support** (the generic ones are DG-15/16/17 and DG-31): create limit reached (5/day; already in DG-16), reply limit reached (60/hour), ticket not found (unknown, malformed and another student's ticket must look the same; no Retry), reply failed with the draft kept, load-more and its Retry, and the closed thread (already in DG-17): the build puts a bar with the "Closed" pill and a "Create a New Ticket" button where the composer was; there is no reopen. Account pending deletion is **not** Support-specific: the contract routes it to the cancel screen (DG-02), and the build shows an inline line until that screen exists (CW05). (h) **Pills:** any status the app does not recognise shows as in progress, not closed (DG-15); every pill must reach 4.5:1 in light and dark (the inbox category pills fail as drawn, #130). (i) **Thread timestamps:** each message has a `createdAt`, but the frame draws none, so the build shows none. Should it? | P1 |
+
+The back chip's 48 dp target and the titled bar's text scaling were fixed in code (O-15, DESIGN_ISSUES #132)
+without moving any drawn pixel. Nothing to draw.
+
+*DG-63, third pass 2026-10-10 (O-14 approved):* (g) the closed bar reads مغلقة / إنشاء تذكرة in Arabic. (h) Open
+and In progress pills are now built with the approved words, and an unknown status shows In progress. They reuse
+the drawn Closed pill's look, so only the words differ. The light pill is 8.97:1 (computed). `pending` still has
+no words (SQ-32) and shows no pill. A per-status pill design, and how a pill behaves at very large text, are still
+asks. (e) is unchanged: the approved Arabic uses the same hint and subtitle tokens, so the three ratios stand.
+
+### 10.3 Message to the designer (ready to send after owner review; revised 2026-10-10, third pass)
+
+Hi! A follow-up on the Support screens: ticket list `178:2800`, Create Ticket `178:3222` and chat `178:3378`.
+They're built from your frames, text only for now (photos come later). The general rules in our first message still
+apply. Here's what's specific to Support, most important first:
+
+1. **Dark and Arabic.** We found Glass on `337:8390` (Customer Support) and on a Create Ticket frame. Are those the
+   dark Support screens, and is there a dark chat? If not, please draw them. We also need Arabic for all three, and
+   for each new state below (DG-35). The Arabic wording is now approved: it's in the list at the end.
+2. **Status pills:** open, in progress, pending and closed. There is no "resolved", and the label is `TK-1042` without
+   "#" (DG-53). Any status we don't recognise shows as "In progress". The words for Open, In progress and Closed are
+   now approved (list at the end). For now the app draws Open and In progress in your Closed pill's grey, so only
+   the words differ. Could you design a pill for each status? `pending` has no approved words yet, so it shows no
+   pill: use `[[COPY: owner]]` for it. Please make every pill at least 4.5:1 contrast in light and dark, and show
+   how a pill should behave at very large text on a small phone. At 3x on a 320 dp screen, "In progress" leaves
+   the ticket subject very little room.
+3. **Support states** (on top of the usual loading, empty, error with Retry, and offline):
+   - list: "load more" and its Retry
+   - create: field errors (subject up to 120 characters, details up to 4,000) and the daily limit (5 tickets a day)
+   - chat: sending, reply failed (we keep the draft), and the reply limit (60 an hour)
+   - ticket not found: an unknown ticket and someone else's must look the same, with no Retry
+   - closed ticket: there is no reopen, so we replaced the composer with a bar showing the "Closed" pill and a
+     "Create a New Ticket" button (in Arabic: مغلقة and إنشاء تذكرة). Please draw it.
+4. **Frames that aren't Support.** `178:3518`, `309:9146` and `296:3154` are all named "Customer Support", but
+   `178:3518` is the premium paywall and the other two are the favourite-questions list (`309:8915` is the other
+   paywall frame). Could you rename them? `309:8713`, `309:8819` and `180:7154` look like light School copies of the
+   Support screens (`180:7154` is an older chat header). Can they be retired? Is there a University (purple) version?
+5. **Quick decisions:**
+   - Staff avatar `178:3424`: keep the 3D character, or use a support icon? The backend gives staff no identity,
+     and a student could pick a similar character.
+   - Ticket-row date: we show the creation date, but the list is sorted by last activity. After a reply the dates
+     can look out of order. Which date should it be?
+   - Chat timestamps: every message has a time, but the frame shows none. Should it?
+6. **Type and contrast.** We mapped the off-scale sizes to the nearest styles. The 22 Bold heading is drawn at
+   24 Bold, the 20 Regular subtitle at 16 Regular, the 22 SemiBold Submit at 16 SemiBold, and the 16.63 message text
+   at 16. Please confirm, or add 22 and 20 to the scale. Three light texts are below 4.5:1:
+   - details hint `#B7B7B7` on white: 2.01:1
+   - chat hint `#A1A1A1` on white: 2.58:1
+   - create subtitle `#7C7C7C` on `#FCFBF9`: 4.04:1
+
+   Could you darken them?
+7. **Please confirm what we left out:**
+   - "Seen": the backend has no read receipts.
+   - "See All": it's hidden in your frame.
+   - The Attach box and its hint: they come back with the photo step.
+   - The camera and the mic: removed for good (DG-54).
+
+**Approved words** (please use them as written):
+
+| Where | English | Arabic |
+| --- | --- | --- |
+| List card title, and the closed-ticket button | Create a New Ticket | إنشاء تذكرة |
+| List card subtitle | Describe your issue | اشرح مشكلتك |
+| List heading | Recent Tickets | التذاكر الأخيرة |
+| Create screen, top bar | New Ticket | تذكرة جديدة |
+| Create screen, heading (unchanged) | Create Ticket | إنشاء تذكرة |
+| Create screen, subtitle | Describe your issue and we'll help you | اشرح مشكلتك وسنساعدك |
+| Field labels | Subject / Details | الموضوع / التفاصيل |
+| Details hint | Describe the issue in detail... | اشرح المشكلة بالتفصيل... |
+| Submit button | Submit Ticket | إرسال التذكرة |
+| Chat hint | Write your message | اكتب رسالتك |
+| Pills | Open / In progress / Closed | مفتوحة / قيد المعالجة / مغلقة |
+| Pending pill | `[[COPY: owner]]` | `[[COPY: owner]]` |
+
+Please answer in the table from our first message (section 8), using row DG-63. Thanks!
+
+### 10.4 Revision note (lead-only, second pass 2026-10-10)
+
+Read-only Sonnet check of §10 against the brief and the records, then corrected here:
+- **Frames:** the misnamed set is three (`178:3518`, `309:9146`, `296:3154`), not two. The twins are now paired
+  (`309:8915` paywall, `309:9146` favourites). `309:8713` / `309:8819` / `180:7154` are now asked as School
+  duplicates (CW12a_PLAN §2), not as University twins. DG-15, DG-17 and DG-35 are struck through in place (never
+  deleted).
+- **Dark:** the Glass audit's `337:8390` / `337:8543` / Create Ticket entries (#55) contradict "no dark Support frame".
+  They are asked about instead of requesting new frames.
+- **Removals:** camera and mic are a permanent deletion (DG-54), not part of the photo step. "Seen" has no contract
+  field.
+- **Type:** the first draft asked to "confirm as drawn", but the build does not draw them as drawn. It now states the
+  mapping (#131 §5).
+- **Contrast:** names each element with its hex values.
+- **States:** pending deletion moved out of the Support-specific list (DG-02; the contract routes it to the cancel
+  screen; CW05).
+- **Answers:** the designer is asked to reply in the §8 table under DG-63.
+- **Not done:** Figma was not opened in this pass (the Figma connector needs re-authorising), so all node facts are
+  the repo's records.
+
+### 10.5 Revision note (lead-only, third pass 2026-10-10)
+
+- **Why:** the owner approved the O-14 copy (`CW12a_FOLLOWUP_REPORT.md` §13). The message asked for
+  `[[COPY: owner]]` on every pill. It now gives the approved words, and keeps `[[COPY: owner]]` for `pending` only.
+- **Added:** the approved-words table (owner-approved text, no new wording), the current pill stand-in (Closed's
+  look reused), and the large-text question (measured with the bundled fonts: no overflow up to 3.0×, but at
+  320 dp and 3.0× an In progress row leaves the subject column 21 dp in English and 11 dp in Arabic).
+- **Unchanged:** the asks for Arabic and dark versions of the three screens and their states, the frame
+  corrections, the type mapping, the three low-contrast texts (still 2.01, 2.58 and 4.04 to 1, not fixed), the
+  avatar, date and timestamp questions, and the confirmed removals ("Seen", "See All", the Attach box, camera,
+  mic).
+- **Not done:** Figma was not opened (the connector still needs re-authorising), and nothing was sent.
+
+## 11. Addendum 2026-10-10 — Legal viewer (CW04a) built on an interim style. Draft, NOT sent.
+
+**Why:** the owner approved building the viewer without a frame (instruction "NEXT STEP — ACCEPT NNA, CLOSE BUG-027,
+AND IMPLEMENT CW04a", D3). DG-05 stays **NEW FRAME REQUIRED**: what is built is an interim from the existing scale and
+theme, not a design. Figma was not opened (the connector needs re-authorising); node ids below are the repo's records.
+Full record: `CW04a_REPORT.md`.
+
+**What the designer should replace (DG-05)** — every value is an existing token:
+
+| Element | Interim (existing token) |
+|---|---|
+| Document title (the served `# ` heading) | `AppType.h2`, `textPrimary` |
+| Section heading (`##`) | `AppType.h3`, `textPrimary` (`###`–`######`: `h4`) |
+| Body text, list items, table cells | `AppType.bodyMedium`, `textSecondary` |
+| Bold (`**…**`) | `AppType.bodyMediumStrong` (weight 500) — no heavier 14 pt style exists in the scale |
+| Table header cell | `AppType.labelLarge`, `textPrimary` |
+| Rules (`---`) and table lines | theme `ColorScheme.outlineVariant` (Material's divider role), 1 px |
+| Link (none served today) | `bodyMedium` in `link`, underlined |
+| Spacing | blocks 12, table cells 8, page 20 at the sides; list markers in a 24 indent |
+
+**Decisions already taken by the owner, for the frame to follow:**
+- **C3 — one title.** Once the document is shown, its own heading is the page title and the bar keeps only the back
+  chip (no second title). While loading, or on a failure, the bar shows the existing "Privacy & policy" /
+  "Terms & Conditions" title.
+- **C1 / C2 — Login line (`82:1086` in `82:819`).** "User Agreement" opens the Terms of Use. The Cookie Policy link is
+  removed, with its clause, because no cookie document exists. The line now reads "By continuing, you agree to our
+  User Agreement and Privacy Policy" (existing fragments only; its EN + AR wording still needs product/legal
+  approval, `DESIGN_ISSUES.md` #9). The frame still draws three links.
+
+**Questions (answer in the §8 table under DG-05):**
+1. Heading, body, bold, table and rule styles for the viewer, in light and dark, EN and AR.
+2. The bar while the document is shown: back chip only (as built), or something else?
+3. Wide tables on 320 dp: the build wraps cells inside the screen width (no sideways scrolling). Keep?
+4. Arabic tables: columns run right to left and cells start at the right, as built. Confirm.
+5. The Login line with two links instead of three (C2).
+
+**Not done:** nothing was sent, and Figma was not opened.
+
+### 11.1 Message to the designer (draft, NOT sent; prepared 2026-10-11 for owner review)
+
+It asks the questions above in one short message; it is not a second request. The O-16 wording is still pending
+(`O16_DECISION_NOTE.md`), so the message presents the Login sentence as interim, not approved.
+
+> Hi! Two quick things about the legal documents, please.
+>
+> 1. **Legal document viewer (DG-05).** Privacy and Terms now open inside the app, from Profile and from the Login
+>    line. There was no Figma frame for this screen, so for now it uses our existing type scale and theme colours.
+>    That's a stand-in, not a design. Could you draw the frame, or confirm the stand-in? If they're part of the
+>    design, please include these states:
+>    - loading
+>    - the document itself (headings, body text, bold, lists, tables, dividers), in light and dark, English and
+>      Arabic
+>    - not published yet (the document isn't available)
+>    - offline
+>    - too many requests (try again in a few seconds)
+>    - general error, with Retry
+>
+>    Once the document shows, its own heading is the page title and the top bar keeps only the back button. Is that
+>    OK?
+> 2. **Login line (`82:1086`).** Your frame has three links: User Agreement, Privacy Policy and Cookie Policy. The
+>    app now has two, because there's no cookie document to open. It reads "By continuing, you agree to our User
+>    Agreement and Privacy Policy", and "User Agreement" opens the Terms document. Product/legal still have to
+>    approve this wording in English and Arabic, so please don't treat it as final copy.
+> 3. **Is two links OK for now?** Please confirm the two-link line works as an interim layout, or send the revised
+>    frame.
+>
+> Please answer in the table from our first message (section 8), row DG-05. Thanks!
+
+**Not done:** not sent. Nothing in it is approved, and Figma was not opened.

@@ -155,6 +155,16 @@ names. The frame's sentence is ungrammatical ("By Continue") and names the brand
 is grammatical and does not. **Not changed:** consent copy for minors is not the build's to reword
 in either direction. **Fix we need:** product/legal approve one sentence (EN + AR) alongside the URLs.
 
+**Addendum 2026-10-10 (CW04a) — the URLs are gone; the sentence still needs approval.** The links now open the
+in-app legal viewer (`getLegalDocument`, public; `/legal/*` reachable signed out), so there is no URL to supply.
+On the owner's word: "User Agreement" opens the Terms of Use (C1), and the Cookie Policy link is removed with its
+clause (C2), because no cookie document exists and the link went to a host that never resolved. The line is now the
+existing fragments `legalPrefix` + `userAgreement` + `legalAnd` + `privacyPolicy`: "By continuing, you agree to our
+User Agreement and Privacy Policy" / "بالمتابعة، فإنك توافق على اتفاقية المستخدم و سياسة الخصوصية". No word was
+written for it; `cookiePolicy` and `legalSeparator` stay in the ARB files for when a cookie document exists.
+**Still needed:** product/legal approve that sentence in EN and AR (the Arabic "و" stands apart, as it did before
+the Cookie link), and the designer redraws `82:1086` with two links (`03_DESIGNER_HANDOFF.md` §11).
+
 ## 10. ✅ RESOLVED (Day 8) — the theme toggle landed in Settings
 **What:** a full **dark** theme existed in Figma and in `AppColors` from Day 0, but no screen had a
 control to switch themes, so `MaterialApp.themeMode` was pinned to `ThemeMode.light` and **half the
@@ -4956,6 +4966,329 @@ nav style at large scales.
   card), so the difference is consistency, not data.
 - A brand-new student lands on Home to "Welcome back," (the frame's copy).
 **Ask (owner / designer):** whether any of the three should change.
+
+## 127. 🟠 The phone placeholder is `01X XXXX XXXX`, not the frame's sample number
+
+> **Classification:** owner ruling 2026-10-09 (N-26). Built; the frames need to catch up.
+
+The Login phone field's placeholder in the frame (Day 1 brief), reused by Sign Up's parent-number
+field, was a realistic Egyptian mobile, and the app shipped it in both ARB files. The designer
+confirmed it is a real person's personal number. Egypt has no range reserved for fiction (none from
+NTRA, no entry in the international lists), so no "safe" real-format number exists. The owner chose
+a pattern nobody can dial: `phoneHint` is `01X XXXX XXXX` in EN and AR (Western digits, as #19). The
+number is deliberately not repeated here. Test fixtures and the mock profile use the staging smoke
+account `+2010000000001` instead: eleven digits after `+20`, a length no Egyptian mobile has.
+`phone_test.dart` fails if either language's hint ever parses as a phone again.
+
+**Ask (designer):** put the same pattern in the Login and Sign Up frames, and remove the number from
+any other frame that carries it. **Not done here:** the old number is still in git history (pushed)
+and in the dated audit records under `.ai/audits/`; purging either is a separate owner decision.
+
+## 128. 🟠 A banned sign-in has no frame — an inline interim notice is built (DG-03)
+
+> **Classification:** contract-not-designed. Owner ruling 2026-10-09 (CW02): inline on the OTP screen until the frame exists.
+
+Since 3.42.0-m1, `verifyOtp` can answer `403 account_banned` after a correct code (`contract/error-codes.md:51`,
+`contract/openapi.yaml:231`). The code is consumed, no tokens or session are issued, and the contract asks for a
+"banned — contact Support" screen with no retry. No frame exists. CW02 builds the owner's interim: the OTP screen shows
+the contract's suggested client copy (`errorAccountBanned`, EN "Account banned — contact Support" and its AR pair) in
+the screen's existing error line, announced as a live region; code entry and resend are locked; the primary CTA becomes
+the existing "Back to login". The error line keeps the screen's existing small error style, which is weak for a terminal
+state.
+
+**Ask (designer, DG-03):** the banned frame in light/dark and AR/EN, and its final copy. **Ask (Seif, SQ-12):** where a
+signed-out banned student reaches Support — every `/support/*` operation needs a session, and the ban revoked them all.
+Nothing links to Support until then.
+
+## 129. 🟡 An unknown route shows the shared error state — no frame (DG-31)
+
+> **Classification:** no frame. Owner ruling 2026-10-09 (CW02): built from existing parts only.
+
+The router's `errorBuilder` (CW02) renders `RouteErrorScreen`: the shared error state with the existing `genericError`
+copy and the existing circle back chip (pops, or goes Home), no Retry and no new copy. **Ask (designer, DG-31):** the
+generic error-page frame within the shared state kit.
+
+## 130. 🟠 OPEN — Notifications inbox (CW07a) — stand-ins and open design questions
+
+> **Classification:** designer decisions + frames not drawn. Built 2026-10-10 from `180:8386` (School, light, EN;
+> `309:9525`, University, reads identical). **Status: OPEN. Owner: designer, with the owner on the derived "All".**
+
+The frame draws one screen: light, English, six rows, four chips. Everything else was built from existing tokens and
+shared states, and each choice is listed so the designer can rule on it. **No colour or size was invented**: every
+value below is a frame value, a copy of a named existing token, or a scale style.
+
+**1. Dark canvas — no frame (DG-35).** Every dark value is a stand-in that copies the value of an existing dark
+token. `AppColors` carries each one with its source in the doc comment.
+
+| Token | Dark value | Copies |
+| --- | --- | --- |
+| `notificationRowFill` | `#27282C` at 20% + Glass G5, no shadow | `treeRowBadgeFill` / `reviewFilterIdle*` |
+| `notificationDiscFill` | `#27282C` at 20% + Glass G5 | `treeRowBadgeFill` |
+| `notificationChipIdleFill` / `…Label` | `#27282C` at 20% + Glass G5 / `#FCFBF9` | `reviewFilterIdleFill` / `reviewFilterIdleLabel` |
+| `notificationChipSelectedFill` / `…Label` | `#AE87E7` / `#232428` | `quizReviewFilterFill` / `quizReviewFilterLabel` |
+| `notificationDiscGlyph` | `#FCFBF9` | `textPrimary` |
+| `notificationBody` | `#DCDCDC` | `textSecondary` |
+| `notificationTime` | `#FCFBF9` | `textPrimary` (keeps the time the stronger of body and time, as in light) |
+| `notificationUnreadDot` | `#AE87E7` | `bellUnreadDot` |
+| `notificationRowBorder` | `rgba(124,58,237,0.2)`, same as light | the way `topStudentBorder` keeps its purple on both canvases |
+| the three pills | the light pastel pairs, unchanged | `cardLabel`'s precedent |
+
+The row title takes `textPrimary` in both canvases (light `#0E0E0E`; the frame draws pure `#000000`, which is not in
+the palette — the same call the catalog rows made under #57 / #68). The disc glyph is the asset's own `#000000`, so
+it keeps its own token (`notificationDiscGlyph`) rather than moving to `textPrimary`.
+
+**2. Type mapped to the handoff scale — no 10.17 or 11.18 style exists.** Pill label 10.17 SemiBold → `labelSmall`
+(10/500); time 11.18 SemiBold → `labelMedium` (12/500); body 12 Medium → `labelMedium`; title 18 → `h3`; idle chip
+14 SemiBold → `labelLarge`; selected chip 16 SemiBold → `buttonLarge`; the 22 SemiBold bar title → `TitledChrome`'s
+`h2` (20/700), as on every screen behind the Profile hub. The weights the scale lacks (the frame's SemiBold on the
+pill and the time) render as the scale's Medium. **Ask:** a scale entry for these, or the frame moved onto the scale.
+
+**3. Rows render in full; the frame clips the body at two lines.** No detail view exists to read the rest (DG-42:
+nothing is opened from a row), and the `moderation_warning` body is five sentences. **Ask:** two lines plus a
+detail screen, or full text as built.
+
+**4. One border alpha, 0.2.** Four of the six frame rows draw 0.2 and two draw 0.15, and the 0.15 rows are not
+consistently the read ones (`309:5595` is read and draws 0.2), so there is no read/unread rule to encode.
+
+**5. Dropped from the frame (DG-57, adr-049 §3).** The Promotions chip (the contract's `category` enum has no such
+value) and the "Premium Offer — 40% Off!" row (a purchase surface the app never builds). The "Daily Streak!" row has
+no contract `kind`, so it cannot be rendered either. The chips are All · Announcements · Support · System.
+
+**6. "All" is written without "(6)".** No total exists in the contract. The label is a new key, `notifFilterAll`:
+EN is `180:8556` without its count; AR "الكل" is the word already shipped in `quizReviewFilterAll`. **DERIVED,
+not designer-written — the owner should confirm it.**
+
+**7. Absolute date and time, not "5 min ago".** The contract gives an instant, and relative time would be a second
+piece of copy with no source. The row shows `DateFormat.yMMMd(locale).add_jm()` in the device's zone. In Arabic
+`intl` renders Western digits here, the same open question as #19.
+
+**8. Contrast, measured by the WCAG 2.x formula from the token hexes (computed, not read off a device).**
+The selected chip's cream `#FCFBF9` on `#AE87E7` is **2.74:1** in light (built as drawn; the dark stand-in,
+`#232428` on `#AE87E7`, is **5.48:1** — the #54 / #77 precedent). The category pills' 10 px labels are also under
+4.5:1 as drawn: Announcements `#7070A0` on `#D0D0FF` **3.13:1**, System `#00A73E` on `#C3FDD8` **2.78:1**, Support
+`#466EB6` on `#CEF8FF` **4.44:1**. The unread dot `#7070A0` on the cream row is **4.50:1**. **Ask:** the designer's
+ruling on the selected chip and the System / Announcements pills. Nothing was changed on the build's own judgement.
+
+**9. The selected state of an icon chip is not drawn.** The frame selects only All, which has no glyph. A selected
+Announcements / Support / System chip tints its glyph the same as its label, on the same purple.
+
+**10. No "unread" accessibility label.** Unread rows are buttons and the dot is decorative, so a screen-reader user
+is told it is a button and not that it is unread. No EN or AR source exists for the word, so none is shipped.
+**Ask:** the copy, and where it goes in the merged row.
+
+**11. Arabic and dark frames are missing (DG-35).** RTL is derived by the directional rules (the chip row starts at
+the right, the dot sits at the END side — the right in English, the left in Arabic — and the disc at the start, the
+row's content mirrors); the dark canvas is §1.
+
+**12. No empty, loading, error, offline or load-more frames (DG-08, DG-31).** Built from the shared pieces: a
+spinner; `nothingHere`; `genericError`, `offline` and `accountPendingDeletion` with the leaderboard's icon-and-line
+layout; Retry (withheld for a pending deletion and a rate limit); and a text Load more button, with its own Retry
+after a failed append. **Ask:** the frames, and whether an end-of-inbox line is wanted (none is shown).
+
+**13. The Home bell's tap target.** The drawn chip stays 37 and the target is 48 × 48, laid out so the chip keeps its
+exact pixels (`home_header_bell_light.png` / `_dark.png` unchanged). Nothing for the designer to decide; recorded so
+the 11 px of slack around the chip is not mistaken for a layout change.
+
+**14. Smaller reads.** The frame's content sits 16.26 inside the border's inner edge, so the row's content inset
+from its outer edge is 17.46 (16.26 + the 1.2 border). The title and the dot share a row with an 8 gap the frame
+does not need (its titles are one line). The three glyphs are drawn at the sizes of their own exports (29, 31, 31).
+The `moderation_warning` text tells a student to "contact Support from the app" while Support is still a shell
+(CW12 follows).
+
+**Ask (designer):** §1 dark frames and the Arabic frames, §2 scale entries, §3, §8, §10, §12. **Ask (owner):** §6.
+
+---
+
+## 131. 🟠 OPEN — Support tickets (CW12a) — copy not supplied, stand-ins and open design questions
+
+> **Classification:** copy not supplied + frames not drawn + designer decisions. Built 2026-10-10 from `178:2800`
+> (list), `178:3222` (create) and `178:3378` (thread) — School, light, English. **Status: OPEN. Owner: designer for
+> frames and visuals; owner for the Arabic copy.** Brief: `.ai/audits/current/completion/CW12a_PLAN.md`.
+>
+> **Update 2026-10-10 (O-14, copy approved):** the owner approved the Support copy: Arabic for the eleven keys, and
+> English and Arabic for the Open and In progress pills and the send button's label. It is in the app. `pending`
+> is NOT approved (SQ-32). See §2 and §3 below and `CW12a_FOLLOWUP_REPORT.md` §13. The designer asks stand.
+
+**1. Which frames are support.** Verified by name and content: `178:2800`, `178:3222`, `178:3378`; `309:8713`,
+`309:8819` and `180:7154` are light School duplicates (180:7154 is an older thread header). **Four frames that the
+designer handoff (DG-15, DG-17) maps to support are not support:** `309:8915` and `178:3518` are an "Upgrade to
+premium" paywall (178:3518 is even named "Customer Support") and are never built (adr-049 §3); `309:9146` and
+`296:3154` are a "Favorite questions" list named "Customer Support". **Ask:** rename or move them.
+
+**2. Arabic copy — not supplied, and none is shipped.** No release mechanism exists that keeps provisional copy out
+of a build (no guard, flag or flavor resource does it), so on the owner's 2026-10-10 rule **no proposed text enters
+the app.** Eleven new keys carry the frame's English verbatim; `app_ar.arb` carries that same English, so the Arabic
+UI shows English for: `supportCreateNewTicket`, `supportDescribeYourIssue`, `supportRecentTickets`,
+`supportNewTicketTitle`, `supportCreateTicketSubtitle`, `supportSubjectLabel`, `supportDetailsLabel`,
+`supportDetailsHint`, `supportSubmitTicket`, `supportStatusClosed`, `supportComposerHint` (plus the words-free
+`supportTicketMeta` = `{reference} · {date}`). Each `@key` says `ARABIC NOT SUPPLIED (CW12a copy register)`, and
+`test/features/support/support_copy_status_test.dart` pins the state — **tracking only, not a release gate: nothing
+stops a release build from shipping English in the Arabic UI.** Proposed Arabic for review (PROVISIONAL, not in the
+app) is in the brief §4.2. Side effect: the hint's trailing "..." sits at the visual left in the RTL paragraph.
+*Superseded 2026-10-10 (O-14):* the owner approved Arabic for all eleven keys, and `app_ar.arb` now carries it
+(the plan's proposals, except two the owner chose: `supportCreateNewTicket` is the shorter إنشاء تذكرة, the
+same words as `createTicket`, and `supportRecentTickets` is التذاكر الأخيرة). The markers are gone, and the copy test
+now pins the approved text. The details hint is now Arabic, so its "..." ends the sentence at the left, which is
+correct. Still tracking only: nothing gates a release on copy.
+Reused approved keys: `profileCustomerSupport` (the title and the staff author — the contract and frame write
+"Customer support"; casing only), `createTicket`, `leaderboardYou` ("You"), `nothingHere`, and the shared state and
+error keys.
+
+**3. Isolated — no approved text in either language, so not built.** The status pills for `open`, `in_progress`,
+`pending` (and any unknown status, which the contract says reads as in progress): a non-closed row shows **no pill**.
+The frame's "resolved" is not a contract status and is not built (DG-53). The send button's accessible label: the
+send glyph is hidden from screen readers and the accessible path is the keyboard's Send action
+(`TextInputAction.send`, labelled by the OS keyboard). Proposals (PROVISIONAL): Open / مفتوحة, In progress / قيد
+المعالجة, Pending / معلّقة, Send / إرسال. **Ask (designer):** the four status pills in EN and AR (DG-53) and the send
+label.
+*Superseded 2026-10-10 (O-14):* the pills for `open` (Open / مفتوحة) and `in_progress` (In progress / قيد
+المعالجة) are built, and **an unknown status shows In progress** (the contract's rule). **`pending` still shows no
+pill** (SQ-32), and the provisional Pending / معلّقة is not in the app. **Stand-in:** Open and In progress reuse
+the drawn Closed pill's look as drawn (its fill and label tokens, its size); only the words differ. Contrast,
+computed from the token hexes: light `#444444` on the fill over the white row is **8.97:1**; dark `#DCDCDC` on the
+fill over the dark row is about **8.67:1** (Glass ignored), and the dark label is pinned at 4.5:1 or more on the
+dark canvas. Bundled fonts, 320 dp, 3.0× text: no overflow, but an In progress row leaves the subject column
+21 dp (EN) or 11 dp (AR). The send glyph is now a labelled button (Send / إرسال: disabled while empty or sending),
+and the reply field keeps its name (the hint's words) once there is text. **Ask (designer) still stands:**
+per-status pills, and how a pill behaves at large text.
+
+**4. Dark canvas — no frame.** Stand-ins copy existing dark tokens; dark elevation is Glass G5 (create card, ticket
+row, field section, composer bar) and the inputs use the existing `fieldGlass`; no dark shadow.
+
+| Token | Light (frame) | Dark stand-in | Copies |
+| --- | --- | --- | --- |
+| `supportCardFill` | `#FCFBF9` | `#232428` at 20% | `cardFill` |
+| `supportSurfaceFill` | `#FFFFFF` | `#232428` at 20% | `fieldFill` |
+| `supportInk` | `#384F47` | `#FCFBF9` | `textPrimary` |
+| `supportInkMuted` | `#4B675E` | `#DCDCDC` | `textSecondary` |
+| `supportRowBorder` | `#4B675E` | `#4B675E` | `quizOptionBorder` |
+| `supportOnInk` | `#FCFBF9` | `#232428` | `background` |
+| `supportCreateTitle` / `supportCreateSubtitle` | `#1A1A1A` / `#424242` | `#FCFBF9` / `#DCDCDC` | `textPrimary` / `textSecondary` |
+| `supportHeadingSubtitle` | `#7C7C7C` | `#ECECEC` | `bodyMuted` |
+| `supportInputHint` / `supportComposerHint` | `#B7B7B7` / `#A1A1A1` | `#B3B3B3` | `mutedText` |
+| `supportPillClosedFill` / `…Label` | `#B6B6B6` at 13% / `#444444` | same fill / `#DCDCDC` | — / `textSecondary` |
+| `supportThreadDivider` | `#7C3AED` at 10% | same | `topStudentBorder` |
+
+`supportInk` is shared by text and the add button's fill, so **the add button turns cream in dark with a dark plus.**
+**Ask:** confirm, or draw the dark add button.
+
+**5. Type mapped to the scale.** Create-card title 18.941 SemiBold → `h3`; its subtitle 14 SemiBold → `labelLarge`;
+"Recent Tickets" 18 → `h3`; row subject 14 SemiBold → `labelLarge`; meta and pill 12 SemiBold → `buttonSmall`;
+heading "Create Ticket" Bold 22 → `h1` (24/700); its subtitle Regular 20 → `bodyLarge` (16/400); field label Bold
+14 → `labelLarge` (14/600); details hint Cairo 16 → `bodyLarge`; **Submit Ticket SemiBold 22 → the shared
+`PrimaryCta`'s `buttonLarge` (16/600)**; thread title 18 SemiBold → `h3`; message name and body (SF Pro 16.632) →
+`h4` / `bodyLarge`; composer hint Cairo Bold 16 → `h4` (16/600). The 22 bar titles use `TitledChrome`'s `h2`.
+**Ask:** scale entries for 22 and 20, or the frames moved onto the scale.
+
+**6. Decisions the frames do not make (built, logged for the designer).**
+- The date on a row is `createdAt`, drawn `yyyy-MM-dd` as in the frame, without the frame's "#" before `TK-` (DG-53);
+  Western digits in Arabic, as elsewhere (#19). **Ask:** creation date or last activity?
+- Row subjects and message bodies render in full; the thread title wraps to two lines (the subject appears nowhere
+  else on the thread), then ellipsis.
+- The thread's first row is the ticket's opening `details`, shown as "You": the contract keeps it out of the thread
+  and the frame draws only messages. No timestamps are shown, as drawn.
+- Closed ticket: the composer slot becomes a bar with the "Closed" pill and a "Create a New Ticket" text button
+  (the contract: no reopen, file a new ticket). **Not drawn — ask for the frame.** *2026-10-10 (O-14):* in Arabic
+  it reads مغلقة and إنشاء تذكرة (the button shares the card's key). The button's label had lost the app's font
+  family (a button `textStyle` replaces the theme's) and drew in the platform face in both languages. Fixed: the
+  style now sits on the label, so it draws in Inter with the Tajawal/Cairo fallback.
+- The staff avatar is the frame's `Avaters` fill (`178:3424`, a 3D character like a student avatar), downscaled from
+  2048 to 108 px and drawn at its frame size 36 × 35 inside the 31 disc. **Ask:** confirm a character for "Customer
+  support" (a student could pick a similar one), or supply a support glyph. The frame's disc gradient (#95CDBB →
+  #4B675E) differs slightly from the shared `AvatarDisc` it reuses.
+- Composer: 1–4 lines, max 4000; the keyboard's Send key sends. Create: 120 / 4000 limits enforced, counter hidden.
+- The Subject input's touch target is 48 high; the white field is still drawn at the frame's 43, centred.
+
+**7. Removed from the frames.** The Attach box and its "PNG, JPG, or PDF up to 10MB" hint (photos are CW12b, after
+CW04; DG-18 / DG-52), the camera and the microphone (DG-54: no operation), "Seen" (no read-receipt field), "See
+All" (hidden in the frame), the nav bar (the support route is pushed above the shell, as before).
+
+**8. States not drawn (DG-15/16/17).** Loading spinner; empty `nothingHere`; error / offline / pending deletion with
+Retry (withheld for a rate limit, a pending deletion and a missing ticket); Load more and its own Retry; submitting
+and sending spinners; field errors (`fieldRequired`, `fieldRejected`); failure lines with the shared copy. **Ask:**
+the frames.
+
+**9. Contrast as drawn (light, WCAG 2.x from the token hexes, computed).** Details hint `#B7B7B7` on white
+**2.01:1**; composer hint `#A1A1A1` on white **2.58:1**; the create subtitle `#7C7C7C` on `#FCFBF9` **4.04:1** at
+20 px regular. Built as drawn; the dark stand-ins are pinned at ≥ 4.5:1 by `app_colors_test.dart`.
+*2026-10-10 (O-14):* **unchanged by the approved copy.** The Arabic hints and subtitle use the same tokens, so the
+same three ratios apply in Arabic. Not fixed; still the designer's ask.
+
+**10. Shadows.** The composer bar and field are exported as CSS `drop-shadow` filters, whose value is half the Figma
+blur (the project's evidence: the CTA, Figma blur 4, exports as `drop-shadow(… 2px …)`), so they are built at blur
+3.7 and 1.6. The other support shadows are box shadows, built 1:1.
+
+**11. Inherited from shared widgets (not changed by CW12a).** `TitledChrome` fixes its bar at 35 dp, so at 2.0×
+text the list and create titles are clipped (`RESPONSIVE.md` territory). The shared `CircleBackButton` is 35 dp,
+under Android's 48 dp tap-target minimum, on every screen that uses it. **Ask (owner):** a shared-widget fix wave.
+
+**Ask (designer):** §1, §3, §4, §5, §6 (date, closed bar, staff avatar), §8 and the Arabic and dark frames.
+**Ask (owner):** ~~§2 (approved Arabic for the eleven keys)~~ (approved 2026-10-10, O-14) and §11. Still open for
+the owner: the `pending` label, after SQ-32.
+
+## 132. 🟡 BUILT 2026-10-10, uncommitted (O-15) — the back chip's 48 dp target, and titled bars that grow with the text
+
+> **Owner instruction 2026-10-10** (CW12a follow-up, "shared accessibility fixes"). Resolves #131 §11 and applies the
+> remedy #80 / `DECISIONS.md` D-013 named for the catalog header's back chip. An implementation fix, not a design
+> change: no drawn pixel of the chip moves, so nothing here waits on the designer.
+
+**What was wrong.** `CircleBackButton` was a 35 dp box, so every back chip was a 35 dp target, under the 48 dp that
+Material and Android's accessibility check ask for. A bigger box alone cannot fix it: a render box refuses a pointer
+outside its own size, so the BAR around the chip has to be 48 too (#80). `TitledChrome` (and its line-for-line copy
+`EditProfileChrome`) also fixed its bar at 35 with a one-line title, so at 2.0× text the 52 px line was cut and ran
+under the chip (#131 §11, AVD 2026-10-10).
+
+**What changed.**
+- `CircleBackButton(tapTargetSize: MaterialTapTargetSize.padded)` lays the same 35 chip out in a 48 box, centred or
+  flush to one edge (`chipAlignment`), with ONE labelled button node the size of the box (the Home bell's
+  arrangement, #130 §13). `chipKey` keys the drawn chip, so tests that measure "the back chip" still measure the
+  frame's 35. The default stays `shrinkWrap` (35), so a call site that has not been migrated does not move.
+- Each migrated bar grows to at least 48 and takes the extra back out of its insets, so the chip, the title and the
+  body keep their pixels at 1.0×:
+
+| Call site | Screens | How the 48 box fits |
+| --- | --- | --- |
+| `TitledChrome` | Settings, Customer Support (ticket list), New Ticket, Notifications, Friends, Refer a Friend, Privacy & policy, Terms & Conditions, Quiz Setup, Flash Card Setup | insets 20/16/20/8 become 13.5/9.5/13.5/1.5 around a bar of at least 48. The title keeps clear of the 48 box on both sides and wraps instead of ellipsising |
+| `EditProfileChrome` | Edit Profile | now IS `TitledChrome` (the duplication its docstring dated) |
+| `CatalogHeader` / `CatalogScaffold` | Subjects, Units, Chapters, Lessons, Lectures, the Mistakes screens | header of at least 48, scaffold insets −6.5, title padded 6.5 (its old width), trailing action 6.5 in. The Mistakes pill itself is unchanged (a 35 target, #80) |
+| Leaderboard header | Leaderboard | the row is already 48 (the share `IconButton`). The box sits flush to the chip's end and reaches 13 toward the screen edge. Start inset 20 → 7 |
+| Quiz Result / Quiz Review headers | Result, Review | side insets −6.5, Review's floor 35 → 48, title inset +6.5 |
+| Sign Up_1 / Sign Up_2 rows | Sign up (identity, track) | the box sits flush to the chip's start and reaches into the space before the language pill. The row is 48, so the top inset and the gap under the row each give back (48 − 36.10) / 2 |
+
+`LanguagePill.height` is now public; the sign-up rows need it.
+
+**Evidence (BUILD, plus the Android emulator; no physical device).** 52 before/after captures with the bundled fonts, made in a throwaway copy: EN + AR,
+411 and 360 dp, plus light and dark for the chromes. 44 are pixel-identical. The other 8 are the English
+`TitledChrome` / `EditProfileChrome` captures; they differ only in the title's anti-aliasing (≤ 0.43 dp, 0.04–0.41 %
+of pixels, none in the chip's strip). The title is now `TextAlign.center` within a box rounded up to a whole pixel.
+A control run with the old alignment matched 32/32. Regression tests:
+- `test/core/widgets/back_chip_target_test.dart` (19)
+- `test/features/registration/signup_back_target_test.dart` (8)
+- one each in the Leaderboard, Quiz Result and Quiz Review tests
+
+Each of three behavioural mutations fails them: padded drawn as 35, a 35 `TitledChrome` bar, and a 35 catalog
+header. The Mistakes tests now measure the header's 35 band, not its 48 box.
+
+**Still open.**
+1. **Not migrated, still 35 dp targets:** OTP (`otp_screen.dart`), the unknown-route page (`route_error_screen.dart`),
+   the support thread header (`support_ticket_screen.dart`) and School/University detail (`RegistrationHeader`, whose
+   screens are N-26/CW02 files). Their files carry other waves' uncommitted work, so they were left alone. Each is a
+   one-site change once those waves are committed.
+2. **Large-text wrapping:** at 2.0×, English "Notifications" breaks inside the word on 360 dp and narrower, and
+   "Terms & Conditions" does on 320 dp. There is no mid-word break at 411 dp and none in Arabic. Every title stays
+   whole: no clipping, no ellipsis.
+3. **320 dp, 1.0×:** the Arabic "تعديل الملف الشخصي" (199.9 dp) takes two lines. The space between the two 48
+   reservations there is 197. From 360 dp up, every titled bar's title is one line.
+4. **Unchanged:** the Mistakes pill (35, #80) and the language pill (36.1, #89). The other RESPONSIVE fixes (#1, #2,
+   #4–#8, #10–#12) are not part of this.
+5. **No ink in the slop:** a tap in the padded slop shows no ripple, because the ink stays on the chip (the bell's
+   arrangement).
+6. **Not walked:** no physical device, iOS or TalkBack walk yet. What the Android emulator did show (AVD Pixel_8,
+   API 36, 420 dpi, mock build, 2026-10-10):
+   - **Back node 48 dp** (126 × 126 px in uiautomator) on Notifications (EN and AR), the Support list, Settings,
+     Leaderboard and Units, at 1.0× and at 2.0× font scale.
+   - **Support list title bar** (AR, 1.0×): pixel-identical to the pre-O-15 CW12a capture.
+   - **2.0×:** the AR Support title and the EN "Notifications" title are whole and clear of the chip.
 
 # Appendix — edit4's open ledger, as of 2026-09-20
 

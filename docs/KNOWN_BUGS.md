@@ -783,3 +783,96 @@ provider that is merely loading. A rule with no test holds exactly as long as so
 a guard: `asyncProvidersWithoutRetry` (`test/guards/rules.dart`) names every `FutureProvider` /
 `AsyncNotifierProvider` without `retry:`; it named those five on the old tree, and six fixture tests in
 `rules_test.dart` prove it detects, scopes to the declaration, ignores comments and skips `StreamProvider`.
+
+---
+
+## BUG-026 🟠 A sign-in the student backed out of can finish later and silently replace a newer session
+
+**Status:** OPEN — found 2026-10-09 by the CW02 fresh REVIEW (finding O10-1, `completion/CW02_REPORT.md` §12). Its
+return-target symptom was BUILD-reproduced in a throwaway copy of the test before CW02's fix; the session swap itself is
+SOURCE-level, and no test asserts it. **Fix in CW04** (the L-AUTH-ROUTER wave), on an owner decision. Its return-to-target
+symptom was fixed in CW02 (`ReturnTarget.sessionStarted`) — except a Continue tapped while the late verify is still
+writing its tokens, which only this fix closes; the session swap itself was deliberately left alone, because
+fixing it narrows a pinned rule (below) and CW02 was told not to broaden into a session refactor.
+
+**What breaks.** On a shared phone: a code for account B is entered and its verify is slow; the OTP screen's back chip
+is still enabled while verifying, so the student backs out and signs in as account A; A's success view shows. B's verify
+then answers: the app writes B's tokens over A's and records B as the signed-in student, while the screen still says A
+signed in. Everything after that runs as B. Before CW02's fix, the success view's Continue also sent the B session to
+A's remembered return-to-target location.
+
+**Reproduce.** Tests only. The harness to extend is `test/core/router/return_target_test.dart`, group "a verify the
+student walked away from completes late" — gate `verifyOtp` on a `Completer`, back out of the OTP screen, sign in as A,
+then complete the hung verify for B. That group passes now: it asserts only the return-target half (fixed in CW02);
+nothing asserts the session half yet. Not reproducible on
+the mock (one student id for every account, instant answers); not attempted on staging (it needs two accounts' codes
+inside the Dio window — 15 s connect + 20 s receive, `lib/core/network/dio_client.dart:17-18`).
+
+**Root cause.** `OtpNotifier.verify` (`lib/features/auth/notifier/otp_notifier.dart:140-159`) writes the tokens and calls
+`AuthController.markAuthenticated` BEFORE its `_disposed` check. That is deliberate (R-2 / W3-1, pinned by
+`test/features/auth/verify_fork_test.dart`): a student who taps Back mid-verify must not be left with a consumed code and
+no session. Nothing checks whether ANOTHER sign-in completed while this one was in flight, so the later answer wins.
+`RegistrationSubmitNotifier.submit` has the same shape (it writes tokens and flips auth with no screen check;
+`registrationSubmitProvider` is not `autoDispose`).
+
+**Why tests missed it.** Every sign-in test ran one verify at a time; the only in-flight test (`verify_fork_test.dart`)
+has one student. The failure needs two overlapping sign-ins for different accounts.
+
+**Fix (proposed for CW04 — not done, needs an owner decision).** A late answer must not replace a session that started
+after it was sent. Options to weigh there: an attempt counter in `AuthController` (a completed sign-in whose attempt is
+older than the current session is discarded, and its tokens revoked best-effort), or blocking a second sign-in while one
+is in flight. Either one narrows the R-2 / W3-1 rule ("the tokens and the flip land regardless") that
+`verify_fork_test.dart` documents; that test (one student, no newer session) should still pass, and a new test must pin
+the exception.
+
+---
+
+## BUG-027 🟡 The School form forgets which school was picked (or skipped) once the student leaves it
+
+**Status:** FIXED 2026-10-10, uncommitted (change set NNA, follow-up; owner instruction "NEXT STEP — ACCEPT NNA,
+CLOSE BUG-027, AND IMPLEMENT CW04a"). Found 2026-10-10 while building the `name_not_allowed` return
+(`completion/NNA_REPORT.md`). Pre-existing: the back chip has done it since the skip landed (`7fdc16b`, 2026-08-05) and
+the picked-school half since Day 3 (`57fab32`). BUILD-reproduced in a throwaway copy (a probe test, four cases), fixed
+and BUILD-verified by `test/features/registration/school_pick_survives_return_test.dart`; not walked on a device.
+
+**What breaks.** An Egyptian school-track student picks a school, or taps "I can't find my school", then leaves the
+School form and comes back: by the back chip to Track and Continue, or, since NNA, by a refused name sending them to
+Sign Up_1 and forward again. The School field shows the search hint, as if nothing had been chosen.
+- **Picked:** the draft still holds the school id and Start learning still sends it. The data is right but the screen
+  hides it, so the student may pick again or worry that the choice was lost.
+- **Skipped:** the draft holds no id either way, so the body is the same, but the field no longer reads as answered.
+
+**Reproduce.** Mock harness (`flutter run --flavor staging -t lib/main_mock.dart`): register on the School track in
+Egypt, pick a school, tap the back chip, tap Continue on Track. The probe asserted the same on the real route table:
+before leaving the field showed the school (`school-42` in the draft); after coming back it showed the hint, with
+`school-42` still in the draft.
+
+**Root cause.** `SchoolDetailScreen` keeps the chosen row in its own state so the field can show the school's NAME
+(`_selectedSchool` and `_schoolSkipped`, `lib/features/registration/screens/school_detail_screen.dart:58`, `:63`); the
+draft carries only the id (`RegistrationController.setSchool`, `lib/features/registration/notifier/registration_controller.dart:134`).
+Every other field on the form is drawn from the draft, so it comes back; a new screen state starts with these two empty.
+
+**Why tests missed it.** The School tests pump the form once and never leave it. The NNA flow tests leave and come back
+but seed the school with `setSchool`, not through the picker, so the field showed the hint on the first visit too.
+
+**Fix (done 2026-10-10).** The chosen row and the skip now live on the registration draft beside the id
+(`RegistrationDraft.pickedSchool` / `schoolSkipped`, `lib/features/registration/models/registration_draft.dart`), set by
+`RegistrationController.setSchool(id, row:)` / `skipSchool()`. The School form draws the field from the draft, not from
+its own state, so a new screen state shows what was chosen. The school is now one answer in three fields: every setter
+that drops the id (a new country, governorate or city, a typed city) drops the row and the skip with it, and picking the
+SAME place again changes nothing. Only the id is ever submitted (the body test pins that the row never reaches it).
+Two behaviours changed with it, both toward what is sent:
+- re-picking the same country, governorate or city no longer blanks the field (the draft kept the id, so the field hid
+  a school that would still be sent);
+- a new governorate now drops a skip too (it already dropped the city, so the "I can't find my school" answer was for a
+  place no longer chosen; the screen's own rule said so, but its governorate handler left the skip).
+
+**University:** no equivalent defect. Its university, faculty and year fields are drawn from the draft's ids against the
+fetched tree (`value: draft.universityId` …, `university_detail_screen.dart`), so they were already shown after a return;
+the new test leaves the form and comes back to prove it.
+
+**Tests (BUILD):** `school_pick_survives_return_test.dart`, 16 tests — pick through the real sheet, leave by the back
+chip, come back: the name is shown (EN and AR, RTL) and its id is sent; a skip still reads as answered and sends no id;
+after a refused name the trip through Sign Up_1 keeps the picked school and the corrected name is sent once with it and
+the same token; a new city drops the pick, the same city keeps it; University selections survive; the controller keeps
+the three fields as one answer. Mutation-checked (6 mutations on the screen and the controller, all caught).
