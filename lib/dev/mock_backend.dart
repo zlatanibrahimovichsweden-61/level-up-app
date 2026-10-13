@@ -40,6 +40,7 @@ import 'mock_modules.dart';
 import 'mock_notifications.dart';
 import 'mock_quiz_history.dart';
 import 'mock_recovery.dart';
+import 'mock_referral.dart';
 import 'mock_support.dart';
 import 'mock_terms.dart';
 import 'mock_track_transfer.dart';
@@ -187,6 +188,10 @@ class MockBackendInterceptor extends Interceptor {
   /// favourites persist for this session. Its quizzes are its own: a quiz
   /// finished through `POST /quizzes/{id}/finish` does not appear in it.
   final _quizHistory = MockQuizHistory();
+
+  /// The Refer a Friend record (CW15): `GET /me/invite`. Fixture in
+  /// `mock_referral.dart`.
+  final _referral = MockReferral();
 
   /// The Track transfer (CW14): `POST /me/track-transfer`. Rules in
   /// `mock_track_transfer.dart`; the track and the school stage are this
@@ -523,6 +528,16 @@ class MockBackendInterceptor extends Interceptor {
         return _ok(handler, options, 200, data);
       case null:
         break;
+    }
+
+    // ---- Refer a Friend (CW15) --------------------------------------------
+    // `GET /me/invite` is `stable`; a fixed record, in `mock_referral.dart`.
+    final referralReply = _referral.handle(method, path);
+    if (referralReply != null) {
+      switch (referralReply) {
+        case MockReferralOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+      }
     }
 
     // ---- Track transfer (CW14) --------------------------------------------

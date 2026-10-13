@@ -259,9 +259,11 @@ class _Menu extends ConsumerWidget {
           disabledHint: unavailable,
         ),
         const SizedBox(height: 16),
-        // TODO(contract): seif_fight.md S5 — the referral code is collected at
-        // registration and thrown away; there is no referral endpoint, so the
-        // screen behind this row is a SHELL with its share control disabled.
+        // TODO(contract): seif_fight.md S5 — the referral code is sent as
+        // `inviteCode` on the School registration only. The screen behind this
+        // row is still a SHELL with its share control disabled: the data layer
+        // has `ReferralRepository.getMyInvite` (`GET /me/invite`, stable), but
+        // no screen consumes it yet.
         // The row navigates (Step 3) because a student who taps it learns the
         // feature exists and is not open yet; a dead row teaches nothing.
         ProfileMenuRow(

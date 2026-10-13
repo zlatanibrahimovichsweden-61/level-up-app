@@ -205,6 +205,15 @@ void main() {
       dart: 'lib/features/auth/models/token_pair.dart',
       dartClass: 'TokenPair',
     ),
+    (
+      // The Refer a Friend record. All three fields are required and none is
+      // nullable; `pointsEarned` in particular is easy to drop because it can
+      // be derived (wrongly) as 10 x `friendsJoined`.
+      label: 'MyInvite (getMyInvite)',
+      path: ['MyInvite'],
+      dart: 'lib/features/referral/models/my_invite.dart',
+      dartClass: 'MyInvite',
+    ),
   ];
 
   test('the contract is actually being read', () {
