@@ -8,13 +8,13 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/circle_back_button.dart';
 import '../../../core/widgets/elevation/app_modal.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../core/widgets/elevation/primary_cta.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../core/widgets/state_widget.dart';
+import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/profile_update.dart';
 import '../models/student_profile.dart';
@@ -122,6 +122,10 @@ const double _underTitleBar = 17;
 ///
 /// [onBack] is null in the non-loaded states, where a plain pop is correct;
 /// the form passes its unsaved-changes guard instead.
+///
+/// It was a line-for-line copy of [TitledChrome] with the title fixed; it is
+/// now that widget (O-15), so the 48 dp back target and the title that wraps
+/// at large text scales are the same code here as on every other titled bar.
 class EditProfileChrome extends StatelessWidget {
   const EditProfileChrome({super.key, required this.child, this.onBack});
 
@@ -130,39 +134,11 @@ class EditProfileChrome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final ext = Theme.of(context).extension<AppColors>()!;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-          child: SizedBox(
-            height: 35,
-            child: Stack(
-              alignment: AlignmentDirectional.center,
-              children: [
-                Text(
-                  l10n.editProfile,
-                  // One line, like `TitledChrome` (register SF-08).
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppType.h2.copyWith(color: ext.textPrimary),
-                ),
-                PositionedDirectional(
-                  start: 0,
-                  child: CircleBackButton(
-                    key: const Key('edit_profile_back'),
-                    onPressed: onBack ?? () => Navigator.of(context).maybePop(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Expanded(child: child),
-      ],
+    return TitledChrome(
+      title: AppLocalizations.of(context).editProfile,
+      backKey: const Key('edit_profile_back'),
+      onBack: onBack,
+      child: child,
     );
   }
 }

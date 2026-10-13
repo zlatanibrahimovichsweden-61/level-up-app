@@ -222,6 +222,11 @@ class _Header extends StatelessWidget {
   /// Clear of the 35 dp chip on BOTH sides, so the pair stays centred.
   static const _inset = 35.0 + 8;
 
+  /// The chip's padded 48 box reaches this far past it (O-15). The side
+  /// insets give it back and the pair's inset takes it, so nothing moves; the
+  /// 52 block already holds the box's height.
+  static const _slop = CircleBackButton.tapSlop;
+
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
@@ -232,9 +237,9 @@ class _Header extends StatelessWidget {
       // Container adds the rule's width to its padding, so the bottom padding
       // is what is left of the frame's 92.
       padding: const EdgeInsetsDirectional.fromSTEB(
-        _start,
+        _start - _slop,
         _top,
-        _start,
+        _start - _slop,
         _height - _top - _block - _rule,
       ),
       decoration: BoxDecoration(
@@ -248,7 +253,7 @@ class _Header extends StatelessWidget {
           alignment: AlignmentDirectional.center,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: _inset),
+              padding: const EdgeInsets.symmetric(horizontal: _inset + _slop),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -274,8 +279,10 @@ class _Header extends StatelessWidget {
             PositionedDirectional(
               start: 0,
               child: CircleBackButton(
-                // A test leaves the screen the way a student does.
-                key: const Key('quiz_result_back'),
+                // A test leaves the screen the way a student does. On the
+                // drawn chip, not the 48 box around it (O-15).
+                chipKey: const Key('quiz_result_back'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 onPressed: onBack,
               ),
             ),

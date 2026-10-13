@@ -18,6 +18,12 @@ import '../models/registration_args.dart';
 import '../notifier/registration_controller.dart';
 import 'registration_expired_view.dart';
 
+/// The header row is now the back chip's 48 box tall, not the pill's 36.10
+/// (O-15), so the inset above it and the gap below it each give back half the
+/// difference: the chip, the pill and everything under them keep their pixels.
+const double _headerSlop =
+    (CircleBackButton.tapTarget - LanguagePill.height) / 2;
+
 /// Sign Up_1 (identity) · Figma `337:15875`. First wizard screen after the OTP
 /// `registrationRequired` fork. Collects Full Name + Parent's Number (+ an
 /// optional, NON-submitted referral code), shows the proven phone read-only, and
@@ -115,7 +121,12 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
             if (offline) const OfflineBanner(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  24,
+                  8 - _headerSlop,
+                  24,
+                  24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -131,6 +142,10 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                         CircleBackButton(
                           onPressed: () => context.go('/login'),
                           variant: BackChipVariant.registration,
+                          // Flush to the start, so the box reaches into the
+                          // free space before the pill, not past the gutter.
+                          tapTargetSize: MaterialTapTargetSize.padded,
+                          chipAlignment: AlignmentDirectional.centerStart,
                         ),
                         const Spacer(),
                         LanguagePill(
@@ -140,7 +155,7 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 8 - _headerSlop),
                     Text(
                       l10n.createAccountTitle,
                       style: AppType.h1.copyWith(color: ext.textPrimary),

@@ -31,6 +31,17 @@ import 'mistakes_fixtures.dart';
 
 class MockMistakesRepository extends Mock implements MistakesRepository {}
 
+/// The frame's 35 header band inside [CatalogHeader]. Since O-15 the header is
+/// at least the back chip's 48 target tall, with the frame's band — the title,
+/// the chip, the Mistakes pill — centred in it, so "N under the header" is
+/// measured from the band's edge, which is where it always was on screen.
+Rect _band(Rect header) => Rect.fromLTRB(
+  header.left,
+  header.top + CircleBackButton.tapSlop,
+  header.right,
+  header.bottom - CircleBackButton.tapSlop,
+);
+
 /// The Mistakes flow, walked through the REAL router.
 ///
 /// Every test here boots the whole app and taps its way in from the Subjects
@@ -521,7 +532,7 @@ void main() {
       await pumpCatalogApp(tester, catalog: catalog, mistakes: mistakes);
       await openMistakes(tester);
 
-      final bar = tester.getRect(header());
+      final bar = _band(tester.getRect(header()));
       final bio = tester.getRect(card('Biology'));
       final chem = tester.getRect(card('Chemistry'));
       final phys = tester.getRect(card('Physics'));
@@ -546,7 +557,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      final bar = tester.getRect(header());
+      final bar = _band(tester.getRect(header()));
       final block = tester.getRect(
         find
             .descendant(
@@ -772,10 +783,12 @@ void main() {
     );
     Finder inRow(int index, Finder matching) =>
         find.descendant(of: rows().at(index), matching: matching);
-    Rect header(WidgetTester tester) => tester.getRect(
-      find.descendant(
-        of: find.byType(MistakesSubjectScreen),
-        matching: find.byType(CatalogHeader),
+    Rect header(WidgetTester tester) => _band(
+      tester.getRect(
+        find.descendant(
+          of: find.byType(MistakesSubjectScreen),
+          matching: find.byType(CatalogHeader),
+        ),
       ),
     );
     AppColors colors(WidgetTester tester) => Theme.of(
@@ -974,10 +987,12 @@ void main() {
     );
     Finder inRow(int index, Finder matching) =>
         find.descendant(of: rows().at(index), matching: matching);
-    Rect header(WidgetTester tester) => tester.getRect(
-      find.descendant(
-        of: find.byType(MistakesChaptersScreen),
-        matching: find.byType(CatalogHeader),
+    Rect header(WidgetTester tester) => _band(
+      tester.getRect(
+        find.descendant(
+          of: find.byType(MistakesChaptersScreen),
+          matching: find.byType(CatalogHeader),
+        ),
       ),
     );
 
@@ -1185,10 +1200,12 @@ void main() {
     );
     Finder inRow(int index, Finder matching) =>
         find.descendant(of: rows().at(index), matching: matching);
-    Rect header(WidgetTester tester) => tester.getRect(
-      find.descendant(
-        of: find.byType(MistakesLessonsScreen),
-        matching: find.byType(CatalogHeader),
+    Rect header(WidgetTester tester) => _band(
+      tester.getRect(
+        find.descendant(
+          of: find.byType(MistakesLessonsScreen),
+          matching: find.byType(CatalogHeader),
+        ),
       ),
     );
 

@@ -19,6 +19,7 @@ import 'package:level_up_app/features/quiz/models/quiz_review_args.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_review_screen.dart';
 import 'package:level_up_app/features/quiz/widgets/question_stem_text.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/core/widgets/circle_back_button.dart';
 
 import 'quiz_fixtures.dart';
 import 'quiz_harness.dart';
@@ -836,5 +837,20 @@ void main() {
       expect(p.maxLines, 1);
       expect(p.overflow, TextOverflow.ellipsis);
     });
+  });
+
+  // O-15 / DESIGN_ISSUES #132.
+  testWidgets('the back target is 48: a tap just off the drawn chip leaves', (
+    tester,
+  ) async {
+    await openReview(tester, args: compact());
+
+    expect(tester.getSize(find.byType(CircleBackButton)), const Size(48, 48));
+    final chip = tester.getRect(find.byKey(const Key('quiz_review_back')));
+    expect(chip.size, const Size(35, 35));
+    // Outside the 35 circle, inside the 48 box around it.
+    await tester.tapAt(chip.bottomRight + const Offset(4, 4));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuizReviewScreen), findsNothing);
   });
 }

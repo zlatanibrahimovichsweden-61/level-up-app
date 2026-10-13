@@ -179,6 +179,11 @@ class _Header extends StatelessWidget {
   /// Clear of the chip on BOTH sides, so the title stays centred.
   static const _inset = _chip + 8;
 
+  /// The chip's padded 48 box reaches this far past it on every side (O-15).
+  /// The bar's insets give it back, its floor grows to the box and the
+  /// title's inset takes it, so the chip and the title keep their pixels.
+  static const _slop = CircleBackButton.tapSlop;
+
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
@@ -188,10 +193,10 @@ class _Header extends StatelessWidget {
       // Container adds the rule's width to its padding, so the bottom padding
       // is what is left of the frame's 63.
       padding: const EdgeInsetsDirectional.fromSTEB(
-        _start,
-        _top,
-        _start,
-        _height - _top - _chip - _rule,
+        _start - _slop,
+        _top - _slop,
+        _start - _slop,
+        _height - _top - _chip - _rule - _slop,
       ),
       decoration: BoxDecoration(
         border: Border(
@@ -200,12 +205,14 @@ class _Header extends StatelessWidget {
       ),
       // A floor, not a height: a larger text scale grows the bar.
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: _chip),
+        constraints: const BoxConstraints(
+          minHeight: CircleBackButton.tapTarget,
+        ),
         child: Stack(
           alignment: AlignmentDirectional.center,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: _inset),
+              padding: const EdgeInsets.symmetric(horizontal: _inset + _slop),
               child: Text(
                 title,
                 maxLines: 1,
@@ -218,8 +225,10 @@ class _Header extends StatelessWidget {
             PositionedDirectional(
               start: 0,
               child: CircleBackButton(
-                // A test leaves the screen the way a student does.
-                key: const Key('quiz_review_back'),
+                // A test leaves the screen the way a student does. On the
+                // drawn chip, not the 48 box around it (O-15).
+                chipKey: const Key('quiz_review_back'),
+                tapTargetSize: MaterialTapTargetSize.padded,
                 onPressed: onBack,
               ),
             ),
