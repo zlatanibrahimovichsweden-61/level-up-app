@@ -33,6 +33,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../core/network/interceptors/error_interceptor.dart';
+import 'mock_friends.dart';
 import 'mock_legal.dart';
 import 'mock_notifications.dart';
 import 'mock_quiz_history.dart';
@@ -152,6 +153,12 @@ class MockBackendInterceptor extends Interceptor {
   /// Fixtures and rules live in `mock_support.dart`; creates and replies persist
   /// for this session.
   final _support = MockSupportDesk();
+
+  /// The friend graph and reporting (CW09 data layer): the eleven friend-graph
+  /// operations other than the phone lookup, plus `POST /student-reports`.
+  /// Fixtures and rules live in `mock_friends.dart`; friendships, requests,
+  /// blocks and reports persist for this session.
+  final _friends = MockFriendsGraph();
 
   /// Quiz history, the quiz review, favourites and the Solved Questions
   /// number (CW16 data layer): `GET /quizzes`, `GET /quizzes/{id}`, `PUT`/
@@ -348,6 +355,39 @@ class MockBackendInterceptor extends Interceptor {
         case MockSupportValidation(:final errors):
           return _validationFailed(handler, options, errors);
         case MockSupportProblem(
+          :final status,
+          :final code,
+          :final detail,
+          :final retryAfterSeconds,
+        ):
+          return _problem(
+            handler,
+            options,
+            status,
+            code,
+            detail,
+            headers: retryAfterSeconds == null
+                ? null
+                : <String, List<String>>{
+                    'retry-after': ['$retryAfterSeconds'],
+                  },
+          );
+      }
+    }
+
+    // ---- friend graph + reporting (CW09 data layer) -----------------------
+    // Twelve operations, all `stable`; the data and the contract's rules
+    // (paging, the bounded suggestions, one 404 for many causes, the two write
+    // budgets) are in `mock_friends.dart`. `POST /friends/phone-lookup` is NOT
+    // served (DR-08) and falls through to the generic 404 below.
+    final friendsReply = _friends.handle(method, path, query, body);
+    if (friendsReply != null) {
+      switch (friendsReply) {
+        case MockFriendsOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockFriendsValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockFriendsProblem(
           :final status,
           :final code,
           :final detail,

@@ -167,6 +167,32 @@ void main() {
       dart: 'lib/features/quiz/models/quiz_review_page.dart',
       dartClass: 'QuizReview',
     ),
+    (
+      label: 'StudentCard (suggestions, blocks, request student)',
+      path: ['StudentCard'],
+      dart: 'lib/features/friends/models/friend_models.dart',
+      dartClass: 'StudentCard',
+    ),
+    (
+      // `points` is optional on the wire (omitted for a hidden score), so the
+      // five REQUIRED fields are what this binding pins.
+      label: 'Friend (listMyFriends, acceptFriendRequest)',
+      path: ['Friend'],
+      dart: 'lib/features/friends/models/friend_models.dart',
+      dartClass: 'Friend',
+    ),
+    (
+      label: 'FriendRequest (listMyFriendRequests)',
+      path: ['FriendRequest'],
+      dart: 'lib/features/friends/models/friend_models.dart',
+      dartClass: 'FriendRequest',
+    ),
+    (
+      label: 'SendFriendRequestResult (sendFriendRequest)',
+      path: ['SendFriendRequestResult'],
+      dart: 'lib/features/friends/models/friend_models.dart',
+      dartClass: 'SendFriendRequestResult',
+    ),
   ];
 
   test('the contract is actually being read', () {
