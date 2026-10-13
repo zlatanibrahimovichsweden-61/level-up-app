@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/content_text_direction.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// How one option is currently being presented.
@@ -58,6 +59,7 @@ class QuestionOptionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final ext = theme.extension<AppColors>()!;
     final l10n = AppLocalizations.of(context);
+    final ui = Directionality.of(context);
 
     final (fill, border, borderWidth) = switch (state) {
       // The idle hairline is `quizOptionTileBorder`, NOT `quizOptionBorder`:
@@ -121,6 +123,15 @@ class QuestionOptionTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       text,
+                      // An option is the question's content, in the question's
+                      // language (adr-018), which need not be the app's: it
+                      // takes its OWN direction, as the stem above it does,
+                      // and stays aligned at the app's start. The badge on the
+                      // leading side and the tile's mirroring stay the app's.
+                      textDirection: contentTextDirection(text, fallback: ui),
+                      textAlign: ui == TextDirection.ltr
+                          ? TextAlign.left
+                          : TextAlign.right,
                       // labelLarge: the frame's 14px semi-bold option text
                       // (`308:5155`). The question above is h3; an option at
                       // h3 too collapses the hierarchy. Register SF-05.

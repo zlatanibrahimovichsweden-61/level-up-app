@@ -10,6 +10,7 @@ import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 
 import '../../goldens/golden_harness.dart';
+import '../flashcards/reading_order.dart';
 
 /// The drill-down row's PALETTE and its index disc · edit3.md #42.
 ///
@@ -421,6 +422,145 @@ void main() {
       expect(chevron(tester).left - 12 - name.left, closeTo(242, 0.01));
     });
   });
+
+  // BUG-020, the part the flashcard fix left open (KNOWN_BUGS.md): a catalog
+  // row's NAME is the content's language (adr-018), which need not be the app's
+  // - an Arabic lecture in the English app, an English one in the Arabic app.
+  // Laid out in the app's direction, a name's neutral punctuation lands at the
+  // wrong end ("?" at the START of an English name in the Arabic app). The name
+  // takes `contentTextDirection` and stays aligned at the app's start; the
+  // badge, the chevron and the row's mirroring stay the app's.
+  //
+  // Caveat, recorded with the rule: first-strong direction reads an Arabic
+  // sentence that opens on a Latin term as left-to-right.
+  group(
+    'BUG-020: the name takes its own direction, aligned at the app start',
+    () {
+      Future<void> pumpName(
+        WidgetTester tester, {
+        required String locale,
+        required String name,
+      }) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale(locale),
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 363,
+                  child: TreeListRow(index: 3, name: name, onTap: () {}),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      Rect rowRect(WidgetTester tester) =>
+          tester.getRect(find.byType(TreeListRow));
+      Rect chevronRect(WidgetTester tester) => tester.getRect(
+        find.descendant(
+          of: find.byType(TreeListRow),
+          matching: find.byType(Icon),
+        ),
+      );
+      Rect badgeRect(WidgetTester tester) => tester.getRect(
+        find.descendant(
+          of: find.byType(TreeListRow),
+          matching: find.byType(ElevatedSurface),
+        ),
+      );
+
+      // (app language, name, the direction the NAME reads in)
+      for (final (locale, name, direction) in [
+        ('en', 'الخلية والأنسجة', TextDirection.rtl),
+        ('ar', 'Cell Biology', TextDirection.ltr),
+        ('en', 'Cell Biology', TextDirection.ltr),
+        ('ar', 'الخلية والأنسجة', TextDirection.rtl),
+        // No letters at all: the app's own direction.
+        ('en', '2024', TextDirection.ltr),
+        ('ar', '2024', TextDirection.rtl),
+      ]) {
+        testWidgets('$locale app · "$name" reads ${direction.name}', (
+          tester,
+        ) async {
+          await pumpName(tester, locale: locale, name: name);
+
+          final text = tester.widget<Text>(find.text(name));
+          expect(text.textDirection, direction);
+          // At the APP's start, whatever the name's own direction is.
+          expect(
+            text.textAlign,
+            locale == 'ar' ? TextAlign.right : TextAlign.left,
+          );
+
+          // The name begins where the text column does: 12 after the badge.
+          final name_ = tester.getRect(find.text(name));
+          if (locale == 'ar') {
+            expect(badgeRect(tester).left - name_.right, closeTo(12, 0.01));
+          } else {
+            expect(name_.left - badgeRect(tester).right, closeTo(12, 0.01));
+          }
+          expect(tester.takeException(), isNull);
+        });
+      }
+
+      for (final (locale, name, direction) in [
+        // The "?" that the Arabic app drew at the START of an English name.
+        ('ar', 'What is a cell?', TextDirection.ltr),
+        ('ar', 'Cell (part 1).', TextDirection.ltr),
+        // The full stop that the English app drew at the right end of an Arabic
+        // name.
+        ('en', 'الخلية (الجزء 1).', TextDirection.rtl),
+      ]) {
+        testWidgets('$locale app · "$name" keeps its marks in reading order', (
+          tester,
+        ) async {
+          await pumpName(tester, locale: locale, name: name);
+
+          expectReadingOrder(
+            tester.renderObject<RenderParagraph>(find.text(name)),
+            name,
+            direction,
+          );
+          expect(tester.takeException(), isNull);
+        });
+      }
+
+      testWidgets('the badge and the chevron stay the app\'s: English app, '
+          'Arabic name', (tester) async {
+        await pumpName(tester, locale: 'en', name: 'الخلية والأنسجة');
+
+        expect(
+          badgeRect(tester).left - rowRect(tester).left,
+          closeTo(17, 0.01),
+        );
+        expect(
+          rowRect(tester).right - chevronRect(tester).right,
+          closeTo(12, 0.01),
+        );
+      });
+
+      testWidgets('the badge and the chevron stay the app\'s: Arabic app, '
+          'English name', (tester) async {
+        await pumpName(tester, locale: 'ar', name: 'Cell Biology');
+
+        expect(
+          rowRect(tester).right - badgeRect(tester).right,
+          closeTo(17, 0.01),
+        );
+        expect(
+          chevronRect(tester).left - rowRect(tester).left,
+          closeTo(12, 0.01),
+        );
+      });
+    },
+  );
 
   testWidgets('the Mistakes palette is untouched by the catalog move', (
     tester,

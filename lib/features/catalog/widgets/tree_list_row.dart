@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/content_text_direction.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import 'catalog_scaffold.dart';
 
@@ -132,6 +133,7 @@ class TreeListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final ext = Theme.of(context).extension<AppColors>()!;
+    final ui = Directionality.of(context);
     final (
       fill,
       border,
@@ -215,6 +217,18 @@ class TreeListRow extends StatelessWidget {
                           name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
+                          // Laid out in its OWN direction, so a name in the
+                          // other language keeps its punctuation in place
+                          // (BUG-020), and aligned at the app's start like the
+                          // rest of the row. The badge, the chevron and the
+                          // row's mirroring stay the app's.
+                          textDirection: contentTextDirection(
+                            name,
+                            fallback: ui,
+                          ),
+                          textAlign: ui == TextDirection.ltr
+                              ? TextAlign.left
+                              : TextAlign.right,
                           // Frame `404:6648` specifies Inter 600/16 in
                           // `#000000` for the Mistakes row name. Pure black is
                           // not in this palette at all and 16/600 is not in the

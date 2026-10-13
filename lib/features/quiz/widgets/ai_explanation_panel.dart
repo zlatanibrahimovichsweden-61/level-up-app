@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/content_text_direction.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/explanation_state.dart';
@@ -46,6 +47,7 @@ class AiExplanationPanel extends StatelessWidget {
     final ext = theme.extension<AppColors>()!;
     final elevation = theme.extension<AppElevation>()!;
     final l10n = AppLocalizations.of(context);
+    final ui = Directionality.of(context);
 
     final outerBorder = ext.aiPanelOuterBorder;
     final backlight = elevation.aiPanelBacklight;
@@ -118,7 +120,19 @@ class AiExplanationPanel extends StatelessWidget {
               ),
             ),
             ExplanationLoaded(:final text) => _Body(
-              child: Text(text, style: _bodyStyle(ext)),
+              // The explanation is "in the question's own language"
+              // (`getExplanation`), which need not be the app's: it takes its
+              // OWN direction, as the stem does, and stays aligned at the
+              // app's start. The panel's own copy (its title, the states
+              // around it) is the app's.
+              child: Text(
+                text,
+                textDirection: contentTextDirection(text, fallback: ui),
+                textAlign: ui == TextDirection.ltr
+                    ? TextAlign.left
+                    : TextAlign.right,
+                style: _bodyStyle(ext),
+              ),
             ),
             // The copy is the same either way — an explanation is an extra, and
             // losing one must never read as a broken quiz. What changes is

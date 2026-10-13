@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/widgets/content_text_direction.dart';
+import 'package:level_up_app/features/quiz/models/explanation_state.dart';
+import 'package:level_up_app/features/quiz/widgets/ai_explanation_panel.dart';
+import 'package:level_up_app/features/quiz/widgets/question_option_tile.dart';
 import 'package:level_up_app/features/quiz/widgets/question_stem_text.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 
 /// `contentTextDirection`: server content's own direction, from its first
 /// strong character, and the app's when it has none (BUG-020).
@@ -53,6 +58,58 @@ void main() {
               .textDirection,
           contentTextDirection(text, fallback: app),
           reason: '"$text" in the $app app',
+        );
+      }
+    }
+  });
+
+  // The same rule reaches the other two places the quiz shows the question's
+  // content: an option's label and the AI explanation's body.
+  testWidgets('an option and an explanation take the stem\'s rule, exactly', (
+    tester,
+  ) async {
+    Widget host(TextDirection app, Widget child) => MaterialApp(
+      theme: AppTheme.light,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: Locale(app == TextDirection.rtl ? 'ar' : 'en'),
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    );
+
+    for (final text in samples.keys.where((text) => text.isNotEmpty)) {
+      for (final app in TextDirection.values) {
+        final expected = contentTextDirection(text, fallback: app);
+
+        await tester.pumpWidget(
+          host(
+            app,
+            QuestionOptionTile(
+              letter: 'A',
+              text: text,
+              state: OptionTileState.idle,
+              onTap: () {},
+            ),
+          ),
+        );
+        expect(
+          tester.widget<Text>(find.text(text)).textDirection,
+          expected,
+          reason: 'the option "$text" in the $app app',
+        );
+
+        await tester.pumpWidget(
+          host(
+            app,
+            AiExplanationPanel(
+              state: ExplanationLoaded(text),
+              onRequest: () {},
+            ),
+          ),
+        );
+        expect(
+          tester.widget<Text>(find.text(text)).textDirection,
+          expected,
+          reason: 'the explanation "$text" in the $app app',
         );
       }
     }

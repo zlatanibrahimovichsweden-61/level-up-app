@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/content_text_direction.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/mistakes_subject.dart';
@@ -130,6 +131,15 @@ class MistakesSubjectCard extends StatelessWidget {
                         subject.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        // Its OWN direction, so a name in the other language
+                        // keeps its punctuation in place (BUG-020), aligned at
+                        // the app's start. The count under it, the chevron and
+                        // the card's mirroring stay the app's.
+                        textDirection: contentTextDirection(
+                          subject.name,
+                          fallback: Directionality.of(context),
+                        ),
+                        textAlign: rtl ? TextAlign.right : TextAlign.left,
                         // Frame: Inter 700 / 16. `AppType` has no 16/700
                         // entry, and the scale is the designer's — extending
                         // it is not this day's call. Mapped to the nearest

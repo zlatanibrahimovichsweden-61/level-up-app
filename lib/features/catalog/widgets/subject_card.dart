@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/content_text_direction.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/subject.dart';
@@ -46,6 +47,7 @@ class SubjectCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
     final elevation = Theme.of(context).extension<AppElevation>()!;
+    final ui = Directionality.of(context);
     final counter = subject.questionCounter;
 
     // `MergeSemantics` + `button: true`, the Mistakes card's and TreeListRow's
@@ -80,6 +82,17 @@ class SubjectCard extends StatelessWidget {
                           subject.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          // Its OWN direction, so a name in the other language
+                          // keeps its punctuation in place (BUG-020), aligned
+                          // at the app's start. The chevron beside it stays
+                          // the app's.
+                          textDirection: contentTextDirection(
+                            subject.name,
+                            fallback: ui,
+                          ),
+                          textAlign: ui == TextDirection.ltr
+                              ? TextAlign.left
+                              : TextAlign.right,
                           style: AppType.h3.copyWith(
                             color: ext.subjectCardTitle,
                           ),
