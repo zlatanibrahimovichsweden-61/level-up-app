@@ -35,10 +35,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,deviceId,platform,model);
 
-@override
-String toString() {
-  return 'DeviceInfo(deviceId: $deviceId, platform: $platform, model: $model)';
-}
 
 
 }
@@ -210,8 +206,8 @@ return $default(_that.deviceId,_that.platform,_that.model);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _DeviceInfo implements DeviceInfo {
-  const _DeviceInfo({required this.deviceId, required this.platform, this.model});
+class _DeviceInfo extends DeviceInfo {
+  const _DeviceInfo({required this.deviceId, required this.platform, this.model}): super._();
   factory _DeviceInfo.fromJson(Map<String, dynamic> json) => _$DeviceInfoFromJson(json);
 
 @override final  String deviceId;
@@ -238,10 +234,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,deviceId,platform,model);
 
-@override
-String toString() {
-  return 'DeviceInfo(deviceId: $deviceId, platform: $platform, model: $model)';
-}
 
 
 }

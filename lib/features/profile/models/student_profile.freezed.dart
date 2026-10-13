@@ -55,10 +55,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(entitlements),createdAt,pendingDeletion);
 
-@override
-String toString() {
-  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt, pendingDeletion: $pendingDeletion)';
-}
 
 
 }
@@ -316,8 +312,8 @@ return $default(_that.id,_that.track,_that.name,_that.phone,_that.email,_that.da
 /// @nodoc
 @JsonSerializable()
 
-class _StudentProfile implements StudentProfile {
-  const _StudentProfile({required this.id, required this.track, required this.name, required this.phone, this.email, @DateOnlyConverter() required this.dateOfBirth, required this.avatar, required this.geography, this.school, this.university, required this.points, required this.level, required this.badges, required this.privacy, required final  List<EntitlementState> entitlements, required this.createdAt, this.pendingDeletion}): _entitlements = entitlements;
+class _StudentProfile extends StudentProfile {
+  const _StudentProfile({required this.id, required this.track, required this.name, required this.phone, this.email, @DateOnlyConverter() required this.dateOfBirth, required this.avatar, required this.geography, this.school, this.university, required this.points, required this.level, required this.badges, required this.privacy, required final  List<EntitlementState> entitlements, required this.createdAt, this.pendingDeletion}): _entitlements = entitlements,super._();
   factory _StudentProfile.fromJson(Map<String, dynamic> json) => _$StudentProfileFromJson(json);
 
 @override final  String id;
@@ -386,10 +382,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,id,track,name,phone,email,dateOfBirth,avatar,geography,school,university,points,level,badges,privacy,const DeepCollectionEquality().hash(_entitlements),createdAt,pendingDeletion);
 
-@override
-String toString() {
-  return 'StudentProfile(id: $id, track: $track, name: $name, phone: $phone, email: $email, dateOfBirth: $dateOfBirth, avatar: $avatar, geography: $geography, school: $school, university: $university, points: $points, level: $level, badges: $badges, privacy: $privacy, entitlements: $entitlements, createdAt: $createdAt, pendingDeletion: $pendingDeletion)';
-}
 
 
 }
@@ -802,10 +794,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,type,id,url);
 
-@override
-String toString() {
-  return 'ProfileAvatar(type: $type, id: $id, url: $url)';
-}
 
 
 }
@@ -977,8 +965,8 @@ return $default(_that.type,_that.id,_that.url);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _ProfileAvatar implements ProfileAvatar {
-  const _ProfileAvatar({required this.type, this.id, required this.url});
+class _ProfileAvatar extends ProfileAvatar {
+  const _ProfileAvatar({required this.type, this.id, required this.url}): super._();
   factory _ProfileAvatar.fromJson(Map<String, dynamic> json) => _$ProfileAvatarFromJson(json);
 
 @override final  String type;
@@ -1006,10 +994,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,type,id,url);
 
-@override
-String toString() {
-  return 'ProfileAvatar(type: $type, id: $id, url: $url)';
-}
 
 
 }
@@ -1399,10 +1383,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => runtimeType.hashCode;
 
-@override
-String toString() {
-  return 'ProfileCity()';
-}
 
 
 }
@@ -1573,10 +1553,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,ref);
 
-@override
-String toString() {
-  return 'ProfileCity.coded(ref: $ref)';
-}
 
 
 }
@@ -1652,10 +1628,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,name);
 
-@override
-String toString() {
-  return 'ProfileCity.freeText(name: $name)';
-}
 
 
 }

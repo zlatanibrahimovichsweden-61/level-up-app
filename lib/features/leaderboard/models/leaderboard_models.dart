@@ -66,8 +66,15 @@ enum LeaderboardScope {
 /// [rank] is the student's exact position in the visible population — NOT an
 /// index into the page. Ranks are dense: excluded students are removed before
 /// ranking, so the numbers around them close and leave no gap.
+///
+/// `toString` is redacted to the type name: a row is ANOTHER student's id,
+/// name and avatar, and the project rule is that none of them reaches a log, an
+/// error detail or a test report by accident (the friends models do the same).
+/// Equality is the generated field-by-field one.
 @freezed
 abstract class LeaderboardEntry with _$LeaderboardEntry {
+  const LeaderboardEntry._();
+
   const factory LeaderboardEntry({
     required int rank,
     required String studentId,
@@ -86,4 +93,7 @@ abstract class LeaderboardEntry with _$LeaderboardEntry {
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json) =>
       _$LeaderboardEntryFromJson(json);
+
+  @override
+  String toString() => 'LeaderboardEntry(<redacted>)';
 }

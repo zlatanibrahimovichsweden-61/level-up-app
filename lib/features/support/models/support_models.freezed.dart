@@ -39,10 +39,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,ticketId,reference,subject,status,createdAt,lastActivityAt);
 
-@override
-String toString() {
-  return 'SupportTicketSummary(ticketId: $ticketId, reference: $reference, subject: $subject, status: $status, createdAt: $createdAt, lastActivityAt: $lastActivityAt)';
-}
 
 
 }
@@ -252,10 +248,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,ticketId,reference,subject,status,createdAt,lastActivityAt);
 
-@override
-String toString() {
-  return 'SupportTicketSummary(ticketId: $ticketId, reference: $reference, subject: $subject, status: $status, createdAt: $createdAt, lastActivityAt: $lastActivityAt)';
-}
 
 
 }
@@ -322,10 +314,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,ticketId,reference,subject,details,status,createdAt,lastActivityAt,closedAt);
 
-@override
-String toString() {
-  return 'SupportTicket(ticketId: $ticketId, reference: $reference, subject: $subject, details: $details, status: $status, createdAt: $createdAt, lastActivityAt: $lastActivityAt, closedAt: $closedAt)';
-}
 
 
 }
@@ -536,10 +524,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,ticketId,reference,subject,details,status,createdAt,lastActivityAt,closedAt);
 
-@override
-String toString() {
-  return 'SupportTicket(ticketId: $ticketId, reference: $reference, subject: $subject, details: $details, status: $status, createdAt: $createdAt, lastActivityAt: $lastActivityAt, closedAt: $closedAt)';
-}
 
 
 }
@@ -607,10 +591,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,messageId,authorKind,body,createdAt);
 
-@override
-String toString() {
-  return 'SupportTicketMessage(messageId: $messageId, authorKind: $authorKind, body: $body, createdAt: $createdAt)';
-}
 
 
 }
@@ -812,10 +792,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,messageId,authorKind,body,createdAt);
 
-@override
-String toString() {
-  return 'SupportTicketMessage(messageId: $messageId, authorKind: $authorKind, body: $body, createdAt: $createdAt)';
-}
 
 
 }

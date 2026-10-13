@@ -41,10 +41,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,rank,studentId,name,avatarUrl,points,isMe);
 
-@override
-String toString() {
-  return 'LeaderboardEntry(rank: $rank, studentId: $studentId, name: $name, avatarUrl: $avatarUrl, points: $points, isMe: $isMe)';
-}
 
 
 }
@@ -219,8 +215,8 @@ return $default(_that.rank,_that.studentId,_that.name,_that.avatarUrl,_that.poin
 /// @nodoc
 @JsonSerializable()
 
-class _LeaderboardEntry implements LeaderboardEntry {
-  const _LeaderboardEntry({required this.rank, required this.studentId, required this.name, required this.avatarUrl, required this.points, required this.isMe});
+class _LeaderboardEntry extends LeaderboardEntry {
+  const _LeaderboardEntry({required this.rank, required this.studentId, required this.name, required this.avatarUrl, required this.points, required this.isMe}): super._();
   factory _LeaderboardEntry.fromJson(Map<String, dynamic> json) => _$LeaderboardEntryFromJson(json);
 
 @override final  int rank;
@@ -256,10 +252,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,rank,studentId,name,avatarUrl,points,isMe);
 
-@override
-String toString() {
-  return 'LeaderboardEntry(rank: $rank, studentId: $studentId, name: $name, avatarUrl: $avatarUrl, points: $points, isMe: $isMe)';
-}
 
 
 }

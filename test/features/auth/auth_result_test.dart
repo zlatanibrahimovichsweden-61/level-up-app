@@ -102,6 +102,68 @@ void main() {
     });
   });
 
+  // E4-02: both arms hold credentials (the tokens, the profile, the
+  // registration token). Freezed's generated toString printed every field.
+  group('toString never prints a credential or the profile', () {
+    test('authenticated: neither token, nor anything in the profile', () {
+      final result = AuthResult.fromJson({
+        'result': 'authenticated',
+        'tokens': {
+          'accessToken': 'SENTINEL-ACCESS',
+          'accessExpiresInSeconds': 900,
+          'refreshToken': 'SENTINEL-REFRESH',
+          'refreshExpiresInSeconds': 5184000,
+        },
+        'profile': {'id': 'SENTINEL-ID', 'name': 'SENTINEL NAME'},
+      });
+
+      final text = '$result';
+      expect(text, startsWith('AuthResult.authenticated('));
+      for (final secret in const [
+        'SENTINEL-ACCESS',
+        'SENTINEL-REFRESH',
+        'SENTINEL-ID',
+        'SENTINEL NAME',
+      ]) {
+        expect(text, isNot(contains(secret)));
+      }
+      // The value is still all there.
+      expect(
+        (result as AuthenticatedResult).tokens.accessToken,
+        'SENTINEL-ACCESS',
+      );
+    });
+
+    test('registrationRequired: not the registration token', () {
+      final result = AuthResult.fromJson({
+        'result': 'registrationRequired',
+        'registrationToken': 'SENTINEL-REGISTRATION',
+        'expiresInSeconds': 600,
+      });
+
+      expect(result.toString(), startsWith('AuthResult.registrationRequired('));
+      expect(result.toString(), isNot(contains('SENTINEL-REGISTRATION')));
+      expect(
+        (result as RegistrationRequiredResult).registrationToken,
+        'SENTINEL-REGISTRATION',
+      );
+    });
+
+    test('TokenPair: neither token', () {
+      const pair = TokenPair(
+        accessToken: 'SENTINEL-ACCESS',
+        accessExpiresInSeconds: 900,
+        refreshToken: 'SENTINEL-REFRESH',
+        refreshExpiresInSeconds: 5184000,
+      );
+
+      expect(pair.toString(), startsWith('TokenPair('));
+      expect(pair.toString(), isNot(contains('SENTINEL-ACCESS')));
+      expect(pair.toString(), isNot(contains('SENTINEL-REFRESH')));
+      expect(pair.accessToken, 'SENTINEL-ACCESS');
+    });
+  });
+
   test('OtpRequestResult.fromJson maps the 202 body', () {
     final r = OtpRequestResult.fromJson({
       'resendAfterSeconds': 60,

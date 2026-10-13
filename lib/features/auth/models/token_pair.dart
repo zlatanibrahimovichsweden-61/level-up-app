@@ -9,8 +9,16 @@ part 'token_pair.g.dart';
 ///
 /// Token VALUES are secrets: they go straight to SecureStorage and are never
 /// logged (minors' data).
+///
+/// That includes the implicit way. Freezed would otherwise generate a
+/// `toString()` printing every field, so any `'$tokens'`, uncaught-error dump or
+/// failing-test message would carry both bearer credentials. The override below
+/// says the type and nothing else (freezed emits no `toString` of its own when
+/// the class declares one). Equality, `copyWith` and JSON are untouched.
 @freezed
 abstract class TokenPair with _$TokenPair {
+  const TokenPair._();
+
   const factory TokenPair({
     required String accessToken,
     required int accessExpiresInSeconds,
@@ -20,4 +28,7 @@ abstract class TokenPair with _$TokenPair {
 
   factory TokenPair.fromJson(Map<String, dynamic> json) =>
       _$TokenPairFromJson(json);
+
+  @override
+  String toString() => 'TokenPair(<redacted>)';
 }

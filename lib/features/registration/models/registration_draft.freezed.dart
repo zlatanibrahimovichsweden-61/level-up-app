@@ -49,10 +49,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,pickedSchool,schoolSkipped,stage,educationSystem,universityId,facultyId,studyYearId,const DeepCollectionEquality().hash(refusedNames)]);
 
-@override
-String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, pickedSchool: $pickedSchool, schoolSkipped: $schoolSkipped, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, refusedNames: $refusedNames)';
-}
 
 
 }
@@ -328,10 +324,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,pickedSchool,schoolSkipped,stage,educationSystem,universityId,facultyId,studyYearId,const DeepCollectionEquality().hash(_refusedNames)]);
 
-@override
-String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, pickedSchool: $pickedSchool, schoolSkipped: $schoolSkipped, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, refusedNames: $refusedNames)';
-}
 
 
 }

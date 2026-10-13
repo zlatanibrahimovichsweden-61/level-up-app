@@ -45,6 +45,20 @@ void main() {
     expect(Phone.isValid('abc'), isFalse);
   });
 
+  // E4-02: a phone number is a student's (often a minor's) personal data; it
+  // must not reach a log, an error detail or a test report by accident. The
+  // number is read through `e164`, where a caller means to.
+  test('toString and interpolation never print the number', () {
+    final phone = Phone.tryParse('01000000099')!;
+
+    expect(phone.toString(), 'Phone(<redacted>)');
+    expect('$phone', isNot(contains('1000000099')));
+    expect('${[phone]}', isNot(contains('1000000099')));
+    // Redacting the string form did not touch the value.
+    expect(phone.e164, '+201000000099');
+    expect(phone, Phone.tryParse('+201000000099'));
+  });
+
   // N-26: the frame's sample in this hint was a real person's number. The
   // hint is a pattern now and must never again be a number someone can dial.
   test('the phone hint is not a dialable number, in either language', () {

@@ -31,6 +31,14 @@ enum RegTrack { school, university }
 /// is the adr-010 switch driving the whole geography branch — the code never
 /// compares `countryCode == 'EG'` itself, because the country list is
 /// server-owned and extensible.
+///
+/// `toString` is redacted to the type name. The draft is a minor's registration
+/// in progress - the registration token, the proven phone, the student's name, a
+/// parent's phone, a date of birth, a referral code - and the project rule is
+/// that none of it reaches a log, an error detail or a test report by accident.
+/// Freezed emits no `toString` of its own when the class declares one, so a
+/// field added later cannot leak through it. Equality and `copyWith` are the
+/// generated field-by-field ones.
 @freezed
 abstract class RegistrationDraft with _$RegistrationDraft {
   const RegistrationDraft._();
@@ -88,4 +96,7 @@ abstract class RegistrationDraft with _$RegistrationDraft {
   /// bounces back to `/login` ("registration expired, start again"). The server
   /// also enforces expiry — this just avoids a doomed submit.
   bool get isExpired => DateTime.now().isAfter(tokenExpiresAt);
+
+  @override
+  String toString() => 'RegistrationDraft(<redacted>)';
 }

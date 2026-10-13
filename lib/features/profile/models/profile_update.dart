@@ -143,8 +143,12 @@ class ProfileUpdate {
   int get hashCode =>
       Object.hash(name, email, avatarId, leaderboardVisible, scoreHidden);
 
+  /// Redacted to WHICH fields the update carries, never their values: [name]
+  /// and [email] are a student's own data, and [avatarId] picks their face.
+  /// The keys are the contract's own field names, so the string still says what
+  /// the update is without saying what the student typed.
   @override
-  String toString() => 'ProfileUpdate(${toJson()})';
+  String toString() => 'ProfileUpdate(fields: ${toJson().keys.toList()})';
 }
 
 /// What the student did to the `email` field, as a closed set.
@@ -194,8 +198,9 @@ final class EmailSet extends EmailPatch {
   @override
   int get hashCode => Object.hash(EmailSet, value);
 
+  /// Redacted: [value] is the address the student typed.
   @override
-  String toString() => 'EmailPatch.set($value)';
+  String toString() => 'EmailPatch.set(<redacted>)';
 }
 
 final class EmailCleared extends EmailPatch {

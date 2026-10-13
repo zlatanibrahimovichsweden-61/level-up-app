@@ -40,10 +40,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,universityId,facultyId,studyYearId,governorateId,cityId,cityName,parentPhone,email,avatarId);
 
-@override
-String toString() {
-  return 'UniversityRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, parentPhone: $parentPhone, email: $email, avatarId: $avatarId)';
-}
 
 
 }
@@ -279,10 +275,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,universityId,facultyId,studyYearId,governorateId,cityId,cityName,parentPhone,email,avatarId);
 
-@override
-String toString() {
-  return 'UniversityRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, parentPhone: $parentPhone, email: $email, avatarId: $avatarId)';
-}
 
 
 }

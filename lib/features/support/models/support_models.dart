@@ -60,6 +60,11 @@ abstract final class SupportAuthorKinds {
 /// accepted as a path parameter anywhere. [ticketId] is the only handle.
 /// [createdAt] and [lastActivityAt] are the server's instants (normally UTC);
 /// call `.toLocal()` before formatting them for display.
+///
+/// `toString` is redacted to the type name: [subject] is text the student
+/// wrote, and the project rule is that none of it reaches a log, an error
+/// detail or a test report by accident. Equality and JSON are the generated
+/// ones.
 @freezed
 abstract class SupportTicketSummary with _$SupportTicketSummary {
   const SupportTicketSummary._();
@@ -88,6 +93,9 @@ abstract class SupportTicketSummary with _$SupportTicketSummary {
   /// True ONLY for the wire value `closed`. An unknown status is "in progress -
   /// not closed" (`openapi.yaml:3911-3922`), so it reads as `false`.
   bool get isClosed => knownStatus == SupportTicketStatus.closed;
+
+  @override
+  String toString() => 'SupportTicketSummary(<redacted>)';
 }
 
 /// One ticket from `GET /support/tickets/{ticketId}` and the answer to
@@ -102,6 +110,10 @@ abstract class SupportTicketSummary with _$SupportTicketSummary {
 /// **`attachments` is deliberately not modelled** (photos are CW12b, gated on
 /// CW04). The contract lists it as required on the wire, so it is always
 /// there, but json_serializable ignores keys it has no field for.
+///
+/// `toString` is redacted to the type name: [subject] and [details] are text
+/// the student wrote (a minor, usually), and none of it reaches a log, an error
+/// detail or a test report by accident.
 @freezed
 abstract class SupportTicket with _$SupportTicket {
   const SupportTicket._();
@@ -128,6 +140,9 @@ abstract class SupportTicket with _$SupportTicket {
   /// True ONLY for the wire value `closed`. An unknown status reads as `false`
   /// - it never refuses a reply on the client's say-so.
   bool get isClosed => knownStatus == SupportTicketStatus.closed;
+
+  @override
+  String toString() => 'SupportTicket(<redacted>)';
 }
 
 /// One reply in a ticket's thread (`SupportTicketMessage`,
@@ -140,6 +155,9 @@ abstract class SupportTicket with _$SupportTicket {
 /// [body] may be an empty string (a photo-only reply from another client,
 /// spec-067); `attachments` is not modelled in CW12a, so such a reply is a
 /// name with no text.
+///
+/// `toString` is redacted to the type name: [body] is text the student wrote,
+/// and none of it reaches a log, an error detail or a test report by accident.
 @freezed
 abstract class SupportTicketMessage with _$SupportTicketMessage {
   const SupportTicketMessage._();
@@ -156,4 +174,7 @@ abstract class SupportTicketMessage with _$SupportTicketMessage {
 
   /// True ONLY for `student`. Anything else renders as Customer support.
   bool get isStudent => authorKind == SupportAuthorKinds.student;
+
+  @override
+  String toString() => 'SupportTicketMessage(<redacted>)';
 }

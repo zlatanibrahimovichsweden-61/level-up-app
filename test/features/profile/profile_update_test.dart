@@ -210,6 +210,41 @@ void main() {
     });
   });
 
+  // E4-02: the update carries the student's own name, address and avatar.
+  group('toString never prints what the student typed', () {
+    test('ProfileUpdate names the fields, not their values', () {
+      const update = ProfileUpdate(
+        name: 'SENTINEL NAME',
+        email: EmailPatch.set('sentinel@example.test'),
+        avatarId: 'SENTINEL-AVATAR',
+        scoreHidden: true,
+      );
+
+      expect(
+        update.toString(),
+        'ProfileUpdate(fields: [name, email, avatarId, scoreHidden])',
+      );
+      expect('$update', isNot(contains('SENTINEL')));
+      expect('$update', isNot(contains('sentinel@')));
+      // The wire body is untouched.
+      expect(update.toJson(), <String, dynamic>{
+        'name': 'SENTINEL NAME',
+        'email': 'sentinel@example.test',
+        'avatarId': 'SENTINEL-AVATAR',
+        'scoreHidden': true,
+      });
+    });
+
+    test('EmailPatch.set hides the address; the other arms are plain', () {
+      expect(
+        const EmailPatch.set('sentinel@example.test').toString(),
+        'EmailPatch.set(<redacted>)',
+      );
+      expect(const EmailPatch.unchanged().toString(), 'EmailPatch.unchanged()');
+      expect(const EmailPatch.cleared().toString(), 'EmailPatch.cleared()');
+    });
+  });
+
   group('EmailPatch', () {
     test('the three arms are not equal to each other', () {
       expect(const EmailPatch.unchanged(), isNot(const EmailPatch.cleared()));

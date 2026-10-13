@@ -35,10 +35,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,accessToken,accessExpiresInSeconds,refreshToken,refreshExpiresInSeconds);
 
-@override
-String toString() {
-  return 'TokenPair(accessToken: $accessToken, accessExpiresInSeconds: $accessExpiresInSeconds, refreshToken: $refreshToken, refreshExpiresInSeconds: $refreshExpiresInSeconds)';
-}
 
 
 }
@@ -211,8 +207,8 @@ return $default(_that.accessToken,_that.accessExpiresInSeconds,_that.refreshToke
 /// @nodoc
 @JsonSerializable()
 
-class _TokenPair implements TokenPair {
-  const _TokenPair({required this.accessToken, required this.accessExpiresInSeconds, required this.refreshToken, required this.refreshExpiresInSeconds});
+class _TokenPair extends TokenPair {
+  const _TokenPair({required this.accessToken, required this.accessExpiresInSeconds, required this.refreshToken, required this.refreshExpiresInSeconds}): super._();
   factory _TokenPair.fromJson(Map<String, dynamic> json) => _$TokenPairFromJson(json);
 
 @override final  String accessToken;
@@ -240,10 +236,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,accessToken,accessExpiresInSeconds,refreshToken,refreshExpiresInSeconds);
 
-@override
-String toString() {
-  return 'TokenPair(accessToken: $accessToken, accessExpiresInSeconds: $accessExpiresInSeconds, refreshToken: $refreshToken, refreshExpiresInSeconds: $refreshExpiresInSeconds)';
-}
 
 
 }

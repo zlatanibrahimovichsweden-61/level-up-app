@@ -67,6 +67,9 @@ class Phone {
   @override
   int get hashCode => e164.hashCode;
 
+  /// Redacted: a phone number is a student's (often a minor's) personal data and
+  /// must not reach a log, an error detail or a test report by accident. The
+  /// number is read through [e164], where a caller means to.
   @override
-  String toString() => 'Phone($e164)';
+  String toString() => 'Phone(<redacted>)';
 }

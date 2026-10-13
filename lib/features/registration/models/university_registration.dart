@@ -36,6 +36,10 @@ part 'university_registration.g.dart';
 ///
 /// `studyYearId` must reference an `active` year; a `soon` year is rejected
 /// server-side with `validation_failed`, so the picker never offers one.
+///
+/// `toString` is redacted to the type name, as on [SchoolRegistration]: this is
+/// the request body, so it holds the registration token, a minor's name and date
+/// of birth, the parent's phone number and the free-text city.
 @freezed
 abstract class UniversityRegistration
     with _$UniversityRegistration
@@ -68,6 +72,9 @@ abstract class UniversityRegistration
 
   factory UniversityRegistration.fromJson(Map<String, dynamic> json) =>
       _$UniversityRegistrationFromJson(json);
+
+  @override
+  String toString() => 'UniversityRegistration(<redacted>)';
 
   /// Builds the body from the wizard draft. There is still no geography branch
   /// on this track — every field below is unconditionally required — but the

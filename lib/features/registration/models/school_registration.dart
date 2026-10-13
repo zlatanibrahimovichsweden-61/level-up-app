@@ -40,6 +40,11 @@ part 'school_registration.g.dart';
 /// `inviteCode` IS collected - it is Sign Up_1's optional referral field - and
 /// is sent only when the student typed one (spec-047, `stable` since
 /// 3.44.0-m1). It never fails registration, so nothing here validates it.
+///
+/// `toString` is redacted to the type name: this is the request body, so it
+/// holds the registration token, a minor's name and date of birth, the parent's
+/// phone number, the address, the invite code and the free-text city. Equality,
+/// `copyWith` and JSON are the generated ones.
 @freezed
 abstract class SchoolRegistration
     with _$SchoolRegistration
@@ -84,6 +89,9 @@ abstract class SchoolRegistration
 
   factory SchoolRegistration.fromJson(Map<String, dynamic> json) =>
       _$SchoolRegistrationFromJson(json);
+
+  @override
+  String toString() => 'SchoolRegistration(<redacted>)';
 
   /// Builds the body from the wizard draft, ENFORCING the contract's
   /// conditionality regardless of what the draft still holds.

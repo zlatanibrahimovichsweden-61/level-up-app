@@ -53,10 +53,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => runtimeType.hashCode;
 
-@override
-String toString() {
-  return 'AuthResult()';
-}
 
 
 }
@@ -200,8 +196,8 @@ return registrationRequired(_that.registrationToken,_that.expiresInSeconds);case
 /// @nodoc
 @JsonSerializable()
 
-class AuthenticatedResult implements AuthResult {
-  const AuthenticatedResult({required this.tokens, required final  Map<String, dynamic> profile, @JsonKey(includeIfNull: false) this.inviteCodeApplied, final  String? $type}): _profile = profile,$type = $type ?? 'authenticated';
+class AuthenticatedResult extends AuthResult {
+  const AuthenticatedResult({required this.tokens, required final  Map<String, dynamic> profile, @JsonKey(includeIfNull: false) this.inviteCodeApplied, final  String? $type}): _profile = profile,$type = $type ?? 'authenticated',super._();
   factory AuthenticatedResult.fromJson(Map<String, dynamic> json) => _$AuthenticatedResultFromJson(json);
 
  final  TokenPair tokens;
@@ -238,10 +234,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,tokens,const DeepCollectionEquality().hash(_profile),inviteCodeApplied);
 
-@override
-String toString() {
-  return 'AuthResult.authenticated(tokens: $tokens, profile: $profile, inviteCodeApplied: $inviteCodeApplied)';
-}
 
 
 }
@@ -292,8 +284,8 @@ $TokenPairCopyWith<$Res> get tokens {
 /// @nodoc
 @JsonSerializable()
 
-class RegistrationRequiredResult implements AuthResult {
-  const RegistrationRequiredResult({required this.registrationToken, required this.expiresInSeconds, final  String? $type}): $type = $type ?? 'registrationRequired';
+class RegistrationRequiredResult extends AuthResult {
+  const RegistrationRequiredResult({required this.registrationToken, required this.expiresInSeconds, final  String? $type}): $type = $type ?? 'registrationRequired',super._();
   factory RegistrationRequiredResult.fromJson(Map<String, dynamic> json) => _$RegistrationRequiredResultFromJson(json);
 
  final  String registrationToken;
@@ -323,10 +315,6 @@ bool operator ==(Object other) {
 @override
 int get hashCode => Object.hash(runtimeType,registrationToken,expiresInSeconds);
 
-@override
-String toString() {
-  return 'AuthResult.registrationRequired(registrationToken: $registrationToken, expiresInSeconds: $expiresInSeconds)';
-}
 
 
 }

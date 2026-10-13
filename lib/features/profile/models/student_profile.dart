@@ -19,6 +19,11 @@ part 'student_profile.g.dart';
 /// `NamedRef` is the contract's shared bilingual reference row; it is imported
 /// from the registration models rather than duplicated, because duplicating a
 /// contract type is how the two copies silently drift apart.
+///
+/// `toString` is redacted to the type name: this is a minor's name, phone
+/// number, email, date of birth and avatar, and the project rule is that none of
+/// them reaches a log, an error detail or a test report by accident. Equality,
+/// `copyWith` and JSON are the generated ones.
 
 /// The student's track. Contract enum `[school, university]` is a CLOSED set
 /// (unlike `EducationSystem`/`EntitlementType`, which are marked extensible), so
@@ -30,6 +35,8 @@ enum Track { school, university }
 
 @freezed
 abstract class StudentProfile with _$StudentProfile {
+  const StudentProfile._();
+
   const factory StudentProfile({
     required String id,
     required Track track,
@@ -79,6 +86,9 @@ abstract class StudentProfile with _$StudentProfile {
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) =>
       _$StudentProfileFromJson(json);
+
+  @override
+  String toString() => 'StudentProfile(<redacted>)';
 }
 
 /// The live deletion grace window (adr-114) — `{effectiveAt}`.
@@ -111,8 +121,15 @@ abstract class PendingDeletion with _$PendingDeletion {
 ///
 /// `type` stays a wire `String`: the UI does not branch on it today, and
 /// hard-typing a two-value enum the app never reads only adds a way to throw.
+///
+/// `toString` is redacted to the type name: for a `custom` avatar the [url] is
+/// the student's own uploaded photo, and none of it reaches a log, an error
+/// detail or a test report by accident. Equality and JSON are the generated
+/// ones.
 @freezed
 abstract class ProfileAvatar with _$ProfileAvatar {
+  const ProfileAvatar._();
+
   const factory ProfileAvatar({
     required String type,
 
@@ -123,6 +140,9 @@ abstract class ProfileAvatar with _$ProfileAvatar {
 
   factory ProfileAvatar.fromJson(Map<String, dynamic> json) =>
       _$ProfileAvatarFromJson(json);
+
+  @override
+  String toString() => 'ProfileAvatar(<redacted>)';
 }
 
 /// Registration geography as the server stored it. `governorate` is Egypt-only
@@ -162,6 +182,10 @@ abstract class ProfileGeography with _$ProfileGeography {
 /// (`{ref: {...}, runtimeType: 'coded'}`), which is not a shape this API ever
 /// sends or accepts; leaving it in place would give the union a parser that
 /// cannot round-trip its own input.
+///
+/// `toString` is redacted to the type name for both arms: the free-text arm is
+/// the student's own words for where they live. Freezed emits no `toString` for
+/// the arms when the base class declares one.
 @Freezed(toJson: false)
 sealed class ProfileCity with _$ProfileCity {
   const ProfileCity._();
@@ -186,6 +210,9 @@ sealed class ProfileCity with _$ProfileCity {
     CodedCity(:final ref) => ref.toJson(),
     FreeTextCity(:final name) => <String, dynamic>{'name': name},
   };
+
+  @override
+  String toString() => 'ProfileCity(<redacted>)';
 }
 
 /// School-track academic block. `stage` and `educationSystem` are kept as wire
