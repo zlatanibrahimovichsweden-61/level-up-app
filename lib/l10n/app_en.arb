@@ -115,6 +115,10 @@
   "errorOtpInvalid": "This is an incorrect code, try again",
   "errorOtpExpired": "This code has expired. Request a new one.",
   "errorOtpThrottled": "Too many attempts. Please wait a moment and try again.",
+  "errorAccountBanned": "Account banned — contact Support",
+  "@errorAccountBanned": {
+    "description": "403 account_banned on verifyOtp: the contract-suggested copy (contract/error-codes.md account_banned row, pin eddb6ac), shown inline on the OTP screen until the designer's banned frame exists (CW02)."
+  },
   "errorValidationFailed": "Please check your input and try again.",
 
   "schoolRegistrationTitle": "School Registration",

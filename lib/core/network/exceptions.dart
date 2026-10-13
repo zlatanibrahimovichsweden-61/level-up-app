@@ -133,3 +133,33 @@ bool isOffline(Object? error) =>
 /// tests construct) is recognised alongside any future subclass.
 bool isAccountPendingDeletion(Object? error) =>
     error is ApiException && error.code == 'account_pending_deletion';
+
+/// `403 account_banned` — the account is banned (`contract/error-codes.md:51`,
+/// `contract/openapi.yaml:231`).
+///
+/// **Four operations return it** — `verifyOtp`, `verifyParentOtp`,
+/// `confirmRecovery` and the web-only `verifyRedemptionSessionOtp`
+/// (`contract-changelog.md`, 3.42.0-m1) — and it comes back **only after a
+/// correct code**, with **no tokens and no session** issued by any of them.
+/// What the contract says about the code differs by operation: for `verifyOtp`
+/// (`contract/openapi.yaml:231`) and `verifyRedemptionSessionOtp` (`:371`) it
+/// states "the code is consumed"; for `verifyParentOtp` (`:542`) and
+/// `confirmRecovery` (`:625`) it says only that no tokens or session were
+/// issued. `contract/error-codes.md:51` marks the code as consumed for
+/// `verifyOtp` alone. So the `verifyParentOtp` and `confirmRecovery` handlers
+/// (CW06) must not assume the code was consumed. The contract's client rule is
+/// *do not retry; route to Support*.
+///
+/// **CW02 handles `verifyOtp` only.** The `verifyParentOtp` and
+/// `confirmRecovery` arms land with recovery in CW06. It is never returned on
+/// token refresh or on an authenticated call, so no interceptor branches on it
+/// and nothing here logs the student out — there is no session to end.
+///
+/// "Route to Support" is NOT implemented: there is no signed-out Support route
+/// yet (a question for Seif). Until the designer's banned frame exists the OTP
+/// screen shows the contract's suggested copy inline.
+///
+/// Matches on `code`, like [isAccountPendingDeletion], so a plain
+/// `ApiException` (what `ErrorInterceptor` builds) is recognised.
+bool isAccountBanned(Object? error) =>
+    error is ApiException && error.code == 'account_banned';

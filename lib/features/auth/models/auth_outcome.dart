@@ -11,7 +11,12 @@ sealed class AuthOutcome {
 
 /// Verified into an existing account. Tokens are already in SecureStorage.
 class AuthenticatedOutcome extends AuthOutcome {
-  const AuthenticatedOutcome();
+  const AuthenticatedOutcome({this.studentId});
+
+  /// The server id of the student who just signed in — used only to match the
+  /// router's return target to the student whose session ended, never shown or
+  /// stored. Null when the response carried none (the target then fails closed).
+  final String? studentId;
 }
 
 /// New phone — no account yet. Carry the short-lived registrationToken (+ its

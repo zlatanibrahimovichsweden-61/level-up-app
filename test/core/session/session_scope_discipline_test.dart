@@ -38,6 +38,17 @@ void main() {
         'Device identity. forceLogout goes out of its way to preserve the '
         'device_id (Decisions_Log 2026-07-23) — clearing this would make the '
         'next login look like a new device and mis-fire session_superseded.',
+    'returnTargetProvider':
+        'Survives a FORCED sign-out on purpose (return-to-target, CW02): it '
+        'holds a route string and the ending student\'s server id (O-10: '
+        'returned only to that student) — no other profile data; a '
+        'user-initiated sign-out clears it in AuthController.logout. NOTE: '
+        'this entry is a '
+        'record, not a guard — it is a plain Provider, which the scan below '
+        'does not see. "Survives a forced sign-out" is pinned by '
+        'session_isolation_test.dart (the same(target) case after '
+        'forceLogout) and by the "never added to the invalidation set" source '
+        'scan in this file.',
     'countriesProvider': 'Global reference data — same for every student.',
     'governoratesProvider': 'Global reference data — same for every student.',
     'citiesProvider': 'Global reference data — same for every student.',
@@ -168,6 +179,24 @@ void main() {
       reason:
           'These providers are exempted here but no longer exist. Delete the '
           'entries so the list keeps meaning something: ${stale.join(', ')}',
+    );
+  });
+
+  test('returnTargetProvider is never added to the invalidation set', () {
+    // The scan above only classifies NOTIFIER/Future/Stream providers, so it
+    // cannot see the plain `Provider<ReturnTarget>`. Return-to-target only works
+    // if a FORCED sign-out leaves it alone; invalidating it there would silently
+    // turn the feature off. The behaviour is pinned in session_isolation_test.dart;
+    // this scan pins the mechanism: session_scope.dart's CODE (comments stripped,
+    // so its own doc bullet may keep naming the provider) never references it.
+    final source = code('lib/core/session/session_scope.dart');
+
+    expect(
+      source.contains('returnTargetProvider'),
+      isFalse,
+      reason:
+          'invalidateSessionScope must not touch returnTargetProvider: a '
+          'forced sign-out has to leave the remembered location in place.',
     );
   });
 

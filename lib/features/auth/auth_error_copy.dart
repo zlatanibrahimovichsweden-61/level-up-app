@@ -19,6 +19,10 @@ String authErrorMessage(AppLocalizations l10n, Object? error) {
         return l10n.errorOtpThrottled;
       case 'validation_failed':
         return l10n.errorValidationFailed;
+      // `403 account_banned` (verifyOtp, after a correct code). The contract's
+      // own suggested copy; deliberately NOT `isInvalidOtp`, so no red boxes.
+      case 'account_banned':
+        return l10n.errorAccountBanned;
     }
   }
   return l10n.genericError;

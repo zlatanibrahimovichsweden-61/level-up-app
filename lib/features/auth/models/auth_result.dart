@@ -15,11 +15,15 @@ part 'auth_result.g.dart';
 /// / `registrationRequired`, matching the contract's discriminator mapping.
 ///
 /// SCOPE NOTE: `AuthenticatedResult.profile` is carried as opaque JSON on
-/// purpose. These two screens only store tokens and route to `/home`; they
-/// never read the profile. The full freezed `StudentProfile` model (avatar,
-/// geography, points, entitlements, …) is a large contract type that lands with
-/// the `/home` brief — modeling it here would be out of this two-screen scope.
-/// Keeping it as `Map<String,dynamic>` invents nothing and parses faithfully.
+/// purpose. These two screens only store tokens and land the student on the
+/// remembered location (the same student only) or `/home`; the one
+/// thing read from the profile is `profile['id']` (the contract's required
+/// `StudentProfile.id`), to match the router's return target to the student who
+/// signed in — nothing else in it is read here. The full freezed
+/// `StudentProfile` model (avatar, geography, points, entitlements, …) is a
+/// large contract type that lives in the profile feature, read from `GET /me` —
+/// modeling it here would be out of this two-screen scope. Keeping it as
+/// `Map<String,dynamic>` invents nothing and parses faithfully.
 @Freezed(unionKey: 'result', unionValueCase: FreezedUnionCase.none)
 sealed class AuthResult with _$AuthResult {
   const factory AuthResult.authenticated({

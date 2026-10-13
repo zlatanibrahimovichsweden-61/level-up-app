@@ -40,6 +40,8 @@ import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/screens/tab_placeholder.dart';
 import '../../l10n/app_localizations.dart';
+import 'return_target.dart';
+import 'route_error_screen.dart';
 
 /// The auth routes — reachable while signed out. Everything else requires auth.
 /// The whole `/register` wizard is pre-auth: registration happens BEFORE any
@@ -82,6 +84,95 @@ String? authRedirect(AuthStatus status, String matchedLocation) {
   return null;
 }
 
+/// The location a signed-out bounce should remember, or null for "nothing worth
+/// returning to" (unit-tested directly, like [authRedirect]).
+///
+/// **Only a location inside the tab shell** — one that matches under the
+/// `StatefulShellRoute` — is remembered, and that is decided by asking the
+/// router's own [configuration] what `uri` matches, not by a path list that
+/// would drift as routes are added. Why only the shell:
+/// - A shell location opened with `go` gets its whole parent stack built from
+///   the path (`/learn/subject/1/unit/2` rebuilds `/learn` and `/learn/subject/1`
+///   beneath it), the bottom nav, and a working back chip.
+/// - Every top-level route outside it — `/profile*`, `/settings`, `/refer`,
+///   `/support`, `/friends`, `/legal/*`, `/track-select`, `/quiz*` — would
+///   open with NOTHING beneath it, no nav bar, a dead back chip
+///   (`TitledChrome` is `maybePop()`) and an Android BACK that exits the app. It
+///   was `/home` before this existed, so those fall back to `/home`.
+/// - That also covers what must never be remembered anyway: the auth routes
+///   (`/`, `/login`, `/login/otp`, `/register*`), an unmatched location (no
+///   match at all), and `/quiz*`, whose pages are built from an in-memory
+///   `extra` that neither a sign-out nor go_router's refresh keeps.
+///
+/// Returns path PLUS query (`Uri.toString()`). In memory only — see
+/// [ReturnTarget].
+String? rememberableLocation(RouteConfiguration configuration, Uri uri) {
+  // Not an app location at all (go_router's empty configuration is `Uri()`),
+  // and `findMatch` asserts on a path that does not start with `/`.
+  if (!uri.path.startsWith('/')) return null;
+  final match = configuration.findMatch(uri);
+  if (match.isError) return null;
+  if (!match.routes.any((route) => route is StatefulShellRoute)) return null;
+  return uri.toString();
+}
+
+/// The location actually ON SCREEN, or null while go_router has nothing to show
+/// (before the first parse, or on its error page).
+///
+/// This is not `state.uri` of the redirect. When an auth flip makes go_router
+/// refresh, it re-parses its STORED location, and a screen opened with `push`
+/// is not stored — the redirect sees the base of the stack (`/learn`, not the
+/// `/learn/mistakes` that Subjects pushed over it; the same blind spot as
+/// `currentConfiguration.uri`). Pushes INSIDE the shell are common (Mistakes,
+/// Lessons, Lectures), and the shell location on screen is the better place to
+/// return to, so it is read from `router.state`, which is the topmost page —
+/// but which throws on an empty or error configuration, hence the guard.
+Uri? _shownLocation(GoRouter router) {
+  final shown = router.routerDelegate.currentConfiguration;
+  if (shown.isEmpty || shown.isError) return null;
+  return router.state.uri;
+}
+
+/// Called by the router's `redirect` whenever a SIGNED-OUT student is bounced.
+///
+/// A user-initiated sign-out remembers nothing (and `AuthController.logout`
+/// has already cleared anything earlier). Otherwise the location is what was on
+/// screen when that is a rememberable one — the session ended under the student
+/// there — else the location being parsed (a cold start or a link followed while
+/// signed out), when [rememberableLocation] allows it. A non-shell page pushed
+/// over a shell page (`/support` over `/account`) is not rememberable, so the
+/// shell page beneath it — the stored location — is what comes back.
+///
+/// When NO location is rememberable, the target is cleared, not kept: the newest
+/// bounce wins, and an older target would otherwise send the next sign-in to a
+/// place the student was not heading from this sign-out.
+///
+/// [router] is null only if go_router were to run a redirect before
+/// `routerProvider` has the router in hand. It cannot today (the parser runs
+/// only once the `Router` widget mounts, after the constructor), but the
+/// redirect must degrade to "remember nothing", never throw.
+///
+/// Writes only to the plain [ReturnTarget] holder — never to Riverpod state,
+/// because a redirect runs during navigation/build (BUG-001).
+void _noteSignedOutBounce(
+  ReturnTarget target,
+  AuthUnauthenticated status,
+  GoRouterState state,
+  GoRouter? router,
+) {
+  if (router == null || status.reason == LogoutReason.userInitiated) return;
+  final configuration = router.configuration;
+  final shown = _shownLocation(router);
+  final location =
+      (shown == null ? null : rememberableLocation(configuration, shown)) ??
+      rememberableLocation(configuration, state.uri);
+  if (location != null) {
+    target.remember(location);
+  } else {
+    target.clear();
+  }
+}
+
 /// go_router skeleton. Routes mirror the build plan. A ShellRoute wraps the
 /// bottom-nav destinations (home / profile / settings).
 ///
@@ -105,11 +196,48 @@ final routerProvider = Provider<GoRouter>((ref) {
   // keeps what it was given; a fresh `go` with new args replaces it.
   OtpArgs? lastOtpArgs;
 
-  return GoRouter(
+  // Read by the redirect below to see what is on screen. Assigned by the
+  // `return` at the end; go_router never runs a redirect inside its constructor.
+  GoRouter? router;
+
+  return router = GoRouter(
     initialLocation: '/',
     refreshListenable: authListenable,
-    redirect: (context, state) =>
-        authRedirect(ref.read(authControllerProvider), state.matchedLocation),
+    redirect: (context, state) {
+      final status = ref.read(authControllerProvider);
+      final destination = authRedirect(status, state.matchedLocation);
+      // A signed-out redirect IS the bounce to /login. Remember where from.
+      if (destination != null && status is AuthUnauthenticated) {
+        try {
+          _noteSignedOutBounce(
+            ref.read(returnTargetProvider),
+            status,
+            state,
+            router,
+          );
+        } catch (_) {
+          // Remembering where the student was heading is a convenience. If it
+          // fails for any reason the bounce to /login must still happen, so the
+          // failure is dropped: not rethrown, and not logged (a location can
+          // carry a student's own ids).
+        }
+      }
+      return destination;
+    },
+    // A location no route matches. A signed-out student is normally sent to
+    // /login by `authRedirect` before this renders. Two edges are not bounced:
+    // while the status is still `AuthUnknown` (a cold start, before the stored
+    // token is read) `authRedirect` waits, so an unmatched cold-start location
+    // would show this page until the read resolves and the bounce runs; and
+    // `_atAuthRoute` treats every `/register…` location as an auth route, so an
+    // unmatched `/register…` path is not bounced. Neither is reachable through
+    // any URL or deep-link entry point the app ships (no intent filters beyond
+    // MAIN/LAUNCHER, no URL types in Info.plist), and every in-app `/register`
+    // navigation is a fixed valid path. Only a platform route override can
+    // supply such a cold-start location — go_router honours the platform's
+    // default route over `initialLocation`, so an explicit launch carrying a
+    // route, or a test harness (`defaultRouteNameTestValue`), reaches it.
+    errorBuilder: (_, _) => const RouteErrorScreen(),
     routes: [
       GoRoute(path: '/', builder: (_, _) => const OnboardingScreen()),
       // OTP is nested under /login (BUG-005). As a top-level route opened with

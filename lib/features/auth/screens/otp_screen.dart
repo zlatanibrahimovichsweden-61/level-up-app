@@ -6,6 +6,7 @@ import 'package:pinput/pinput.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/router/return_target.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
 import '../../../core/theme/app_typography.dart';
@@ -25,7 +26,8 @@ import '../notifier/otp_notifier.dart';
 /// OTP verify. SIX boxes (contract mandates 6; the Figma's 4 is superseded).
 /// Forks on verify: authenticated → success screen → /home; registrationRequired
 /// → carry the registrationToken to /register. Renders loading / error / offline
-/// / success, in AR (RTL) + EN (LTR).
+/// / success / banned (`403 account_banned`: locked entry + "Back to login"),
+/// in AR (RTL) + EN (LTR).
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key, required this.args});
 
@@ -50,6 +52,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   void _verify() {
     // Guard the auto-submit path too (button is disabled when offline).
     if (ref.read(isOnlineProvider).value == false) return;
+    // …and when banned: the code was consumed and the contract says do not
+    // retry. The cells are disabled then, but that does not stop `onCompleted`
+    // (pinput 6.0.2 fires it on any controller text change, enabled or not), so
+    // this guard is what keeps every path to `verify` shut; the notifier refuses
+    // too.
+    if (ref.read(otpProvider(widget.args)).isBanned) return;
     FocusScope.of(context).unfocus();
     ref.read(otpProvider(widget.args).notifier).verify(_pin);
   }
@@ -119,7 +127,23 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             ),
             Expanded(
               child: succeeded
-                  ? _SuccessView(onContinue: () => context.go('/home'))
+                  // The remembered location a signed-out bounce left (once) —
+                  // only if the student who just signed in is the one whose
+                  // session ended (matched by the server's student id) — else
+                  // Home. An outcome without an id fails closed to Home too.
+                  ? _SuccessView(
+                      onContinue: () => context.go(
+                        ref
+                            .read(returnTargetProvider)
+                            .consume(
+                              studentId: switch (state.outcome) {
+                                AuthenticatedOutcome(:final studentId) =>
+                                  studentId,
+                                _ => null,
+                              },
+                            ),
+                      ),
+                    )
                   : _InputView(
                       l10n: l10n,
                       state: state,
@@ -140,6 +164,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           : () => ref
                                 .read(otpProvider(widget.args).notifier)
                                 .resend(),
+                      // `account_banned`: the CTA becomes this. `go`, not
+                      // `pop`, as registration's expired view does — it
+                      // lands on Login whatever the stack was.
+                      onBackToLogin: () => context.go('/login'),
                     ),
             ),
           ],
@@ -162,6 +190,7 @@ class _InputView extends StatelessWidget {
     required this.onCompleted,
     required this.onVerify,
     required this.onResend,
+    required this.onBackToLogin,
   });
 
   final AppLocalizations l10n;
@@ -172,6 +201,9 @@ class _InputView extends StatelessWidget {
   final ValueChanged<String> onCompleted;
   final VoidCallback? onVerify;
   final VoidCallback? onResend;
+
+  /// The primary CTA while [OtpUiState.isBanned] — the existing "Back to login".
+  final VoidCallback onBackToLogin;
 
   /// The card's own radius and auto-layout · `308:5114` / `337:19501`, read
   /// on the Properties panel 2026-09-20. Both canvases give the same four
@@ -225,6 +257,32 @@ class _InputView extends StatelessWidget {
     // red boxes; other failures (expired/throttled/offline/generic) use the
     // same line without the red boxes.
     final hasError = state.error != null;
+
+    // `403 account_banned` is terminal here: the code was correct but consumed,
+    // and no session exists. Code entry and resend lock, the one error line
+    // carries the contract's suggested copy, and "Back to login" takes the
+    // Verify button's place — same widget, same style, nothing new on screen.
+    // The designer's banned frame is item DG-03
+    // (`.ai/audits/current/completion/03_DESIGNER_HANDOFF.md`); the Support
+    // route a banned student would be sent to is Seif question SQ-12
+    // (`02_SEIF_HANDOFF.md`). Until both land, this inline state is the screen.
+    final banned = state.isBanned;
+
+    // The frame's error line: Inter Medium 10 (`labelSmall`), start-aligned
+    // under the digits, no icon (`82:1447`).
+    Widget? errorLine;
+    if (hasError) {
+      final text = Text(
+        authErrorMessage(l10n, state.error),
+        textAlign: TextAlign.start,
+        style: AppType.labelSmall.copyWith(color: ext.otpErrorText),
+      );
+      // Banned is a terminal answer that arrives with no other cue (the cells
+      // just lock), so a screen reader is told when it appears. A plain
+      // `Semantics` over the same Text: no visual change, and the other error
+      // states are not wrapped at all.
+      errorLine = banned ? Semantics(liveRegion: true, child: text) : text;
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
@@ -282,6 +340,9 @@ class _InputView extends StatelessWidget {
                     controller: pinController,
                     focusNode: focusNode,
                     autofocus: true,
+                    // Banned: the cells stop taking input and the node gives up
+                    // focus (pinput drops `canRequestFocus` with `enabled`).
+                    enabled: !banned,
                     keyboardType: TextInputType.number,
                     forceErrorState: state.isInvalidCode,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -290,24 +351,20 @@ class _InputView extends StatelessWidget {
                     builder: (context, pin) => _DigitBox(state: pin),
                   ),
                 ),
-                // The frame's error line: Inter Medium 10 (`labelSmall`),
-                // start-aligned under the digits, no icon (`82:1447`). Every
-                // failure uses this one slot; only `otp_invalid` also turns
-                // the cells red.
-                if (hasError) ...[
+                // The frame's error line (built above). Every failure uses
+                // this one slot; only `otp_invalid` also turns the cells red.
+                if (errorLine != null) ...[
                   const SizedBox(height: _gapDigitsToError),
-                  Text(
-                    authErrorMessage(l10n, state.error),
-                    textAlign: TextAlign.start,
-                    style: AppType.labelSmall.copyWith(color: ext.otpErrorText),
-                  ),
+                  errorLine,
                 ],
                 const SizedBox(height: _cardGap),
                 PrimaryCta(
-                  enabled: onVerify != null,
+                  enabled: banned || onVerify != null,
                   child: FilledButton(
-                    onPressed: onVerify,
-                    child: state.isVerifying
+                    onPressed: banned ? onBackToLogin : onVerify,
+                    child: banned
+                        ? Text(l10n.backToLogin, style: AppType.buttonLarge)
+                        : state.isVerifying
                         ? SizedBox(
                             height: 24,
                             width: 24,
@@ -322,13 +379,17 @@ class _InputView extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: _gapCardToResend),
-          _ResendRow(
-            l10n: l10n,
-            secondsRemaining: state.secondsRemaining,
-            isResending: state.isResending,
-            onResend: onResend,
-          ),
+          // No resend once banned: a new code could not change the answer, and
+          // the contract says do not retry.
+          if (!banned) ...[
+            const SizedBox(height: _gapCardToResend),
+            _ResendRow(
+              l10n: l10n,
+              secondsRemaining: state.secondsRemaining,
+              isResending: state.isResending,
+              onResend: onResend,
+            ),
+          ],
         ],
       ),
     );
@@ -381,8 +442,9 @@ class _DigitBox extends StatelessWidget {
         cs.primary,
         _focusedBorderWidth,
       ),
-      // `disabled` is unreachable here - the field is never disabled - and
-      // `submitted` / `following` / `initial` are all the resting look.
+      // `disabled` is the banned lock (`account_banned`: the field is
+      // disabled, see `_InputView`) and keeps the resting look, as do
+      // `submitted` / `following` / `initial`.
       _ => (
         ext.otpDigitFill,
         ext.otpDigitBorder,
