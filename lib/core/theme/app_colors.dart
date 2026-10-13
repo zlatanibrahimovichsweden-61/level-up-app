@@ -199,6 +199,23 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.trackCardFill,
     required this.trackCardArtShadow,
     required this.backlight,
+    required this.notificationChipIdleFill,
+    required this.notificationChipIdleLabel,
+    required this.notificationChipSelectedFill,
+    required this.notificationChipSelectedLabel,
+    required this.notificationRowFill,
+    required this.notificationRowBorder,
+    required this.notificationDiscFill,
+    required this.notificationDiscGlyph,
+    required this.notificationBody,
+    required this.notificationTime,
+    required this.notificationUnreadDot,
+    required this.notificationPillAnnouncementsFill,
+    required this.notificationPillAnnouncementsLabel,
+    required this.notificationPillSupportFill,
+    required this.notificationPillSupportLabel,
+    required this.notificationPillSystemFill,
+    required this.notificationPillSystemLabel,
   });
 
   final Color background;
@@ -278,8 +295,11 @@ class AppColors extends ThemeExtension<AppColors> {
   /// changes hue between canvases: it is not a fixed "notification orange",
   /// even though it happens to share both values with [link].
   ///
-  /// The dot is STATE, not decoration, and there is no notifications endpoint
-  /// in the contract — see the gate on `HomeHeader`.
+  /// The dot is STATE, not decoration, and it stays off: the endpoint exists
+  /// (`GET /me/notifications/unread-count`, `openapi.yaml:1226`), but the one
+  /// item every student gets (`enrolment_opened`) has no copy yet, so a server
+  /// count would light the dot over an inbox that shows nothing (CW07b; Seif
+  /// SQ-20) — see the gate on `HomeHeader`.
   final Color bellUnreadDot;
 
   // --- Catalog tokens (Figma Learn/Subjects 337:5702) -----------------------
@@ -1436,6 +1456,105 @@ class AppColors extends ThemeExtension<AppColors> {
   /// frame has one; light simply passes no `Backlight`.
   final Color backlight;
 
+  // --- Notifications inbox (CW07a · Figma 180:8386, School light, EN) -------
+  //
+  // ONLY the light canvas is drawn. `309:9525` (University) reads identical to
+  // it, and no dark frame exists for either (DESIGN_ISSUES DG-35). Every dark
+  // value below is therefore a STAND-IN: it copies the value of the existing
+  // dark token named in its doc, and is replaced by a read value the day the
+  // designer draws the dark inbox.
+
+  /// An IDLE filter chip (All · Announcements · Support · System). Light
+  /// `#FCFBF9` (`180:8557`); dark stand-in: no dark frame (DG-35), value of
+  /// [reviewFilterIdleFill] (`#27282C` at 20%, under Glass), CW07a.
+  final Color notificationChipIdleFill;
+
+  /// An IDLE chip's label AND its 16 glyph, one colour in the frame
+  /// (`180:8558`, `180:8711`): light `#384F47`; dark stand-in: no dark frame
+  /// (DG-35), value of [reviewFilterIdleLabel] (`#FCFBF9`), CW07a.
+  final Color notificationChipIdleLabel;
+
+  /// The SELECTED chip. Light `#AE87E7` (`180:8555`); dark stand-in: no dark
+  /// frame (DG-35), value of [quizReviewFilterFill] (`#AE87E7`), CW07a. The
+  /// same purple on both canvases, so the selected chip is the one part of the
+  /// inbox that does not change hue.
+  final Color notificationChipSelectedFill;
+
+  /// The SELECTED chip's label (and its glyph, if it has one). Light `#FCFBF9`
+  /// (`180:8556`), measured **2.74:1** on [notificationChipSelectedFill];
+  /// dark stand-in: no dark frame (DG-35), value of [quizReviewFilterLabel]
+  /// (`#232428`, **5.48:1**), CW07a. Built as drawn in light and logged as an
+  /// accessibility question, the same precedent as DESIGN_ISSUES #54.
+  final Color notificationChipSelectedLabel;
+
+  /// A notification row. Light `#FCFBF9` (`180:8743`); dark stand-in: no dark
+  /// frame (DG-35), value of [treeRowBadgeFill] (`#27282C` at 20%, under
+  /// Glass), CW07a.
+  final Color notificationRowFill;
+
+  /// The row's 1.2 hairline. Light `rgba(124,58,237,0.2)` (`180:8743`); dark
+  /// stand-in: no dark frame (DG-35), the same purple at the same alpha — the
+  /// way [topStudentBorder] keeps `rgba(124,58,237,0.1)` on both canvases
+  /// (`59:2090`, `337:5460`), CW07a.
+  ///
+  /// ONE alpha for every row. The frame draws 0.2 on four of its six rows and
+  /// 0.15 on two, and the 0.15 rows are not consistently the read ones
+  /// (`309:5595` is read and draws 0.2), so there is no read/unread rule to
+  /// encode.
+  final Color notificationRowBorder;
+
+  /// The 40 category disc in a row. Light `#F4E6FF` (`180:8851`); dark
+  /// stand-in: no dark frame (DG-35), value of [treeRowBadgeFill] (`#27282C` at
+  /// 20%, under Glass), CW07a.
+  final Color notificationDiscFill;
+
+  /// The category glyph inside the disc. Light `#000000` — the asset's own fill
+  /// (`180:8854`); dark stand-in: no dark frame (DG-35), value of
+  /// [textPrimary] (`#FCFBF9`), CW07a.
+  final Color notificationDiscGlyph;
+
+  /// The row's body text. Light `#636363` (`180:8755`); dark stand-in: no dark
+  /// frame (DG-35), value of [textSecondary] (`#DCDCDC`), CW07a.
+  final Color notificationBody;
+
+  /// The row's date and time. Light `#3A3A50` (`180:8760`) — darker than the
+  /// body in the frame; dark stand-in: no dark frame (DG-35), value of
+  /// [textPrimary] (`#FCFBF9`), so the time stays the stronger of the two as it
+  /// is in light, CW07a.
+  final Color notificationTime;
+
+  /// The unread dot. Light `#7070A0` (`180:8752`); dark stand-in: no dark
+  /// frame (DG-35), value of [bellUnreadDot] (`#AE87E7`, the Home bell's own
+  /// dark dot), CW07a.
+  final Color notificationUnreadDot;
+
+  // The three category pills. **Both canvases keep the light pastel pair**, as
+  // [cardLabel] keeps `#7070A0` on both: no dark frame says otherwise, and a
+  // category colour that changed with the canvas would be a second meaning
+  // for the same word. Read off `180:8757`, `180:8791` and `180:8807`.
+  //
+  // Measured contrast of label on fill (WCAG 2.x), logged in DESIGN_ISSUES
+  // because every pair is below the 4.5:1 a 10px label would need: Announcements
+  // 3.13:1, System 2.78:1, Support 4.44:1.
+
+  /// The Announcements pill's fill. `#D0D0FF` (`180:8757`) on both canvases.
+  final Color notificationPillAnnouncementsFill;
+
+  /// The Announcements pill's label. `#7070A0` (`180:8758`) on both canvases.
+  final Color notificationPillAnnouncementsLabel;
+
+  /// The Support pill's fill. `#CEF8FF` (`180:8807`) on both canvases.
+  final Color notificationPillSupportFill;
+
+  /// The Support pill's label. `#466EB6` on both canvases (`180:8807`).
+  final Color notificationPillSupportLabel;
+
+  /// The System pill's fill. `#C3FDD8` (`180:8791`) on both canvases.
+  final Color notificationPillSystemFill;
+
+  /// The System pill's label. `#00A73E` on both canvases (`180:8791`).
+  final Color notificationPillSystemLabel;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -1627,6 +1746,23 @@ class AppColors extends ThemeExtension<AppColors> {
     trackCardFill: Color(0xFFFCFBF9), // Figma 125:862
     trackCardArtShadow: Color.fromRGBO(0, 0, 0, 0.25), // 125:862
     backlight: Brand.purplePrimary, // #AE87E7 — B1..B16, dark frames only
+    notificationChipIdleFill: Color(0xFFFCFBF9), // Figma 180:8557
+    notificationChipIdleLabel: Color(0xFF384F47), // Figma 180:8558 / 180:8711
+    notificationChipSelectedFill: Brand.purplePrimary, // #AE87E7 — 180:8555
+    notificationChipSelectedLabel: Color(0xFFFCFBF9), // Figma 180:8556
+    notificationRowFill: Color(0xFFFCFBF9), // Figma 180:8743
+    notificationRowBorder: Color.fromRGBO(124, 58, 237, 0.2), // Figma 180:8743
+    notificationDiscFill: Color(0xFFF4E6FF), // Figma 180:8851
+    notificationDiscGlyph: Color(0xFF000000), // the asset's own fill, 180:8854
+    notificationBody: Color(0xFF636363), // Figma 180:8755
+    notificationTime: Color(0xFF3A3A50), // Figma 180:8760
+    notificationUnreadDot: Color(0xFF7070A0), // Figma 180:8752
+    notificationPillAnnouncementsFill: Color(0xFFD0D0FF), // Figma 180:8757
+    notificationPillAnnouncementsLabel: Color(0xFF7070A0), // Figma 180:8758
+    notificationPillSupportFill: Color(0xFFCEF8FF), // Figma 180:8807
+    notificationPillSupportLabel: Color(0xFF466EB6), // Figma 180:8807
+    notificationPillSystemFill: Color(0xFFC3FDD8), // Figma 180:8791
+    notificationPillSystemLabel: Color(0xFF00A73E), // Figma 180:8791
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -1847,6 +1983,31 @@ class AppColors extends ThemeExtension<AppColors> {
     // layer, which is unusual enough in this wave to be worth the comment.
     trackCardArtShadow: Color.fromRGBO(0, 0, 0, 0.25), // 337:15981
     backlight: Brand.purplePrimary, // #AE87E7 — B1..B16
+    // Notifications inbox — NO dark frame (DG-35). Every value below is a
+    // stand-in that copies the value of the dark token named beside it, CW07a.
+    notificationChipIdleFill: Color(0x3327282C), // = reviewFilterIdleFill
+    notificationChipIdleLabel: Color(0xFFFCFBF9), // = reviewFilterIdleLabel
+    notificationChipSelectedFill: Brand.purplePrimary, // = quizReviewFilterFill
+    notificationChipSelectedLabel: Color(0xFF232428), // = quizReviewFilterLabel
+    notificationRowFill: Color(0x3327282C), // = treeRowBadgeFill
+    notificationRowBorder: Color.fromRGBO(
+      124,
+      58,
+      237,
+      0.2,
+    ), // as topStudentBorder
+    notificationDiscFill: Color(0x3327282C), // = treeRowBadgeFill
+    notificationDiscGlyph: Color(0xFFFCFBF9), // = textPrimary
+    notificationBody: Color(0xFFDCDCDC), // = textSecondary
+    notificationTime: Color(0xFFFCFBF9), // = textPrimary
+    notificationUnreadDot: Brand.purplePrimary, // = bellUnreadDot
+    // The pills keep the light pastel pairs on both canvases, as cardLabel does.
+    notificationPillAnnouncementsFill: Color(0xFFD0D0FF), // Figma 180:8757
+    notificationPillAnnouncementsLabel: Color(0xFF7070A0), // Figma 180:8758
+    notificationPillSupportFill: Color(0xFFCEF8FF), // Figma 180:8807
+    notificationPillSupportLabel: Color(0xFF466EB6), // Figma 180:8807
+    notificationPillSystemFill: Color(0xFFC3FDD8), // Figma 180:8791
+    notificationPillSystemLabel: Color(0xFF00A73E), // Figma 180:8791
   );
 
   @override
@@ -2033,6 +2194,23 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? trackCardFill,
     Color? trackCardArtShadow,
     Color? backlight,
+    Color? notificationChipIdleFill,
+    Color? notificationChipIdleLabel,
+    Color? notificationChipSelectedFill,
+    Color? notificationChipSelectedLabel,
+    Color? notificationRowFill,
+    Color? notificationRowBorder,
+    Color? notificationDiscFill,
+    Color? notificationDiscGlyph,
+    Color? notificationBody,
+    Color? notificationTime,
+    Color? notificationUnreadDot,
+    Color? notificationPillAnnouncementsFill,
+    Color? notificationPillAnnouncementsLabel,
+    Color? notificationPillSupportFill,
+    Color? notificationPillSupportLabel,
+    Color? notificationPillSystemFill,
+    Color? notificationPillSystemLabel,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -2245,6 +2423,38 @@ class AppColors extends ThemeExtension<AppColors> {
       trackCardFill: trackCardFill ?? this.trackCardFill,
       trackCardArtShadow: trackCardArtShadow ?? this.trackCardArtShadow,
       backlight: backlight ?? this.backlight,
+      notificationChipIdleFill:
+          notificationChipIdleFill ?? this.notificationChipIdleFill,
+      notificationChipIdleLabel:
+          notificationChipIdleLabel ?? this.notificationChipIdleLabel,
+      notificationChipSelectedFill:
+          notificationChipSelectedFill ?? this.notificationChipSelectedFill,
+      notificationChipSelectedLabel:
+          notificationChipSelectedLabel ?? this.notificationChipSelectedLabel,
+      notificationRowFill: notificationRowFill ?? this.notificationRowFill,
+      notificationRowBorder:
+          notificationRowBorder ?? this.notificationRowBorder,
+      notificationDiscFill: notificationDiscFill ?? this.notificationDiscFill,
+      notificationDiscGlyph:
+          notificationDiscGlyph ?? this.notificationDiscGlyph,
+      notificationBody: notificationBody ?? this.notificationBody,
+      notificationTime: notificationTime ?? this.notificationTime,
+      notificationUnreadDot:
+          notificationUnreadDot ?? this.notificationUnreadDot,
+      notificationPillAnnouncementsFill:
+          notificationPillAnnouncementsFill ??
+          this.notificationPillAnnouncementsFill,
+      notificationPillAnnouncementsLabel:
+          notificationPillAnnouncementsLabel ??
+          this.notificationPillAnnouncementsLabel,
+      notificationPillSupportFill:
+          notificationPillSupportFill ?? this.notificationPillSupportFill,
+      notificationPillSupportLabel:
+          notificationPillSupportLabel ?? this.notificationPillSupportLabel,
+      notificationPillSystemFill:
+          notificationPillSystemFill ?? this.notificationPillSystemFill,
+      notificationPillSystemLabel:
+          notificationPillSystemLabel ?? this.notificationPillSystemLabel,
     );
   }
 
@@ -2855,6 +3065,91 @@ class AppColors extends ThemeExtension<AppColors> {
         t,
       )!,
       backlight: Color.lerp(backlight, other.backlight, t)!,
+      notificationChipIdleFill: Color.lerp(
+        notificationChipIdleFill,
+        other.notificationChipIdleFill,
+        t,
+      )!,
+      notificationChipIdleLabel: Color.lerp(
+        notificationChipIdleLabel,
+        other.notificationChipIdleLabel,
+        t,
+      )!,
+      notificationChipSelectedFill: Color.lerp(
+        notificationChipSelectedFill,
+        other.notificationChipSelectedFill,
+        t,
+      )!,
+      notificationChipSelectedLabel: Color.lerp(
+        notificationChipSelectedLabel,
+        other.notificationChipSelectedLabel,
+        t,
+      )!,
+      notificationRowFill: Color.lerp(
+        notificationRowFill,
+        other.notificationRowFill,
+        t,
+      )!,
+      notificationRowBorder: Color.lerp(
+        notificationRowBorder,
+        other.notificationRowBorder,
+        t,
+      )!,
+      notificationDiscFill: Color.lerp(
+        notificationDiscFill,
+        other.notificationDiscFill,
+        t,
+      )!,
+      notificationDiscGlyph: Color.lerp(
+        notificationDiscGlyph,
+        other.notificationDiscGlyph,
+        t,
+      )!,
+      notificationBody: Color.lerp(
+        notificationBody,
+        other.notificationBody,
+        t,
+      )!,
+      notificationTime: Color.lerp(
+        notificationTime,
+        other.notificationTime,
+        t,
+      )!,
+      notificationUnreadDot: Color.lerp(
+        notificationUnreadDot,
+        other.notificationUnreadDot,
+        t,
+      )!,
+      notificationPillAnnouncementsFill: Color.lerp(
+        notificationPillAnnouncementsFill,
+        other.notificationPillAnnouncementsFill,
+        t,
+      )!,
+      notificationPillAnnouncementsLabel: Color.lerp(
+        notificationPillAnnouncementsLabel,
+        other.notificationPillAnnouncementsLabel,
+        t,
+      )!,
+      notificationPillSupportFill: Color.lerp(
+        notificationPillSupportFill,
+        other.notificationPillSupportFill,
+        t,
+      )!,
+      notificationPillSupportLabel: Color.lerp(
+        notificationPillSupportLabel,
+        other.notificationPillSupportLabel,
+        t,
+      )!,
+      notificationPillSystemFill: Color.lerp(
+        notificationPillSystemFill,
+        other.notificationPillSystemFill,
+        t,
+      )!,
+      notificationPillSystemLabel: Color.lerp(
+        notificationPillSystemLabel,
+        other.notificationPillSystemLabel,
+        t,
+      )!,
     );
   }
 }

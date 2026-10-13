@@ -597,6 +597,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.trackCardGlassFirst,
     required this.trackCardGlassSecond,
     required this.flashcardCardShadows,
+    required this.notificationRowShadows,
+    required this.notificationRowGlass,
+    required this.notificationDiscGlass,
+    required this.notificationChipIdleShadows,
+    required this.notificationChipIdleGlass,
   });
 
   // --- edit2: shell, auth, onboarding, registration ------------------------
@@ -955,6 +960,37 @@ class AppElevation extends ThemeExtension<AppElevation> {
   /// rather than becoming a token. API→UI Wave 22.
   final List<FigmaShadow> flashcardCardShadows;
 
+  // --- Notifications inbox (CW07a · Figma 180:8386, light only) -------------
+  //
+  // No dark frame exists (DESIGN_ISSUES DG-35). Dark takes the treatment the
+  // established dark chips and discs use — no shadow, the translucent fill and
+  // Glass G5 — as a STAND-IN, not a reading.
+
+  /// A notification row's INNER shadow: `#000000` at 25%, offset (0, -0.5),
+  /// blur 2.5 (`180:8743`). Dark stand-in: none — the row elevates with
+  /// [notificationRowGlass] alone, as [treeRowBadgeGlass]'s disc does. CW07a.
+  final List<FigmaShadow> notificationRowShadows;
+
+  /// A notification row, dark only — G5, the file's default for a plain
+  /// translucent card. Stand-in: no dark frame (DG-35). CW07a.
+  final GlassStyle? notificationRowGlass;
+
+  /// The 40 category disc in a notification row, dark only — G5, the value
+  /// [treeRowBadgeGlass] gives the catalog's index disc. Stand-in: no dark
+  /// frame (DG-35). CW07a.
+  final GlassStyle? notificationDiscGlass;
+
+  /// An IDLE inbox filter chip's INNER shadow: `#000000` at 25%, offset (0, -1),
+  /// blur 3.3 (`180:8557`). Dark stand-in: none, as [reviewFilterIdleShadows]
+  /// (`337:6827`). The SELECTED chip is flat on both canvases and takes no
+  /// token. CW07a.
+  final List<FigmaShadow> notificationChipIdleShadows;
+
+  /// An IDLE inbox filter chip, dark only — G5, the value
+  /// [reviewFilterIdleGlass] gives the review screen's idle pill. Stand-in: no
+  /// dark frame (DG-35). CW07a.
+  final GlassStyle? notificationChipIdleGlass;
+
   /// Light canvas.
   ///
   /// **`static final`, not `const`, deliberately:** two tokens take their
@@ -1148,6 +1184,26 @@ class AppElevation extends ThemeExtension<AppElevation> {
         inset: true,
       ),
     ],
+    // Notifications inbox, Figma 180:8743 (row) and 180:8557 (idle chip).
+    notificationRowShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0, -0.5),
+        blur: 2.5,
+        inset: true,
+      ),
+    ],
+    notificationRowGlass: null,
+    notificationDiscGlass: null,
+    notificationChipIdleShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0, -1),
+        blur: 3.3,
+        inset: true,
+      ),
+    ],
+    notificationChipIdleGlass: null,
   );
 
   /// Dark canvas.
@@ -1410,6 +1466,13 @@ class AppElevation extends ThemeExtension<AppElevation> {
         inset: true,
       ),
     ],
+    // Notifications inbox — NO dark frame (DG-35). Stand-ins: no shadow, G5, as
+    // the dark idle chips and the tree-row discs do. CW07a.
+    notificationRowShadows: const [],
+    notificationRowGlass: _g5,
+    notificationDiscGlass: _g5,
+    notificationChipIdleShadows: const [],
+    notificationChipIdleGlass: _g5,
   );
 
   @override
@@ -1502,6 +1565,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? trackCardGlassFirst,
     GlassStyle? trackCardGlassSecond,
     List<FigmaShadow>? flashcardCardShadows,
+    List<FigmaShadow>? notificationRowShadows,
+    GlassStyle? notificationRowGlass,
+    GlassStyle? notificationDiscGlass,
+    List<FigmaShadow>? notificationChipIdleShadows,
+    GlassStyle? notificationChipIdleGlass,
   }) {
     // Note, as `AppColors.copyWith` already notes for its nullable borders:
     // `??` cannot CLEAR a nullable token. Dark gets its nulls from the palette
@@ -1630,6 +1698,15 @@ class AppElevation extends ThemeExtension<AppElevation> {
       trackCardGlassFirst: trackCardGlassFirst ?? this.trackCardGlassFirst,
       trackCardGlassSecond: trackCardGlassSecond ?? this.trackCardGlassSecond,
       flashcardCardShadows: flashcardCardShadows ?? this.flashcardCardShadows,
+      notificationRowShadows:
+          notificationRowShadows ?? this.notificationRowShadows,
+      notificationRowGlass: notificationRowGlass ?? this.notificationRowGlass,
+      notificationDiscGlass:
+          notificationDiscGlass ?? this.notificationDiscGlass,
+      notificationChipIdleShadows:
+          notificationChipIdleShadows ?? this.notificationChipIdleShadows,
+      notificationChipIdleGlass:
+          notificationChipIdleGlass ?? this.notificationChipIdleGlass,
     );
   }
 
@@ -2049,6 +2126,31 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.flashcardCardShadows,
         t,
       ),
+      notificationRowShadows: FigmaShadow.lerpList(
+        notificationRowShadows,
+        other.notificationRowShadows,
+        t,
+      ),
+      notificationRowGlass: GlassStyle.lerp(
+        notificationRowGlass,
+        other.notificationRowGlass,
+        t,
+      ),
+      notificationDiscGlass: GlassStyle.lerp(
+        notificationDiscGlass,
+        other.notificationDiscGlass,
+        t,
+      ),
+      notificationChipIdleShadows: FigmaShadow.lerpList(
+        notificationChipIdleShadows,
+        other.notificationChipIdleShadows,
+        t,
+      ),
+      notificationChipIdleGlass: GlassStyle.lerp(
+        notificationChipIdleGlass,
+        other.notificationChipIdleGlass,
+        t,
+      ),
     );
   }
 
@@ -2144,6 +2246,11 @@ class AppElevation extends ThemeExtension<AppElevation> {
     trackCardGlassFirst,
     trackCardGlassSecond,
     flashcardCardShadows,
+    notificationRowShadows,
+    notificationRowGlass,
+    notificationDiscGlass,
+    notificationChipIdleShadows,
+    notificationChipIdleGlass,
   ];
 
   @override

@@ -946,4 +946,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get flashcardPreviewUsedUp =>
       'You\'ve used this week\'s free flashcards.';
+
+  @override
+  String get notifFilterAll => 'All';
+
+  @override
+  String get notifModerationWarningTitle => 'A message about your account';
+
+  @override
+  String get notifModerationWarningBody =>
+      'We received a report about content from your account that does not follow the Level Up community rules. This is a warning. Please keep your messages and photos respectful. If this happens again, your account may be banned. If you think this is a mistake, contact Support from the app.';
 }

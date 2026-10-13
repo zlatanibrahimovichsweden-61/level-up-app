@@ -21,6 +21,7 @@ import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/mistakes/screens/mistakes_overview_screen.dart';
 import '../../features/mistakes/screens/mistakes_subject_screen.dart';
 import '../../features/mistakes/screens/mistakes_tree_screens.dart';
+import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
@@ -549,6 +550,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       // FriendsScreen). Routed so the built screen is reachable and testable
       // the day a design gives it a door.
       GoRoute(path: '/friends', builder: (_, _) => const FriendsScreen()),
+      // The notifications inbox (CW07a), pushed from the Home bell over the
+      // shell like `/support`: the frame draws no nav bar. Authenticated by the
+      // default-deny redirect; not a shell location, so return-to-target never
+      // remembers it.
+      GoRoute(
+        path: '/notifications',
+        builder: (_, _) => const NotificationsScreen(),
+      ),
       // Two paths, one screen: the documents differ by title and by nothing
       // else until somebody supplies the copy.
       GoRoute(

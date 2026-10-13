@@ -871,6 +871,201 @@ void main() {
     });
   });
 
+  // CW07a: the notifications inbox. One row per token, so a token added to the
+  // class without a row here is the next reviewer's question.
+  group('CW07a Notifications tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    const lavender = Color(0xFFAE87E7); // Brand.purplePrimary
+    const ink = Color(0xFF384F47);
+    const cream = Color(0xFFFCFBF9);
+    const rowBorder = Color.fromRGBO(124, 58, 237, 0.2); // 180:8743
+
+    final tokens = <_Token>[
+      _Token(
+        'notificationChipIdleFill',
+        (c) => c.notificationChipIdleFill,
+        (c, v) => c.copyWith(notificationChipIdleFill: v),
+        cream, // 180:8557
+        const Color(0x3327282C),
+      ),
+      _Token(
+        'notificationChipIdleLabel',
+        (c) => c.notificationChipIdleLabel,
+        (c, v) => c.copyWith(notificationChipIdleLabel: v),
+        ink, // 180:8558
+        cream,
+      ),
+      _Token(
+        'notificationChipSelectedFill',
+        (c) => c.notificationChipSelectedFill,
+        (c, v) => c.copyWith(notificationChipSelectedFill: v),
+        lavender, // 180:8555
+        lavender,
+      ),
+      _Token(
+        'notificationChipSelectedLabel',
+        (c) => c.notificationChipSelectedLabel,
+        (c, v) => c.copyWith(notificationChipSelectedLabel: v),
+        cream, // 180:8556
+        const Color(0xFF232428),
+      ),
+      _Token(
+        'notificationRowFill',
+        (c) => c.notificationRowFill,
+        (c, v) => c.copyWith(notificationRowFill: v),
+        cream, // 180:8743
+        const Color(0x3327282C),
+      ),
+      _Token(
+        'notificationRowBorder',
+        (c) => c.notificationRowBorder,
+        (c, v) => c.copyWith(notificationRowBorder: v),
+        rowBorder,
+        rowBorder,
+      ),
+      _Token(
+        'notificationDiscFill',
+        (c) => c.notificationDiscFill,
+        (c, v) => c.copyWith(notificationDiscFill: v),
+        const Color(0xFFF4E6FF), // 180:8851
+        const Color(0x3327282C),
+      ),
+      _Token(
+        'notificationDiscGlyph',
+        (c) => c.notificationDiscGlyph,
+        (c, v) => c.copyWith(notificationDiscGlyph: v),
+        const Color(0xFF000000), // 180:8854
+        cream,
+      ),
+      _Token(
+        'notificationBody',
+        (c) => c.notificationBody,
+        (c, v) => c.copyWith(notificationBody: v),
+        const Color(0xFF636363), // 180:8755
+        const Color(0xFFDCDCDC),
+      ),
+      _Token(
+        'notificationTime',
+        (c) => c.notificationTime,
+        (c, v) => c.copyWith(notificationTime: v),
+        const Color(0xFF3A3A50), // 180:8760
+        cream,
+      ),
+      _Token(
+        'notificationUnreadDot',
+        (c) => c.notificationUnreadDot,
+        (c, v) => c.copyWith(notificationUnreadDot: v),
+        const Color(0xFF7070A0), // 180:8752
+        lavender,
+      ),
+      // The pills keep their light pastel pairs on both canvases.
+      _Token(
+        'notificationPillAnnouncementsFill',
+        (c) => c.notificationPillAnnouncementsFill,
+        (c, v) => c.copyWith(notificationPillAnnouncementsFill: v),
+        const Color(0xFFD0D0FF), // 180:8757
+        const Color(0xFFD0D0FF),
+      ),
+      _Token(
+        'notificationPillAnnouncementsLabel',
+        (c) => c.notificationPillAnnouncementsLabel,
+        (c, v) => c.copyWith(notificationPillAnnouncementsLabel: v),
+        const Color(0xFF7070A0), // 180:8758
+        const Color(0xFF7070A0),
+      ),
+      _Token(
+        'notificationPillSupportFill',
+        (c) => c.notificationPillSupportFill,
+        (c, v) => c.copyWith(notificationPillSupportFill: v),
+        const Color(0xFFCEF8FF), // 180:8807
+        const Color(0xFFCEF8FF),
+      ),
+      _Token(
+        'notificationPillSupportLabel',
+        (c) => c.notificationPillSupportLabel,
+        (c, v) => c.copyWith(notificationPillSupportLabel: v),
+        const Color(0xFF466EB6), // 180:8807
+        const Color(0xFF466EB6),
+      ),
+      _Token(
+        'notificationPillSystemFill',
+        (c) => c.notificationPillSystemFill,
+        (c, v) => c.copyWith(notificationPillSystemFill: v),
+        const Color(0xFFC3FDD8), // 180:8791
+        const Color(0xFFC3FDD8),
+      ),
+      _Token(
+        'notificationPillSystemLabel',
+        (c) => c.notificationPillSystemLabel,
+        (c, v) => c.copyWith(notificationPillSystemLabel: v),
+        const Color(0xFF00A73E), // 180:8791
+        const Color(0xFF00A73E),
+      ),
+    ];
+
+    test('the table has one row per token, none repeated', () {
+      expect(tokens, hasLength(17));
+      expect({for (final t in tokens) t.name}, hasLength(17));
+    });
+
+    test('the frame\'s values in light, the stand-ins in dark', () {
+      for (final t in tokens) {
+        expect(t.read(light), t.light, reason: '${t.name} in light');
+        expect(t.read(dark), t.dark, reason: '${t.name} in dark');
+      }
+    });
+
+    test('the dark values with no frame are named stand-ins, not '
+        'inventions (DG-35)', () {
+      // No dark Notifications frame exists: every dark value copies the dark
+      // token it is documented to copy, so the day one is drawn the diff is a
+      // reading and not a surprise.
+      expect(dark.notificationChipIdleFill, dark.reviewFilterIdleFill);
+      expect(dark.notificationChipIdleLabel, dark.reviewFilterIdleLabel);
+      expect(dark.notificationChipSelectedFill, dark.quizReviewFilterFill);
+      expect(dark.notificationChipSelectedLabel, dark.quizReviewFilterLabel);
+      expect(dark.notificationRowFill, dark.treeRowBadgeFill);
+      expect(dark.notificationDiscFill, dark.treeRowBadgeFill);
+      expect(dark.notificationDiscGlyph, dark.textPrimary);
+      expect(dark.notificationBody, dark.textSecondary);
+      expect(dark.notificationTime, dark.textPrimary);
+      expect(dark.notificationUnreadDot, dark.bellUnreadDot);
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      for (final t in tokens) {
+        // copyWith sets this one…
+        final one = t.put(light, probe);
+        expect(t.read(one), probe, reason: '${t.name} copyWith');
+        // …and leaves every other one alone.
+        for (final other in tokens.where((o) => o != t)) {
+          expect(
+            other.read(one),
+            other.read(light),
+            reason: '${t.name} copyWith moved ${other.name}',
+          );
+        }
+      }
+
+      // Several are identical on both canvases, so light→dark would pass with
+      // a broken lerp. Lerp towards probes instead.
+      var target = light;
+      for (final t in tokens) {
+        target = t.put(target, probe);
+      }
+      final end = light.lerp(target, 1);
+      final start = light.lerp(target, 0);
+      for (final t in tokens) {
+        expect(t.read(end), probe, reason: '${t.name} lerp to 1');
+        expect(t.read(start), t.read(light), reason: '${t.name} lerp to 0');
+      }
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.
@@ -884,4 +1079,16 @@ void main() {
       expect(file.lengthSync(), greaterThan(1000), reason: '$path looks empty');
     }
   });
+}
+
+/// One token of a per-wave group: how to read it, how to set it through
+/// `copyWith`, and the value each palette is pinned to.
+class _Token {
+  _Token(this.name, this.read, this.put, this.light, this.dark);
+
+  final String name;
+  final Color Function(AppColors) read;
+  final AppColors Function(AppColors, Color) put;
+  final Color light;
+  final Color dark;
 }

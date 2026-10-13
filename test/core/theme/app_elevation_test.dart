@@ -639,6 +639,85 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  group('CW07a — the notifications inbox', () {
+    test('light: two INNER shadows, no Glass (180:8743, 180:8557)', () {
+      expect(light.notificationRowShadows, const [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0, -0.5),
+          blur: 2.5,
+          inset: true,
+        ),
+      ]);
+      expect(light.notificationChipIdleShadows, const [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0, -1),
+          blur: 3.3,
+          inset: true,
+        ),
+      ]);
+      expect(light.notificationRowGlass, isNull);
+      expect(light.notificationDiscGlass, isNull);
+      expect(light.notificationChipIdleGlass, isNull);
+    });
+
+    test('dark: no shadow and Glass G5 on all three - stand-ins, no dark '
+        'frame exists (DG-35)', () {
+      expect(dark.notificationRowShadows, isEmpty);
+      expect(dark.notificationChipIdleShadows, isEmpty);
+      expect(dark.notificationRowGlass, g5);
+      expect(dark.notificationDiscGlass, g5);
+      expect(dark.notificationChipIdleGlass, g5);
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probeShadows = [
+        FigmaShadow(color: black25, offset: Offset(9, 9), blur: 9),
+      ];
+      const probeGlass = GlassStyle(
+        frost: 9,
+        refraction: 0.1,
+        depth: 9,
+        lightAngle: 9,
+        lightIntensity: 0.9,
+        dispersion: 0.9,
+        splay: 9,
+      );
+      final one = light.copyWith(
+        notificationRowShadows: probeShadows,
+        notificationChipIdleShadows: probeShadows,
+        notificationRowGlass: probeGlass,
+        notificationDiscGlass: probeGlass,
+        notificationChipIdleGlass: probeGlass,
+      );
+      expect(one.notificationRowShadows, probeShadows);
+      expect(one.notificationChipIdleShadows, probeShadows);
+      expect(one.notificationRowGlass, probeGlass);
+      expect(one.notificationDiscGlass, probeGlass);
+      expect(one.notificationChipIdleGlass, probeGlass);
+      // …and a neighbour is left alone.
+      expect(one.flashcardCardShadows, light.flashcardCardShadows);
+
+      // Light and dark differ in every one, so a lerp that ignored a token
+      // would leave it at the start value.
+      final end = light.lerp(dark, 1);
+      expect(end.notificationRowGlass, g5);
+      expect(end.notificationDiscGlass, g5);
+      expect(end.notificationChipIdleGlass, g5);
+      expect(end.notificationRowShadows, isEmpty);
+      expect(end.notificationChipIdleShadows, isEmpty);
+      final start = light.lerp(dark, 0);
+      expect(start.notificationRowGlass, isNull);
+      expect(start.notificationRowShadows, light.notificationRowShadows);
+      expect(
+        start.notificationChipIdleShadows,
+        light.notificationChipIdleShadows,
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
   /// Every shadow-list token, by name, so the sweeps below cannot quietly miss
   /// one that was added to the class after they were written.
   Map<String, List<FigmaShadow>> shadowsOf(AppElevation e) => {
@@ -672,6 +751,8 @@ void main() {
     'otpCardShadows': e.otpCardShadows,
     'trackCardShadows': e.trackCardShadows,
     'flashcardCardShadows': e.flashcardCardShadows,
+    'notificationRowShadows': e.notificationRowShadows,
+    'notificationChipIdleShadows': e.notificationChipIdleShadows,
   };
 
   group('#34 — the dark canvas drops BLACK shadows, never cream', () {
@@ -767,6 +848,9 @@ void main() {
       'otpDigitGlass': e.otpDigitGlass,
       'trackCardGlassFirst': e.trackCardGlassFirst,
       'trackCardGlassSecond': e.trackCardGlassSecond,
+      'notificationRowGlass': e.notificationRowGlass,
+      'notificationDiscGlass': e.notificationDiscGlass,
+      'notificationChipIdleGlass': e.notificationChipIdleGlass,
     };
 
     test('the onboarding sheet is the ONLY light Glass', () {
@@ -829,8 +913,10 @@ void main() {
         // previous button's radius differs per canvas) and `reviewRowGlass`.
         // 87 from API→UI Wave 11: `quizSetupDividerWidth` (1.18 / 0.5).
         // 88 from API→UI Wave 22: `flashcardCardShadows`.
+        // 93 from CW07a: the inbox's row and idle-chip shadows and the three
+        // Glass tokens (row, disc, idle chip).
         light.props.length,
-        88,
+        93,
         reason:
             'a token was added or removed. Update props (and this count) so '
             'equality keeps covering every field.',

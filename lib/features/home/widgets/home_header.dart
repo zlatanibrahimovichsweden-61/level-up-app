@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_elevation.dart';
@@ -11,10 +12,8 @@ import '../../../l10n/app_localizations.dart';
 /// Home header · Figma `59:1439` (light) / `337:5323` (dark) — avatar +
 /// "Welcome back, {name}" + the bell chip, over a hairline bottom rule.
 ///
-/// The bell is intentionally INERT: there is no notifications endpoint in the
-/// contract and no inbox screen yet, so it does nothing. It is not wired to a
-/// dead route on purpose — a tap that navigates nowhere is worse than a tap
-/// that visibly does nothing.
+/// The bell opens the notifications inbox (`/notifications`, CW07a), pushed over
+/// the shell so back returns here.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
@@ -28,10 +27,13 @@ class HomeHeader extends StatelessWidget {
 
   /// Whether to draw the unread dot over the bell.
   ///
-  /// TODO(contract): permanently `false` — there is no notifications endpoint
-  /// in the contract, so nothing can set it. The frame draws the dot, but
-  /// rendering it unconditionally would be a permanent "you have mail" lie.
-  /// Confirm with Seif whether an unread count is coming
+  /// Stays `false` in CW07a. The endpoint exists
+  /// (`GET /me/notifications/unread-count`, `openapi.yaml:1226`), but every
+  /// student gets one `enrolment_opened` item that has no copy yet (Seif SQ-20),
+  /// so the inbox does not render it — and a dot driven by the server's count
+  /// would stay lit over an inbox that shows nothing. Wiring it is CW07b, once
+  /// the count and the rendered kinds agree. The frame draws the dot, but
+  /// rendering it unconditionally would be a permanent "you have mail" lie
   /// (docs/DESIGN_ISSUES.md #41).
   final bool hasUnreadNotifications;
 
@@ -76,8 +78,10 @@ class HomeHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           _BellChip(
+            key: const Key('home_bell'),
             hasUnread: hasUnreadNotifications,
             semanticLabel: l10n.notifications,
+            onTap: () => context.push('/notifications'),
           ),
         ],
       ),
@@ -97,11 +101,27 @@ class HomeHeader extends StatelessWidget {
 /// The ring's fill is its own token, not the page background: the dark frame
 /// washes `#232428` at 20% over the page and lights the disc with Glass **G5**,
 /// which is a surface sitting on the background rather than a hole in it.
+///
+/// **The tap target is 48 x 48; the drawn chip is still 37.** The target is
+/// laid out as a 48 box with the chip flush to its END edge and centred
+/// vertically, so the chip lands on exactly the pixels it always had and the
+/// extra 11 (width) and 11 (height) are slack the finger gets. The two goldens
+/// that pin the header (`home_header_bell_light.png` / `_dark.png`) do not move.
 class _BellChip extends StatelessWidget {
-  const _BellChip({required this.hasUnread, required this.semanticLabel});
+  const _BellChip({
+    super.key,
+    required this.hasUnread,
+    required this.semanticLabel,
+    required this.onTap,
+  });
 
   final bool hasUnread;
   final String semanticLabel;
+  final VoidCallback onTap;
+
+  /// Material and both platforms' accessibility guidance floor a tap target at
+  /// 48 / 44.
+  static const _tapTarget = 48.0;
 
   static const _box = 37.0;
   static const _ring = 36.5;
@@ -114,7 +134,7 @@ class _BellChip extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
     final elevation = Theme.of(context).extension<AppElevation>()!;
 
-    return SizedBox(
+    final chip = SizedBox(
       width: _box,
       height: _box,
       child: Stack(
@@ -127,6 +147,9 @@ class _BellChip extends StatelessWidget {
             color: ext.homeBellFill,
             side: BorderSide(color: ext.bellRing, width: 0.5),
             glass: elevation.homeBellGlass,
+            // The ink lives on the ring, where the eye is; the 48 target
+            // around it is a plain detector below.
+            onTap: onTap,
             child: const SizedBox.expand(),
           ),
           SvgPicture.asset(
@@ -134,7 +157,10 @@ class _BellChip extends StatelessWidget {
             width: _box,
             height: _box,
             colorFilter: ColorFilter.mode(ext.bellGlyph, BlendMode.srcIn),
-            semanticsLabel: semanticLabel,
+            // Named by the Semantics below, once. Left on, the glyph's own
+            // label and image role would merge in and TalkBack would read an
+            // ImageView.
+            excludeFromSemantics: true,
           ),
           if (hasUnread)
             PositionedDirectional(
@@ -150,6 +176,26 @@ class _BellChip extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: _tapTarget,
+          height: _tapTarget,
+          // The ring's InkWell would add a second, unlabelled clickable node
+          // (uiautomator showed it) inside this labelled button. The chip is
+          // drawn only; this Semantics is the one node, with the tap action.
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: ExcludeSemantics(child: chip),
+          ),
+        ),
       ),
     );
   }

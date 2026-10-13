@@ -933,4 +933,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get flashcardPreviewUsedUp =>
       'لقد استخدمت البطاقات المجانية لهذا الأسبوع.';
+
+  @override
+  String get notifFilterAll => 'الكل';
+
+  @override
+  String get notifModerationWarningTitle => 'رسالة بخصوص حسابك';
+
+  @override
+  String get notifModerationWarningBody =>
+      'وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل التطبيق.';
 }
