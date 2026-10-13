@@ -209,7 +209,13 @@ class _Sheet extends StatelessWidget {
           backdrop: GlassBackdrop.content,
           child: SafeArea(
             top: false,
-            child: Padding(
+            // Scrolls when the content is taller than the sheet may be: the
+            // largest text on a 320 x 568 phone otherwise pushed "Log In" past
+            // the screen's bottom edge, outside the Column's bounds, where a tap
+            // cannot reach it. The sheet is sized by its content, and a scroll
+            // view takes its child's height up to the room it is given, so a
+            // sheet that fits is laid out exactly as before and does not scroll.
+            child: SingleChildScrollView(
               // The frame's text block is w331 and the button block w362 inside
               // 402 — 35.5 and 20. Both collapse to 20, which is the horizontal
               // padding every other screen in the app already uses; the text

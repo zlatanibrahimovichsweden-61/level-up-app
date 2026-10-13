@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -262,6 +264,18 @@ class _InputView extends StatelessWidget {
   /// card's own 20 to "Verify" (the line ends ~101, Verify starts at 121).
   static const _gapDigitsToError = 13.0;
 
+  /// The contract mandates six digits.
+  static const _digitCount = 6;
+
+  /// The gap between two cells before `spaceBetween` spreads the rest — the one
+  /// pinput draws by default, stated here so [_digitRowWidth] does not lean on
+  /// a package private.
+  static const _digitGap = 8.0;
+
+  /// The row's least width: six cells and the five gaps between them (328).
+  static const _digitRowWidth =
+      _digitCount * _DigitBox._width + (_digitCount - 1) * _digitGap;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -351,20 +365,40 @@ class _InputView extends StatelessWidget {
                 // OTP boxes fill left-to-right regardless of UI locale.
                 Directionality(
                   textDirection: TextDirection.ltr,
-                  child: Pinput.builder(
-                    length: 6,
-                    controller: pinController,
-                    focusNode: focusNode,
-                    autofocus: true,
-                    // Banned: the cells stop taking input and the node gives up
-                    // focus (pinput drops `canRequestFocus` with `enabled`).
-                    enabled: !banned,
-                    keyboardType: TextInputType.number,
-                    forceErrorState: state.isInvalidCode,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    onChanged: onChanged,
-                    onCompleted: onCompleted,
-                    builder: (context, pin) => _DigitBox(state: pin),
+                  // The row is `_digitRowWidth` wide at its least, and the
+                  // card has that much room only from a 396 dp screen up
+                  // (docs/RESPONSIVE.md #8). With room to spare the row is
+                  // exactly as wide as the card, as it always was (the cells
+                  // spread with `spaceBetween`) and the scale is 1. Without
+                  // it, the row keeps its least width and the whole row is
+                  // scaled down to the card — never wider, so nothing spills.
+                  // The tree is the same at every width, so the field keeps
+                  // its state across a rotation.
+                  child: LayoutBuilder(
+                    builder: (context, constraints) => FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: math.max(_digitRowWidth, constraints.maxWidth),
+                        child: Pinput.builder(
+                          length: _digitCount,
+                          controller: pinController,
+                          focusNode: focusNode,
+                          autofocus: true,
+                          // Banned: the cells stop taking input and the node
+                          // gives up focus (pinput drops `canRequestFocus`
+                          // with `enabled`).
+                          enabled: !banned,
+                          keyboardType: TextInputType.number,
+                          forceErrorState: state.isInvalidCode,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          separatorBuilder: (_) =>
+                              const SizedBox(width: _digitGap),
+                          onChanged: onChanged,
+                          onCompleted: onCompleted,
+                          builder: (context, pin) => _DigitBox(state: pin),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 // The frame's error line (built above). Every failure uses
@@ -657,41 +691,69 @@ class _SuccessView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    return Padding(
-      // Figma puts this block at x17.5/w363 of 402; built at 20, the app-wide
-      // horizontal padding.
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
-      child: Column(
-        // The frame top-anchors the block at y245 of 878 (28%), which reads as
-        // optically centred now that the AppBar is gone.
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _SuccessBadge(),
-          const SizedBox(height: 18),
-          Text(
-            l10n.otpSuccessTitle,
-            textAlign: TextAlign.center,
-            style: AppType.h1.copyWith(color: ext.textPrimary),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            l10n.otpSuccessSubtitle,
-            textAlign: TextAlign.center,
-            style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
-          ),
-          // `332:3400`: gap 60 after a fixed 267-high group whose text block
-          // ends at 252, so the subtitle sits 75 above Continue, not 60.
-          const SizedBox(height: 75),
-          // edit5 §7.11a. Always enabled: the only way onto this view is a
-          // stored session, so there is no state in which "Continue" is dead.
-          PrimaryCta(
-            child: FilledButton(
-              onPressed: onContinue,
-              child: Text(l10n.continueLabel, style: AppType.buttonLarge),
+    return PopScope(
+      // Once the tokens are stored there is no "back": the chip is gone from
+      // this view for that reason, and the OS Back must agree with it rather
+      // than pop to the Login form (the signed-in redirect off `/login` only
+      // runs on a navigation, not on a pop). It does what Continue does.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) onContinue();
+      },
+      // Scrolls like `_InputView` when it is taller than the viewport (a phone
+      // on its side; the largest text on a short screen). Continue sits at the
+      // bottom of the column, and a Column that overflows is not hit-testable
+      // past its own bounds, so without this the one way forward could be
+      // drawn and still not answer a tap. When it fits, nothing scrolls and
+      // the block is centred exactly as before.
+      child: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              // Figma puts this block at x17.5/w363 of 402; built at 20, the
+              // app-wide horizontal padding.
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
+              child: Column(
+                // The frame top-anchors the block at y245 of 878 (28%), which
+                // reads as optically centred now that the AppBar is gone.
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _SuccessBadge(),
+                  const SizedBox(height: 18),
+                  Text(
+                    l10n.otpSuccessTitle,
+                    textAlign: TextAlign.center,
+                    style: AppType.h1.copyWith(color: ext.textPrimary),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    l10n.otpSuccessSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AppType.bodyLarge.copyWith(color: ext.bodyMuted),
+                  ),
+                  // `332:3400`: gap 60 after a fixed 267-high group whose text
+                  // block ends at 252, so the subtitle sits 75 above Continue,
+                  // not 60.
+                  const SizedBox(height: 75),
+                  // edit5 §7.11a. Always enabled: the only way onto this view
+                  // is a stored session, so there is no state in which
+                  // "Continue" is dead.
+                  PrimaryCta(
+                    child: FilledButton(
+                      onPressed: onContinue,
+                      child: Text(
+                        l10n.continueLabel,
+                        style: AppType.buttonLarge,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

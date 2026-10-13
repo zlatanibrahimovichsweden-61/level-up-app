@@ -164,25 +164,42 @@ class CatalogMessage extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: ext.mutedText),
-            const SizedBox(height: 16),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
+    // Centred when it fits; when the room under the header is short (a phone on
+    // its side, the smallest phone at the largest text) it scrolls, so the Retry
+    // button is always reachable instead of being drawn past the bottom edge.
+    //
+    // The centring floor is the room it is GIVEN. A parent that gives none (an
+    // unbounded height: a ListView, a bare Column) has nothing to centre in, so
+    // the floor is 0 there and the message simply takes its own height - an
+    // infinite floor would throw.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 48, color: ext.mutedText),
+                  const SizedBox(height: 16),
+                  Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: AppType.bodyLarge.copyWith(color: ext.textSecondary),
+                  ),
+                  if (onRetry != null) ...[
+                    const SizedBox(height: 20),
+                    // Re-triggers the same request on tap — never a silent loop.
+                    FilledButton(onPressed: onRetry, child: Text(l10n.retry)),
+                  ],
+                ],
+              ),
             ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 20),
-              // Re-triggers the same request on tap — never a silent loop.
-              FilledButton(onPressed: onRetry, child: Text(l10n.retry)),
-            ],
-          ],
+          ),
         ),
       ),
     );

@@ -136,7 +136,12 @@ class ProfileConfirmDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       // 345 wide on the 402 frame, like the limit card. 29 a side drew 344.
       insetPadding: const EdgeInsets.symmetric(horizontal: 28.5, vertical: 24),
-      child: Padding(
+      // Scrolls when the card is taller than the screen allows (the largest
+      // text on a short phone): the Column below would otherwise overflow, and
+      // its last control would be drawn outside the Column's own bounds, where
+      // a tap cannot reach it. A card that fits is not scrollable and is laid
+      // out exactly as before — the scroll view shrinks to its content.
+      child: SingleChildScrollView(
         // Top: the frame's 20 over a 35 dp title bar, re-centred on the 48 dp
         // row the ✕'s target needs (13.5 = 20 - (48 - 35) / 2), as on the
         // limit card. Bottom: 15 under Logout's pair (`180:4704`: 239 - 224),
