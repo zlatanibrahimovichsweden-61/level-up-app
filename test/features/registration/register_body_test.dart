@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/features/auth/models/device_info.dart';
 import 'package:level_up_app/features/registration/models/registration_body.dart';
@@ -342,9 +344,77 @@ void main() {
     });
   });
 
+  group('inviteCode (spec-047) — School only', () {
+    Map<String, dynamic> school({
+      String? referralCode = 'FRIEND50',
+      bool egypt = true,
+    }) => SchoolRegistration.fromDraft(
+      egypt
+          ? _egyptSchoolDraft().copyWith(referralCode: referralCode)
+          : _foreignSchoolDraft().copyWith(referralCode: referralCode),
+      device: _device,
+    ).toJson();
+
+    test('the draft\'s referral code goes out as inviteCode', () {
+      expect(school()['inviteCode'], 'FRIEND50');
+      expect(school(egypt: false)['inviteCode'], 'FRIEND50');
+    });
+
+    test('only the OUTER whitespace is trimmed - case, spaces and hyphens '
+        'are the server\'s to ignore', () {
+      expect(school(referralCode: '  ab-cd 23 \n')['inviteCode'], 'ab-cd 23');
+    });
+
+    test('nothing typed leaves the key OUT - not null, not empty', () {
+      for (final referral in <String?>[null, '', '   ', ' \t\n ']) {
+        final json = school(referralCode: referral);
+        expect(
+          json.containsKey('inviteCode'),
+          isFalse,
+          reason: 'referral [$referral]',
+        );
+        expect(json.values, isNot(contains(null)));
+        expect(json.values, isNot(contains('')));
+      }
+    });
+
+    test('a code never changes the rest of the body', () {
+      final without = school(referralCode: null)..remove('inviteCode');
+      final withCode = school()..remove('inviteCode');
+      expect(withCode, without);
+    });
+
+    test('the key survives a JSON round trip, and is absent when unset', () {
+      final body = SchoolRegistration.fromDraft(
+        _egyptSchoolDraft(),
+        device: _device,
+      );
+      // Through the encoder, as Dio sends it: `device` is only a map once
+      // it has been serialized.
+      final wire = jsonDecode(jsonEncode(body)) as Map<String, dynamic>;
+      expect(SchoolRegistration.fromJson(wire).inviteCode, 'FRIEND50');
+      expect(
+        body.copyWith(inviteCode: null).toJson(),
+        isNot(contains('inviteCode')),
+      );
+    });
+
+    test('the University body NEVER carries it, whatever the draft holds '
+        '(the pin still words it as draft there; sending it before a '
+        're-vendor is an owner decision, BACKEND_HANDOFF BH-B7)', () {
+      final json = UniversityRegistration.fromDraft(
+        _universityDraft(),
+        device: _device,
+      ).toJson();
+
+      expect(json.containsKey('inviteCode'), isFalse);
+      expect(json.values, isNot(contains('FRIEND50')));
+    });
+  });
+
   group('fields that must never be submitted', () {
-    test('referralCode is collected but absent from BOTH bodies', () {
-      // DESIGN_ISSUES #7 — no contract field exists for it.
+    test('referralCode never reaches either body under that name', () {
+      // The wire name is `inviteCode` and School alone sends it (above).
       expect(
         SchoolRegistration.fromDraft(
           _egyptSchoolDraft(),

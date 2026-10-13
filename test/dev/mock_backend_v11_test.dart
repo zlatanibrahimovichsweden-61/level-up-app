@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/dev/mock_backend.dart';
+import 'package:level_up_app/features/auth/models/auth_result.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 
 /// The harness is the ONLY place any of Day 7c can be exercised end to end —
@@ -30,6 +31,7 @@ Map<String, dynamic> _schoolBody({
   String countryCode = 'EG',
   String? governorateId = '0197b2f3-0001-7cc3-9b4e-000000000001',
   bool includeSchoolName = false,
+  String? inviteCode,
 }) => <String, dynamic>{
   'track': 'school',
   'registrationToken': 'mock.registration.token',
@@ -44,6 +46,7 @@ Map<String, dynamic> _schoolBody({
   'stage': 'secondary1',
   'educationSystem': 'ig',
   'parentPhone': '+2010000000001',
+  'inviteCode': ?inviteCode,
 };
 
 void main() {
@@ -141,6 +144,68 @@ void main() {
         expect((error as ValidationException).fields, contains('schoolId'));
       },
     );
+  });
+
+  // spec-047: `inviteCodeApplied` rides the 201 only when the request carried
+  // an `inviteCode`, and a code - good, bad or unknown - never fails the
+  // registration. The mock's one recognised code is the fixture below.
+  group('POST /auth/register echoes inviteCodeApplied', () {
+    const recognised = 'ABCD2345';
+
+    Future<Response<Map<String, dynamic>>> register({String? inviteCode}) =>
+        buildMockDio(latency: Duration.zero).post<Map<String, dynamic>>(
+          '/auth/register',
+          data: _schoolBody(inviteCode: inviteCode),
+        );
+
+    test(
+      'a request with no inviteCode gets no inviteCodeApplied key',
+      () async {
+        final res = await register();
+
+        expect(res.statusCode, 201);
+        expect(res.data!.containsKey('inviteCodeApplied'), isFalse);
+      },
+    );
+
+    test('the recognised code answers true', () async {
+      final res = await register(inviteCode: recognised);
+
+      expect(res.statusCode, 201);
+      expect(res.data!['inviteCodeApplied'], isTrue);
+    });
+
+    test(
+      'case, spaces and hyphens are ignored, as on the real server',
+      () async {
+        for (final typed in ['abcd2345', ' ABCD-2345 ', 'ab cd-23 45']) {
+          final res = await register(inviteCode: typed);
+
+          expect(res.data!['inviteCodeApplied'], isTrue, reason: typed);
+        }
+      },
+    );
+
+    test(
+      'any other code answers false and STILL creates the account',
+      () async {
+        for (final typed in ['ZZZZ9999', 'not a code', '']) {
+          final res = await register(inviteCode: typed);
+
+          expect(res.statusCode, 201, reason: typed);
+          expect(res.data!['inviteCodeApplied'], isFalse, reason: typed);
+          expect(res.data!['result'], 'authenticated');
+          expect(res.data!['tokens'], isNotNull);
+        }
+      },
+    );
+
+    test('the field parses through the AuthResult model', () async {
+      final res = await register(inviteCode: recognised);
+
+      final result = AuthResult.fromJson(res.data!) as AuthenticatedResult;
+      expect(result.inviteCodeApplied, isTrue);
+    });
   });
 
   group('the profile echoes the city arm the registration actually used', () {

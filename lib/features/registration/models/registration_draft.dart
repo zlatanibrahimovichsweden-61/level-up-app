@@ -16,8 +16,9 @@ enum RegTrack { school, university }
 /// `registrationRequired` fork plus its deadline ([tokenExpiresAt]); the wizard
 /// must finish inside that 10-minute window. [phone] is proven & bound to the
 /// token — read-only, shown pre-filled, and NEVER submitted (the register body
-/// has no student-phone field). [referralCode] is collected but NOT submitted
-/// (no backend field — conflict #1, TODO(contract)).
+/// has no student-phone field). [referralCode] is Sign Up_1's optional code:
+/// the School body sends it, trimmed, as `inviteCode` when it is not empty,
+/// and the University body does not send it (SQ-24(l)).
 ///
 /// EVERY track-detail field is nullable here even where the contract marks it
 /// required: the draft models a form part-way through being filled, not a

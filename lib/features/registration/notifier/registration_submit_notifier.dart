@@ -20,9 +20,16 @@ import 'registration_controller.dart';
 /// Emitted once `POST /auth/register` returns 201 AND the session has been
 /// established (tokens written, `AuthController` flipped). The screen navigates
 /// on it — navigation stays in the widget layer, never in the notifier.
+///
+/// [inviteCodeApplied] is the 201's `inviteCodeApplied` as the server sent it:
+/// `true` / `false` when the request carried an `inviteCode`, null when it did
+/// not. It is carried, not shown: no screen reads it (the not-applied notice is
+/// undrawn, DG-22), and a code the server did not use never blocks anything.
 @immutable
 class RegistrationSubmitted {
-  const RegistrationSubmitted();
+  const RegistrationSubmitted({this.inviteCodeApplied});
+
+  final bool? inviteCodeApplied;
 }
 
 /// The final step of the registration wizard.
@@ -137,7 +144,7 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
       // navigates.
       ref.read(authControllerProvider.notifier).markAuthenticated();
 
-      return const RegistrationSubmitted();
+      return RegistrationSubmitted(inviteCodeApplied: result.inviteCodeApplied);
     });
 
     // Remember a refused name on its own draft BEFORE the outcome lands, so

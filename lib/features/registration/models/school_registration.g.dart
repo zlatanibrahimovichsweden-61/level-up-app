@@ -25,6 +25,7 @@ _SchoolRegistration _$SchoolRegistrationFromJson(Map<String, dynamic> json) =>
       parentPhone: json['parentPhone'] as String,
       email: json['email'] as String?,
       avatarId: json['avatarId'] as String?,
+      inviteCode: json['inviteCode'] as String?,
     );
 
 Map<String, dynamic> _$SchoolRegistrationToJson(_SchoolRegistration instance) =>
@@ -44,4 +45,5 @@ Map<String, dynamic> _$SchoolRegistrationToJson(_SchoolRegistration instance) =>
       'parentPhone': instance.parentPhone,
       'email': ?instance.email,
       'avatarId': ?instance.avatarId,
+      'inviteCode': ?instance.inviteCode,
     };

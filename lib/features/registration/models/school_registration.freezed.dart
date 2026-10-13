@@ -24,7 +24,12 @@ mixin _$SchoolRegistration {
  DeviceInfo get device; String get name;@DateOnlyConverter() DateTime get dateOfBirth; String get countryCode;@JsonKey(includeIfNull: false) String? get governorateId;/// adr-028 §1 — exactly one of these two reaches the wire. Both are
 /// nullable because the contract expresses "at least one" as an `anyOf`
 /// rather than by making either required.
-@JsonKey(includeIfNull: false) String? get cityId;@JsonKey(includeIfNull: false) String? get cityName;@JsonKey(includeIfNull: false) String? get schoolId; String get stage; String get educationSystem; String get parentPhone;@JsonKey(includeIfNull: false) String? get email;@JsonKey(includeIfNull: false) String? get avatarId;
+@JsonKey(includeIfNull: false) String? get cityId;@JsonKey(includeIfNull: false) String? get cityName;@JsonKey(includeIfNull: false) String? get schoolId; String get stage; String get educationSystem; String get parentPhone;@JsonKey(includeIfNull: false) String? get email;@JsonKey(includeIfNull: false) String? get avatarId;/// A friend's Refer a Friend code (`SchoolRegistration.inviteCode`). The
+/// contract ignores case, spaces and hyphens, so the code goes out as typed
+/// bar the outer whitespace. `includeIfNull: false` is load-bearing: the
+/// key is OMITTED when the student entered nothing, never null and never
+/// empty (`Only a string is accepted`).
+@JsonKey(includeIfNull: false) String? get inviteCode;
 /// Create a copy of SchoolRegistration
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,16 +42,16 @@ $SchoolRegistrationCopyWith<SchoolRegistration> get copyWith => _$SchoolRegistra
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SchoolRegistration&&(identical(other.track, track) || other.track == track)&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.device, device) || other.device == device)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarId, avatarId) || other.avatarId == avatarId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SchoolRegistration&&(identical(other.track, track) || other.track == track)&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.device, device) || other.device == device)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarId, avatarId) || other.avatarId == avatarId)&&(identical(other.inviteCode, inviteCode) || other.inviteCode == inviteCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,countryCode,governorateId,cityId,cityName,schoolId,stage,educationSystem,parentPhone,email,avatarId);
+int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,countryCode,governorateId,cityId,cityName,schoolId,stage,educationSystem,parentPhone,email,avatarId,inviteCode);
 
 @override
 String toString() {
-  return 'SchoolRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, countryCode: $countryCode, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, parentPhone: $parentPhone, email: $email, avatarId: $avatarId)';
+  return 'SchoolRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, countryCode: $countryCode, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, parentPhone: $parentPhone, email: $email, avatarId: $avatarId, inviteCode: $inviteCode)';
 }
 
 
@@ -57,7 +62,7 @@ abstract mixin class $SchoolRegistrationCopyWith<$Res>  {
   factory $SchoolRegistrationCopyWith(SchoolRegistration value, $Res Function(SchoolRegistration) _then) = _$SchoolRegistrationCopyWithImpl;
 @useResult
 $Res call({
- String track, String registrationToken, DeviceInfo device, String name,@DateOnlyConverter() DateTime dateOfBirth, String countryCode,@JsonKey(includeIfNull: false) String? governorateId,@JsonKey(includeIfNull: false) String? cityId,@JsonKey(includeIfNull: false) String? cityName,@JsonKey(includeIfNull: false) String? schoolId, String stage, String educationSystem, String parentPhone,@JsonKey(includeIfNull: false) String? email,@JsonKey(includeIfNull: false) String? avatarId
+ String track, String registrationToken, DeviceInfo device, String name,@DateOnlyConverter() DateTime dateOfBirth, String countryCode,@JsonKey(includeIfNull: false) String? governorateId,@JsonKey(includeIfNull: false) String? cityId,@JsonKey(includeIfNull: false) String? cityName,@JsonKey(includeIfNull: false) String? schoolId, String stage, String educationSystem, String parentPhone,@JsonKey(includeIfNull: false) String? email,@JsonKey(includeIfNull: false) String? avatarId,@JsonKey(includeIfNull: false) String? inviteCode
 });
 
 
@@ -74,7 +79,7 @@ class _$SchoolRegistrationCopyWithImpl<$Res>
 
 /// Create a copy of SchoolRegistration
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? track = null,Object? registrationToken = null,Object? device = null,Object? name = null,Object? dateOfBirth = null,Object? countryCode = null,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = null,Object? educationSystem = null,Object? parentPhone = null,Object? email = freezed,Object? avatarId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? track = null,Object? registrationToken = null,Object? device = null,Object? name = null,Object? dateOfBirth = null,Object? countryCode = null,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = null,Object? educationSystem = null,Object? parentPhone = null,Object? email = freezed,Object? avatarId = freezed,Object? inviteCode = freezed,}) {
   return _then(_self.copyWith(
 track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
 as String,registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
@@ -91,6 +96,7 @@ as String,educationSystem: null == educationSystem ? _self.educationSystem : edu
 as String,parentPhone: null == parentPhone ? _self.parentPhone : parentPhone // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,avatarId: freezed == avatarId ? _self.avatarId : avatarId // ignore: cast_nullable_to_non_nullable
+as String?,inviteCode: freezed == inviteCode ? _self.inviteCode : inviteCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -185,10 +191,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId, @JsonKey(includeIfNull: false)  String? inviteCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SchoolRegistration() when $default != null:
-return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId);case _:
+return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId,_that.inviteCode);case _:
   return orElse();
 
 }
@@ -206,10 +212,10 @@ return $default(_that.track,_that.registrationToken,_that.device,_that.name,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId, @JsonKey(includeIfNull: false)  String? inviteCode)  $default,) {final _that = this;
 switch (_that) {
 case _SchoolRegistration():
-return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId);case _:
+return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId,_that.inviteCode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -226,10 +232,10 @@ return $default(_that.track,_that.registrationToken,_that.device,_that.name,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String track,  String registrationToken,  DeviceInfo device,  String name, @DateOnlyConverter()  DateTime dateOfBirth,  String countryCode, @JsonKey(includeIfNull: false)  String? governorateId, @JsonKey(includeIfNull: false)  String? cityId, @JsonKey(includeIfNull: false)  String? cityName, @JsonKey(includeIfNull: false)  String? schoolId,  String stage,  String educationSystem,  String parentPhone, @JsonKey(includeIfNull: false)  String? email, @JsonKey(includeIfNull: false)  String? avatarId, @JsonKey(includeIfNull: false)  String? inviteCode)?  $default,) {final _that = this;
 switch (_that) {
 case _SchoolRegistration() when $default != null:
-return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId);case _:
+return $default(_that.track,_that.registrationToken,_that.device,_that.name,_that.dateOfBirth,_that.countryCode,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.parentPhone,_that.email,_that.avatarId,_that.inviteCode);case _:
   return null;
 
 }
@@ -241,7 +247,7 @@ return $default(_that.track,_that.registrationToken,_that.device,_that.name,_tha
 @JsonSerializable()
 
 class _SchoolRegistration extends SchoolRegistration {
-  const _SchoolRegistration({this.track = kTrackSchool, required this.registrationToken, required this.device, required this.name, @DateOnlyConverter() required this.dateOfBirth, required this.countryCode, @JsonKey(includeIfNull: false) this.governorateId, @JsonKey(includeIfNull: false) this.cityId, @JsonKey(includeIfNull: false) this.cityName, @JsonKey(includeIfNull: false) this.schoolId, required this.stage, required this.educationSystem, required this.parentPhone, @JsonKey(includeIfNull: false) this.email, @JsonKey(includeIfNull: false) this.avatarId}): super._();
+  const _SchoolRegistration({this.track = kTrackSchool, required this.registrationToken, required this.device, required this.name, @DateOnlyConverter() required this.dateOfBirth, required this.countryCode, @JsonKey(includeIfNull: false) this.governorateId, @JsonKey(includeIfNull: false) this.cityId, @JsonKey(includeIfNull: false) this.cityName, @JsonKey(includeIfNull: false) this.schoolId, required this.stage, required this.educationSystem, required this.parentPhone, @JsonKey(includeIfNull: false) this.email, @JsonKey(includeIfNull: false) this.avatarId, @JsonKey(includeIfNull: false) this.inviteCode}): super._();
   factory _SchoolRegistration.fromJson(Map<String, dynamic> json) => _$SchoolRegistrationFromJson(json);
 
 /// The discriminator. Defaulted rather than `required` because it is a
@@ -268,6 +274,12 @@ class _SchoolRegistration extends SchoolRegistration {
 @override final  String parentPhone;
 @override@JsonKey(includeIfNull: false) final  String? email;
 @override@JsonKey(includeIfNull: false) final  String? avatarId;
+/// A friend's Refer a Friend code (`SchoolRegistration.inviteCode`). The
+/// contract ignores case, spaces and hyphens, so the code goes out as typed
+/// bar the outer whitespace. `includeIfNull: false` is load-bearing: the
+/// key is OMITTED when the student entered nothing, never null and never
+/// empty (`Only a string is accepted`).
+@override@JsonKey(includeIfNull: false) final  String? inviteCode;
 
 /// Create a copy of SchoolRegistration
 /// with the given fields replaced by the non-null parameter values.
@@ -282,16 +294,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SchoolRegistration&&(identical(other.track, track) || other.track == track)&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.device, device) || other.device == device)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarId, avatarId) || other.avatarId == avatarId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SchoolRegistration&&(identical(other.track, track) || other.track == track)&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.device, device) || other.device == device)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.email, email) || other.email == email)&&(identical(other.avatarId, avatarId) || other.avatarId == avatarId)&&(identical(other.inviteCode, inviteCode) || other.inviteCode == inviteCode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,countryCode,governorateId,cityId,cityName,schoolId,stage,educationSystem,parentPhone,email,avatarId);
+int get hashCode => Object.hash(runtimeType,track,registrationToken,device,name,dateOfBirth,countryCode,governorateId,cityId,cityName,schoolId,stage,educationSystem,parentPhone,email,avatarId,inviteCode);
 
 @override
 String toString() {
-  return 'SchoolRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, countryCode: $countryCode, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, parentPhone: $parentPhone, email: $email, avatarId: $avatarId)';
+  return 'SchoolRegistration(track: $track, registrationToken: $registrationToken, device: $device, name: $name, dateOfBirth: $dateOfBirth, countryCode: $countryCode, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, parentPhone: $parentPhone, email: $email, avatarId: $avatarId, inviteCode: $inviteCode)';
 }
 
 
@@ -302,7 +314,7 @@ abstract mixin class _$SchoolRegistrationCopyWith<$Res> implements $SchoolRegist
   factory _$SchoolRegistrationCopyWith(_SchoolRegistration value, $Res Function(_SchoolRegistration) _then) = __$SchoolRegistrationCopyWithImpl;
 @override @useResult
 $Res call({
- String track, String registrationToken, DeviceInfo device, String name,@DateOnlyConverter() DateTime dateOfBirth, String countryCode,@JsonKey(includeIfNull: false) String? governorateId,@JsonKey(includeIfNull: false) String? cityId,@JsonKey(includeIfNull: false) String? cityName,@JsonKey(includeIfNull: false) String? schoolId, String stage, String educationSystem, String parentPhone,@JsonKey(includeIfNull: false) String? email,@JsonKey(includeIfNull: false) String? avatarId
+ String track, String registrationToken, DeviceInfo device, String name,@DateOnlyConverter() DateTime dateOfBirth, String countryCode,@JsonKey(includeIfNull: false) String? governorateId,@JsonKey(includeIfNull: false) String? cityId,@JsonKey(includeIfNull: false) String? cityName,@JsonKey(includeIfNull: false) String? schoolId, String stage, String educationSystem, String parentPhone,@JsonKey(includeIfNull: false) String? email,@JsonKey(includeIfNull: false) String? avatarId,@JsonKey(includeIfNull: false) String? inviteCode
 });
 
 
@@ -319,7 +331,7 @@ class __$SchoolRegistrationCopyWithImpl<$Res>
 
 /// Create a copy of SchoolRegistration
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? track = null,Object? registrationToken = null,Object? device = null,Object? name = null,Object? dateOfBirth = null,Object? countryCode = null,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = null,Object? educationSystem = null,Object? parentPhone = null,Object? email = freezed,Object? avatarId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? track = null,Object? registrationToken = null,Object? device = null,Object? name = null,Object? dateOfBirth = null,Object? countryCode = null,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = null,Object? educationSystem = null,Object? parentPhone = null,Object? email = freezed,Object? avatarId = freezed,Object? inviteCode = freezed,}) {
   return _then(_SchoolRegistration(
 track: null == track ? _self.track : track // ignore: cast_nullable_to_non_nullable
 as String,registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
@@ -336,6 +348,7 @@ as String,educationSystem: null == educationSystem ? _self.educationSystem : edu
 as String,parentPhone: null == parentPhone ? _self.parentPhone : parentPhone // ignore: cast_nullable_to_non_nullable
 as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String?,avatarId: freezed == avatarId ? _self.avatarId : avatarId // ignore: cast_nullable_to_non_nullable
+as String?,inviteCode: freezed == inviteCode ? _self.inviteCode : inviteCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

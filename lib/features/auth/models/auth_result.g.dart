@@ -10,6 +10,7 @@ AuthenticatedResult _$AuthenticatedResultFromJson(Map<String, dynamic> json) =>
     AuthenticatedResult(
       tokens: TokenPair.fromJson(json['tokens'] as Map<String, dynamic>),
       profile: json['profile'] as Map<String, dynamic>,
+      inviteCodeApplied: json['inviteCodeApplied'] as bool?,
       $type: json['result'] as String?,
     );
 
@@ -18,6 +19,7 @@ Map<String, dynamic> _$AuthenticatedResultToJson(
 ) => <String, dynamic>{
   'tokens': instance.tokens,
   'profile': instance.profile,
+  'inviteCodeApplied': ?instance.inviteCodeApplied,
   'result': instance.$type,
 };
 

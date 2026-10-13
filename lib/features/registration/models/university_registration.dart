@@ -75,7 +75,17 @@ abstract class UniversityRegistration
   /// as on the school body.
   ///
   /// `name` and `parentPhone` come from Sign Up_1 (never re-collected);
-  /// `referralCode` is never submitted (no contract field — DESIGN_ISSUES #7).
+  /// `referralCode` is NOT submitted on this track. The pinned contract still
+  /// words `UniversityRegistration.inviteCode` as `draft` ("send it only once it
+  /// is `stable`", openapi.yaml:4179-4186), and an older backend refuses an
+  /// unknown property with `validation_failed`, so the default is to leave it
+  /// out. This is no longer a question for Seif: he has answered SQ-24(l) --
+  /// the field is `stable` since 3.44 and the pin's `draft` wording is a known
+  /// error (docs/BACKEND_HANDOFF.md BH-B7 / BH-B8, tagged `[3.47]`, so not in the
+  /// pin). Sending it before a re-vendor is the OWNER's call (the pin's wording
+  /// against BH-B7); it would be one line in [fromDraft] plus tests. The School
+  /// body does send it. A university student's referral code is collected on
+  /// Sign Up_1 and goes no further.
   /// [device] is supplied by the caller (the shared `deviceInfoProvider`), not
   /// read from the draft — see the class doc.
   ///

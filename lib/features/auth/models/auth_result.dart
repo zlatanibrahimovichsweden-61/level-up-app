@@ -24,11 +24,19 @@ part 'auth_result.g.dart';
 /// large contract type that lives in the profile feature, read from `GET /me` —
 /// modeling it here would be out of this two-screen scope. Keeping it as
 /// `Map<String,dynamic>` invents nothing and parses faithfully.
+///
+/// `AuthenticatedResult.inviteCodeApplied` is the one optional field beside
+/// them: the contract sends it only on the `completeRegistration` 201 and only
+/// when the request carried an `inviteCode` - absent on every other operation
+/// that returns this schema, so it is nullable and null means "not asked", never
+/// "refused". `true`: the code was recognised. `false`: it was not used (no
+/// reason is ever given, and the account was created anyway).
 @Freezed(unionKey: 'result', unionValueCase: FreezedUnionCase.none)
 sealed class AuthResult with _$AuthResult {
   const factory AuthResult.authenticated({
     required TokenPair tokens,
     required Map<String, dynamic> profile,
+    @JsonKey(includeIfNull: false) bool? inviteCodeApplied,
   }) = AuthenticatedResult;
 
   const factory AuthResult.registrationRequired({

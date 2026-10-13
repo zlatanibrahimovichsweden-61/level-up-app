@@ -83,6 +83,7 @@ void main() {
   ProviderContainer seededSchool({
     bool requiresGovernorate = true,
     bool expired = false,
+    String? referralCode = 'FRIEND50',
   }) {
     final c = container();
     final controller = c.read(registrationControllerProvider.notifier)
@@ -98,7 +99,7 @@ void main() {
       ..setIdentity(
         name: 'Nour Hassan',
         parentPhone: '+2010000000001',
-        referralCode: 'FRIEND50',
+        referralCode: referralCode,
       )
       ..setTrack(RegTrack.school)
       ..setDateOfBirth(DateTime(2009, 5, 1))
@@ -119,11 +120,15 @@ void main() {
     return c;
   }
 
-  ProviderContainer seededUniversity() {
+  ProviderContainer seededUniversity({String? referralCode}) {
     final c = container();
     c.read(registrationControllerProvider.notifier)
       ..start(_args)
-      ..setIdentity(name: 'Nour Hassan', parentPhone: '+2010000000001')
+      ..setIdentity(
+        name: 'Nour Hassan',
+        parentPhone: '+2010000000001',
+        referralCode: referralCode,
+      )
       ..setTrack(RegTrack.university)
       ..setDateOfBirth(DateTime(2004, 3, 7))
       ..setUniversity('uni-cairo')
@@ -185,26 +190,22 @@ void main() {
       expect((body as UniversityRegistration).toJson()['track'], 'university');
     });
 
-    test(
-      'name + parentPhone come from the draft; referral never submitted',
-      () async {
-        when(
-          () => repo.register(any()),
-        ).thenAnswer((_) async => _authenticated);
-        final c = seededSchool();
+    test('name + parentPhone come from the draft; the referral is sent as '
+        'inviteCode, never as referralCode', () async {
+      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
+      final c = seededSchool();
 
-        await c.read(registrationSubmitProvider.notifier).submit();
+      await c.read(registrationSubmitProvider.notifier).submit();
 
-        final json =
-            (verify(() => repo.register(captureAny())).captured.single
-                    as SchoolRegistration)
-                .toJson();
-        expect(json['name'], 'Nour Hassan');
-        expect(json['parentPhone'], '+2010000000001');
-        expect(json.containsKey('referralCode'), isFalse);
-        expect(json.values, isNot(contains('FRIEND50')));
-      },
-    );
+      final json =
+          (verify(() => repo.register(captureAny())).captured.single
+                  as SchoolRegistration)
+              .toJson();
+      expect(json['name'], 'Nour Hassan');
+      expect(json['parentPhone'], '+2010000000001');
+      expect(json.containsKey('referralCode'), isFalse);
+      expect(json['inviteCode'], 'FRIEND50');
+    });
 
     test('non-Egypt draft omits the coded ids and every school key', () async {
       when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
@@ -261,6 +262,138 @@ void main() {
               .toJson();
       expect(json.containsKey('schoolId'), isFalse);
       expect(json['cityId'], 'city-dokki');
+    });
+  });
+
+  group('invite code (spec-047) — School sends it, nothing is shown', () {
+    Map<String, dynamic> sentSchoolBody() =>
+        (verify(() => repo.register(captureAny())).captured.single
+                as SchoolRegistration)
+            .toJson();
+
+    test(
+      'the School body carries the trimmed code the student typed',
+      () async {
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededSchool(referralCode: '  FRIEND50  ');
+
+        await c.read(registrationSubmitProvider.notifier).submit();
+
+        expect(sentSchoolBody()['inviteCode'], 'FRIEND50');
+      },
+    );
+
+    test('no code, or a blank one, leaves the key OUT — never null, never '
+        'empty', () async {
+      for (final referral in <String?>[null, '', '   ']) {
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededSchool(referralCode: referral);
+
+        await c.read(registrationSubmitProvider.notifier).submit();
+
+        final json = sentSchoolBody();
+        expect(
+          json.containsKey('inviteCode'),
+          isFalse,
+          reason: 'referral [$referral]',
+        );
+        expect(json.values, isNot(contains(null)));
+        expect(json.values, isNot(contains('')));
+        clearInteractions(repo);
+      }
+    });
+
+    test(
+      'the University body never sends it, whatever the draft holds',
+      () async {
+        when(
+          () => repo.register(any()),
+        ).thenAnswer((_) async => _authenticated);
+        final c = seededUniversity(referralCode: 'FRIEND50');
+
+        await c.read(registrationSubmitProvider.notifier).submit();
+
+        final json =
+            (verify(() => repo.register(captureAny())).captured.single
+                    as UniversityRegistration)
+                .toJson();
+        expect(json.containsKey('inviteCode'), isFalse);
+        expect(json.containsKey('referralCode'), isFalse);
+        expect(json.values, isNot(contains('FRIEND50')));
+      },
+    );
+
+    for (final applied in <bool?>[true, false, null]) {
+      test('inviteCodeApplied $applied is carried; the session is live '
+          'either way', () async {
+        when(() => repo.register(any())).thenAnswer(
+          (_) async =>
+              AuthResult.authenticated(
+                    tokens: const TokenPair(
+                      accessToken: 'access.jwt',
+                      accessExpiresInSeconds: 900,
+                      refreshToken: 'refresh.jwt',
+                      refreshExpiresInSeconds: 5184000,
+                    ),
+                    profile: const {'id': 'student-1'},
+                    inviteCodeApplied: applied,
+                  )
+                  as AuthenticatedResult,
+        );
+        final c = seededSchool();
+
+        await c.read(registrationSubmitProvider.notifier).submit();
+
+        final state = c.read(registrationSubmitProvider);
+        expect(state.hasError, isFalse, reason: 'a code never blocks');
+        expect(state.value?.inviteCodeApplied, applied);
+        expect(c.read(authControllerProvider), isA<AuthAuthenticated>());
+      });
+    }
+
+    test('name_not_allowed keeps the code on the draft, and a different name '
+        'goes out with it on the same token', () async {
+      when(
+        () => repo.register(any()),
+      ).thenThrow(const ApiException(status: 422, code: 'name_not_allowed'));
+      final c = seededSchool();
+
+      await c.read(registrationSubmitProvider.notifier).submit();
+
+      expect(
+        c.read(registrationSubmitProvider).error,
+        isA<ApiException>().having((e) => e.code, 'code', 'name_not_allowed'),
+      );
+      final draft = c.read(registrationControllerProvider)!;
+      expect(draft.referralCode, 'FRIEND50');
+      expect(draft.registrationToken, 'reg.token');
+      expect(draft.refusedNames, {'Nour Hassan'});
+
+      // The same name is not sent again: the answer would be the same.
+      await c.read(registrationSubmitProvider.notifier).submit();
+      verify(() => repo.register(any())).called(1);
+
+      // Sign Up_1 sends the student on with a different name and the same code.
+      c
+          .read(registrationControllerProvider.notifier)
+          .setIdentity(
+            name: 'Nour Hassan Ali',
+            parentPhone: '+2010000000001',
+            referralCode: draft.referralCode,
+          );
+      reset(repo);
+      when(() => repo.register(any())).thenAnswer((_) async => _authenticated);
+
+      await c.read(registrationSubmitProvider.notifier).submit();
+
+      final json = sentSchoolBody();
+      expect(json['name'], 'Nour Hassan Ali');
+      expect(json['registrationToken'], 'reg.token');
+      expect(json['inviteCode'], 'FRIEND50');
     });
   });
 

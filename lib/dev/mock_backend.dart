@@ -239,10 +239,23 @@ class MockBackendInterceptor extends Interceptor {
       // coded on the next fetch would prove nothing.
       _registeredCity = _cityFromRegistration(body);
       _profileEdits.remove(_track);
+
+      // spec-047: `inviteCodeApplied` rides the 201 only when the request
+      // carried an `inviteCode`, and it never says why a code was not used.
+      // The contract ignores case, spaces and hyphens, so this does too. The
+      // ONE code the mock "recognises" is `ABCD2345` (eight characters from the
+      // contract's `MyInvite.code` alphabet); every other code answers
+      // `false`, and neither answer ever fails the registration.
+      const recognisedInviteCode = 'ABCD2345';
+      final sentInviteCode = body['inviteCode'];
       return _ok(handler, options, 201, <String, dynamic>{
         'result': 'authenticated',
         'tokens': _tokenPair(),
         'profile': _profileFromRegistration(body),
+        if (sentInviteCode is String)
+          'inviteCodeApplied':
+              sentInviteCode.replaceAll(RegExp(r'[\s-]'), '').toUpperCase() ==
+              recognisedInviteCode,
       });
     }
 

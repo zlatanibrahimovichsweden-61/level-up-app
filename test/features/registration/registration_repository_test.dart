@@ -138,6 +138,56 @@ void main() {
       expect(captured.containsKey('countryCode'), isFalse);
     });
 
+    test('a School inviteCode goes on the wire and the 201 '
+        'inviteCodeApplied: false is parsed (spec-047)', () async {
+      stubPost(_created({..._authenticated201(), 'inviteCodeApplied': false}));
+
+      final result = await repo.register(
+        _schoolBody.copyWith(inviteCode: 'ABCD2345'),
+      );
+
+      final captured =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/auth/register',
+                  data: captureAny<Object?>(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(captured['inviteCode'], 'ABCD2345');
+      // `false` is still a 201 that logs the student in: a code never blocks.
+      expect(result.inviteCodeApplied, isFalse);
+      expect(result.tokens.accessToken, 'access.jwt');
+    });
+
+    test('inviteCodeApplied: true is parsed', () async {
+      stubPost(_created({..._authenticated201(), 'inviteCodeApplied': true}));
+
+      final result = await repo.register(
+        _schoolBody.copyWith(inviteCode: 'ABCD2345'),
+      );
+
+      expect(result.inviteCodeApplied, isTrue);
+    });
+
+    test('no code typed: the key is absent on the wire and the 201 '
+        'carries no inviteCodeApplied', () async {
+      stubPost(_created(_authenticated201()));
+
+      final result = await repo.register(_schoolBody);
+
+      final captured =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  '/auth/register',
+                  data: captureAny<Object?>(named: 'data'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(captured.containsKey('inviteCode'), isFalse);
+      expect(result.inviteCodeApplied, isNull);
+    });
+
     test('a non-authenticated 201 is contract drift, not silently coerced', () {
       stubPost(
         _created({

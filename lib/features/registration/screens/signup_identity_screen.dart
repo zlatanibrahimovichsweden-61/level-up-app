@@ -28,9 +28,9 @@ const double _headerSlop =
 
 /// Sign Up_1 (identity) · Figma `337:15875`. First wizard screen after the OTP
 /// `registrationRequired` fork. Collects Full Name + Parent's Number (+ an
-/// optional, NON-submitted referral code), shows the proven phone read-only, and
-/// accumulates them into [RegistrationController] before advancing to the track
-/// picker. No network call on this screen.
+/// optional referral code that only the School body sends), shows the proven
+/// phone read-only, and accumulates them into [RegistrationController] before
+/// advancing to the track picker. No network call on this screen.
 ///
 /// Reachable only with a valid `registrationToken`; if the draft is missing or
 /// the token has expired, the expiry guard renders instead.
@@ -103,8 +103,8 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
         .setIdentity(
           name: name,
           parentPhone: parentPhone!.e164,
-          // Collected, NOT submitted (conflict #1). TODO(contract): no backend
-          // field — raise a CR to Seif if referral tracking is confirmed.
+          // Held on the draft until the track is known: the School body sends
+          // it as `inviteCode`, the University body does not (SQ-24(l)).
           referralCode: referral.isEmpty ? null : referral,
         );
     context.push('/register/track');

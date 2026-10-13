@@ -36,8 +36,9 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     );
   }
 
-  /// Sign Up_1 → store identity. `referralCode` is collected but never submitted
-  /// (conflict #1). No-op if there is no active draft.
+  /// Sign Up_1 → store identity. `referralCode` is the optional invite code:
+  /// the School body sends it as `inviteCode`, the University body does not.
+  /// No-op if there is no active draft.
   void setIdentity({
     required String name,
     required String parentPhone,

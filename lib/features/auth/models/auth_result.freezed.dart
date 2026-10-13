@@ -145,10 +145,10 @@ return registrationRequired(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TokenPair tokens,  Map<String, dynamic> profile)?  authenticated,TResult Function( String registrationToken,  int expiresInSeconds)?  registrationRequired,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TokenPair tokens,  Map<String, dynamic> profile, @JsonKey(includeIfNull: false)  bool? inviteCodeApplied)?  authenticated,TResult Function( String registrationToken,  int expiresInSeconds)?  registrationRequired,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AuthenticatedResult() when authenticated != null:
-return authenticated(_that.tokens,_that.profile);case RegistrationRequiredResult() when registrationRequired != null:
+return authenticated(_that.tokens,_that.profile,_that.inviteCodeApplied);case RegistrationRequiredResult() when registrationRequired != null:
 return registrationRequired(_that.registrationToken,_that.expiresInSeconds);case _:
   return orElse();
 
@@ -167,10 +167,10 @@ return registrationRequired(_that.registrationToken,_that.expiresInSeconds);case
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TokenPair tokens,  Map<String, dynamic> profile)  authenticated,required TResult Function( String registrationToken,  int expiresInSeconds)  registrationRequired,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TokenPair tokens,  Map<String, dynamic> profile, @JsonKey(includeIfNull: false)  bool? inviteCodeApplied)  authenticated,required TResult Function( String registrationToken,  int expiresInSeconds)  registrationRequired,}) {final _that = this;
 switch (_that) {
 case AuthenticatedResult():
-return authenticated(_that.tokens,_that.profile);case RegistrationRequiredResult():
+return authenticated(_that.tokens,_that.profile,_that.inviteCodeApplied);case RegistrationRequiredResult():
 return registrationRequired(_that.registrationToken,_that.expiresInSeconds);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -185,10 +185,10 @@ return registrationRequired(_that.registrationToken,_that.expiresInSeconds);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TokenPair tokens,  Map<String, dynamic> profile)?  authenticated,TResult? Function( String registrationToken,  int expiresInSeconds)?  registrationRequired,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TokenPair tokens,  Map<String, dynamic> profile, @JsonKey(includeIfNull: false)  bool? inviteCodeApplied)?  authenticated,TResult? Function( String registrationToken,  int expiresInSeconds)?  registrationRequired,}) {final _that = this;
 switch (_that) {
 case AuthenticatedResult() when authenticated != null:
-return authenticated(_that.tokens,_that.profile);case RegistrationRequiredResult() when registrationRequired != null:
+return authenticated(_that.tokens,_that.profile,_that.inviteCodeApplied);case RegistrationRequiredResult() when registrationRequired != null:
 return registrationRequired(_that.registrationToken,_that.expiresInSeconds);case _:
   return null;
 
@@ -201,7 +201,7 @@ return registrationRequired(_that.registrationToken,_that.expiresInSeconds);case
 @JsonSerializable()
 
 class AuthenticatedResult implements AuthResult {
-  const AuthenticatedResult({required this.tokens, required final  Map<String, dynamic> profile, final  String? $type}): _profile = profile,$type = $type ?? 'authenticated';
+  const AuthenticatedResult({required this.tokens, required final  Map<String, dynamic> profile, @JsonKey(includeIfNull: false) this.inviteCodeApplied, final  String? $type}): _profile = profile,$type = $type ?? 'authenticated';
   factory AuthenticatedResult.fromJson(Map<String, dynamic> json) => _$AuthenticatedResultFromJson(json);
 
  final  TokenPair tokens;
@@ -212,6 +212,7 @@ class AuthenticatedResult implements AuthResult {
   return EqualUnmodifiableMapView(_profile);
 }
 
+@JsonKey(includeIfNull: false) final  bool? inviteCodeApplied;
 
 @JsonKey(name: 'result')
 final String $type;
@@ -230,16 +231,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthenticatedResult&&(identical(other.tokens, tokens) || other.tokens == tokens)&&const DeepCollectionEquality().equals(other._profile, _profile));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthenticatedResult&&(identical(other.tokens, tokens) || other.tokens == tokens)&&const DeepCollectionEquality().equals(other._profile, _profile)&&(identical(other.inviteCodeApplied, inviteCodeApplied) || other.inviteCodeApplied == inviteCodeApplied));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,tokens,const DeepCollectionEquality().hash(_profile));
+int get hashCode => Object.hash(runtimeType,tokens,const DeepCollectionEquality().hash(_profile),inviteCodeApplied);
 
 @override
 String toString() {
-  return 'AuthResult.authenticated(tokens: $tokens, profile: $profile)';
+  return 'AuthResult.authenticated(tokens: $tokens, profile: $profile, inviteCodeApplied: $inviteCodeApplied)';
 }
 
 
@@ -250,7 +251,7 @@ abstract mixin class $AuthenticatedResultCopyWith<$Res> implements $AuthResultCo
   factory $AuthenticatedResultCopyWith(AuthenticatedResult value, $Res Function(AuthenticatedResult) _then) = _$AuthenticatedResultCopyWithImpl;
 @useResult
 $Res call({
- TokenPair tokens, Map<String, dynamic> profile
+ TokenPair tokens, Map<String, dynamic> profile,@JsonKey(includeIfNull: false) bool? inviteCodeApplied
 });
 
 
@@ -267,11 +268,12 @@ class _$AuthenticatedResultCopyWithImpl<$Res>
 
 /// Create a copy of AuthResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? tokens = null,Object? profile = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? tokens = null,Object? profile = null,Object? inviteCodeApplied = freezed,}) {
   return _then(AuthenticatedResult(
 tokens: null == tokens ? _self.tokens : tokens // ignore: cast_nullable_to_non_nullable
 as TokenPair,profile: null == profile ? _self._profile : profile // ignore: cast_nullable_to_non_nullable
-as Map<String, dynamic>,
+as Map<String, dynamic>,inviteCodeApplied: freezed == inviteCodeApplied ? _self.inviteCodeApplied : inviteCodeApplied // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

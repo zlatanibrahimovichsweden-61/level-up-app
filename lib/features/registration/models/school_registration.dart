@@ -16,7 +16,8 @@ part 'school_registration.g.dart';
 /// since v2.0.0-m1 added `device`): `track, registrationToken, device, name,
 /// dateOfBirth, countryCode, stage, educationSystem, parentPhone`, PLUS the
 /// schema's `anyOf` — at least one of `cityId` / `cityName`.
-/// Optional: `governorateId, cityId, cityName, schoolId, email, avatarId`.
+/// Optional: `governorateId, cityId, cityName, schoolId, email, avatarId,
+/// inviteCode`.
 ///
 /// `device` (`:1393`) became REQUIRED in contract 2.0.0-m1. It is the same
 /// `DeviceInfo` already sent to `/auth/otp/verify`, and it must be the same
@@ -35,6 +36,10 @@ part 'school_registration.g.dart';
 /// `email` and `avatarId` exist in the contract but are not collected: neither
 /// appears in the Figma frames and both are optional (the server assigns a
 /// default avatar). They are modeled so the shape stays faithful.
+///
+/// `inviteCode` IS collected - it is Sign Up_1's optional referral field - and
+/// is sent only when the student typed one (spec-047, `stable` since
+/// 3.44.0-m1). It never fails registration, so nothing here validates it.
 @freezed
 abstract class SchoolRegistration
     with _$SchoolRegistration
@@ -66,6 +71,13 @@ abstract class SchoolRegistration
     required String parentPhone,
     @JsonKey(includeIfNull: false) String? email,
     @JsonKey(includeIfNull: false) String? avatarId,
+
+    /// A friend's Refer a Friend code (`SchoolRegistration.inviteCode`). The
+    /// contract ignores case, spaces and hyphens, so the code goes out as typed
+    /// bar the outer whitespace. `includeIfNull: false` is load-bearing: the
+    /// key is OMITTED when the student entered nothing, never null and never
+    /// empty (`Only a string is accepted`).
+    @JsonKey(includeIfNull: false) String? inviteCode,
   }) = _SchoolRegistration;
 
   const SchoolRegistration._();
@@ -93,8 +105,13 @@ abstract class SchoolRegistration
   /// `name` and `parentPhone` come from Sign Up_1 and are never re-collected.
   /// [device] is supplied by the caller (the shared `deviceInfoProvider`), not
   /// read from the draft — see the class doc.
-  /// `referralCode` is deliberately absent — there is no contract field for it
-  /// (DESIGN_ISSUES #7); it is collected but never submitted.
+  ///
+  /// `inviteCode` — the draft's `referralCode`, trimmed, sent only when it is
+  /// not empty (omitted otherwise). The contract takes it on the School body
+  /// since 3.44.0-m1 and never fails registration over it: an unknown or
+  /// unusable code still creates the account and only `inviteCodeApplied`
+  /// (read, not shown) says so. The University body does not send it - see
+  /// [UniversityRegistration.fromDraft].
   ///
   /// Throws [IncompleteRegistrationDraft] if a contract-required field is
   /// missing and [ForbiddenRegistrationField] if a forbidden one is present —
@@ -105,6 +122,7 @@ abstract class SchoolRegistration
   }) {
     final requiresGovernorate = draft.requiresGovernorate ?? false;
     final city = cityUnionFromDraft(draft);
+    final inviteCode = draft.referralCode?.trim();
 
     if (!requiresGovernorate) {
       forbidField(
@@ -130,6 +148,7 @@ abstract class SchoolRegistration
       stage: requireField(draft.stage, 'stage'),
       educationSystem: requireField(draft.educationSystem, 'educationSystem'),
       parentPhone: requireField(draft.parentPhone, 'parentPhone'),
+      inviteCode: inviteCode == null || inviteCode.isEmpty ? null : inviteCode,
     );
   }
 }

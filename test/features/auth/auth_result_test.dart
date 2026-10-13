@@ -30,6 +30,45 @@ void main() {
       },
     );
 
+    // `AuthenticatedResult.inviteCodeApplied` (spec-047): present only on the
+    // completeRegistration 201 and only when the request carried an inviteCode.
+    Map<String, dynamic> authenticatedJson({Object? inviteCodeApplied}) => {
+      'result': 'authenticated',
+      'tokens': {
+        'accessToken': 'access.jwt',
+        'accessExpiresInSeconds': 900,
+        'refreshToken': 'refresh.jwt',
+        'refreshExpiresInSeconds': 5184000,
+      },
+      'profile': {'id': 'uuid'},
+      'inviteCodeApplied': ?inviteCodeApplied,
+    };
+
+    test('inviteCodeApplied true / false are parsed as sent', () {
+      for (final applied in [true, false]) {
+        final result = AuthResult.fromJson(
+          authenticatedJson(inviteCodeApplied: applied),
+        );
+        expect((result as AuthenticatedResult).inviteCodeApplied, applied);
+      }
+    });
+
+    test('inviteCodeApplied absent is null - "not asked", not "refused"', () {
+      final result = AuthResult.fromJson(authenticatedJson());
+      expect((result as AuthenticatedResult).inviteCodeApplied, isNull);
+      // ...and a null stays out of the JSON rather than becoming a key.
+      expect(result.toJson(), isNot(contains('inviteCodeApplied')));
+    });
+
+    test('inviteCodeApplied is the contract\'s name, camelCase, on the '
+        'authenticated arm only', () {
+      final json = AuthResult.fromJson(
+        authenticatedJson(inviteCodeApplied: true),
+      ).toJson();
+      expect(json['inviteCodeApplied'], isTrue);
+      expect(json['result'], 'authenticated');
+    });
+
     test(
       'registrationRequired → RegistrationRequiredResult with token + ttl',
       () {

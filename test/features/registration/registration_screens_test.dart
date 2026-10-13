@@ -134,7 +134,7 @@ void main() {
         final draft = container.read(registrationControllerProvider)!;
         expect(draft.name, 'Mostafa');
         expect(draft.parentPhone, '+201000000000'); // normalized E.164
-        expect(draft.referralCode, 'FRIEND10'); // collected, not submitted
+        expect(draft.referralCode, 'FRIEND10'); // held until the track is known
         // Landed on the track picker.
         expect(find.text('Choose Your Track'), findsOneWidget);
       },

@@ -59,7 +59,7 @@ void main() {
       final draft = container.read(registrationControllerProvider)!;
       expect(draft.name, 'Mostafa');
       expect(draft.parentPhone, '+201000000000');
-      expect(draft.referralCode, 'FRIEND10'); // collected (not submitted here)
+      expect(draft.referralCode, 'FRIEND10'); // held for the School body
       expect(draft.track, RegTrack.university);
       // Token + phone survive the accumulation.
       expect(draft.registrationToken, 'reg.token');
