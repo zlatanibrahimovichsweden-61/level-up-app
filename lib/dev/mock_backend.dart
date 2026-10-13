@@ -38,6 +38,7 @@ import 'mock_friends.dart';
 import 'mock_legal.dart';
 import 'mock_modules.dart';
 import 'mock_notifications.dart';
+import 'mock_push.dart';
 import 'mock_quiz_history.dart';
 import 'mock_recovery.dart';
 import 'mock_referral.dart';
@@ -188,6 +189,11 @@ class MockBackendInterceptor extends Interceptor {
   /// favourites persist for this session. Its quizzes are its own: a quiz
   /// finished through `POST /quizzes/{id}/finish` does not appear in it.
   final _quizHistory = MockQuizHistory();
+
+  /// The push-token registration (CW08a): `PUT /me/fcm-token`. Rules in
+  /// `mock_push.dart`. Dormant: the app's only gateway is the Noop, so nothing
+  /// calls it until the push SDK exists.
+  final _push = MockPushDesk();
 
   /// The Refer a Friend record (CW15): `GET /me/invite`. Fixture in
   /// `mock_referral.dart`.
@@ -528,6 +534,20 @@ class MockBackendInterceptor extends Interceptor {
         return _ok(handler, options, 200, data);
       case null:
         break;
+    }
+
+    // ---- push token (CW08a) -----------------------------------------------
+    // `PUT /me/fcm-token` is `stable`; the contract's rules (empty, blank or
+    // over-4096 token is 400, a valid one is 204 and idempotent) are in
+    // `mock_push.dart`.
+    final pushReply = _push.handle(method, path, body);
+    if (pushReply != null) {
+      switch (pushReply) {
+        case MockPushOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockPushValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+      }
     }
 
     // ---- Refer a Friend (CW15) --------------------------------------------
