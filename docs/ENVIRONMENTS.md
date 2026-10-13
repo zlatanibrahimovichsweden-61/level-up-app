@@ -1,7 +1,9 @@
 # Environments & Platform Identity — the architecture record
 
 **Chapter:** Environment & Architecture — Identity / Flavors · **Opened:** 2026-10-04 · **Status:** Wave 0
-done (2026-10-04); **D-021 ratified 2026-10-06**; **Wave 1 (Android) done 2026-10-06**; Waves 2–4 not started.
+done (2026-10-04); **D-021 ratified 2026-10-06**; **Wave 1 (Android) done 2026-10-06**; **Wave 2 partly built
+2026-10-12** (boot assertion, `main_mock` release refusal, environment ribbon — BUILD only: unit / widget / guard tests, see the per-feature levels in §4.4; the
+`.example`-in-prod build failure is still OPEN, an owner decision); Waves 3–4 not started.
 **Input audit:** `.ai/audits/current/app_identity_environment_audit_2026-10-04.md` (read-only, 2026-10-04).
 **Chapter state:** `.ai/audits/current/env_chapter_state.md` · **Readiness rubric:**
 `docs/STORE_READINESS_RUBRIC.md` · **Decision:** `docs/DECISIONS.md` D-021 (**ratified 2026-10-06**).
@@ -55,8 +57,8 @@ into a *coherence* rule (§6) in the same commit that introduced the flavors.
 
 Two real backends are expected (staging, production); the contract currently declares one
 (`contract/openapi.yaml:107-109`, 3.28.0-m1). There is **no development backend** (Seif, 2026-10-06, Q6).
-Development is a *client-side* distinction (mock overrides, future `isDev` indicator) living inside the
-staging identity. Mapping: non-production app → staging backend; production app → production backend.
+Development is a *client-side* distinction (mock overrides, and the Flavor-driven environment ribbon built in
+Wave 2 — §4.4) living inside the staging identity. Mapping: non-production app → staging backend; production app → production backend.
 
 ---
 
@@ -125,7 +127,7 @@ else A; the owner's prefix is based on the owned domain, which the repo could no
 
 **Q2 — Installable identities per platform.** Options were three (`<prod>`, `.staging`, `.dev`) or two
 (dev shares staging). **Answer: two.** Consequence accepted: dev and staging builds overwrite each other on
-one device; `Flavor.dev` and `Flavor.staging` are distinguishable only on screen (Wave 2 indicator).
+one device; `Flavor.dev` and `Flavor.staging` are distinguishable only on screen (the Wave 2 ribbon, §4.4).
 
 **Q3 — Display names.** Proposed `Level Up` / `Level Up STG` / `Level Up DEV`. **Answer: the first two;
 no DEV name** because there is no DEV identity. iOS truncates home-screen names beyond ~12–14 characters;
@@ -293,14 +295,64 @@ Until Wave 3 lands, iOS has one scheme and the template id; **no iOS command is 
 ### 4.3 Rules the contract makes true (and which wave makes each one true)
 
 1. `--flavor X` and `-t lib/main_X.dart` must agree — **Android: build-time (Wave 1)**; iOS: Wave 3; a
-   Dart boot assertion that the compiled `Flavor` equals the platform flavor adds a second, cross-platform
-   layer in Wave 2.
+   Dart boot assertion that the compiled `Flavor` agrees with the platform flavor adds a second,
+   cross-platform layer — **built 2026-10-12 (Wave 2, BUILD: tests only, never run in a built app; §4.4)**.
 2. A release build without `--flavor` fails — **Android: true (Wave 1)**: a flavorless build assembles every
    flavor and the coherence check refuses one of them, because no entrypoint is accepted by both `prod` and
    `staging`.
 3. `Flavor.prod` with a `.example` host fails at build time, not at first request — Wave 2.
 4. `main.dart` keeps forwarding to dev for `flutter run` convenience: rule 2 makes it harmless (it can
-   only run under `--flavor staging`), so it stays. Revisit in Wave 2 only if the boot assertion needs it.
+   only run under `--flavor staging`), so it stays. Wave 2's boot assertion does not need it changed:
+   `Flavor.dev` accepts the `staging` platform flavor (§4.4).
+
+### 4.4 Wave 2 as built (2026-10-12) — BUILD (unit / widget / guard tests); the level differs per feature, below
+
+Levels use the ladder of `IMPL_RUN_2026-10-12.md` §0 (unit / widget / guard tests are BUILD; an APK is ARTEFACT; an
+emulator walk is EMULATOR; nothing here reached DEVICE or CI):
+
+| Feature | Level reached | What was not done |
+| --- | --- | --- |
+| Boot assertion (`bootstrap` → `AppConfig.verifyPlatformFlavor`) | **BUILD only**: the pure mapping is unit-tested, its call and ORDER are pinned by a guard; the `verify_guards.ps1` probe added for it (which would prove the guard can fail) was only parse-checked; no run of it is recorded | Never run in a built app. The one APK built in this run starts from `main_mock.dart`, which calls `AppConfig.init(Flavor.dev)` itself and does not go through `bootstrap`, so it never exercised the assertion; the real `appFlavor` under `--flavor` was never observed |
+| `main_mock` release refusal | **BUILD only**: source plus a guard and a (parse-checked; no run recorded) `verify_guards.ps1` probe; `kReleaseMode` is false under `flutter test` and in a debug APK | No release build of any entrypoint was made, so the refusal itself never fired |
+| Environment ribbon | **BUILD** (widget and pixel tests), **plus one EMULATOR sighting** before the corner pin: the E3 walk of the mock debug APK (ARTEFACT) saw the `DEV` ribbon at the earlier end corner. After the R2c pin to the physical top right it is **BUILD only** | The `STAGING` ribbon and the production absence were never seen on an emulator (the mock entrypoint hard-codes `Flavor.dev`); no DEVICE |
+
+- **Boot assertion** — `bootstrap()` (`lib/bootstrap.dart`) calls `AppConfig.verifyPlatformFlavor(flavor,
+  platformFlavor)` as its first statement, before the binding, `AppConfig.init` and `runApp`; the platform
+  flavor defaults to `appFlavor` (`package:flutter/services.dart`, the value of `--flavor`). A mismatch throws
+  a `StateError` and boot stops with no UI and no copy. The comparison is a **mapping, not an equality**:
+  `Flavor.dev` and `Flavor.staging` accept the platform flavor `staging`, `Flavor.prod` accepts `prod`, because
+  Android has only the `prod` and `staging` identities and `Flavor.dev` is a runtime mode of the staging one
+  (D-021 Q2). An **absent** platform flavor (null: iOS until Wave 3, `flutter run` without `--flavor`,
+  `flutter test`) is tolerated. Pure function, unit-tested in `test/core/config/w1_platform_flavor_test.dart`;
+  the wiring and its ORDER are pinned by `test/guards/workflow_test.dart` ("the Dart layer of the flavor
+  contract"), and `tool/verify_guards.ps1` carries a probe meant to delete the call and show the guard fails (parse-checked only: the script edits files, and no run of it is recorded in the ledger).
+- **Mock refusal** — `lib/main_mock.dart` throws when `kReleaseMode`, as the first statement of `main()`:
+  before the binding, before `AppConfig.init`, before the token wipe. Gradle already refuses the build on
+  Android; this is the cross-platform layer. Pinned by the same guard group and a second
+  `verify_guards.ps1` probe (also with no run recorded). (`kReleaseMode` is false under `flutter test`, so the refusal itself is
+  checked at source level only; no release build was run and it has never fired.)
+- **Environment ribbon** — `EnvironmentRibbon` (`lib/app.dart`, wired into the `MaterialApp.router` builder): a
+  stock Flutter `Banner` reading **`AppConfig.maybeInstance?.flavor`** (not `isDev`, which is true for dev and
+  staging alike). It shows `DEV` / `STAGING` (the flavor's name upper-cased — no `Text`, no string literal, no
+  ARB key) on `Flavor.dev` and `Flavor.staging` only; production, and any harness that never initialised
+  `AppConfig`, get the child untouched. Colour: the existing `AppColors.destructive` (one value on both
+  canvases; no new token). Corner (**superseded 2026-10-12: now pinned to the physical top right, see the next bullet**): **top end** (top-left in Arabic) — Flutter's banner paints a 45-degree band
+  over roughly 40 ≤ x + y ≤ 57 dp from that corner (read from `banner.dart`), i.e. over the OS status icons and
+  the margin around them; the app's own controls keep **at least 20dp** clear of the edge and start below the
+  status bar, and the closest one (the stadium-shaped language pill) has its nearest painted point about 39dp
+  plus the status-bar height from the corner, past the band's outer edge on any status bar of about 18dp or
+  more. That is layout reasoning, **not a device check**. The bottom corners were rejected because the first and
+  last navigation tabs sit there. It paints only (its painter reports no hit), so it never intercepts a tap —
+  tested. Tests: `test/core/config/w1_env_indicator_test.dart`.
+- **Ribbon corner, pinned (2026-10-12, R2c) — BUILD; not seen on an emulator or device after the pin.** The emulator walk (E3, EMULATOR level, the mock build with the earlier end corner) saw the ribbon at the top LEFT over the OS clock in Arabic. `layoutDirection` and `textDirection` are now pinned to `ltr`, so the corner is physically the **top right in both app languages** (`test/core/config/w1_env_indicator_test.dart`, 14 tests, pixels included). **Caveat:** that assumes a left-to-right SYSTEM language; on an Arabic-system phone the OS may mirror its clock to the top right and the ribbon would then cover it in both app languages. Not checked on any device; pinned by a "KNOWN LIMIT" test; owner decision `COMPLETION_STATE.md` O-20, `docs/DECISIONS.md` D-028.
+- **What a boot-assertion mismatch looks like** — `main_dev.dart`, `main_staging.dart` and `main_prod.dart` are
+  `void main() => bootstrap(...)`, so the `StateError` surfaces as an unhandled async error, not a visible
+  crash: nothing after it runs (no binding, no `AppConfig.init`, no `runApp`), so it fails closed, but to a
+  tester it is most likely a blank launch with no on-screen signal. This is a SOURCE-level expectation; when a
+  `--flavor` build is first run on a device (BUILD/DEVICE level), check what the tester actually sees and
+  whether the platform log is enough.
+- **Still OPEN (owner decision, not built):** the `.example`-in-prod build failure (rule 3 above) — the
+  placement of that check was never settled, and `Flavor.prod`'s host is still the fail-closed placeholder.
 
 ---
 
@@ -308,11 +360,11 @@ Until Wave 3 lands, iOS has one scheme and the template id; **no iOS command is 
 
 | Forbidden combination | Android today | iOS today | Remaining enforcement |
 | --- | --- | --- | --- |
-| staging flavor + production configuration | **impossible at build** — Gradle refuses `--flavor staging -t lib/main_prod.dart` | not expressible (no schemes) | Wave 2: Dart boot assertion flavor ⇄ `Flavor`; Wave 3: iOS schemes |
-| production flavor + development/staging API | **impossible at build** — `prod` compiles `main_prod.dart` only; no flavor → refused | possible (template; `-t` is the only selector) | Wave 2 boot assertion; Wave 3 schemes |
+| staging flavor + production configuration | **impossible at build** — Gradle refuses `--flavor staging -t lib/main_prod.dart` | not expressible (no schemes) | Dart boot assertion flavor ⇄ `Flavor` **built 2026-10-12** (BUILD: tests only, never run in a built app, §4.4); Wave 3: iOS schemes |
+| production flavor + development/staging API | **impossible at build** — `prod` compiles `main_prod.dart` only; no flavor → refused | possible (template; `-t` is the only selector) | boot assertion **built 2026-10-12** — but with no iOS platform flavor it TOLERATES an absent one, so on iOS it cannot yet catch this; Wave 3 schemes close it |
 | production build + `.example` host | possible (build succeeds; app fails closed at runtime) | same | Wave 2: release build of `prod` fails if `_baseUrlFor(prod)` matches `.example` |
 | staging identity + production Firebase | **guarded (vacuous until Firebase exists):** `android_identity_test.dart` checks a per-flavor `google-services.json` names its own id and none sits in `src/main` | none | Wave 3: the iOS equivalent for `GoogleService-Info.plist` |
-| release build from the mock entrypoint | **impossible at build** — `main_mock.dart` is allowed in debug/profile only | possible | Wave 2: `main_mock.dart` refuses to run when `kReleaseMode` (cross-platform) |
+| release build from the mock entrypoint | **impossible at build** — `main_mock.dart` is allowed in debug/profile only | possible at build | `main_mock.dart` refuses to run when `kReleaseMode` (cross-platform) — **built 2026-10-12** (BUILD: source + guard, never run in a release build; §4.4) |
 
 ---
 
@@ -364,7 +416,7 @@ need an APNs key from the Apple developer account. *Treat push as not ready unti
 | --- | --- | --- | --- | --- |
 | **0** | Architecture & identity decision | this document, rubric, D-021 proposal, risk R-9 | — | **done 2026-10-04** |
 | **1** | Android environment architecture | `flavorDimensions("env")`, flavors `prod`/`staging`, `.stg` suffix, `resValue app_name`, label → `@string/app_name`, SDK literals, Gradle flavor ⇄ entrypoint check, guard evolution + identity guard, `ci.yml` + `tool/` updates, `pre-push` trigger list, `RELEASE_SIGNING.md` correction | D-021 (ratified 2026-10-06) | **done 2026-10-06** — BUILD + ARTEFACT on Windows; DEVICE not reached (no device attached during the wave) |
-| **2** | Flutter environment contract | boot assertion compiled `Flavor` ⇄ platform flavor, `.example`-in-prod build-time failure, `isDev` indicator (dev vs staging are now distinguishable only on screen), `main_mock` release refusal (cross-platform), guard tests for each. **No website/redeem URL slot** — see §10 and `RISKS.md` R-10 | Wave 1 | not started |
+| **2** | Flutter environment contract | boot assertion compiled `Flavor` ⇄ platform flavor, `.example`-in-prod build-time failure, `isDev` indicator (dev vs staging are now distinguishable only on screen), `main_mock` release refusal (cross-platform), guard tests for each. **No website/redeem URL slot** — see §10 and `RISKS.md` R-10 | Wave 1 | **partly built 2026-10-12** (§4.4): boot assertion, `main_mock` release refusal, environment ribbon (Flavor-driven, not `isDev`) and their guard tests — per feature (§4.4): the assertion and the `main_mock` refusal at BUILD only (unit / guard tests, never run in a built app); the ribbon at BUILD plus one EMULATOR sighting in the mock build before the corner pin; no release build, no DEVICE, no CI. **OPEN, owner decision:** the `.example`-in-prod build failure |
 | **3** | iOS environment architecture | two schemes `prod`/`staging`, `Debug/Release/Profile-<flavor>` configurations, per-flavor `xcconfig` with `PRODUCT_BUNDLE_IDENTIFIER` and display name, `Info.plist` reads them, deployment target 13.0 → **15.0** (×3 + `AppFrameworkInfo.plist`), Podfile generated with `platform :ios, '15.0'` and committed, `knownRegions` + `ar`, iOS half of the Firebase-slot guard; **input R-11:** the Xcode archive's Privacy Report is the only proof that no undeclared required-reason API remains after the `device_info_plus` replacement (`RISKS.md` R-11, reconciliation O-3) | **a Mac with Xcode 26** | **blocked on this machine** — SOURCE-level authoring possible here, BUILD is not |
 | **4** | Cross-platform validation & release safety | AAB in CI, signing-secret injection design (no secrets committed), first observed CI run (R-3), DEVICE check of both Android identities side by side, rubric re-score, final chapter report | Waves 1–2 (Android), 3 (iOS) | not started |
 

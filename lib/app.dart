@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/config/app_config.dart';
 import 'core/providers/locale_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 
@@ -52,13 +54,94 @@ class LevelUpApp extends ConsumerWidget {
         value: Theme.of(context).brightness == Brightness.dark
             ? _darkOverlay
             : _lightOverlay,
-        child: child!,
+        child: EnvironmentRibbon(child: child!),
       ),
       routerConfig: router,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
     );
+  }
+}
+
+/// The engineering-only environment marker (CW18a): a corner ribbon naming the
+/// flavor on `Flavor.dev` and `Flavor.staging` builds, so a device that holds
+/// one of them can be told apart at a glance. Dev and staging are one installed
+/// identity (D-021 Q2), so this ribbon is the only place the difference shows.
+///
+/// - **Absent in production**, and absent whenever [AppConfig] has not been
+///   initialised (a harness that pumps the root widget on its own), which
+///   returns [child] untouched - no wrapper, so the production tree is exactly
+///   what it was before the ribbon existed.
+/// - **Driven by the [Flavor]**, not by `AppConfig.isDev`, which is true for
+///   dev and staging alike and cannot tell them apart.
+/// - **Stock Flutter [Banner]**: it paints its message itself, so there is no
+///   `Text`, no string literal and no ARB key (the message is the flavor's own
+///   name, upper-cased), and its painter reports no hit, so it never
+///   intercepts a tap.
+/// - **Colour**: [AppColors.destructive], the one saturated token that is the
+///   same on both canvases, so the ribbon reads alike in light and dark and its
+///   white label stays legible. It is an engineering marker, never a student
+///   signal; no new token was added for it.
+/// - **Corner**: the top RIGHT, physically, in both languages. Flutter's banner
+///   paints a 45-degree band over roughly 40 <= x + y <= 57 (dp from the right
+///   edge plus dp from the top edge, read from `banner.dart`), so it lies over
+///   the OS status icons and the margin around them. The status-bar CLOCK is
+///   the OS's, not the app's: it does not follow the language the student
+///   picked in Settings, and on an Android device whose SYSTEM language is
+///   left-to-right it is at the top LEFT (the walked configuration: an
+///   English-locale emulator). A corner that followed the app's layout
+///   direction put the ribbon over the clock in Arabic (readiness walk E3, AR
+///   screens). A [Banner] has no
+///   physical-corner value, only start/end resolved against its
+///   `layoutDirection`, so the ribbon pins that to [TextDirection.ltr]: `topEnd`
+///   then means the right corner in every locale. The message is the flavor's
+///   own Latin name, so its `textDirection` is pinned too. The app's own
+///   controls keep at least 20dp clear of the edge and start below the status
+///   bar. In English the right corner is the END side (language pill and bell);
+///   the closest one, the stadium-shaped language pill, has its nearest painted
+///   point about 39dp plus the status-bar height from the corner, which is past
+///   the band's outer edge on any status bar of about 18dp or more. In Arabic
+///   the right corner is the START side, where the 35dp back chip sits (20dp
+///   from the edge, 16dp below the status bar): its nearest painted point is
+///   about 46dp plus the status-bar height from the corner, past the band's
+///   outer edge on any status bar of about 11dp or more. This is layout
+///   reasoning, not a device check. The bottom corners were rejected: the first
+///   and last navigation tabs and their labels sit there.
+///
+/// **Known limit - the pin assumes a left-to-right SYSTEM language.** The
+/// corner is decided by the app, not by the OS. A phone whose own language is
+/// right-to-left may mirror its status bar (clock at the top right, which is
+/// how Android's SystemUI is understood to behave; not observed here), and then
+/// the pinned ribbon sits over that clock in BOTH app languages. The class does
+/// not read the platform locale, because which corner the OS clock takes on a
+/// right-to-left phone, on Android or on iOS, has not been checked on a device
+/// and a guess would be worse than a stated gap. To close it: look at an
+/// Arabic-system device, and if the clock is mirrored, choose the corner from
+/// `PlatformDispatcher.locale` instead of the fixed right corner. The test
+/// that pins the present behaviour is the "KNOWN LIMIT" one in
+/// `test/core/config/w1_env_indicator_test.dart`.
+class EnvironmentRibbon extends StatelessWidget {
+  const EnvironmentRibbon({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final flavor = AppConfig.maybeInstance?.flavor;
+    return switch (flavor) {
+      Flavor.dev || Flavor.staging => Banner(
+        message: flavor!.name.toUpperCase(),
+        location: BannerLocation.topEnd,
+        // Pinned, not inherited: with the ambient direction `topEnd` is the
+        // top LEFT in Arabic, over the OS clock. See the class doc.
+        layoutDirection: TextDirection.ltr,
+        textDirection: TextDirection.ltr,
+        color: Theme.of(context).extension<AppColors>()!.destructive,
+        child: child,
+      ),
+      Flavor.prod || null => child,
+    };
   }
 }
 

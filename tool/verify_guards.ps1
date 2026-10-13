@@ -43,9 +43,9 @@ deliberate violation. It is never imported, so it cannot affect the app - the
 guards see it because they scan `lib/` from disk, which is the surface under
 test. It is gitignored so a crashed run cannot leave it staged.
 
-Five probes must edit a real file (`ci.yml`, `AndroidManifest.xml`,
-`RELEASE_SIGNING.md`, `build.gradle.kts`). Those are
-backed up first and restored in a `finally` block with a SHA-256 comparison
+Seven probes must edit a real file (`ci.yml`, `AndroidManifest.xml`,
+`RELEASE_SIGNING.md`, `build.gradle.kts`, `bootstrap.dart`, `main_mock.dart`).
+Those are backed up first and restored in a `finally` block with a SHA-256 comparison
 before the script exits, so an error or Ctrl-C cannot leave the repo modified.
 
 WHAT THIS DOES NOT PROVE
@@ -248,7 +248,32 @@ $editProbes = @(
        Bak  = 'build.gradle.kts.guardprobe.bak'
        From = 'applicationId = "com.levelupworld.app"'
        To   = 'applicationId = "com.levelup.level_up_app"'
-       Label = 'applicationId is the D-021 value' }
+       Label = 'applicationId is the D-021 value' },
+
+    # CW18a, the Dart layer of the flavor contract. Delete the one call that
+    # compares the compiled Flavor with the platform flavor: the app would boot
+    # with an entrypoint its build configuration never chose (iOS has no Gradle
+    # to refuse it). The unit tests of the comparison stay green - they test
+    # the function, not that bootstrap() calls it - which is why this guard
+    # reads the wiring.
+    @{ Name = 'Boot platform-flavor check'
+       Test = 'bootstrap() checks the platform flavor before it initialises anything'
+       Path = 'lib/bootstrap.dart'
+       Bak  = 'bootstrap.guardprobe.bak'
+       From = 'AppConfig.verifyPlatformFlavor(flavor, platformFlavor);'
+       To   = ''
+       Label = 'bootstrap() verifies the platform flavor' },
+
+    # CW18a. Turn the mock entrypoint's release refusal into a no-op: a release
+    # artefact built from main_mock.dart would then run the canned backend.
+    # Gradle refuses that build on Android only.
+    @{ Name = 'Mock entrypoint release refusal'
+       Test = 'main_mock refuses a release build before it touches config or tokens'
+       Path = 'lib/main_mock.dart'
+       Bak  = 'main_mock.guardprobe.bak'
+       From = 'if (kReleaseMode) {'
+       To   = 'if (false) {'
+       Label = 'main_mock.dart refuses to run in release' }
 )
 
 foreach ($p in $editProbes) {

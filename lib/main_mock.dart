@@ -21,6 +21,7 @@
 /// Delete both files to remove the harness entirely.
 library;
 
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,6 +43,19 @@ import 'dev/mock_backend.dart';
 const kResetSessionOnLaunch = true;
 
 Future<void> main() async {
+  // A release artefact must never carry a canned backend that answers every
+  // sign-in with a magic code. Gradle already refuses to build this entrypoint
+  // in release for Android; this is the cross-platform layer (iOS has no such
+  // check until Wave 3), and it comes FIRST - before the config is initialised
+  // and before the token wipe below, so a refused launch changes nothing on
+  // the device.
+  if (kReleaseMode) {
+    throw StateError(
+      'lib/main_mock.dart is a development harness and cannot run in a '
+      'release build.',
+    );
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
   // Still needed: `refreshDioProvider` is not overridden and reads AppConfig
   // when it is first built.

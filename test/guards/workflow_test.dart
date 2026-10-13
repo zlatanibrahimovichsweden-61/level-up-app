@@ -362,6 +362,150 @@ void main() {
     });
   });
 
+  group('the Dart layer of the flavor contract stays intact (CW18a)', () {
+    // docs/ENVIRONMENTS.md §4.3 and §5. Gradle already refuses a wrong
+    // flavor/entrypoint pair for Android; these are the cross-platform layer
+    // that holds on iOS too, and they are ordinary source files that a future
+    // edit can quietly weaken. The behaviour is unit-tested in
+    // test/core/config/w1_platform_flavor_test.dart; what is pinned HERE is the
+    // wiring and the ORDER, which no unit test of a pure function can see.
+
+    /// Dart source with full-line comments removed. These files explain, in
+    /// comments, the very calls this scan looks for, so prose must never
+    /// satisfy (or trip) a structural rule - the ci.yml lesson again.
+    String dartCode(String path) => File(
+      path,
+    ).readAsLinesSync().where((l) => !RegExp(r'^\s*//').hasMatch(l)).join('\n');
+
+    test('bootstrap() checks the platform flavor before it initialises '
+        'anything', () {
+      final src = dartCode('lib/bootstrap.dart');
+      final check = src.indexOf(
+        'AppConfig.verifyPlatformFlavor(flavor, platformFlavor);',
+      );
+      final binding = src.indexOf('WidgetsFlutterBinding.ensureInitialized();');
+      final init = src.indexOf('AppConfig.init(flavor);');
+
+      expect(
+        check,
+        isNonNegative,
+        reason:
+            'lib/bootstrap.dart no longer calls '
+            'AppConfig.verifyPlatformFlavor(flavor, platformFlavor). A build '
+            'whose platform flavor and compiled Flavor disagree would boot.',
+      );
+      expect(init, isNonNegative);
+      expect(binding, isNonNegative);
+      expect(
+        check,
+        lessThan(binding),
+        reason: 'the check must precede the binding and everything after it',
+      );
+      expect(
+        check,
+        lessThan(init),
+        reason:
+            'AppConfig.init must not run first: a mismatched boot would have '
+            'a base URL before it is refused',
+      );
+    });
+
+    test(
+      'the platform flavor it checks IS the one the build was made with',
+      () {
+        // The parameter exists only so the check can be tested. If its default
+        // drifted to null the check would be vacuous in production - every
+        // build "has no platform flavor" - and every test would still pass.
+        final src = dartCode('lib/bootstrap.dart');
+        expect(
+          src.contains('String? platformFlavor = appFlavor'),
+          isTrue,
+          reason:
+              'bootstrap() must default platformFlavor to appFlavor '
+              '(package:flutter/services.dart), not to null',
+        );
+      },
+    );
+
+    test('AppConfig.init is called by bootstrap() and by the mock entrypoint, '
+        'nowhere else', () {
+      // Any other caller is a way to boot that skips the check above.
+      final callers = <String>{
+        for (final f
+            in Directory('lib')
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart')))
+          if (!f.path
+                  .replaceAll(r'\', '/')
+                  .endsWith('lib/core/config/app_config.dart') &&
+              dartCode(f.path).contains('AppConfig.init('))
+            f.path.replaceAll(r'\', '/'),
+      };
+
+      expect(
+        callers,
+        {'lib/bootstrap.dart', 'lib/main_mock.dart'},
+        reason:
+            'a new AppConfig.init caller bypasses the platform-flavor check '
+            'in bootstrap() - route it through bootstrap()',
+      );
+    });
+
+    test('the three flavor entrypoints go through bootstrap() with their '
+        'own Flavor', () {
+      for (final flavor in ['dev', 'staging', 'prod']) {
+        expect(
+          dartCode(
+            'lib/main_$flavor.dart',
+          ).contains('bootstrap(Flavor.$flavor)'),
+          isTrue,
+          reason:
+              'lib/main_$flavor.dart must call bootstrap(Flavor.$flavor): the '
+              'platform-flavor check is keyed to the Flavor it is handed',
+        );
+      }
+    });
+
+    test('main_mock refuses a release build before it touches config or '
+        'tokens', () {
+      final src = dartCode('lib/main_mock.dart');
+      final refusal = RegExp(
+        r'if \(kReleaseMode\) \{\s*throw ',
+      ).firstMatch(src);
+      final binding = src.indexOf('WidgetsFlutterBinding.ensureInitialized();');
+      final init = src.indexOf('AppConfig.init(Flavor.dev);');
+      final wipe = src.indexOf('clearTokens()');
+
+      expect(
+        refusal,
+        isNotNull,
+        reason:
+            'lib/main_mock.dart must `if (kReleaseMode) { throw ... }`. A '
+            'release artefact must never carry the canned backend; Gradle '
+            'refuses it on Android only (iOS until Wave 3).',
+      );
+      expect(binding, isNonNegative);
+      expect(init, isNonNegative);
+      expect(wipe, isNonNegative);
+      expect(
+        refusal!.start,
+        lessThan(binding),
+        reason: 'the refusal must be the first thing main() does',
+      );
+      expect(
+        refusal.start,
+        lessThan(init),
+        reason: 'a refused launch must not initialise the config',
+      );
+      expect(
+        refusal.start,
+        lessThan(wipe),
+        reason: 'a refused launch must not wipe the stored tokens',
+      );
+    });
+  });
+
   group('canonical validation stays canonical', () {
     test('both validate scripts exist', () {
       expect(File('tool/validate.ps1').existsSync(), isTrue);

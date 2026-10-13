@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show appFlavor;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,7 +8,19 @@ import 'core/providers/core_providers.dart';
 import 'core/storage/preferences_store.dart';
 
 /// Shared boot sequence for all three flavors.
-Future<void> bootstrap(Flavor flavor) async {
+///
+/// [platformFlavor] is the flavor the platform build was made with
+/// (`--flavor X`, read as `appFlavor`); it defaults to that and is a parameter
+/// only so the check can be tested. The compiled [flavor] must agree with it
+/// ([AppConfig.verifyPlatformFlavor]) or boot stops here, before the binding,
+/// the config, the preferences or `runApp`: a build whose configuration says
+/// one environment and whose entrypoint says another must never show a screen.
+Future<void> bootstrap(
+  Flavor flavor, {
+  String? platformFlavor = appFlavor,
+}) async {
+  AppConfig.verifyPlatformFlavor(flavor, platformFlavor);
+
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.init(flavor);
 
