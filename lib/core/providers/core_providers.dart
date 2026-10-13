@@ -33,18 +33,26 @@ final refreshDioProvider = Provider<Dio>((ref) {
   return DioClient.createBare(error: ErrorInterceptor());
 });
 
-// Explicit left-side type: dioProvider and authRepositoryProvider reference each
-// other (the refresh closure), which is a lazy RUNTIME link but a static
-// reference cycle — annotating the variable breaks the inference cycle.
+// Explicit left-side type: this file and auth_repository.dart import each other
+// (the repository watches dioProvider; dioProvider uses requestTokenRefresh), so
+// the annotation keeps type inference from ever looping between them.
 final Provider<Dio> dioProvider = Provider<Dio>((ref) {
+  // The refresh runs on the bare client and NEVER through authRepositoryProvider.
+  // That repository watches THIS provider, so reading it from here is a provider
+  // cycle: harmless in release, but in a debug build `Ref.read` asserts and
+  // throws `CircularDependencyError`, the interceptor swallows it, and an
+  // expired access token can never be refreshed (E4-01). The bare client is a
+  // leaf that depends on nothing, so watching it closes no loop.
+  final refreshDio = ref.watch(refreshDioProvider);
   return DioClient.create(
     storage: ref.watch(secureStorageProvider),
     authController: ref.read(authControllerProvider.notifier),
-    // Lazy: reads authRepositoryProvider only when a refresh is actually needed
-    // (at onError), so building dioProvider doesn't cycle back through the repo.
-    refresh: ({required refreshToken, required deviceId}) => ref
-        .read(authRepositoryProvider)
-        .refresh(refreshToken: refreshToken, deviceId: deviceId),
+    refresh: ({required refreshToken, required deviceId}) =>
+        requestTokenRefresh(
+          refreshDio,
+          refreshToken: refreshToken,
+          deviceId: deviceId,
+        ),
     error: ErrorInterceptor(),
   );
 });

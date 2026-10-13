@@ -78,28 +78,20 @@ class AuthRepository {
   /// recurse. Throws `UnauthorizedException` carrying `refresh_token_invalid`
   /// (dead chain → full re-login) or `session_superseded` (evicted by a newer
   /// device); the caller decides the logout reason.
+  ///
+  /// The app's own refresh path (`dioProvider`'s interceptor) does NOT call this
+  /// method: it calls [requestTokenRefresh] on the bare client directly, because
+  /// reaching this repository from `dioProvider` is a provider cycle. See there.
+  /// This is the same implementation, kept for callers that already hold the
+  /// repository.
   Future<TokenPair> refresh({
     required String refreshToken,
     required String deviceId,
-  }) async {
-    try {
-      final res = await _refreshDio.post<Map<String, dynamic>>(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken, 'deviceId': deviceId},
-      );
-      return TokenPair.fromJson(res.data!);
-    } on DioException catch (e) {
-      throw _asAppException(e);
-    } on AppException {
-      rethrow;
-    } on Object catch (e) {
-      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
-      // core TypeError/FormatException here, not a DioException. Wrap it so
-      // the typed boundary holds. runtimeType only: response bodies carry
-      // minors' data and must never leak into an error detail.
-      throw UnknownException(detail: 'parse: ${e.runtimeType}');
-    }
-  }
+  }) => requestTokenRefresh(
+    _refreshDio,
+    refreshToken: refreshToken,
+    deviceId: deviceId,
+  );
 
   /// `POST /auth/logout` — revoke this session (Bearer, idempotent 204). A
   /// `401 authentication_required` just means already-logged-out; swallow it so
@@ -115,17 +107,60 @@ class AuthRepository {
       throw _asAppException(e);
     }
   }
+}
 
-  /// The ErrorInterceptor already mapped the failure onto [DioException.error].
-  /// Unwrap it; fall back to [UnknownException] if something bypassed the chain.
-  AppException _asAppException(DioException e) {
-    final err = e.error;
-    return err is AppException ? err : const UnknownException();
+/// `POST /auth/refresh` on the BARE [refreshDio] — the one implementation of the
+/// call, shared by [AuthRepository.refresh] and `dioProvider`.
+///
+/// **Why a function on the bare client and not a call on the repository.**
+/// `dioProvider`'s interceptor needs a refresher, and the repository's main
+/// client IS `dioProvider` (`authRepositoryProvider` watches it). A refresher that
+/// reads the repository therefore makes `dioProvider` read one of its own
+/// descendants: a provider cycle. Release builds never notice, but in a debug
+/// build Riverpod's `Ref.read` asserts and throws `CircularDependencyError`,
+/// `AuthInterceptor` swallows it, and the 401 reaches the screen: a debug or
+/// staging session could never refresh an expired access token and was stranded
+/// after the access token's 15 minutes (E4-01). This function needs only the bare
+/// client, which depends on nothing, so the graph has no cycle in any build.
+///
+/// [refreshDio] MUST be the bare client (no AuthInterceptor), so a 401 here
+/// cannot re-enter the retry path. Throws the same typed [AppException]s the
+/// repository does.
+Future<TokenPair> requestTokenRefresh(
+  Dio refreshDio, {
+  required String refreshToken,
+  required String deviceId,
+}) async {
+  try {
+    final res = await refreshDio.post<Map<String, dynamic>>(
+      '/auth/refresh',
+      data: {'refreshToken': refreshToken, 'deviceId': deviceId},
+    );
+    return TokenPair.fromJson(res.data!);
+  } on DioException catch (e) {
+    throw _asAppException(e);
+  } on AppException {
+    rethrow;
+  } on Object catch (e) {
+    // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a core
+    // TypeError/FormatException here, not a DioException. Wrap it so the typed
+    // boundary holds. runtimeType only: response bodies carry minors' data and
+    // must never leak into an error detail.
+    throw UnknownException(detail: 'parse: ${e.runtimeType}');
   }
 }
 
-// Explicit left-side type breaks the static reference cycle with dioProvider
-// (which reads this provider lazily inside its refresh closure).
+/// The ErrorInterceptor already mapped the failure onto [DioException.error].
+/// Unwrap it; fall back to [UnknownException] if something bypassed the chain.
+AppException _asAppException(DioException e) {
+  final err = e.error;
+  return err is AppException ? err : const UnknownException();
+}
+
+// Explicit left-side type: this file and core_providers.dart import each other
+// (the repository watches dioProvider; dioProvider uses [requestTokenRefresh]),
+// so the annotation keeps type inference from ever looping between them. There
+// is no PROVIDER cycle: dioProvider does not read this provider.
 final Provider<AuthRepository> authRepositoryProvider =
     Provider<AuthRepository>(
       (ref) => AuthRepository(

@@ -248,6 +248,77 @@ void main() {
     },
   );
 
+  /// E4-01 follow-up. The refresh path used to end in `catch (_)`, which also
+  /// swallowed Dart `Error`s (a programmer bug such as Riverpod's
+  /// `CircularDependencyError`, which is what hid E4-01 in debug) and passed the
+  /// plain 401 on as if nothing had gone wrong. A bug must stay visible; only a
+  /// runtime `Exception` (a secure-storage fault) is the original 401's business.
+  group('a failure inside the refresh that is not an AppException', () {
+    test(
+      'a programmer Error is NOT swallowed into the original 401: the '
+      'caller gets the unknown outcome and the session is untouched',
+      () async {
+        var refreshCalls = 0;
+        final dio = buildDio(
+          refresh: ({required refreshToken, required deviceId}) async {
+            refreshCalls++;
+            throw StateError('a bug in the refresh wiring');
+          },
+          adapter: (options) async => _unauthorized('authentication_required'),
+        );
+
+        await expectLater(
+          dio.get<dynamic>('/protected'),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is DioException &&
+                  e.error is! UnauthorizedException &&
+                  e.error is AppException,
+            ),
+          ),
+        );
+
+        expect(refreshCalls, 1);
+        // A bug is not proof the session is dead.
+        verifyNever(() => storage.clearTokens());
+        expect(
+          container.read(authControllerProvider),
+          isA<AuthAuthenticated>(),
+        );
+      },
+    );
+
+    test('a runtime Exception (a storage fault) still passes the original 401 '
+        'on, typed, with no logout', () async {
+      var refreshCalls = 0;
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          throw const FormatException('storage fault');
+        },
+        adapter: (options) async => _unauthorized('authentication_required'),
+      );
+
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is DioException &&
+                e.error is UnauthorizedException &&
+                (e.error! as UnauthorizedException).code ==
+                    'authentication_required',
+          ),
+        ),
+      );
+
+      expect(refreshCalls, 1);
+      verifyNever(() => storage.clearTokens());
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    });
+  });
+
   /// CW02 slice A. Contract: a non-2xx without a parsable body and `code` is an
   /// UNKNOWN outcome — treat it like `internal_error`. For the refresh call that
   /// means it is NOT proof the session is dead: only `refresh_token_invalid` /

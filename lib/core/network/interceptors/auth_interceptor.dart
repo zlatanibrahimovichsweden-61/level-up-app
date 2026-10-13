@@ -97,7 +97,12 @@ class AuthInterceptor extends Interceptor {
       return handler.reject(
         DioException(requestOptions: err.requestOptions, error: e),
       );
-    } catch (_) {
+    } on Exception {
+      // A runtime fault that is not an AppException (a secure-storage read or
+      // write): not proof the session is dead, so the original 401 goes on and
+      // ErrorInterceptor types it. A Dart `Error` (a programmer bug, such as the
+      // provider cycle that hid E4-01 in debug) is deliberately NOT caught: it
+      // reaches the caller as the unknown outcome instead of vanishing.
       return handler.next(err);
     }
 
