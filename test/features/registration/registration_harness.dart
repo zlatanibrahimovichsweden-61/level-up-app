@@ -14,7 +14,7 @@ class MockReferenceRepository extends Mock implements ReferenceRepository {}
 const regArgs = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600,
-  phone: '+201555000111',
+  phone: '+201500000001',
 );
 
 Widget marker(String text) => Scaffold(body: Center(child: Text(text)));

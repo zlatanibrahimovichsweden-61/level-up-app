@@ -34,7 +34,7 @@ RegistrationDraft _draft({
   return RegistrationDraft(
     registrationToken: 'reg.token',
     tokenExpiresAt: DateTime.now().add(const Duration(minutes: 10)),
-    phone: '+201555000111',
+    phone: '+201500000001',
     name: name,
     parentPhone: parentPhone,
     referralCode: referralCode,
@@ -367,7 +367,7 @@ void main() {
         device: _device,
       ).toJson();
       expect(json.containsKey('phone'), isFalse);
-      expect(json.values, isNot(contains('+201555000111')));
+      expect(json.values, isNot(contains('+201500000001')));
     });
 
     test('name + parentPhone come from the draft, not re-collected', () {

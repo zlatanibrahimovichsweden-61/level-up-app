@@ -447,7 +447,7 @@ void main() {
                 const RegistrationArgs(
                   registrationToken: 'reg.token',
                   expiresInSeconds: -1,
-                  phone: '+201555000111',
+                  phone: '+201500000001',
                 ),
               )
               ..setTrack(RegTrack.school);

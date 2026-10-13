@@ -28,7 +28,7 @@ class _FakeBody extends Fake implements RegistrationBody {}
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600,
-  phone: '+201555000111',
+  phone: '+201500000001',
 );
 
 /// The same fixture the OTP tests use. `deviceInfoProvider` itself is
@@ -91,7 +91,7 @@ void main() {
             ? const RegistrationArgs(
                 registrationToken: 'reg.token',
                 expiresInSeconds: -1,
-                phone: '+201555000111',
+                phone: '+201500000001',
               )
             : _args,
       )
