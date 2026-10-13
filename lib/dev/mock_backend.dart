@@ -33,6 +33,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../core/network/interceptors/error_interceptor.dart';
+import 'mock_legal.dart';
 import 'mock_notifications.dart';
 import 'mock_support.dart';
 
@@ -558,6 +559,18 @@ class MockBackendInterceptor extends Interceptor {
         flashcardGrade.group(1)!,
         body,
       );
+    }
+
+    // ---- legal documents (CW04a) ------------------------------------------
+    // `getLegalDocument` is `stable` and public. The labelled layout sample —
+    // NOT legal text — and the contract's 400 are in `mock_legal.dart`.
+    switch (const MockLegalDocuments().handle(method, path, query)) {
+      case MockLegalOk(:final data):
+        return _ok(handler, options, 200, data);
+      case MockLegalValidation(:final errors):
+        return _validationFailed(handler, options, errors);
+      case null:
+        break;
     }
 
     // ---- reference --------------------------------------------------------

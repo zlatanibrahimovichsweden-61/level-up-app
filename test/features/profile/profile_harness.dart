@@ -18,6 +18,7 @@ import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
+import 'package:level_up_app/features/legal/repository/legal_repository.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
 import 'package:level_up_app/features/profile/screens/profile_screen.dart';
@@ -29,6 +30,7 @@ import 'package:level_up_app/features/leaderboard/repository/leaderboard_reposit
 
 import 'profile_fixtures.dart';
 import '../leaderboard/leaderboard_fixtures.dart';
+import '../legal/legal_fixtures.dart';
 
 class MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -118,12 +120,16 @@ Future<ProviderContainer> pumpProfileApp(
       leaderboardRepositoryProvider.overrideWithValue(
         QuietLeaderboardRepository(),
       ),
+      // The Privacy and Terms rows open the legal viewer (CW04a), which
+      // fetches its document; never from the network here.
+      legalRepositoryProvider.overrideWithValue(QuietLegalRepository()),
       if (auth != null) authRepositoryProvider.overrideWithValue(auth),
       isOnlineProvider.overrideWith((ref) => Stream.value(true)),
     ],
   );
   addTearDown(container.dispose);
   holdBoards(container);
+  holdLegalDocuments(container);
   if (keepProfile) holdProfile(container);
 
   // Signed in — exactly what the OTP `authenticated` fork does.
