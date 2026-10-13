@@ -137,6 +137,7 @@ Do §14 (THE COOKIE). It is the migration's completion signal.
 | Backend facts Seif confirmed; open questions for Seif | `docs/BACKEND_HANDOFF.md` (§L = answered vs still open), then `docs/seif_fight.md` |
 | Responsive & text-scaling rules (**proposed, not applied**) | `docs/RESPONSIVE.md` |
 | Which contract commit is pinned | `contract/SOURCE.md` |
+| Working in a Claude Code cloud session (Linux; branch `cld`) | `docs/CLOUD_SETUP.md` |
 | The ordered fix queue | `.ai/audits/current/known-issues.md` |
 | Feature-specific rules | `docs/day*_brief.md` — **dated records, not current state** |
 
@@ -148,6 +149,12 @@ powershell -ExecutionPolicy Bypass -File tool\validate.ps1   # Windows
 ```sh
 sh tool/validate.sh                                          # Git Bash / macOS / Linux
 ```
+```sh
+bash tool/cloud/check.sh                                     # Claude Code cloud session (Linux)
+```
+
+In a cloud session use `tool/cloud/check.sh`: it is CI's Linux gate and excludes the goldens, whose
+baselines are Windows-only. Setup, limits and what stays local: `docs/CLOUD_SETUP.md`.
 
 Format → analyze → the full test suite including every guard. Required result:
 **OVERALL: PASS**. It writes a self-contained record to `.ai/audits/current/test-results.md`.
