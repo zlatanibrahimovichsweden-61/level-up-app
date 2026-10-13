@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +19,7 @@ import 'package:level_up_app/features/leaderboard/widgets/leaderboard_row.dart';
 import 'package:level_up_app/features/leaderboard/widgets/scope_toggle.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
+import 'package:level_up_app/features/registration/models/reference_models.dart';
 import 'package:level_up_app/features/shell/main_shell.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -66,6 +70,8 @@ void main() {
     WidgetTester tester, {
     required StudentProfile me,
     String locale = 'en',
+    Brightness brightness = Brightness.light,
+    bool settle = true,
   }) async {
     when(profile.getMe).thenAnswer((_) async => me);
 
@@ -93,16 +99,30 @@ void main() {
         container: container,
         child: MaterialApp.router(
           locale: Locale(locale),
-          theme: AppTheme.light,
+          theme: brightness == Brightness.light
+              ? AppTheme.light
+              : AppTheme.dark,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: container.read(routerProvider),
         ),
       ),
     );
-    await tester.pumpAndSettle();
-    container.read(routerProvider).go('/leaderboard');
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+      container.read(routerProvider).go('/leaderboard');
+      await tester.pumpAndSettle();
+    } else {
+      // A board that never answers keeps its spinner turning, so the tree
+      // never settles: a fixed run of frames instead.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      container.read(routerProvider).go('/leaderboard');
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
     // Asserted on every mount, not once: this is what keeps D-008 closed. If
     // `/leaderboard` is ever pointed back at a placeholder, all 17 cases in
     // this file go red here rather than passing against a screen nobody can
@@ -411,6 +431,100 @@ void main() {
     });
   });
 
+  // CW17 / TalkBack: the board as the router mounts it. Each podium place and
+  // each ranked row is one node (rank, name or "You", points), the avatar photo
+  // is no stop of its own, and only the caller's row is selected.
+  for (final locale in ['en', 'ar']) {
+    testWidgets('$locale · podium places and rows are one node each', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      givenBoard(ranks: const [1, 2, 3, 4, 5], meRank: 4);
+      await openLeaderboard(tester, me: schoolProfile(), locale: locale);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(LeaderboardScreen)),
+      );
+
+      // A podium place: badge, name, points.
+      final winner = tester.getSemantics(find.text('Student 1'));
+      expect(winner.getSemanticsData().label.split('\n'), [
+        '1',
+        'Student 1',
+        l10n.leaderboardPoints(990),
+      ]);
+      expect(winner.childrenCount, 0);
+      expect(winner.getSemanticsData().flagsCollection.isImage, isFalse);
+
+      // The caller's own row: "You" in place of the name, and selected.
+      final me = tester.getSemantics(find.text(l10n.leaderboardYou));
+      expect(me.getSemanticsData().label.split('\n'), [
+        '4',
+        l10n.leaderboardYou,
+        l10n.leaderboardPoints(960),
+      ]);
+      expect(me.childrenCount, 0);
+      expect(me.getSemanticsData().flagsCollection.isImage, isFalse);
+      expect(me.getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
+
+      // An ordinary row is merged the same way and is not selected.
+      final other = tester.getSemantics(find.text('Student 5'));
+      expect(other.getSemanticsData().label.split('\n'), [
+        '5',
+        'Student 5',
+        l10n.leaderboardPoints(950),
+      ]);
+      expect(other.childrenCount, 0);
+      expect(other.getSemanticsData().flagsCollection.isImage, isFalse);
+      expect(
+        other.getSemanticsData().flagsCollection.isSelected,
+        Tristate.isFalse,
+      );
+      handle.dispose();
+    });
+  }
+
+  // `getLeaderboard` documents 429 `rate_limited` ("Honour Retry-After",
+  // `openapi.yaml:2568`). Until CW17 the board said "Something went wrong" and
+  // gave no hint that waiting was the cure.
+  group('429 rate_limited', () {
+    void givenFailure(Object error) {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => throw error);
+    }
+
+    for (final locale in ['en', 'ar']) {
+      testWidgets('says so, with no Retry to hammer · $locale', (tester) async {
+        givenFailure(const RateLimitedException());
+        await openLeaderboard(tester, me: schoolProfile(), locale: locale);
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+        expect(find.text(l10n.rateLimited), findsOneWidget);
+        expect(find.text(l10n.genericError), findsNothing);
+        expect(find.text(l10n.retry), findsNothing);
+      });
+
+      testWidgets('names the wait when the server sent Retry-After · $locale', (
+        tester,
+      ) async {
+        givenFailure(
+          const RateLimitedException(retryAfter: Duration(seconds: 42)),
+        );
+        await openLeaderboard(tester, me: schoolProfile(), locale: locale);
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+        expect(find.text(l10n.rateLimitedIn(42)), findsOneWidget);
+        expect(find.text(l10n.rateLimited), findsNothing);
+        expect(find.text(l10n.genericError), findsNothing);
+        expect(find.text(l10n.retry), findsNothing);
+      });
+    }
+  });
+
   // The footer of a board that is already on screen. A failed append keeps the
   // rows; whether it may offer Retry is the first page's call
   // ([boardRetryAllowed]): a 429 recovers on its own clock (`getLeaderboard`:
@@ -502,6 +616,94 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    for (final locale in ['en', 'ar']) {
+      testWidgets('429 · the text, no Retry, rows kept · $locale', (
+        tester,
+      ) async {
+        givenFailingSecondPage(const RateLimitedException());
+        await openLeaderboard(tester, me: schoolProfile(), locale: locale);
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+        await scrollToFooter(tester);
+
+        expect(find.text(l10n.rateLimited), findsOneWidget);
+        expect(find.text(l10n.retry), findsNothing);
+        expect(find.text(l10n.genericError), findsNothing);
+        // The rows already on screen survive.
+        expect(find.byType(LeaderboardRow), findsWidgets);
+        expect(secondPageAsks, 1);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('429 with Retry-After · names the wait · $locale', (
+        tester,
+      ) async {
+        givenFailingSecondPage(
+          const RateLimitedException(retryAfter: Duration(seconds: 30)),
+        );
+        await openLeaderboard(tester, me: schoolProfile(), locale: locale);
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+        await scrollToFooter(tester);
+
+        expect(find.text(l10n.rateLimitedIn(30)), findsOneWidget);
+        expect(find.text(l10n.retry), findsNothing);
+      });
+    }
+
+    testWidgets('429 · scrolling again does not ask the server again', (
+      tester,
+    ) async {
+      givenFailingSecondPage(const RateLimitedException());
+      await openLeaderboard(tester, me: schoolProfile());
+      await scrollToFooter(tester);
+      expect(secondPageAsks, 1);
+
+      // Back up and down again: the withheld button must not be bypassed by the
+      // scroll listener that fired the first request.
+      await tester.drag(find.byType(ListView), const Offset(0, 3000));
+      await tester.pumpAndSettle();
+      await scrollToFooter(tester);
+      await scrollToFooter(tester);
+
+      expect(secondPageAsks, 1);
+      expect(find.text('Retry'), findsNothing);
+    });
+
+    testWidgets('account_pending_deletion · its line, no Retry', (
+      tester,
+    ) async {
+      givenFailingSecondPage(
+        const ApiException(status: 403, code: 'account_pending_deletion'),
+      );
+      await openLeaderboard(tester, me: schoolProfile());
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      await scrollToFooter(tester);
+
+      expect(find.text(l10n.accountPendingDeletion), findsOneWidget);
+      expect(find.text(l10n.retry), findsNothing);
+    });
+
+    testWidgets('an ordinary failure still gets its Retry, and it asks again', (
+      tester,
+    ) async {
+      // Suppression must be narrow: a footer that withheld Retry for every
+      // error would be a regression, not a fix.
+      givenFailingSecondPage(const NetworkException());
+      await openLeaderboard(tester, me: schoolProfile());
+
+      await scrollToFooter(tester);
+
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Something went wrong'), findsNothing);
+
+      final asksBefore = secondPageAsks;
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(secondPageAsks, asksBefore + 1);
+    });
+
     // `LeaderboardNotifier.loadMore` promises "never a silent retry". The scroll
     // listener broke that for every failure kind that keeps its Retry: each
     // tick near the bottom asked again (eight requests in one drag against a
@@ -583,6 +785,138 @@ void main() {
           expect(tester.takeException(), isNull);
         },
       );
+    }
+  });
+
+  // CW07a_REPORT.md:187-189 - error, empty and offline were never rendered on
+  // the dark canvas by any test. The dark and Arabic frames for these states do
+  // not exist (DG-35, DG-08, DG-31), so this pins behaviour - the line, whether
+  // Retry is offered, that nothing overflows - and deliberately NOT colours or
+  // pixels, which would freeze a stand-in as if it were the design.
+  group('every state on the dark canvas', () {
+    Future<void> openDark(
+      WidgetTester tester,
+      String locale, {
+      bool settle = true,
+    }) async {
+      await openLeaderboard(
+        tester,
+        me: schoolProfile(),
+        locale: locale,
+        brightness: Brightness.dark,
+        settle: settle,
+      );
+      expect(
+        Theme.of(tester.element(find.byType(LeaderboardScreen))).brightness,
+        Brightness.dark,
+        reason: 'this group is about the dark canvas',
+      );
+    }
+
+    void givenFailure(Object error) {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => throw error);
+    }
+
+    Finder retryButton(AppLocalizations l10n) =>
+        find.widgetWithText(FilledButton, l10n.retry);
+
+    for (final locale in ['en', 'ar']) {
+      group(locale, () {
+        testWidgets('loading: the spinner, nothing else', (tester) async {
+          final pending = Completer<CursorPage<LeaderboardEntry>>();
+          when(
+            () => board.getLeaderboard(
+              scope: any(named: 'scope'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => pending.future);
+
+          await openDark(tester, locale, settle: false);
+
+          expect(
+            find.descendant(
+              of: find.byType(LeaderboardScreen),
+              matching: find.byType(CircularProgressIndicator),
+            ),
+            findsOneWidget,
+          );
+          expect(find.byType(LeaderboardRow), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('empty: its line, no Retry', (tester) async {
+          givenBoard(ranks: const []);
+          await openDark(tester, locale);
+          final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+          expect(find.text(l10n.leaderboardEmpty), findsOneWidget);
+          expect(retryButton(l10n), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('error: the generic line and a Retry', (tester) async {
+          givenFailure(const UnknownException());
+          await openDark(tester, locale);
+          final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(retryButton(l10n), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('offline: its own line and a Retry', (tester) async {
+          givenFailure(const OfflineException());
+          await openDark(tester, locale);
+          final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+          expect(find.text(l10n.offline), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(retryButton(l10n), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('pending deletion: its own line, no Retry', (tester) async {
+          givenFailure(
+            const ApiException(status: 403, code: 'account_pending_deletion'),
+          );
+          await openDark(tester, locale);
+          final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+          expect(find.text(l10n.accountPendingDeletion), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(retryButton(l10n), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('rate limited: its own line, no Retry', (tester) async {
+          givenFailure(const RateLimitedException());
+          await openDark(tester, locale);
+          final l10n = await AppLocalizations.delegate.load(Locale(locale));
+
+          expect(find.text(l10n.rateLimited), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(retryButton(l10n), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('loaded: podium and rows, nothing overflows', (
+          tester,
+        ) async {
+          givenBoard(ranks: const [1, 2, 3, 4, 5], meRank: 4);
+          await openDark(tester, locale);
+
+          expect(find.byType(LeaderboardRow), findsNWidgets(2));
+          expect(find.text('Student 1'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+      });
     }
   });
 

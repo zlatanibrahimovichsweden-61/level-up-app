@@ -14,10 +14,24 @@ import '../../l10n/app_localizations.dart';
 /// instruction is to neither log out nor retry, so the inbox says what is
 /// actually wrong instead of showing a generic error. Recognising the code is
 /// [isAccountPendingDeletion]'s job.
-String notificationsFailureText(AppLocalizations l10n, Object? error) =>
-    isAccountPendingDeletion(error)
-    ? l10n.accountPendingDeletion
-    : l10n.genericError;
+///
+/// `429 rate_limited` says so, defensively: `listMyNotifications` documents no
+/// 429 in the pinned contract, but the error interceptor maps any 429
+/// `rate_limited` answer to a [RateLimitedException], so the inbox can meet
+/// one. [AppLocalizations.rateLimitedIn] when the server's `Retry-After` is
+/// known, else [AppLocalizations.rateLimited]; Retry stays withheld
+/// ([notificationsRetryAllowed]). The same two strings, chosen the same way, as
+/// `supportLoadFailureText`.
+String notificationsFailureText(AppLocalizations l10n, Object? error) {
+  if (isAccountPendingDeletion(error)) return l10n.accountPendingDeletion;
+  if (error is RateLimitedException) {
+    final retryAfter = error.retryAfter;
+    return retryAfter == null
+        ? l10n.rateLimited
+        : l10n.rateLimitedIn(retryAfter.inSeconds);
+  }
+  return l10n.genericError;
+}
 
 /// Whether a failed inbox may offer Retry.
 ///

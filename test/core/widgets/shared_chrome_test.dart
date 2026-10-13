@@ -7,6 +7,7 @@ import 'package:level_up_app/core/widgets/circle_back_button.dart';
 import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/core/widgets/form_fields.dart';
 import 'package:level_up_app/core/widgets/language_pill.dart';
+import 'package:level_up_app/core/widgets/offline_banner.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 
 /// The three pieces of shared chrome edit2 moved onto `ElevatedSurface`.
@@ -329,6 +330,64 @@ void main() {
       expect(node.flagsCollection.isButton, isTrue, reason: 'a button');
       expect(node.flagsCollection.isImage, isFalse, reason: 'not an image');
       handle.dispose();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // CW17: the banner is built only while connectivity is down, so it appears
+  // WITHOUT the student doing anything - which a screen reader never says
+  // aloud unless the node is a live region. No copy of its own: the words are
+  // the visible Text's.
+  group('OfflineBanner', () {
+    Widget bannerHost(String locale, {Brightness? brightness}) => MaterialApp(
+      theme: (brightness ?? Brightness.light) == Brightness.light
+          ? AppTheme.light
+          : AppTheme.dark,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: Locale(locale),
+      home: const Scaffold(body: Column(children: [OfflineBanner()])),
+    );
+
+    for (final locale in ['en', 'ar']) {
+      testWidgets('$locale · one live-region node that says it is offline', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(bannerHost(locale));
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(OfflineBanner)),
+        );
+        expect(
+          Directionality.of(tester.element(find.byType(OfflineBanner))),
+          locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+        );
+
+        final node = tester.getSemantics(find.byType(OfflineBanner));
+        final flags = node.getSemanticsData().flagsCollection;
+        expect(node.label, l10n.offline);
+        expect(flags.isLiveRegion, isTrue, reason: 'announced when it appears');
+        // Nothing else: not a button, not an image (the glyph is decoration).
+        expect(flags.isButton, isFalse);
+        expect(flags.isImage, isFalse);
+        expect(node.childrenCount, 0, reason: 'one stop, not two');
+        handle.dispose();
+      });
+    }
+
+    testWidgets('it adds no pixel: full width, 38 tall, on both canvases', (
+      tester,
+    ) async {
+      // 10 + the 18 line of `labelLarge` (14/18) + 10. The live region is a
+      // semantics-only wrapper, so this is the height the banner always had.
+      for (final brightness in Brightness.values) {
+        await tester.pumpWidget(bannerHost('en', brightness: brightness));
+
+        final size = tester.getSize(find.byType(OfflineBanner));
+        expect(size.width, 800, reason: brightness.name);
+        expect(size.height, 38, reason: brightness.name);
+        expect(tester.takeException(), isNull);
+      }
     });
   });
 }

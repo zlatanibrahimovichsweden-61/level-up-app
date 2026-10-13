@@ -16,30 +16,39 @@ class OfflineBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.errorContainer,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                l10n.offline,
-                textAlign: TextAlign.center,
-                // labelLarge (14/18/600), not bodyMediumStrong: this banner
-                // was 14px w600 on every screen before the type scale, and
-                // Login and OTP carried a private copy at the same metrics.
-                // One widget, one style — Fable style-fitting register SF-01.
-                style: AppType.labelLarge.copyWith(color: cs.onErrorContainer),
+    // A live region: the banner appears when connectivity drops, usually while
+    // the student's attention is elsewhere on the screen, so a screen reader
+    // announces it (its words are the Text's own - no copy of its own). Only
+    // the banner that is shown is announced: it is built only while `offline`.
+    return Semantics(
+      liveRegion: true,
+      child: Material(
+        color: cs.errorContainer,
+        child: Padding(
+          padding: const EdgeInsetsDirectional.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.wifi_off, size: 18, color: cs.onErrorContainer),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  l10n.offline,
+                  textAlign: TextAlign.center,
+                  // labelLarge (14/18/600), not bodyMediumStrong: this banner
+                  // was 14px w600 on every screen before the type scale, and
+                  // Login and OTP carried a private copy at the same metrics.
+                  // One widget, one style — Fable style-fitting register SF-01.
+                  style: AppType.labelLarge.copyWith(
+                    color: cs.onErrorContainer,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

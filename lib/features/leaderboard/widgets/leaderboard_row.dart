@@ -56,58 +56,65 @@ class LeaderboardRow extends StatelessWidget {
     // the frame draws the points no quieter than the name (W06-2).
     final foreground = isMe ? ext.podiumOnAccent : ext.leaderboardRowText;
 
-    return Semantics(
-      selected: isMe,
-      child: ElevatedSurface(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_radius),
-        ),
-        height: _height,
-        padding: const EdgeInsetsDirectional.fromSTEB(_leadingPad, 0, 16, 0),
-        // `leaderboardRowFill` now, not `cardFill`: the frame fills an
-        // ordinary row pure white in light and a 20% wash in dark, and the
-        // near-white `cardFill` was standing in for the first of those.
-        color: isMe ? ext.podiumAccent : ext.leaderboardRowFill,
-        // Figma hangs one soft drop shadow on the whole vertical stack
-        // (`133:3117`), not on each row. The stack here is a
-        // `ListView.separated`, so a single shadow behind it would be
-        // covered by the rows themselves; drawn per row, knocked out
-        // behind each fill, it lands where the frame's does. Both canvases
-        // keep it - this is one of the few dark surfaces that does.
-        shadows: elevation.leaderboardListShadows,
-        // The caller's own row (`134:3554`) carries NO Glass in the frame,
-        // where every other row does. It is the one opaque lilac row in a
-        // column of translucent ones, which is the point of it.
-        glass: isMe ? null : elevation.leaderboardRowGlass,
-        child: Row(
-          children: [
-            SizedBox(
-              width: _rankColumn,
-              child: Text(
-                '${entry.rank}',
-                textAlign: TextAlign.center,
-                style: AppType.bodyMediumStrong.copyWith(color: foreground),
+    // One node per row: rank, name (or "You") and points read as a single
+    // sentence instead of three swipes. `selected` stays on the caller's row.
+    // The explicit merge is belt and braces: a `Semantics(selected:)` already
+    // isolates the row and merges its text on its own, but the one-node reading
+    // must not hang on that detail (Home's Top Student rows do the same).
+    return MergeSemantics(
+      child: Semantics(
+        selected: isMe,
+        child: ElevatedSurface(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_radius),
+          ),
+          height: _height,
+          padding: const EdgeInsetsDirectional.fromSTEB(_leadingPad, 0, 16, 0),
+          // `leaderboardRowFill` now, not `cardFill`: the frame fills an
+          // ordinary row pure white in light and a 20% wash in dark, and the
+          // near-white `cardFill` was standing in for the first of those.
+          color: isMe ? ext.podiumAccent : ext.leaderboardRowFill,
+          // Figma hangs one soft drop shadow on the whole vertical stack
+          // (`133:3117`), not on each row. The stack here is a
+          // `ListView.separated`, so a single shadow behind it would be
+          // covered by the rows themselves; drawn per row, knocked out
+          // behind each fill, it lands where the frame's does. Both canvases
+          // keep it - this is one of the few dark surfaces that does.
+          shadows: elevation.leaderboardListShadows,
+          // The caller's own row (`134:3554`) carries NO Glass in the frame,
+          // where every other row does. It is the one opaque lilac row in a
+          // column of translucent ones, which is the point of it.
+          glass: isMe ? null : elevation.leaderboardRowGlass,
+          child: Row(
+            children: [
+              SizedBox(
+                width: _rankColumn,
+                child: Text(
+                  '${entry.rank}',
+                  textAlign: TextAlign.center,
+                  style: AppType.bodyMediumStrong.copyWith(color: foreground),
+                ),
               ),
-            ),
-            const SizedBox(width: _rankToAvatar),
-            BoardAvatar(url: entry.avatarUrl, diameter: _avatarDiameter),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                // The frame labels the caller's own row "You" rather than
-                // repeating their name back at them.
-                isMe ? l10n.leaderboardYou : entry.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppType.bodyMediumStrong.copyWith(color: foreground),
+              const SizedBox(width: _rankToAvatar),
+              BoardAvatar(url: entry.avatarUrl, diameter: _avatarDiameter),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  // The frame labels the caller's own row "You" rather than
+                  // repeating their name back at them.
+                  isMe ? l10n.leaderboardYou : entry.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppType.bodyMediumStrong.copyWith(color: foreground),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              l10n.leaderboardPoints(entry.points),
-              style: AppType.bodyMedium.copyWith(color: foreground),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                l10n.leaderboardPoints(entry.points),
+                style: AppType.bodyMedium.copyWith(color: foreground),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -119,53 +119,58 @@ class _PodiumPlace extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_isWinner)
-          // TODO(design-asset): the frame has a `Crown` layer inside `Top 3`
-          // (Figma `133:3117`) that has not been exported yet. A Material
-          // glyph stands in, the same way the five nav glyphs did before their
-          // export landed — a placeholder, not a design choice. Tinted with
-          // the winner's own ring colour so the stand-in is at least the right
-          // gold rather than a second invented one.
-          Icon(Icons.emoji_events, size: 32, color: ext.podiumFirstRing),
-        SizedBox(height: _isWinner ? 4 : 0),
-        // The rank badge overlaps the avatar's lower edge, so the stack is
-        // allowed to paint outside its box.
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
-          children: [
-            BoardAvatar(
-              url: entry.avatarUrl,
-              diameter: diameter,
-              ringColor: _ringColor(ext),
-              ringWidth: _ringWidth,
-            ),
-            Positioned(
-              bottom: -_badgeSize / 3,
-              child: _RankBadge(rank: entry.rank, place: place),
-            ),
-          ],
-        ),
-        const SizedBox(height: _badgeSize / 3 + 8),
-        Text(
-          entry.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: AppType.bodyMediumStrong.copyWith(color: ext.textPrimary),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          l10n.leaderboardPoints(entry.points),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: AppType.captionRegular.copyWith(color: ext.textSecondary),
-        ),
-      ],
+    // One node per place: the rank on the badge, the name and the points read
+    // as one sentence in the order they are drawn, not as four separate stops.
+    // The crown and the avatar carry no label and add no node.
+    return MergeSemantics(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isWinner)
+            // TODO(design-asset): the frame has a `Crown` layer inside `Top 3`
+            // (Figma `133:3117`) that has not been exported yet. A Material
+            // glyph stands in, the same way the five nav glyphs did before their
+            // export landed — a placeholder, not a design choice. Tinted with
+            // the winner's own ring colour so the stand-in is at least the right
+            // gold rather than a second invented one.
+            Icon(Icons.emoji_events, size: 32, color: ext.podiumFirstRing),
+          SizedBox(height: _isWinner ? 4 : 0),
+          // The rank badge overlaps the avatar's lower edge, so the stack is
+          // allowed to paint outside its box.
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.bottomCenter,
+            children: [
+              BoardAvatar(
+                url: entry.avatarUrl,
+                diameter: diameter,
+                ringColor: _ringColor(ext),
+                ringWidth: _ringWidth,
+              ),
+              Positioned(
+                bottom: -_badgeSize / 3,
+                child: _RankBadge(rank: entry.rank, place: place),
+              ),
+            ],
+          ),
+          const SizedBox(height: _badgeSize / 3 + 8),
+          Text(
+            entry.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppType.bodyMediumStrong.copyWith(color: ext.textPrimary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            l10n.leaderboardPoints(entry.points),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: AppType.captionRegular.copyWith(color: ext.textSecondary),
+          ),
+        ],
+      ),
     );
   }
 }

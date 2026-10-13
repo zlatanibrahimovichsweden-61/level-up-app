@@ -13,10 +13,23 @@ import '../../l10n/app_localizations.dart';
 /// does not exist yet, so the board says what is actually wrong instead of
 /// showing a generic error. Recognising the code is [isAccountPendingDeletion]'s
 /// job.
-String boardFailureText(AppLocalizations l10n, Object? error) =>
-    isAccountPendingDeletion(error)
-    ? l10n.accountPendingDeletion
-    : l10n.genericError;
+///
+/// `429 rate_limited` says so (`getLeaderboard` documents it, "Honour
+/// Retry-After"): [AppLocalizations.rateLimitedIn] when the server's
+/// `Retry-After` is known, else [AppLocalizations.rateLimited] (the header is
+/// not guaranteed, so the message has to stand alone). Retry stays withheld
+/// ([boardRetryAllowed]) - the text names the wait instead. The same two
+/// strings, chosen the same way, as `supportLoadFailureText`.
+String boardFailureText(AppLocalizations l10n, Object? error) {
+  if (isAccountPendingDeletion(error)) return l10n.accountPendingDeletion;
+  if (error is RateLimitedException) {
+    final retryAfter = error.retryAfter;
+    return retryAfter == null
+        ? l10n.rateLimited
+        : l10n.rateLimitedIn(retryAfter.inSeconds);
+  }
+  return l10n.genericError;
+}
 
 /// Whether a failed board may offer Retry.
 ///

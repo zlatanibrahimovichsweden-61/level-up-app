@@ -45,6 +45,12 @@ class BoardAvatar extends StatelessWidget {
         child: Image.network(
           url,
           fit: BoxFit.cover,
+          // The photo has no description to give (the contract sends none, and
+          // these are minors), so the default unlabelled image node only adds
+          // an ImageView stop - and, merged into a row, makes TalkBack take the
+          // whole row for a picture. The row or podium place carries the
+          // student's name; the avatar adds nothing to it.
+          excludeFromSemantics: true,
           // Both failure and in-flight render the same neutral circle, so a
           // slow CDN never shows a broken-image glyph mid-scroll.
           errorBuilder: (_, _, _) => _Placeholder(color: ext.mutedText),

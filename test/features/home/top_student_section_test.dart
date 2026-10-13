@@ -62,6 +62,7 @@ void main() {
     WidgetTester tester, {
     StudentProfile? profile,
     Brightness brightness = Brightness.light,
+    String locale = 'en',
   }) async {
     final me = profile ?? schoolProfile();
     // The block listens to `/me` for points changes (after a quiz).
@@ -77,7 +78,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp.router(
-          locale: const Locale('en'),
+          locale: Locale(locale),
           theme: brightness == Brightness.light
               ? AppTheme.light
               : AppTheme.dark,
@@ -341,6 +342,37 @@ void main() {
 
       expect(find.widgetWithText(TextButton, 'Retry'), findsNothing);
     });
+
+    // `getLeaderboard` documents 429 `rate_limited` ("Honour Retry-After",
+    // `openapi.yaml:2568`). The block says so instead of "Something went
+    // wrong", with the Leaderboard tab's own words (`boardFailureText`).
+    for (final locale in ['en', 'ar']) {
+      testWidgets('429 says it is rate limited, no Retry · $locale', (
+        tester,
+      ) async {
+        givenError(const RateLimitedException());
+        await pump(tester, locale: locale);
+
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+        expect(find.text(l10n.rateLimited), findsOneWidget);
+        expect(find.text(l10n.genericError), findsNothing);
+        expect(find.widgetWithText(TextButton, l10n.retry), findsNothing);
+      });
+
+      testWidgets('429 with Retry-After names the wait · $locale', (
+        tester,
+      ) async {
+        givenError(
+          const RateLimitedException(retryAfter: Duration(seconds: 30)),
+        );
+        await pump(tester, locale: locale);
+
+        final l10n = await AppLocalizations.delegate.load(Locale(locale));
+        expect(find.text(l10n.rateLimitedIn(30)), findsOneWidget);
+        expect(find.text(l10n.genericError), findsNothing);
+        expect(find.widgetWithText(TextButton, l10n.retry), findsNothing);
+      });
+    }
 
     testWidgets('403 account_pending_deletion → its own copy, no Retry', (
       tester,

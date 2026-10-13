@@ -235,6 +235,146 @@ void main() {
     });
   });
 
+  // CW07a_REPORT.md:187-189 - Home's error, offline and loading states were
+  // rendered on the dark canvas by no test (only a loaded page was). The dark
+  // and Arabic frames for these states do not exist (DG-35, DG-08), so this
+  // pins behaviour - the line shown, whether Retry is offered, that nothing
+  // overflows - and deliberately NOT colours or pixels, which would freeze a
+  // stand-in as if it were the design.
+  group('states on the dark canvas', () {
+    for (final locale in ['en', 'ar']) {
+      group(locale, () {
+        Future<AppLocalizations> pumpDark(
+          WidgetTester tester, {
+          bool offline = false,
+        }) async {
+          await pumpHome(
+            tester,
+            locale: Locale(locale),
+            theme: AppTheme.dark,
+            offline: offline,
+          );
+          expect(
+            Theme.of(tester.element(find.byType(HomeScreen))).brightness,
+            Brightness.dark,
+            reason: 'this group is about the dark canvas',
+          );
+          return AppLocalizations.delegate.load(Locale(locale));
+        }
+
+        testWidgets('loading: a skeleton, not a spinner, nothing overflows', (
+          tester,
+        ) async {
+          when(
+            repo.getMe,
+          ).thenAnswer((_) => Completer<StudentProfile>().future);
+
+          await pumpDark(tester);
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(find.byType(LevelCard), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('error: the generic line and a Retry that re-calls /me', (
+          tester,
+        ) async {
+          when(repo.getMe).thenAnswer(
+            (_) => Future<StudentProfile>.error(
+              const ApiException(status: 500, code: 'internal_error'),
+            ),
+          );
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(find.text(l10n.offline), findsNothing);
+          expect(find.widgetWithText(FilledButton, l10n.retry), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          when(repo.getMe).thenAnswer((_) async => schoolProfile());
+          await tester.tap(find.widgetWithText(FilledButton, l10n.retry));
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(LevelCard), findsOneWidget);
+          verify(repo.getMe).called(2);
+        });
+
+        testWidgets('offline error: its own view, with a Retry', (
+          tester,
+        ) async {
+          when(repo.getMe).thenAnswer(
+            (_) => Future<StudentProfile>.error(const OfflineException()),
+          );
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.offline), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.byIcon(Icons.wifi_off), findsOneWidget);
+          expect(find.widgetWithText(FilledButton, l10n.retry), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('connectivity down with data on screen: banner + content', (
+          tester,
+        ) async {
+          when(repo.getMe).thenAnswer((_) async => schoolProfile());
+
+          final l10n = await pumpDark(tester, offline: true);
+
+          expect(find.text(l10n.offline), findsOneWidget);
+          expect(find.byType(LevelCard), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('a failed board leaves Home standing, with its Retry', (
+          tester,
+        ) async {
+          when(repo.getMe).thenAnswer((_) async => schoolProfile());
+          when(
+            () => board.getLeaderboard(
+              scope: any(named: 'scope'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => throw const UnknownException());
+
+          final l10n = await pumpDark(tester);
+          await tester.pump();
+
+          expect(find.byType(LevelCard), findsOneWidget);
+          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(find.widgetWithText(TextButton, l10n.retry), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('a rate-limited board says so and offers no Retry', (
+          tester,
+        ) async {
+          when(repo.getMe).thenAnswer((_) async => schoolProfile());
+          when(
+            () => board.getLeaderboard(
+              scope: any(named: 'scope'),
+              cursor: any(named: 'cursor'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => throw const RateLimitedException());
+
+          final l10n = await pumpDark(tester);
+          await tester.pump();
+
+          expect(find.byType(LevelCard), findsOneWidget);
+          expect(find.text(l10n.rateLimited), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.widgetWithText(TextButton, l10n.retry), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+      });
+    }
+  });
+
   /// Figma `125:2373` vs `337:5303`. ONE screen serves both tracks: `GET /me`
   /// is track-agnostic and so is everything Home renders from it. The frames
   /// differ in exactly one place, and that difference is asserted here rather

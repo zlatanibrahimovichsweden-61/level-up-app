@@ -95,4 +95,69 @@ void main() {
     expect(at(0).border, Border.all(color: const Color(0xFFDC4A22)));
     expect(at(1).color, colours(Brightness.light).podiumFirstRing);
   });
+
+  // ------------------------------------------------------------ a11y -------
+  // TalkBack: one stop per place, not four. The rank on the badge, the name and
+  // the points were separate nodes, and the avatar photo added an unlabelled
+  // ImageView stop (BoardAvatar's default image semantics). Asserted on
+  // `flagsCollection` - the flags Android turns into a role - not on
+  // `isSemantics(isImage: false)`, which passes while a merged node still
+  // carries the image flag (BUG-021/024).
+  for (final locale in ['en', 'ar']) {
+    testWidgets('$locale · each place is ONE node that is not an image', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale(locale),
+          home: Scaffold(
+            body: Center(child: Podium(top: [entry(1), entry(2), entry(3)])),
+          ),
+        ),
+      );
+      expect(
+        Directionality.of(tester.element(find.byType(Podium))),
+        locale == 'ar' ? TextDirection.rtl : TextDirection.ltr,
+      );
+      final l10n = AppLocalizations.of(tester.element(find.byType(Podium)));
+
+      for (final rank in [1, 2, 3]) {
+        final node = tester.getSemantics(find.text('Student $rank'));
+        final data = node.getSemanticsData();
+
+        // Badge numeral, name, points: the three lines of the one node, in the
+        // order the place draws them.
+        expect(data.label.split('\n'), [
+          '$rank',
+          'Student $rank',
+          l10n.leaderboardPoints(1000 - rank * 10),
+        ], reason: 'place $rank');
+
+        // Nothing underneath keeps a node of its own, and the node is no image
+        // (nor a button: the place is not tappable).
+        expect(node.childrenCount, 0, reason: 'place $rank is one node');
+        expect(data.flagsCollection.isImage, isFalse, reason: 'place $rank');
+        expect(data.flagsCollection.isButton, isFalse, reason: 'place $rank');
+      }
+      handle.dispose();
+    });
+  }
+
+  testWidgets('a lone winner is still one node, and not an image', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      host(Podium(top: [entry(1)]), brightness: Brightness.light),
+    );
+
+    final node = tester.getSemantics(find.text('Student 1'));
+    expect(node.childrenCount, 0);
+    expect(node.getSemanticsData().flagsCollection.isImage, isFalse);
+    handle.dispose();
+  });
 }

@@ -332,14 +332,31 @@ class _BoardListState extends State<_BoardList> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        if (widget.results.appendError != null) {
+        final appendError = widget.results.appendError;
+        if (appendError != null) {
+          // The rows stay. Whether the failure may be retried is the same call
+          // as on the first page ([boardRetryAllowed]): a pending deletion
+          // answers the same 403 on every tap, and a rate-limited call
+          // recovers on its own clock and must not be hammered
+          // (`getLeaderboard`: "Honour Retry-After"). Both keep the text and
+          // offer no button - leaving the board and coming back asks again from
+          // page one. The notifications inbox and the support lists do the
+          // same.
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
-              child: TextButton(
-                onPressed: widget.onLoadMore,
-                child: Text(l10n.retry),
-              ),
+              child: boardRetryAllowed(appendError)
+                  ? TextButton(
+                      onPressed: widget.onLoadMore,
+                      child: Text(l10n.retry),
+                    )
+                  : Text(
+                      boardFailureText(l10n, appendError),
+                      textAlign: TextAlign.center,
+                      style: AppType.bodyMedium.copyWith(
+                        color: ext.textSecondary,
+                      ),
+                    ),
             ),
           );
         }

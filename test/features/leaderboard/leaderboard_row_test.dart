@@ -8,6 +8,8 @@
 /// rows — W06-2, W06-3 and W06-4.
 library;
 
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
@@ -112,6 +114,115 @@ void main() {
       expect(avatar.size, const Size(32, 32));
       expect(row.right - avatar.right, 40);
     });
+  });
+
+  // ------------------------------------------------------------ a11y -------
+  // TalkBack: a row is one stop reading "rank, name, points", and the avatar
+  // photo is not a stop of its own. Asserted on `flagsCollection` (the flags
+  // Android maps to a role), not on `isSemantics(isImage: false)` - the lesson
+  // of BUG-021/024.
+  for (final locale in ['en', 'ar']) {
+    group('semantics · $locale', () {
+      testWidgets('an ordinary row is one node: rank, name, points', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          host(LeaderboardRow(entry: entry(4)), locale: locale),
+        );
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(LeaderboardRow)),
+        );
+
+        final node = tester.getSemantics(find.byType(LeaderboardRow));
+        final data = node.getSemanticsData();
+        expect(data.label.split('\n'), [
+          '4',
+          'Student 4',
+          l10n.leaderboardPoints(960),
+        ]);
+        expect(
+          node.childrenCount,
+          0,
+          reason: 'nothing keeps a node of its own',
+        );
+        expect(data.flagsCollection.isImage, isFalse, reason: 'avatar photo');
+        expect(data.flagsCollection.isButton, isFalse);
+        expect(data.flagsCollection.isSelected, Tristate.isFalse);
+        handle.dispose();
+      });
+
+      testWidgets('the caller\'s row reads "You" and stays selected', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(
+          host(LeaderboardRow(entry: entry(4, isMe: true)), locale: locale),
+        );
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(LeaderboardRow)),
+        );
+
+        final node = tester.getSemantics(find.byType(LeaderboardRow));
+        final data = node.getSemanticsData();
+        // The name is replaced by "You", never repeated beside it.
+        expect(data.label.split('\n'), [
+          '4',
+          l10n.leaderboardYou,
+          l10n.leaderboardPoints(960),
+        ]);
+        expect(node.childrenCount, 0);
+        expect(data.flagsCollection.isImage, isFalse);
+        expect(data.flagsCollection.isSelected, Tristate.isTrue);
+        handle.dispose();
+      });
+    });
+  }
+
+  // The row owns its node. In the board it sits in a list item that is already
+  // a semantics boundary, but nothing about the row may DEPEND on that: laid
+  // side by side in a plain column (no boundary around each), two rows must
+  // still read as two nodes, not run together into one long sentence.
+  testWidgets('two rows in a plain column are two nodes, not one', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 362,
+            child: Column(
+              children: [
+                LeaderboardRow(entry: entry(4)),
+                LeaderboardRow(entry: entry(5, isMe: true)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(LeaderboardRow).first),
+    );
+
+    final first = tester.getSemantics(find.text('Student 4'));
+    final second = tester.getSemantics(find.text(l10n.leaderboardYou));
+    expect(first.id, isNot(second.id));
+    expect(first.getSemanticsData().label.split('\n'), [
+      '4',
+      'Student 4',
+      l10n.leaderboardPoints(960),
+    ]);
+    expect(second.getSemanticsData().label.split('\n'), [
+      '5',
+      l10n.leaderboardYou,
+      l10n.leaderboardPoints(950),
+    ]);
+    handle.dispose();
   });
 
   // Last, because it loads the real fonts for the rest of this isolate.

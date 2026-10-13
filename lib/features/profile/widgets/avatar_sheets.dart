@@ -394,11 +394,14 @@ class ChooseAvatarSheet extends ConsumerWidget {
           ),
           data: (items) => items.isEmpty
               // An empty list is not a failure the student can retry away —
-              // the server answered, with nothing. Left as it was.
+              // the server answered, with nothing — so it is not told "Something
+              // went wrong" and is offered no Retry. It reads the neutral
+              // empty line the app already has ([AppLocalizations.nothingHere],
+              // the Notifications inbox's), not a second one (NR-33).
               ? inset(
                   Center(
                     child: Text(
-                      l10n.genericError,
+                      l10n.nothingHere,
                       style: AppType.bodyMedium.copyWith(
                         color: ext.textSecondary,
                       ),

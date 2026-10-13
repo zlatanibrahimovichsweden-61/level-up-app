@@ -248,9 +248,13 @@ void main() {
           },
         );
 
-        testWidgets('a rate-limited inbox offers no Retry either', (
+        testWidgets('a rate-limited inbox says so and offers no Retry', (
           tester,
         ) async {
+          // Defensive: `listMyNotifications` documents no 429 in the pin, but
+          // the error interceptor maps any 429 `rate_limited` answer, so the
+          // inbox can meet one. No Retry-After on this one: the standalone
+          // line, never a made-up wait.
           final l10n = await l10nFor(language);
           listCall().thenAnswer(
             (_) async => throw const RateLimitedException(),
@@ -258,8 +262,29 @@ void main() {
 
           await pumpInbox(tester, language: language);
 
-          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(find.text(l10n.rateLimited), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
           expect(find.byKey(const Key('notifications_retry')), findsNothing);
+          expect(find.text(l10n.retry), findsNothing);
+        });
+
+        testWidgets('a rate-limited inbox names the wait when the server did', (
+          tester,
+        ) async {
+          final l10n = await l10nFor(language);
+          listCall().thenAnswer(
+            (_) async => throw const RateLimitedException(
+              retryAfter: Duration(seconds: 45),
+            ),
+          );
+
+          await pumpInbox(tester, language: language);
+
+          expect(find.text(l10n.rateLimitedIn(45)), findsOneWidget);
+          expect(find.text(l10n.rateLimited), findsNothing);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.byKey(const Key('notifications_retry')), findsNothing);
+          expect(find.text(l10n.retry), findsNothing);
         });
       });
     }
@@ -453,7 +478,8 @@ void main() {
           await tester.pump();
 
           expect(find.byType(NotificationRow), findsOneWidget);
-          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(find.text(l10n.rateLimited), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
           expect(
             find.byKey(const Key('notifications_append_retry')),
             findsNothing,
@@ -932,6 +958,148 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // CW07a_REPORT.md:187-189 - error, empty, offline and the rest were rendered
+  // on the dark canvas by no test (only a loaded page was). The dark and Arabic
+  // frames for these states do not exist (DG-35, DG-31), so this pins behaviour
+  // - the line shown, whether Retry is offered, that nothing overflows - and
+  // deliberately NOT colours or pixels, which would freeze a stand-in as if it
+  // were the design.
+  group('every state on the dark canvas', () {
+    for (final language in languages) {
+      group(language, () {
+        Future<AppLocalizations> pumpDark(WidgetTester tester) async {
+          await pumpInbox(
+            tester,
+            language: language,
+            brightness: Brightness.dark,
+          );
+          expect(
+            Theme.of(
+              tester.element(find.byType(NotificationsScreen)),
+            ).brightness,
+            Brightness.dark,
+            reason: 'this group is about the dark canvas',
+          );
+          return l10nFor(language);
+        }
+
+        testWidgets('loading: the spinner under the chips', (tester) async {
+          final pending = Completer<CursorPage<NotificationItem>>();
+          listCall().thenAnswer((_) => pending.future);
+
+          await pumpDark(tester);
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(
+            find.byKey(const Key('notification_chip_all')),
+            findsOneWidget,
+          );
+          expect(find.byType(NotificationRow), findsNothing);
+          expect(tester.takeException(), isNull);
+
+          pending.complete(inboxPage([]));
+          await tester.pump();
+        });
+
+        testWidgets('empty: nothingHere, no Retry', (tester) async {
+          listCall().thenAnswer((_) async => inboxPage([]));
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.nothingHere), findsOneWidget);
+          expect(find.byKey(const Key('notifications_retry')), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('error: genericError and a Retry', (tester) async {
+          listCall().thenAnswer(
+            (_) async => throw const ApiException(
+              status: 500,
+              code: 'internal_server_error',
+            ),
+          );
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.genericError), findsOneWidget);
+          expect(find.byKey(const Key('notifications_retry')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('offline: its own copy and a Retry', (tester) async {
+          listCall().thenAnswer((_) async => throw const OfflineException());
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.offline), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.byKey(const Key('notifications_retry')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('pending deletion: its own copy, no Retry', (tester) async {
+          listCall().thenAnswer(
+            (_) async => throw const ApiException(
+              status: 403,
+              code: 'account_pending_deletion',
+            ),
+          );
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.accountPendingDeletion), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.byKey(const Key('notifications_retry')), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('rate limited: its own copy, no Retry', (tester) async {
+          listCall().thenAnswer(
+            (_) async => throw const RateLimitedException(
+              retryAfter: Duration(seconds: 20),
+            ),
+          );
+
+          final l10n = await pumpDark(tester);
+
+          expect(find.text(l10n.rateLimitedIn(20)), findsOneWidget);
+          expect(find.text(l10n.genericError), findsNothing);
+          expect(find.byKey(const Key('notifications_retry')), findsNothing);
+          expect(tester.takeException(), isNull);
+        });
+
+        testWidgets('a failed append keeps the rows and offers its Retry', (
+          tester,
+        ) async {
+          listCall().thenAnswer(
+            (_) async => inboxPage(
+              [announcementItem('1')],
+              hasMore: true,
+              nextCursor: 'c2',
+            ),
+          );
+          listCall(
+            cursor: 'c2',
+          ).thenAnswer((_) async => throw const OfflineException());
+
+          await pumpDark(tester);
+          await tester.tap(find.byKey(const Key('notifications_load_more')));
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(NotificationRow), findsOneWidget);
+          expect(
+            find.byKey(const Key('notifications_append_retry')),
+            findsOneWidget,
+          );
+          expect(tester.takeException(), isNull);
+        });
+      });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+
   group('marking a row read', () {
     testWidgets('a tap on an unread row asks once and the dot goes', (
       tester,
