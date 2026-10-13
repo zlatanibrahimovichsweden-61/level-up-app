@@ -80,6 +80,13 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
     super.dispose();
   }
 
+  /// Abandons registration for Login. The back chip and the OS Back both end
+  /// here: the OTP screen REPLACED itself with this one, so nothing sits
+  /// beneath it to pop to and an OS Back left alone would close the app. The
+  /// draft and its token are left exactly as they are, whichever way the
+  /// student leaves.
+  void _backToLogin() => context.go('/login');
+
   void _continue() {
     final name = _nameController.text.trim();
     final parentPhone = Phone.tryParse(_parentPhoneController.text);
@@ -140,121 +147,131 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
     final nameRejected =
         draft?.refusedNames.contains(_nameController.text.trim()) ?? false;
 
-    // Guard: no active draft or the 10-minute token window has elapsed.
+    // Guard: no active draft or the 10-minute token window has elapsed. The
+    // view handles its own OS Back (see [RegistrationExpiredView]); wrapping it
+    // here too would run the handler twice.
     if (draft == null || draft.isExpired) {
       return const RegistrationExpiredView();
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (offline) const OfflineBanner(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsetsDirectional.fromSTEB(
-                  24,
-                  8 - _headerSlop,
-                  24,
-                  24,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        // The wizard's back chip (Figma `90:208`), same as
-                        // Sign Up_2 uses. This was a bare `IconButton` with
-                        // Material's arrow — exactly the drift
-                        // `CircleBackButton`'s docstring says it exists to
-                        // stop. It mirrors under RTL and carries the same
-                        // back-button semantics label. Abandons registration
-                        // → /login.
-                        CircleBackButton(
-                          onPressed: () => context.go('/login'),
-                          variant: BackChipVariant.registration,
-                          // Flush to the start, so the box reaches into the
-                          // free space before the pill, not past the gutter.
-                          tapTargetSize: MaterialTapTargetSize.padded,
-                          chipAlignment: AlignmentDirectional.centerStart,
-                        ),
-                        const Spacer(),
-                        LanguagePill(
-                          label: l10n.switchLanguage,
-                          onTap: () =>
-                              ref.read(localeProvider.notifier).toggle(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8 - _headerSlop),
-                    Text(
-                      l10n.createAccountTitle,
-                      style: AppType.h1.copyWith(color: ext.textPrimary),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.createAccountSubtitle,
-                      style: AppType.bodyLarge.copyWith(
-                        color: ext.textSecondary,
+    return PopScope(
+      // The OS Back does what the chip does (see [_backToLogin]).
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _backToLogin();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              if (offline) const OfflineBanner(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    24,
+                    8 - _headerSlop,
+                    24,
+                    24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          // The wizard's back chip (Figma `90:208`), same as
+                          // Sign Up_2 uses. This was a bare `IconButton` with
+                          // Material's arrow — exactly the drift
+                          // `CircleBackButton`'s docstring says it exists to
+                          // stop. It mirrors under RTL and carries the same
+                          // back-button semantics label. Abandons registration
+                          // → /login.
+                          CircleBackButton(
+                            onPressed: _backToLogin,
+                            variant: BackChipVariant.registration,
+                            // Flush to the start, so the box reaches into the
+                            // free space before the pill, not past the gutter.
+                            tapTargetSize: MaterialTapTargetSize.padded,
+                            chipAlignment: AlignmentDirectional.centerStart,
+                          ),
+                          const Spacer(),
+                          LanguagePill(
+                            label: l10n.switchLanguage,
+                            onTap: () =>
+                                ref.read(localeProvider.notifier).toggle(),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 28),
-                    // Full Name
-                    FieldLabel(l10n.fullNameLabel),
-                    const SizedBox(height: 8),
-                    PlainTextField(
-                      controller: _nameController,
-                      hint: l10n.fullNameHint,
-                      keyboardType: TextInputType.name,
-                      maxLength: 100,
-                      hasError: nameRejected,
-                      // Re-derives the mark: a different name clears it, the
-                      // refused one brings it back.
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    if (_showNameError)
-                      InlineFieldError(l10n.invalidName)
-                    else if (nameRejected)
-                      InlineFieldError(l10n.fieldRejected),
-                    const SizedBox(height: 16),
-                    // Phone — read-only, proven at the OTP step, never submitted.
-                    FieldLabel(l10n.phoneLabel),
-                    const SizedBox(height: 8),
-                    _ReadOnlyPhone(phone: draft.phone),
-                    const SizedBox(height: 16),
-                    // Parent's Number — the one phone that IS submitted.
-                    FieldLabel(l10n.parentNumberLabel),
-                    const SizedBox(height: 8),
-                    _DialCodePhoneField(
-                      controller: _parentPhoneController,
-                      hint: l10n.phoneHint,
-                    ),
-                    if (_showParentPhoneError)
-                      InlineFieldError(l10n.invalidPhone),
-                    const SizedBox(height: 16),
-                    // Referral — optional, collected but NOT submitted (#1).
-                    FieldLabel(l10n.referralCodeOptional),
-                    const SizedBox(height: 8),
-                    PlainTextField(
-                      controller: _referralController,
-                      hint: l10n.referralCodeHint,
-                      keyboardType: TextInputType.text,
-                    ),
-                    const SizedBox(height: 28),
-                    PrimaryCta(
-                      child: FilledButton(
-                        onPressed: _continue,
-                        child: Text(
-                          l10n.continueLabel,
-                          style: AppType.buttonLarge,
+                      const SizedBox(height: 8 - _headerSlop),
+                      Text(
+                        l10n.createAccountTitle,
+                        style: AppType.h1.copyWith(color: ext.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.createAccountSubtitle,
+                        style: AppType.bodyLarge.copyWith(
+                          color: ext.textSecondary,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 28),
+                      // Full Name
+                      FieldLabel(l10n.fullNameLabel),
+                      const SizedBox(height: 8),
+                      PlainTextField(
+                        controller: _nameController,
+                        hint: l10n.fullNameHint,
+                        keyboardType: TextInputType.name,
+                        maxLength: 100,
+                        hasError: nameRejected,
+                        // Re-derives the mark: a different name clears it, the
+                        // refused one brings it back.
+                        onChanged: (_) => setState(() {}),
+                      ),
+                      if (_showNameError)
+                        InlineFieldError(l10n.invalidName)
+                      else if (nameRejected)
+                        InlineFieldError(l10n.fieldRejected),
+                      const SizedBox(height: 16),
+                      // Phone — read-only, proven at the OTP step, never submitted.
+                      FieldLabel(l10n.phoneLabel),
+                      const SizedBox(height: 8),
+                      _ReadOnlyPhone(phone: draft.phone),
+                      const SizedBox(height: 16),
+                      // Parent's Number — the one phone that IS submitted.
+                      FieldLabel(l10n.parentNumberLabel),
+                      const SizedBox(height: 8),
+                      _DialCodePhoneField(
+                        controller: _parentPhoneController,
+                        hint: l10n.phoneHint,
+                      ),
+                      if (_showParentPhoneError)
+                        InlineFieldError(l10n.invalidPhone),
+                      const SizedBox(height: 16),
+                      // Referral — optional; sent as `inviteCode` on the School
+                      // body only.
+                      FieldLabel(l10n.referralCodeOptional),
+                      const SizedBox(height: 8),
+                      PlainTextField(
+                        controller: _referralController,
+                        hint: l10n.referralCodeHint,
+                        keyboardType: TextInputType.text,
+                      ),
+                      const SizedBox(height: 28),
+                      PrimaryCta(
+                        child: FilledButton(
+                          onPressed: _continue,
+                          child: Text(
+                            l10n.continueLabel,
+                            style: AppType.buttonLarge,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

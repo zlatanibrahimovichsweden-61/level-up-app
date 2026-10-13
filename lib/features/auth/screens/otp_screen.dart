@@ -42,6 +42,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _focusNode = FocusNode();
   String _pin = '';
 
+  /// Set by the first exit from the success view; see [_continueToApp].
+  bool _leavingSuccessView = false;
+
   @override
   void dispose() {
     _pinController.dispose();
@@ -60,6 +63,35 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (ref.read(otpProvider(widget.args)).isBanned) return;
     FocusScope.of(context).unfocus();
     ref.read(otpProvider(widget.args).notifier).verify(_pin);
+  }
+
+  /// Leaves the sign-in success view for the app: the remembered location a
+  /// signed-out bounce left (once) — only if the student who just signed in is
+  /// the one whose session ended (matched by the server's student id) — else
+  /// Home. An outcome without an id fails closed to Home too.
+  ///
+  /// The success view has two ways out and they are this one: its Continue and
+  /// the OS Back. Back must not be a third — it would pop to a Login form with
+  /// a live session behind it.
+  ///
+  /// It runs ONCE. Two exits in the same frame (Continue and Back, or the same
+  /// one twice - a janky handset delivers both before the first navigation has
+  /// been built) would each consume the return target, and the second consume
+  /// finds it spent and answers Home, overriding the remembered place the
+  /// first one went to.
+  void _continueToApp() {
+    if (_leavingSuccessView) return;
+    _leavingSuccessView = true;
+    context.go(
+      ref
+          .read(returnTargetProvider)
+          .consume(
+            studentId: switch (ref.read(otpProvider(widget.args)).outcome) {
+              AuthenticatedOutcome(:final studentId) => studentId,
+              _ => null,
+            },
+          ),
+    );
   }
 
   @override
@@ -127,23 +159,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             ),
             Expanded(
               child: succeeded
-                  // The remembered location a signed-out bounce left (once) —
-                  // only if the student who just signed in is the one whose
-                  // session ended (matched by the server's student id) — else
-                  // Home. An outcome without an id fails closed to Home too.
-                  ? _SuccessView(
-                      onContinue: () => context.go(
-                        ref
-                            .read(returnTargetProvider)
-                            .consume(
-                              studentId: switch (state.outcome) {
-                                AuthenticatedOutcome(:final studentId) =>
-                                  studentId,
-                                _ => null,
-                              },
-                            ),
-                      ),
-                    )
+                  ? _SuccessView(onContinue: _continueToApp)
                   : _InputView(
                       l10n: l10n,
                       state: state,

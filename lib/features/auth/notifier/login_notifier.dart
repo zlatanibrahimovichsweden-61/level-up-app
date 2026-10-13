@@ -19,6 +19,11 @@ class LoginNotifier extends AsyncNotifier<OtpRequestResult?> {
   /// on success (so the screen can navigate), or null on failure (state holds
   /// the error).
   Future<OtpRequestResult?> sendOtp(String phoneE164) async {
+    // One request at a time. The screen disables Send OTP while this loads, but
+    // that only takes hold on the NEXT frame: two taps delivered in the same
+    // frame both reach here, and each would send an SMS. The notifier is the
+    // guard, the disabled button is the cue (as `EditProfileNotifier.save`).
+    if (state.isLoading) return null;
     state = const AsyncLoading<OtpRequestResult?>();
     final guarded = await AsyncValue.guard(
       () => ref.read(authRepositoryProvider).requestOtp(phoneE164),
