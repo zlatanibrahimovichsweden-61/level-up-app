@@ -16,6 +16,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/models/phone.dart';
 import '../models/registration_args.dart';
 import '../notifier/registration_controller.dart';
+import '../notifier/registration_submit_notifier.dart';
+import '../registration_error_copy.dart';
 import 'registration_expired_view.dart';
 
 /// The header row is now the back chip's 48 box tall, not the pill's 36.10
@@ -88,6 +90,12 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
     });
     if (_showNameError || _showParentPhoneError) return;
 
+    // The server refused this exact name for this registration; it stays
+    // marked and nothing moves on, since sending it again would only bring
+    // the same answer back. A different name goes on as usual.
+    if (_isRefused(name)) return;
+
+    _clearNameRejection();
     FocusScope.of(context).unfocus();
     final referral = _referralController.text.trim();
     ref
@@ -102,12 +110,35 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
     context.push('/register/track');
   }
 
+  /// The student goes on with a name the server has not refused, so the
+  /// refusal that brought them here is spent. Only `name_not_allowed` is
+  /// cleared here: any other submit failure belongs to the detail screen that
+  /// shows it. The refused name itself stays recorded on the draft.
+  void _clearNameRejection() {
+    if (isNameNotAllowed(ref.read(registrationSubmitProvider).error)) {
+      ref.read(registrationSubmitProvider.notifier).clearError();
+    }
+  }
+
+  /// Was [name] (as it would be sent: trimmed) refused by the server during
+  /// this registration (`422 name_not_allowed`)? Only changing it to a
+  /// different name clears the mark; coming back to the screen or tapping
+  /// Continue does not (owner, 2026-10-10).
+  bool _isRefused(String name) =>
+      ref.read(registrationControllerProvider)?.refusedNames.contains(name) ??
+      false;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ext = Theme.of(context).extension<AppColors>()!;
     final draft = ref.watch(registrationControllerProvider);
     final offline = ref.watch(isOnlineProvider).value == false;
+    // A detail screen's submit came back `422 name_not_allowed` and sent the
+    // student here (see `isNameNotAllowed`); the refused name is still in the
+    // field, from the draft, and stays marked for as long as it reads the same.
+    final nameRejected =
+        draft?.refusedNames.contains(_nameController.text.trim()) ?? false;
 
     // Guard: no active draft or the 10-minute token window has elapsed.
     if (draft == null || draft.isExpired) {
@@ -176,8 +207,15 @@ class _SignupIdentityScreenState extends ConsumerState<SignupIdentityScreen> {
                       hint: l10n.fullNameHint,
                       keyboardType: TextInputType.name,
                       maxLength: 100,
+                      hasError: nameRejected,
+                      // Re-derives the mark: a different name clears it, the
+                      // refused one brings it back.
+                      onChanged: (_) => setState(() {}),
                     ),
-                    if (_showNameError) InlineFieldError(l10n.invalidName),
+                    if (_showNameError)
+                      InlineFieldError(l10n.invalidName)
+                    else if (nameRejected)
+                      InlineFieldError(l10n.fieldRejected),
                     const SizedBox(height: 16),
                     // Phone — read-only, proven at the OTP step, never submitted.
                     FieldLabel(l10n.phoneLabel),

@@ -21,6 +21,7 @@ String registrationErrorMessage(AppLocalizations l10n, Object? error) {
       case 'phone_already_registered':
         return l10n.phoneAlreadyRegistered;
       case 'validation_failed':
+      case 'name_not_allowed':
         return l10n.errorValidationFailed;
     }
   }
@@ -60,12 +61,33 @@ String fieldIssueMessage(AppLocalizations l10n, RegFieldIssue issue) =>
     };
 
 /// Per-field issues, whichever side produced them — the client pre-flight or
-/// the server's `400 validation_failed` field map.
+/// the server's `400 validation_failed` field map. A `422 name_not_allowed`
+/// names no field, but it can only be about `name`, so it lands there as the
+/// same approved "Please check this field" a `400` would give it.
 Map<String, RegFieldIssue> fieldIssuesFrom(Object? error) => switch (error) {
   DraftValidationFailure(:final issues) => issues,
   ValidationException(:final fields) => serverFieldIssues(fields),
+  _ when isNameNotAllowed(error) => const {
+    RegFields.name: RegFieldIssue.rejected,
+  },
   _ => const {},
 };
+
+/// `422 name_not_allowed` — the name contains a blocked term.
+///
+/// It is in the upstream contract from 3.47.0-m1 (`completeRegistration`),
+/// past the vendored pin (3.46.0-m1). It is handled ahead of the pin on the
+/// owner's word (2026-10-10). The contract says the check runs before the
+/// `registrationToken` is used, so the same token can be resubmitted with
+/// another name while it is still valid; it also says not to retry the same
+/// name. The response does not repeat the name.
+///
+/// The name is asked on Sign Up_1, not on the detail screen that submits, so
+/// the detail screens send the student back there with the draft (and its
+/// token) intact. Nothing resubmits on its own: the next request is the
+/// student's own Start learning.
+bool isNameNotAllowed(Object? error) =>
+    error is ApiException && error.code == 'name_not_allowed';
 
 /// Does this failure mean the whole registration must restart at `/login`?
 ///

@@ -285,6 +285,17 @@ class _FormState extends ConsumerState<_Form> {
     final profile = widget.profile;
     final submit = ref.watch(editProfileProvider);
     final rejected = rejectedFields(submit.error);
+    // The name that would be sent was refused on this visit (O-17): it stays
+    // marked for as long as it reads the same, trimmed, even once an edit has
+    // cleared the banner; a different name takes the mark off, and typing the
+    // refused one back brings it back. Same rule as sign-up.
+    //
+    // So a refusal's mark follows the box, never the error alone: a name
+    // changed while the refused save was still in flight is not the refused
+    // one. A `400` on the name marks it from the error, as before.
+    final nameRejected =
+        ref.read(editProfileProvider.notifier).isRefused(_update.name) ||
+        (rejected.contains('name') && !isProfileNameNotAllowed(submit.error));
 
     return PopScope(
       // A clean form pops normally; a dirty one has to be answered for.
@@ -329,12 +340,12 @@ class _FormState extends ConsumerState<_Form> {
                 // The contract's own cap, enforced as a formatter so the field
                 // cannot hold a value the server would reject.
                 maxLength: 100,
-                hasError: _nameErrorKey != null || rejected.contains('name'),
+                hasError: _nameErrorKey != null || nameRejected,
                 onChanged: (_) => _onEdited(),
               ),
               if (_nameErrorKey != null)
                 InlineFieldError(_nameErrorKey!)
-              else if (rejected.contains('name'))
+              else if (nameRejected)
                 InlineFieldError(l10n.fieldRejected),
               const SizedBox(height: 25),
 
