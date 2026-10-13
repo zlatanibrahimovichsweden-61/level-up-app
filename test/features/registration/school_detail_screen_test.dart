@@ -6,6 +6,7 @@ import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/language_pill.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
 import 'package:level_up_app/features/registration/models/registration_validation.dart';
@@ -152,32 +153,42 @@ void main() {
       await tester.ensureVisible(cta);
       await tester.pumpAndSettle();
 
+      // The frame's header row is the 36.10 pill. O-15 made the row itself
+      // 48 (the back chip's target) and gave half the difference back above
+      // and below it, so the 25 is measured from the pill, and the row is
+      // 25 - (48 - 36.10) / 2 from the title.
+      expect(
+        rect(find.text('School Registration').last).top -
+            rect(find.byType(LanguagePill)).bottom,
+        closeTo(25, 0.001),
+        reason: 'header row → title',
+      );
       expect(
         rect(find.text('School Registration').last).top -
             rect(find.byType(RegistrationHeader)).bottom,
-        25,
-        reason: 'header row → title',
+        closeTo(25 - RegistrationHeader.slop, 0.001),
+        reason: 'the 48 row → title',
       );
       expect(
         rect(find.text('Date of Birth')).top -
             rect(find.text('Complete your profile to get started')).bottom,
-        25,
+        closeTo(25, 0.001),
         reason: 'subtitle → first field block',
       );
       expect(
         rect(find.text('Governorate')).top -
             rect(find.byKey(const Key('field-countryCode'))).bottom,
-        25,
+        closeTo(25, 0.001),
         reason: 'field block → field block',
       );
       expect(
         rect(find.text('Grade')).top -
             rect(find.byKey(const Key('field-educationSystem'))).bottom,
-        25,
+        closeTo(25, 0.001),
       );
       expect(
         rect(cta).top - rect(find.byType(SchoolPickerField)).bottom,
-        25,
+        closeTo(25, 0.001),
         reason: 'last field block → Start learning',
       );
     });
@@ -197,7 +208,7 @@ void main() {
       expect(
         tester.getRect(cta).top -
             tester.getRect(find.byKey(const Key('field-stage'))).bottom,
-        25,
+        closeTo(25, 0.001),
       );
     });
 

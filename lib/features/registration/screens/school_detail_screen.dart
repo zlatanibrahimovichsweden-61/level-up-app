@@ -94,12 +94,17 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
             if (offline) const OfflineBanner(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 24, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  24,
+                  8 - RegistrationHeader.slop,
+                  24,
+                  24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const RegistrationHeader(),
-                    const SizedBox(height: _gap),
+                    const SizedBox(height: _gap - RegistrationHeader.slop),
                     Text(
                       l10n.schoolRegistrationTitle,
                       style: AppType.h1.copyWith(color: ext.textPrimary),

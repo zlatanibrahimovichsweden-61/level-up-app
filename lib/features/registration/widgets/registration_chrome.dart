@@ -16,8 +16,21 @@ import '../../../l10n/app_localizations.dart';
 /// the wizard uses, not Material's platform arrow — the two were mixed across
 /// the four registration screens, so the same control had two appearances one
 /// step apart. It mirrors under RTL on its own.
+///
+/// **The back target is 48 (O-15), the chip stays 35.** The chip sits in a
+/// [CircleBackButton.tapTarget] box flush to the START of the row, so the extra
+/// reaches into the free space before the pill and not past the page gutter.
+/// The row is therefore 48 tall rather than the pill's 36.10, and the pill is
+/// centred in it. A screen that places the header takes [slop] off the inset
+/// above it and off the gap below it, which puts the chip, the pill and
+/// everything under them on the pixels the frame draws.
 class RegistrationHeader extends ConsumerWidget {
   const RegistrationHeader({super.key});
+
+  /// Half of how much taller the row is than the pill it was drawn around:
+  /// (48 - 36.10) / 2. Each screen gives this back above and below the row.
+  static const double slop =
+      (CircleBackButton.tapTarget - LanguagePill.height) / 2;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,6 +40,8 @@ class RegistrationHeader extends ConsumerWidget {
         CircleBackButton(
           onPressed: () => context.pop(),
           variant: BackChipVariant.registration,
+          tapTargetSize: MaterialTapTargetSize.padded,
+          chipAlignment: AlignmentDirectional.centerStart,
         ),
         const Spacer(),
         LanguagePill(

@@ -6,6 +6,7 @@ import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/widgets/language_pill.dart';
 import 'package:level_up_app/features/registration/models/registration_args.dart';
 import 'package:level_up_app/features/registration/models/registration_draft.dart';
 import 'package:level_up_app/features/registration/notifier/registration_controller.dart';
@@ -145,11 +146,19 @@ void main() {
       await tester.ensureVisible(cta);
       await tester.pumpAndSettle();
 
+      // Measured from the frame's 36.10 pill row; the header row itself is
+      // 48 since O-15 and gives half the difference back below it.
+      expect(
+        rect(find.text('University Registration').last).top -
+            rect(find.byType(LanguagePill)).bottom,
+        closeTo(25, 0.001),
+        reason: 'header row → title',
+      );
       expect(
         rect(find.text('University Registration').last).top -
             rect(find.byType(RegistrationHeader)).bottom,
-        closeTo(25, 0.001),
-        reason: 'header row → title',
+        closeTo(25 - RegistrationHeader.slop, 0.001),
+        reason: 'the 48 row → title',
       );
       expect(
         rect(find.text('Date of Birth')).top -
