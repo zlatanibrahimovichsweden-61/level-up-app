@@ -989,7 +989,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportStatusClosed => 'Closed';
 
   @override
+  String get supportStatusOpen => 'Open';
+
+  @override
+  String get supportStatusInProgress => 'In progress';
+
+  @override
   String get supportComposerHint => 'Write your message';
+
+  @override
+  String get supportSend => 'Send';
 
   @override
   String supportTicketMeta(String reference, String date) {

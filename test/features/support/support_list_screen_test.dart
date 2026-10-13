@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -18,7 +19,7 @@ import 'package:level_up_app/features/support/models/support_models.dart';
 import 'package:level_up_app/features/support/repository/support_repository.dart';
 import 'package:level_up_app/features/support/screens/create_support_ticket_screen.dart';
 import 'package:level_up_app/features/support/screens/support_ticket_screen.dart';
-import 'package:level_up_app/features/support/widgets/support_closed_pill.dart';
+import 'package:level_up_app/features/support/widgets/support_status_pill.dart';
 import 'package:level_up_app/features/support/widgets/support_ticket_row.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
@@ -331,57 +332,81 @@ void main() {
       expect(find.text(l10n.supportTicketMeta('TK-7', date)), findsOneWidget);
     });
 
-    testWidgets('only a CLOSED ticket gets a pill; open, in_progress, pending '
-        'and an unknown status get none', (tester) async {
+    for (final language in languages) {
+      testWidgets('each status gets its approved pill, an unknown one reads In '
+          'progress, and pending gets none · $language', (tester) async {
+        final l10n = await l10nFor(language);
+        listCall().thenAnswer(
+          (_) async => ticketsPage([
+            ticketSummary('t-open', status: 'open'),
+            ticketSummary('t-progress', status: 'in_progress'),
+            ticketSummary('t-pending', status: 'pending'),
+            ticketSummary('t-closed', status: 'closed'),
+            // A value this build predates: "in progress, not closed".
+            ticketSummary('t-escalated', status: 'escalated'),
+          ]),
+        );
+
+        await pumpList(tester, language: language);
+
+        String? pillText(String id) {
+          final pill = find.descendant(
+            of: rowFor(id),
+            matching: find.byType(SupportStatusPill),
+          );
+          if (pill.evaluate().isEmpty) return null;
+          expect(
+            find.byKey(Key('support_status_pill_$id')),
+            findsOneWidget,
+            reason: '$id: the pill is keyed by the ticketId',
+          );
+          return tester.widget<SupportStatusPill>(pill).label;
+        }
+
+        expect(pillText('t-open'), l10n.supportStatusOpen);
+        expect(pillText('t-progress'), l10n.supportStatusInProgress);
+        expect(pillText('t-closed'), l10n.supportStatusClosed);
+        expect(pillText('t-escalated'), l10n.supportStatusInProgress);
+        // SQ-32: no approved label, so no pill and no borrowed one.
+        expect(pillText('t-pending'), isNull);
+        expect(find.byType(SupportStatusPill), findsNWidgets(4));
+
+        // The approved words are what is drawn: once each, In progress twice.
+        expect(find.text(l10n.supportStatusOpen), findsOneWidget);
+        expect(find.text(l10n.supportStatusInProgress), findsNWidgets(2));
+        expect(find.text(l10n.supportStatusClosed), findsOneWidget);
+        // No pending word is drawn anywhere, in either language.
+        for (final word in ['Pending', 'pending', 'معلّقة', 'معلقة']) {
+          expect(find.textContaining(word), findsNothing, reason: word);
+        }
+      });
+    }
+
+    testWidgets('the pills show the approved Arabic in the Arabic UI', (
+      tester,
+    ) async {
       listCall().thenAnswer(
         (_) async => ticketsPage([
           ticketSummary('t-open', status: 'open'),
           ticketSummary('t-progress', status: 'in_progress'),
-          ticketSummary('t-pending', status: 'pending'),
           ticketSummary('t-closed', status: 'closed'),
-          // A value this build predates: "in progress, not closed".
-          ticketSummary('t-escalated', status: 'escalated'),
         ]),
-      );
-
-      await pumpList(tester);
-
-      expect(find.byType(SupportClosedPill), findsOneWidget);
-      expect(
-        find.byKey(const Key('support_status_pill_t-closed')),
-        findsOneWidget,
-      );
-      for (final id in ['t-open', 't-progress', 't-pending', 't-escalated']) {
-        expect(
-          find.descendant(
-            of: rowFor(id),
-            matching: find.byType(SupportClosedPill),
-          ),
-          findsNothing,
-          reason: id,
-        );
-      }
-      // The pill's text is the approved Closed, and no other status word is
-      // drawn anywhere (no approved copy exists for them).
-      expect(find.text('Closed'), findsOneWidget);
-      for (final word in ['Open', 'In progress', 'Pending']) {
-        expect(find.text(word), findsNothing, reason: word);
-      }
-    });
-
-    testWidgets('the pill is shown in Arabic UI as the English fallback', (
-      tester,
-    ) async {
-      // CW12a copy register: no approved Arabic exists, so the Arabic UI shows
-      // the English text rather than an unapproved translation.
-      listCall().thenAnswer(
-        (_) async => ticketsPage([ticketSummary('t-closed', status: 'closed')]),
       );
 
       await pumpList(tester, language: 'ar');
 
-      expect(find.text('Closed'), findsOneWidget);
+      // Owner-approved O-14, character for character.
+      expect(find.text('مفتوحة'), findsOneWidget);
+      expect(find.text('قيد المعالجة'), findsOneWidget);
+      expect(find.text('مغلقة'), findsOneWidget);
+      for (final english in ['Open', 'In progress', 'Closed']) {
+        expect(find.text(english), findsNothing, reason: english);
+      }
     });
+
+    // How wide the pills come out at large text on a narrow screen is measured
+    // with the bundled fonts in support_status_pill_layout_test.dart: this
+    // file's placeholder font draws far wider than Inter, Tajawal or Cairo.
 
     testWidgets('the reference is a label: the row is keyed and routed by the '
         'ticketId', (tester) async {
@@ -454,7 +479,7 @@ void main() {
       final pill = tester.getRect(
         find.descendant(
           of: rowFor(ticketIdA),
-          matching: find.byType(SupportClosedPill),
+          matching: find.byType(SupportStatusPill),
         ),
       );
       expect(pill.left - column.right, closeTo(8, 0.01));
@@ -689,12 +714,12 @@ void main() {
 
       // The pill is at the END of its row.
       final row = tester.getRect(rowFor('t-closed'));
-      final pill = tester.getCenter(find.byType(SupportClosedPill));
+      final pill = tester.getCenter(find.byType(SupportStatusPill));
       expect(pill.dx, greaterThan(row.center.dx));
     });
 
-    testWidgets('RTL: everything mirrors, the title is Arabic and the new copy '
-        'falls back to English', (tester) async {
+    testWidgets('RTL: everything mirrors and every line is the approved '
+        'Arabic', (tester) async {
       listCall().thenAnswer(
         (_) async => ticketsPage([ticketSummary('t-closed', status: 'closed')]),
       );
@@ -703,12 +728,29 @@ void main() {
       final screen = tester.element(find.byType(CustomerSupportScreen));
       expect(Directionality.of(screen), TextDirection.rtl);
 
-      // The approved Arabic title; the card's lines have no approved Arabic,
-      // so the English fallback shows (CW12a_PLAN §4.2).
+      // The approved Arabic: the title (already approved) and the card, the
+      // heading and the pill (owner-approved O-14). No English is left.
       expect(find.text('دعم العملاء'), findsOneWidget);
-      expect(find.text('Create a New Ticket'), findsOneWidget);
-      expect(find.text('Describe your issue'), findsOneWidget);
-      expect(find.text('Recent Tickets'), findsOneWidget);
+      expect(find.text('إنشاء تذكرة'), findsOneWidget);
+      expect(find.text('اشرح مشكلتك'), findsOneWidget);
+      expect(find.text('التذاكر الأخيرة'), findsOneWidget);
+      expect(find.text('مغلقة'), findsOneWidget);
+      for (final english in [
+        'Create a New Ticket',
+        'Describe your issue',
+        'Recent Tickets',
+        'Closed',
+      ]) {
+        expect(find.text(english), findsNothing, reason: english);
+      }
+      // Each Arabic line lays out right to left.
+      for (final arabic in ['إنشاء تذكرة', 'اشرح مشكلتك', 'التذاكر الأخيرة']) {
+        expect(
+          tester.renderObject<RenderParagraph>(find.text(arabic)).textDirection,
+          TextDirection.rtl,
+          reason: arabic,
+        );
+      }
 
       final cardRect = tester.getRect(card);
       expect(cardRect.left, 20);
@@ -737,7 +779,7 @@ void main() {
 
       // And the pill moves to the left end of its row.
       final row = tester.getRect(rowFor('t-closed'));
-      final pill = tester.getCenter(find.byType(SupportClosedPill));
+      final pill = tester.getCenter(find.byType(SupportStatusPill));
       expect(pill.dx, lessThan(row.center.dx));
     });
   });
@@ -891,13 +933,51 @@ void main() {
 
       final open = tester.getSemantics(rowFor(ticketIdB));
       expect(open.label, contains('Another question'));
+      expect(open.label, contains('Open'));
       expect(open.label, isNot(contains('Closed')));
-      // No status word is invented for a ticket that is not closed.
-      for (final word in ['open', 'pending', 'in progress']) {
-        expect(open.label.toLowerCase(), isNot(contains(word)));
-      }
+      expect(_nodesWithTap(open), [open], reason: 'one node per row');
       handle.dispose();
     });
+
+    for (final language in languages) {
+      testWidgets('each row names its approved status, and a pending row names '
+          'none · $language', (tester) async {
+        final handle = tester.ensureSemantics();
+        final l10n = await l10nFor(language);
+        listCall().thenAnswer(
+          (_) async => ticketsPage([
+            ticketSummary('t-open', status: 'open'),
+            ticketSummary('t-progress', status: 'in_progress'),
+            ticketSummary('t-pending', status: 'pending'),
+            ticketSummary('t-closed', status: 'closed'),
+            ticketSummary('t-escalated', status: 'escalated'),
+          ]),
+        );
+        await pumpList(tester, language: language);
+
+        String label(String id) => tester.getSemantics(rowFor(id)).label;
+        final words = {
+          l10n.supportStatusOpen,
+          l10n.supportStatusInProgress,
+          l10n.supportStatusClosed,
+        };
+
+        expect(label('t-open'), contains(l10n.supportStatusOpen));
+        expect(label('t-progress'), contains(l10n.supportStatusInProgress));
+        expect(label('t-closed'), contains(l10n.supportStatusClosed));
+        expect(label('t-escalated'), contains(l10n.supportStatusInProgress));
+        // Pending: no status word at all, approved or provisional.
+        for (final word in [...words, 'Pending', 'معلّقة', 'معلقة']) {
+          expect(label('t-pending'), isNot(contains(word)), reason: word);
+        }
+        for (final id in ['t-open', 't-progress', 't-pending', 't-closed']) {
+          final node = tester.getSemantics(rowFor(id));
+          expect(node.flagsCollection.isButton, isTrue, reason: id);
+          expect(_nodesWithTap(node), [node], reason: '$id: one node');
+        }
+        handle.dispose();
+      });
+    }
 
     testWidgets('the heading is a header', (tester) async {
       final handle = tester.ensureSemantics();

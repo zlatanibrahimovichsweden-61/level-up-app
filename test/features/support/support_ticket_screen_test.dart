@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Tristate;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ import 'package:level_up_app/features/support/notifier/support_tickets_notifier.
 import 'package:level_up_app/features/support/repository/support_repository.dart';
 import 'package:level_up_app/features/support/screens/create_support_ticket_screen.dart';
 import 'package:level_up_app/features/support/screens/support_ticket_screen.dart';
-import 'package:level_up_app/features/support/widgets/support_closed_pill.dart';
+import 'package:level_up_app/features/support/widgets/support_status_pill.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1150,7 +1151,7 @@ void main() {
       expect(
         find.descendant(
           of: closedBar,
-          matching: find.byType(SupportClosedPill),
+          matching: find.byType(SupportStatusPill),
         ),
         findsOneWidget,
       );
@@ -1265,8 +1266,8 @@ void main() {
       expect(field.right - glyph.right, closeTo(16, 0.01));
     });
 
-    testWidgets('RTL: everything mirrors, the names are Arabic and the new '
-        'copy is English', (tester) async {
+    testWidgets('RTL: everything mirrors, and the names and the composer '
+        'hint are the approved Arabic', (tester) async {
       stubThread(messages: [supportMessage('m1', authorKind: 'staff')]);
       await pumpThread(tester, language: 'ar');
 
@@ -1288,7 +1289,7 @@ void main() {
       );
       expect(tester.getCenter(sendButton).dx, lessThan(201));
 
-      // Approved Arabic for both names; the composer hint has none.
+      // Approved Arabic for both names and (O-14) for the composer hint.
       expect(
         find.descendant(of: detailsRow, matching: find.text('أنت')),
         findsOneWidget,
@@ -1300,7 +1301,14 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Write your message'), findsOneWidget);
+      expect(find.text('اكتب رسالتك'), findsOneWidget);
+      expect(find.text('Write your message'), findsNothing);
+      expect(
+        tester
+            .renderObject<RenderParagraph>(find.text('اكتب رسالتك'))
+            .textDirection,
+        TextDirection.rtl,
+      );
     });
 
     /// Whether `flutter_svg` laid a horizontal flip (a negative x scale) over
@@ -1339,23 +1347,74 @@ void main() {
       expect(sendGlyphMirrored(tester), isTrue);
     });
 
-    testWidgets('RTL: the closed bar mirrors and shows the English fallback', (
+    testWidgets('RTL: the closed bar mirrors and shows the approved Arabic', (
       tester,
     ) async {
       stubThread(ticket: closedTicket(ticketIdA));
       await pumpThread(tester, language: 'ar');
 
       final bar = tester.getRect(closedBar);
-      final pill = tester.getCenter(find.byType(SupportClosedPill));
+      final pill = tester.getCenter(find.byType(SupportStatusPill));
       final action = tester.getCenter(
         find.byKey(const Key('support_closed_new_ticket')),
       );
       // The pill leads at the right, the action ends at the left.
       expect(pill.dx, greaterThan(bar.center.dx));
       expect(action.dx, lessThan(bar.center.dx));
-      expect(find.text('Closed'), findsOneWidget);
-      expect(find.text('Create a New Ticket'), findsOneWidget);
+      expect(
+        find.descendant(of: closedBar, matching: find.text('مغلقة')),
+        findsOneWidget,
+      );
+      // The owner-approved SHORTER form: the same words as the create
+      // screen's heading, on the same key as the list's card.
+      expect(
+        find.descendant(of: closedBar, matching: find.text('إنشاء تذكرة')),
+        findsOneWidget,
+      );
+      for (final english in ['Closed', 'Create a New Ticket']) {
+        expect(find.text(english), findsNothing, reason: english);
+      }
     });
+
+    for (final language in languages) {
+      testWidgets('the closed bar\'s button is one button named by the card\'s '
+          'words, and opens the create screen · $language', (tester) async {
+        final handle = tester.ensureSemantics();
+        final l10n = await l10nFor(language);
+        stubThread(ticket: closedTicket(ticketIdA));
+        final pumped = await pumpThread(tester, language: language);
+
+        final action = find.byKey(const Key('support_closed_new_ticket'));
+        final node = tester.getSemantics(action);
+        expect(node.flagsCollection.isButton, isTrue);
+        expect(node.label, l10n.supportCreateNewTicket);
+        expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+        // Whole on one line, and at least 48 high.
+        final text = find.descendant(
+          of: action,
+          matching: find.text(l10n.supportCreateNewTicket),
+        );
+        expect(
+          tester.renderObject<RenderParagraph>(text).didExceedMaxLines,
+          isFalse,
+        );
+        expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
+        // The label keeps the theme's family and its Arabic fallback: a
+        // button `textStyle` would replace them (the label then drew in the
+        // platform's default face, which the Arabic made visible).
+        final style = tester.renderObject<RenderParagraph>(text).text.style!;
+        expect(style.fontFamily, 'Inter');
+        expect(style.fontFamilyFallback, containsAll(['Tajawal', 'Cairo']));
+        expect(style.fontSize, AppType.buttonMedium.fontSize);
+        expect(style.fontWeight, AppType.buttonMedium.fontWeight);
+
+        await tester.tap(action);
+        await settle(tester);
+        expect(location(pumped.router), '/support/new');
+        expect(find.byType(CreateSupportTicketScreen), findsOneWidget);
+        handle.dispose();
+      });
+    }
   });
 
   // -------------------------------------------------------------------------
@@ -1470,59 +1529,104 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('semantics', () {
-    testWidgets('the send glyph is EXCLUDED from semantics: no node, no tap '
-        'action, no label', (tester) async {
-      final handle = tester.ensureSemantics();
-      stubThread();
-      await pumpThread(tester);
-      await typeReply(tester, 'Ready to send');
+    for (final language in languages) {
+      testWidgets('the send glyph is ONE button named Send, enabled only when '
+          'there is text, and a screen reader\'s tap sends · $language', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        final l10n = await l10nFor(language);
+        final pending = Completer<SupportTicketMessage>();
+        postCall().thenAnswer((_) => pending.future);
+        stubThread();
+        await pumpThread(tester, language: language);
 
-      // Structurally excluded…
-      expect(
-        tester
-            .widget<ExcludeSemantics>(
-              find
-                  .ancestor(
-                    of: sendButton,
-                    matching: find.byType(ExcludeSemantics),
-                  )
-                  .first,
-            )
-            .excluding,
-        isTrue,
-      );
-      // …so the nearest node above it is not a control: no tap action, not a
-      // button. (Were the glyph exposed it would be its own tappable node.)
-      final nearest = tester.getSemantics(sendButton);
-      expect(
-        nearest.getSemanticsData().hasAction(SemanticsAction.tap),
-        isFalse,
-      );
-      expect(nearest.flagsCollection.isButton, isFalse);
-      // And no label anywhere names it.
-      for (final label in ['Send', 'إرسال']) {
-        expect(find.bySemanticsLabel(label), findsNothing);
-      }
-      handle.dispose();
-    });
+        SemanticsNode node() => tester.getSemantics(sendButton);
+        void expectTheButton() {
+          final n = node();
+          expect(n.label, l10n.supportSend);
+          expect(n.flagsCollection.isButton, isTrue);
+          // The glyph and the spinner are not nodes of their own: no image
+          // and no progress-bar role inside the button (BUG-021).
+          expect(n.flagsCollection.isImage, isFalse);
+          expect(n.childrenCount, 0);
+        }
 
-    testWidgets('the composer field is a text field named by its hint', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      stubThread();
-      await pumpThread(tester);
+        // Empty: a disabled button, with no tap to offer.
+        expectTheButton();
+        expect(node().flagsCollection.isEnabled, Tristate.isFalse);
+        expect(
+          node().getSemanticsData().hasAction(SemanticsAction.tap),
+          isFalse,
+        );
 
-      // The field's node is the EditableText's: the TextField widget itself
-      // has no node of its own.
-      final node = tester.getSemantics(
-        find.descendant(of: composerField, matching: find.byType(EditableText)),
-      );
-      expect(node.flagsCollection.isTextField, isTrue);
-      expect(node.flagsCollection.isMultiline, isTrue);
-      expect(node.hint + node.label, contains('Write your message'));
-      handle.dispose();
-    });
+        // Text: enabled, and its tap action is the send.
+        await typeReply(tester, 'Ready to send');
+        expectTheButton();
+        expect(node().flagsCollection.isEnabled, Tristate.isTrue);
+        expect(
+          node().getSemanticsData().hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+        tester.semantics.tap(find.semantics.byLabel(l10n.supportSend));
+        await tester.pump();
+        verifyPost('Ready to send').called(1);
+
+        // In flight: still the one Send button, disabled; the spinner adds
+        // no node.
+        expect(
+          find.descendant(
+            of: sendButton,
+            matching: find.byType(CircularProgressIndicator),
+          ),
+          findsOneWidget,
+        );
+        expectTheButton();
+        expect(node().flagsCollection.isEnabled, Tristate.isFalse);
+
+        pending.complete(supportMessage('mine', body: 'Ready to send'));
+        await settle(tester);
+        handle.dispose();
+      });
+
+      testWidgets('the composer field keeps its name once there is text, on '
+          'the same node, said once · $language', (tester) async {
+        final handle = tester.ensureSemantics();
+        final l10n = await l10nFor(language);
+        stubThread();
+        await pumpThread(tester, language: language);
+
+        // The field's node is the EditableText's: the TextField widget itself
+        // has no node of its own.
+        SemanticsNode field() => tester.getSemantics(
+          find.descendant(
+            of: composerField,
+            matching: find.byType(EditableText),
+          ),
+        );
+        final empty = field();
+        expect(empty.flagsCollection.isTextField, isTrue);
+        expect(empty.flagsCollection.isMultiline, isTrue);
+        // Named by the visible hint, exactly once (not the hint AND a label).
+        expect(empty.label, l10n.supportComposerHint);
+
+        await typeReply(tester, 'Hello');
+        await tester.pumpAndSettle();
+        final typed = field();
+        // Material drops the hint once there is text; the name stays.
+        expect(typed.label, l10n.supportComposerHint);
+        expect(typed.value, 'Hello');
+        // The same node: a screen reader's focus is not lost on the first
+        // character.
+        expect(typed.id, empty.id);
+
+        await typeReply(tester, '');
+        await tester.pumpAndSettle();
+        expect(field().label, l10n.supportComposerHint);
+        expect(field().id, empty.id);
+        handle.dispose();
+      });
+    }
 
     testWidgets('a message is ONE node: the name and the text, no image role', (
       tester,

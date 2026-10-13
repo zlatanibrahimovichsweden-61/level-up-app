@@ -750,47 +750,59 @@
   },
   "supportCreateNewTicket": "Create a New Ticket",
   "@supportCreateNewTicket": {
-    "description": "Support list: the title of the create-ticket card (Figma 178:3061), and the action label on a closed ticket's thread. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation. Tracked by test/features/support/support_copy_status_test.dart (tracking only, not a release gate)."
+    "description": "Support list: the title of the create-ticket card (Figma 178:3061), and the action label on a closed ticket's thread (the same key, so both read alike). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14): the shorter form, identical to createTicket's Arabic, on purpose; keep the two the same. Tracked by test/features/support/support_copy_status_test.dart (tracking only, not a release gate)."
   },
   "supportDescribeYourIssue": "Describe your issue",
   "@supportDescribeYourIssue": {
-    "description": "Support list: the subtitle of the create-ticket card (Figma 178:3065). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Support list: the subtitle of the create-ticket card (Figma 178:3065). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportRecentTickets": "Recent Tickets",
   "@supportRecentTickets": {
-    "description": "Support list: the heading above the student's tickets (Figma 178:3079). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Support list: the heading above the student's tickets (Figma 178:3079). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportNewTicketTitle": "New Ticket",
   "@supportNewTicketTitle": {
-    "description": "Create-ticket screen: the title in the top bar (Figma 178:3250). The screen's heading below it reuses the approved createTicket. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the title in the top bar (Figma 178:3250). The screen's heading below it reuses the approved createTicket. EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportCreateTicketSubtitle": "Describe your issue and we'll help you",
   "@supportCreateTicketSubtitle": {
-    "description": "Create-ticket screen: the subtitle under the heading (Figma 178:3343). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the subtitle under the heading (Figma 178:3343). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportSubjectLabel": "Subject",
   "@supportSubjectLabel": {
-    "description": "Create-ticket screen: the label of the subject field, 1 to 120 characters (Figma 178:3334). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the label of the subject field, 1 to 120 characters (Figma 178:3334). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportDetailsLabel": "Details",
   "@supportDetailsLabel": {
-    "description": "Create-ticket screen: the label of the details field, 1 to 4000 characters (Figma 178:3346). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the label of the details field, 1 to 4000 characters (Figma 178:3346). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportDetailsHint": "Describe the issue in detail...",
   "@supportDetailsHint": {
-    "description": "Create-ticket screen: the hint inside the empty details field (Figma 178:3352). EN is Figma design copy, verbatim, three full stops included. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the hint inside the empty details field (Figma 178:3352). EN is Figma design copy, verbatim, three full stops included. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportSubmitTicket": "Submit Ticket",
   "@supportSubmitTicket": {
-    "description": "Create-ticket screen: the submit button (Figma 178:3375). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Create-ticket screen: the submit button (Figma 178:3375). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
   },
   "supportStatusClosed": "Closed",
   "@supportStatusClosed": {
-    "description": "The status pill of a closed ticket, on its row and in its thread (Figma 178:3131). Only closed has a pill: open, in progress and pending have no approved text in either language and are not built. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "The status pill of a closed ticket, on its row and on a closed thread's bar (Figma 178:3131, the only drawn pill; supportStatusOpen and supportStatusInProgress reuse its look). Pending has no approved label (SQ-32) and gets no pill. EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
+  },
+  "supportStatusOpen": "Open",
+  "@supportStatusOpen": {
+    "description": "The status pill of an open ticket, on its row in the support list. Not drawn in Figma: it reuses the Closed pill's look (178:3131) until the designer draws per-status pills (DG-63). EN and AR approved by the owner 2026-10-10 (O-14)."
+  },
+  "supportStatusInProgress": "In progress",
+  "@supportStatusInProgress": {
+    "description": "The status pill of a ticket Customer Service is working on (in_progress), on its row in the support list. It also labels any status this app does not know, because the contract says to treat an unknown value as in progress, not closed. Never used for pending (SQ-32). Not drawn in Figma: it reuses the Closed pill's look (178:3131) until the designer draws per-status pills (DG-63). EN and AR approved by the owner 2026-10-10 (O-14)."
   },
   "supportComposerHint": "Write your message",
   "@supportComposerHint": {
-    "description": "Ticket thread: the hint inside the empty reply field (Figma 178:3469). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation."
+    "description": "Ticket thread: the hint inside the empty reply field (Figma 178:3469), and the field's accessible name (it is restated once the hint is gone). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14)."
+  },
+  "supportSend": "Send",
+  "@supportSend": {
+    "description": "Ticket thread: the accessible name of the reply composer's send button (the paper-plane icon). Screen readers only; nothing draws it as text. EN and AR approved by the owner 2026-10-10 (O-14)."
   },
   "supportTicketMeta": "{reference} · {date}",
   "@supportTicketMeta": {
