@@ -2,18 +2,24 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/titled_chrome.dart';
 import '../../../l10n/app_localizations.dart';
-import '../widgets/shell_body.dart';
+import '../../support/widgets/support_tickets_list.dart';
 
 /// Customer Support · routed at `/support`, reached from the Profile hub.
 ///
-/// TODO(contract): seif_fight.md **S33** — support is fully designed
-/// (`Customer Support` ×3, `Create Ticket`, `Customer support chat`, the whole
-/// Message tab) and has **no endpoint of any kind**. Not draft — absent.
+/// The student's own support tickets, text only (CW12a): the "Create a New
+/// Ticket" card, then the ticket list (`GET /support/tickets`) with its four
+/// states. Figma `178:2800` (Customer Support).
 ///
-/// **Nothing here is invented**: no ticket list, no chat thread, no reference
-/// number. A support screen that accepts a message and drops it is worse than
-/// one that says it is not open yet, because the student walks away believing
-/// they have been heard. The frame's Create Ticket control renders, disabled.
+/// It keeps the path and the class name it had as a placeholder: the router and
+/// the return-target tests refer to it, and the route is unchanged. It is still
+/// pushed outside the shell, so it is not a rememberable location.
+///
+/// The screen is only the frame, the title bar and its back chip. Everything
+/// in it is [SupportTicketsList].
+///
+/// No dark, Arabic or empty/loading/error/offline frame exists for support, so
+/// those are derived from the shared states and the established dark
+/// treatments (docs/DESIGN_ISSUES.md #131).
 class CustomerSupportScreen extends StatelessWidget {
   const CustomerSupportScreen({super.key});
 
@@ -26,15 +32,7 @@ class CustomerSupportScreen extends StatelessWidget {
         child: TitledChrome(
           title: l10n.profileCustomerSupport,
           backKey: const Key('support_back'),
-          child: ShellBody(
-            icon: Icons.headset_mic,
-            message: l10n.supportUnavailable,
-            action: DisabledActionButton(
-              key: const Key('support_create_ticket_button'),
-              label: l10n.createTicket,
-              disabledHint: l10n.supportUnavailable,
-            ),
-          ),
+          child: const SupportTicketsList(),
         ),
       ),
     );

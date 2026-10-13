@@ -48,6 +48,7 @@ import 'glass_mapping.dart';
 const _black25 = Color.fromRGBO(0, 0, 0, 0.25);
 const _black15 = Color.fromRGBO(0, 0, 0, 0.15);
 const _black10 = Color.fromRGBO(0, 0, 0, 0.10);
+const _black13 = Color.fromRGBO(0, 0, 0, 0.13);
 
 /// One Figma drop or inner shadow, exactly as the Properties panel states it.
 ///
@@ -602,6 +603,17 @@ class AppElevation extends ThemeExtension<AppElevation> {
     required this.notificationDiscGlass,
     required this.notificationChipIdleShadows,
     required this.notificationChipIdleGlass,
+    required this.supportCreateCardShadows,
+    required this.supportCreateCardGlass,
+    required this.supportAddButtonShadows,
+    required this.supportRowShadows,
+    required this.supportRowGlass,
+    required this.supportFieldSectionShadows,
+    required this.supportFieldSectionGlass,
+    required this.supportInputShadows,
+    required this.supportComposerBarShadows,
+    required this.supportComposerBarGlass,
+    required this.supportComposerFieldShadows,
   });
 
   // --- edit2: shell, auth, onboarding, registration ------------------------
@@ -991,6 +1003,70 @@ class AppElevation extends ThemeExtension<AppElevation> {
   /// dark frame (DG-35). CW07a.
   final GlassStyle? notificationChipIdleGlass;
 
+  // --- Support tickets, text only (CW12a · Figma 178:2800, 178:3222, 178:3378)
+  //
+  // Light only: no dark support frame exists. Dark takes the treatment the
+  // notifications inbox settled on (DESIGN_ISSUES #130) as a STAND-IN, not a
+  // reading: no shadow, plus Glass G5 on the four surfaces below that have
+  // Glass tokens. A surface with no Glass token (the add button, an input, the
+  // composer field) is flat in dark.
+
+  /// The create-ticket card's drop shadow: `#000000` at 25%, offset (0.5, 0.5),
+  /// blur 4 (`178:3052`). Dark stand-in: none — [supportCreateCardGlass] alone.
+  /// CW12a.
+  final List<FigmaShadow> supportCreateCardShadows;
+
+  /// The create-ticket card, dark only — G5. Stand-in: no dark frame. CW12a.
+  final GlassStyle? supportCreateCardGlass;
+
+  /// The 40 add button's drop shadow: `#000000` at 25%, offset (0.028, 0.028),
+  /// blur 1.3 (`178:3066`). Dark stand-in: none (flat). CW12a.
+  final List<FigmaShadow> supportAddButtonShadows;
+
+  /// A ticket row's INNER shadow: `#000000` at 25%, offset (0.02, 0.02), blur
+  /// 2.8 (`178:3104`). Dark stand-in: none — [supportRowGlass] alone. CW12a.
+  final List<FigmaShadow> supportRowShadows;
+
+  /// A ticket row, dark only — G5. Stand-in: no dark frame. CW12a.
+  final GlassStyle? supportRowGlass;
+
+  /// A form field section's INNER shadow: `#000000` at 25%, offset (0.2, 0.2),
+  /// blur 3.4 (`178:3333`, `178:3345`). Dark stand-in: none —
+  /// [supportFieldSectionGlass] alone. CW12a.
+  final List<FigmaShadow> supportFieldSectionShadows;
+
+  /// A form field section, dark only — G5. Stand-in: no dark frame. CW12a.
+  final GlassStyle? supportFieldSectionGlass;
+
+  /// A form input's INNER shadow: `#000000` at 25%, offset (0, 0), blur 3.3
+  /// (`178:3333`, `178:3345`). Dark stand-in: none (flat). CW12a.
+  final List<FigmaShadow> supportInputShadows;
+
+  /// The composer bar's drop shadow: `#000000` at 10%, offset (0, -1), blur 3.7
+  /// (`178:3467`) — upward, the bar being at the bottom. Dark stand-in: none —
+  /// [supportComposerBarGlass] alone. CW12a.
+  ///
+  /// **3.7, not the 1.85 the export prints.** The frame exports this as a CSS
+  /// drop-shadow FILTER (`drop-shadow-[0px_-1px_1.85px…]`), and a filter's third
+  /// value is half the Figma blur — the project's own evidence is the primary CTA:
+  /// [primaryCtaShadows] is blur 4 and node `348:8911` exports it as
+  /// `drop-shadow-[0.5px_0.5px_2px]`. So 1.85 × 2 = 3.7. (The other support
+  /// shadows are box-shadows, exported as `shadow-[…]`, and are 1:1.)
+  final List<FigmaShadow> supportComposerBarShadows;
+
+  /// The composer bar, dark only — G5. Stand-in: no dark frame. CW12a.
+  final GlassStyle? supportComposerBarGlass;
+
+  /// The composer field's drop shadow: `#000000` at 13%, offset (0.2, 0.2),
+  /// blur 1.6 (`178:3468`). Dark stand-in: none (flat). CW12a.
+  ///
+  /// **1.6, not the 0.8 the export prints**, for the same reason as
+  /// [supportComposerBarShadows]: it is exported as a CSS drop-shadow filter
+  /// (`drop-shadow-[0.2px_0.2px_0.8px…]`), whose third value is half the Figma
+  /// blur (the CTA evidence: blur 4 ↔ `drop-shadow-[0.5px_0.5px_2px]`, node
+  /// `348:8911`). So 0.8 × 2 = 1.6.
+  final List<FigmaShadow> supportComposerFieldShadows;
+
   /// Light canvas.
   ///
   /// **`static final`, not `const`, deliberately:** two tokens take their
@@ -1204,6 +1280,51 @@ class AppElevation extends ThemeExtension<AppElevation> {
       ),
     ],
     notificationChipIdleGlass: null,
+    // Support tickets, Figma 178:3052 (create card), 178:3066 (add button),
+    // 178:3104 (row), 178:3333 / 178:3345 (field section and input), 178:3467
+    // (composer bar) and 178:3468 (composer field). CW12a.
+    supportCreateCardShadows: const [
+      FigmaShadow(color: _black25, offset: Offset(0.5, 0.5), blur: 4),
+    ],
+    supportCreateCardGlass: null,
+    supportAddButtonShadows: const [
+      FigmaShadow(color: _black25, offset: Offset(0.028, 0.028), blur: 1.3),
+    ],
+    supportRowShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0.02, 0.02),
+        blur: 2.8,
+        inset: true,
+      ),
+    ],
+    supportRowGlass: null,
+    supportFieldSectionShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0.2, 0.2),
+        blur: 3.4,
+        inset: true,
+      ),
+    ],
+    supportFieldSectionGlass: null,
+    supportInputShadows: const [
+      FigmaShadow(
+        color: _black25,
+        offset: Offset(0, 0),
+        blur: 3.3,
+        inset: true,
+      ),
+    ],
+    supportComposerBarShadows: const [
+      // 2 × the exported filter value (1.85): see the field's doc.
+      FigmaShadow(color: _black10, offset: Offset(0, -1), blur: 3.7),
+    ],
+    supportComposerBarGlass: null,
+    supportComposerFieldShadows: const [
+      // 2 × the exported filter value (0.8): see the field's doc.
+      FigmaShadow(color: _black13, offset: Offset(0.2, 0.2), blur: 1.6),
+    ],
   );
 
   /// Dark canvas.
@@ -1473,6 +1594,19 @@ class AppElevation extends ThemeExtension<AppElevation> {
     notificationDiscGlass: _g5,
     notificationChipIdleShadows: const [],
     notificationChipIdleGlass: _g5,
+    // Support tickets — NO dark frame. Stand-ins: no shadow, and G5 on the four
+    // surfaces that have a Glass token, as the inbox row does. CW12a.
+    supportCreateCardShadows: const [],
+    supportCreateCardGlass: _g5,
+    supportAddButtonShadows: const [],
+    supportRowShadows: const [],
+    supportRowGlass: _g5,
+    supportFieldSectionShadows: const [],
+    supportFieldSectionGlass: _g5,
+    supportInputShadows: const [],
+    supportComposerBarShadows: const [],
+    supportComposerBarGlass: _g5,
+    supportComposerFieldShadows: const [],
   );
 
   @override
@@ -1570,6 +1704,17 @@ class AppElevation extends ThemeExtension<AppElevation> {
     GlassStyle? notificationDiscGlass,
     List<FigmaShadow>? notificationChipIdleShadows,
     GlassStyle? notificationChipIdleGlass,
+    List<FigmaShadow>? supportCreateCardShadows,
+    GlassStyle? supportCreateCardGlass,
+    List<FigmaShadow>? supportAddButtonShadows,
+    List<FigmaShadow>? supportRowShadows,
+    GlassStyle? supportRowGlass,
+    List<FigmaShadow>? supportFieldSectionShadows,
+    GlassStyle? supportFieldSectionGlass,
+    List<FigmaShadow>? supportInputShadows,
+    List<FigmaShadow>? supportComposerBarShadows,
+    GlassStyle? supportComposerBarGlass,
+    List<FigmaShadow>? supportComposerFieldShadows,
   }) {
     // Note, as `AppColors.copyWith` already notes for its nullable borders:
     // `??` cannot CLEAR a nullable token. Dark gets its nulls from the palette
@@ -1707,6 +1852,25 @@ class AppElevation extends ThemeExtension<AppElevation> {
           notificationChipIdleShadows ?? this.notificationChipIdleShadows,
       notificationChipIdleGlass:
           notificationChipIdleGlass ?? this.notificationChipIdleGlass,
+      supportCreateCardShadows:
+          supportCreateCardShadows ?? this.supportCreateCardShadows,
+      supportCreateCardGlass:
+          supportCreateCardGlass ?? this.supportCreateCardGlass,
+      supportAddButtonShadows:
+          supportAddButtonShadows ?? this.supportAddButtonShadows,
+      supportRowShadows: supportRowShadows ?? this.supportRowShadows,
+      supportRowGlass: supportRowGlass ?? this.supportRowGlass,
+      supportFieldSectionShadows:
+          supportFieldSectionShadows ?? this.supportFieldSectionShadows,
+      supportFieldSectionGlass:
+          supportFieldSectionGlass ?? this.supportFieldSectionGlass,
+      supportInputShadows: supportInputShadows ?? this.supportInputShadows,
+      supportComposerBarShadows:
+          supportComposerBarShadows ?? this.supportComposerBarShadows,
+      supportComposerBarGlass:
+          supportComposerBarGlass ?? this.supportComposerBarGlass,
+      supportComposerFieldShadows:
+          supportComposerFieldShadows ?? this.supportComposerFieldShadows,
     );
   }
 
@@ -2151,6 +2315,61 @@ class AppElevation extends ThemeExtension<AppElevation> {
         other.notificationChipIdleGlass,
         t,
       ),
+      supportCreateCardShadows: FigmaShadow.lerpList(
+        supportCreateCardShadows,
+        other.supportCreateCardShadows,
+        t,
+      ),
+      supportCreateCardGlass: GlassStyle.lerp(
+        supportCreateCardGlass,
+        other.supportCreateCardGlass,
+        t,
+      ),
+      supportAddButtonShadows: FigmaShadow.lerpList(
+        supportAddButtonShadows,
+        other.supportAddButtonShadows,
+        t,
+      ),
+      supportRowShadows: FigmaShadow.lerpList(
+        supportRowShadows,
+        other.supportRowShadows,
+        t,
+      ),
+      supportRowGlass: GlassStyle.lerp(
+        supportRowGlass,
+        other.supportRowGlass,
+        t,
+      ),
+      supportFieldSectionShadows: FigmaShadow.lerpList(
+        supportFieldSectionShadows,
+        other.supportFieldSectionShadows,
+        t,
+      ),
+      supportFieldSectionGlass: GlassStyle.lerp(
+        supportFieldSectionGlass,
+        other.supportFieldSectionGlass,
+        t,
+      ),
+      supportInputShadows: FigmaShadow.lerpList(
+        supportInputShadows,
+        other.supportInputShadows,
+        t,
+      ),
+      supportComposerBarShadows: FigmaShadow.lerpList(
+        supportComposerBarShadows,
+        other.supportComposerBarShadows,
+        t,
+      ),
+      supportComposerBarGlass: GlassStyle.lerp(
+        supportComposerBarGlass,
+        other.supportComposerBarGlass,
+        t,
+      ),
+      supportComposerFieldShadows: FigmaShadow.lerpList(
+        supportComposerFieldShadows,
+        other.supportComposerFieldShadows,
+        t,
+      ),
     );
   }
 
@@ -2251,6 +2470,17 @@ class AppElevation extends ThemeExtension<AppElevation> {
     notificationDiscGlass,
     notificationChipIdleShadows,
     notificationChipIdleGlass,
+    supportCreateCardShadows,
+    supportCreateCardGlass,
+    supportAddButtonShadows,
+    supportRowShadows,
+    supportRowGlass,
+    supportFieldSectionShadows,
+    supportFieldSectionGlass,
+    supportInputShadows,
+    supportComposerBarShadows,
+    supportComposerBarGlass,
+    supportComposerFieldShadows,
   ];
 
   @override

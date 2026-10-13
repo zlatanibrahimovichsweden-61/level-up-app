@@ -216,6 +216,20 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.notificationPillSupportLabel,
     required this.notificationPillSystemFill,
     required this.notificationPillSystemLabel,
+    required this.supportCardFill,
+    required this.supportSurfaceFill,
+    required this.supportInk,
+    required this.supportInkMuted,
+    required this.supportRowBorder,
+    required this.supportOnInk,
+    required this.supportCreateTitle,
+    required this.supportCreateSubtitle,
+    required this.supportHeadingSubtitle,
+    required this.supportInputHint,
+    required this.supportComposerHint,
+    required this.supportPillClosedFill,
+    required this.supportPillClosedLabel,
+    required this.supportThreadDivider,
   });
 
   final Color background;
@@ -1555,6 +1569,89 @@ class AppColors extends ThemeExtension<AppColors> {
   /// The System pill's label. `#00A73E` on both canvases (`180:8791`).
   final Color notificationPillSystemLabel;
 
+  // --- Support tickets, text only (CW12a · Figma 178:2800, 178:3222, 178:3378)
+  //
+  // ONLY the light canvas is drawn: no dark and no Arabic/RTL support frame
+  // exists (CW12a_PLAN §2). Every dark value below is therefore a STAND-IN
+  // that copies the existing dark token named in its doc, exactly as the
+  // notifications inbox does (DESIGN_ISSUES #130), and is replaced by a read
+  // value the day the designer draws the dark support screens. The set is
+  // role-based, not node-based: one token serves every node that shares a role.
+
+  /// A support CARD: the create-ticket card (`178:3052`), each form field
+  /// section (`178:3333`, `178:3345`) and the composer bar (`178:3467`). Light
+  /// `#FCFBF9`; dark stand-in: no dark frame, value of [cardFill] (`#232428` at
+  /// 20%, under Glass), CW12a.
+  final Color supportCardFill;
+
+  /// A support SURFACE sitting on a card or the canvas: a ticket row
+  /// (`178:3104`), a form input (`178:3333`, `178:3345`) and the composer field
+  /// (`178:3468`). Light `#FFFFFF`; dark stand-in: no dark frame, value of
+  /// [fieldFill] (`#232428` at 20%), the existing input-field role, CW12a. A
+  /// row in dark elevates with the row Glass, an input with the field Glass.
+  final Color supportSurfaceFill;
+
+  /// The support INK: a ticket row's subject (`178:3104`), a field label, the
+  /// thread title (`178:3398`), a message's name and body (`178:3410`), the
+  /// send glyph and the add button's fill (`178:3066`). Light `#384F47`; dark
+  /// stand-in: no dark frame, value of [textPrimary] (`#FCFBF9`), CW12a. The
+  /// add button therefore turns cream in dark and its plus takes
+  /// [supportOnInk].
+  final Color supportInk;
+
+  /// A ticket row's meta line (`178:3110`). Light `#4B675E`; dark stand-in: no
+  /// dark frame, value of [textSecondary] (`#DCDCDC`), CW12a. NOT the row's
+  /// border: the border keeps its own hue in dark, see [supportRowBorder].
+  final Color supportInkMuted;
+
+  /// A ticket row's 0.5 hairline (`178:3104`). Light `#4B675E`; dark stand-in:
+  /// no dark frame, value of [quizOptionBorder] (`#4B675E`, kept in both
+  /// canvases), CW12a. Split from [supportInkMuted] because the meta text and
+  /// the border need different dark values.
+  final Color supportRowBorder;
+
+  /// What sits ON [supportInk]: the add button's plus glyph (`178:3066`). Light
+  /// `#FCFBF9`; dark stand-in: no dark frame, value of [background]
+  /// (`#232428`), the only value that reads on the cream add button there,
+  /// CW12a.
+  final Color supportOnInk;
+
+  /// The create card's title (`178:3061`). Light `#1A1A1A`; dark stand-in: no
+  /// dark frame, value of [textPrimary] (`#FCFBF9`), CW12a.
+  final Color supportCreateTitle;
+
+  /// The create card's subtitle (`178:3065`). Light `#424242`; dark stand-in:
+  /// no dark frame, value of [textSecondary] (`#DCDCDC`), CW12a.
+  final Color supportCreateSubtitle;
+
+  /// The create screen's heading subtitle (`178:3343`). Light `#7C7C7C`; dark
+  /// stand-in: no dark frame, value of [bodyMuted] (`#ECECEC`, `459:43877`),
+  /// the existing light-grey-to-lighter-grey subtitle pair, CW12a.
+  final Color supportHeadingSubtitle;
+
+  /// A form input's hint (`178:3352`). Light `#B7B7B7`; dark stand-in: no dark
+  /// frame, value of [mutedText] (`#B3B3B3`, the same on both canvases), so a
+  /// hint stays distinguishable from typed text, CW12a.
+  final Color supportInputHint;
+
+  /// The composer field's hint (`178:3469`). Light `#A1A1A1`; dark stand-in: no
+  /// dark frame, value of [mutedText] (`#B3B3B3`), CW12a.
+  final Color supportComposerHint;
+
+  /// The Closed status pill's fill (`178:3131`). `#B6B6B6` at 13%, the same on
+  /// both canvases: a translucent neutral reads on either, CW12a.
+  final Color supportPillClosedFill;
+
+  /// The Closed status pill's label (`178:3131`). Light `#444444`; dark
+  /// stand-in: no dark frame, value of [textSecondary] (`#DCDCDC`) because the
+  /// light grey would not read on the dark canvas, CW12a.
+  final Color supportPillClosedLabel;
+
+  /// The thread header's bottom border (`178:3398`). `rgba(124,58,237,0.1)` on
+  /// both canvases, the way [topStudentBorder] keeps the same purple at the
+  /// same alpha (`59:2090`, `337:5460`), CW12a.
+  final Color supportThreadDivider;
+
   /// Light palette — Figma Login 82:819.
   static const light = AppColors(
     background: Color(0xFFFCFBF9),
@@ -1763,6 +1860,22 @@ class AppColors extends ThemeExtension<AppColors> {
     notificationPillSupportLabel: Color(0xFF466EB6), // Figma 180:8807
     notificationPillSystemFill: Color(0xFFC3FDD8), // Figma 180:8791
     notificationPillSystemLabel: Color(0xFF00A73E), // Figma 180:8791
+    supportCardFill: Color(0xFFFCFBF9), // Figma 178:3052 / 178:3333 / 178:3467
+    supportSurfaceFill: Color(
+      0xFFFFFFFF,
+    ), // Figma 178:3104 / 178:3333 / 178:3468
+    supportInk: Brand.greenPrimary, // #384F47 — Figma 178:3104 / 178:3066
+    supportInkMuted: Color(0xFF4B675E), // Figma 178:3110
+    supportRowBorder: Color(0xFF4B675E), // Figma 178:3104
+    supportOnInk: Color(0xFFFCFBF9), // Figma 178:3066
+    supportCreateTitle: Color(0xFF1A1A1A), // Figma 178:3061
+    supportCreateSubtitle: Color(0xFF424242), // Figma 178:3065
+    supportHeadingSubtitle: Color(0xFF7C7C7C), // Figma 178:3343
+    supportInputHint: Color(0xFFB7B7B7), // Figma 178:3352
+    supportComposerHint: Color(0xFFA1A1A1), // Figma 178:3469
+    supportPillClosedFill: Color.fromRGBO(182, 182, 182, 0.13), // 178:3131
+    supportPillClosedLabel: Color(0xFF444444), // Figma 178:3131
+    supportThreadDivider: Color.fromRGBO(124, 58, 237, 0.1), // Figma 178:3398
   );
 
   /// Dark palette — Figma Login 337:15652.
@@ -2008,6 +2121,29 @@ class AppColors extends ThemeExtension<AppColors> {
     notificationPillSupportLabel: Color(0xFF466EB6), // Figma 180:8807
     notificationPillSystemFill: Color(0xFFC3FDD8), // Figma 180:8791
     notificationPillSystemLabel: Color(0xFF00A73E), // Figma 180:8791
+    // Support tickets — NO dark frame. Every value below is a stand-in that
+    // copies the value of the dark token named beside it, CW12a.
+    supportCardFill: Color(0x33232428), // = cardFill
+    supportSurfaceFill: Color(0x33232428), // = fieldFill
+    supportInk: Color(0xFFFCFBF9), // = textPrimary
+    supportInkMuted: Color(0xFFDCDCDC), // = textSecondary
+    supportRowBorder: Color(0xFF4B675E), // = quizOptionBorder
+    supportOnInk: Color(0xFF232428), // = background
+    supportCreateTitle: Color(0xFFFCFBF9), // = textPrimary
+    supportCreateSubtitle: Color(0xFFDCDCDC), // = textSecondary
+    supportHeadingSubtitle: Color(0xFFECECEC), // = bodyMuted
+    supportInputHint: Color(0xFFB3B3B3), // = mutedText
+    supportComposerHint: Color(0xFFB3B3B3), // = mutedText
+    // The closed pill's fill and the thread divider keep their light values on
+    // both canvases; the pill's label does not (the light grey would not read).
+    supportPillClosedFill: Color.fromRGBO(182, 182, 182, 0.13), // 178:3131
+    supportPillClosedLabel: Color(0xFFDCDCDC), // = textSecondary
+    supportThreadDivider: Color.fromRGBO(
+      124,
+      58,
+      237,
+      0.1,
+    ), // as topStudentBorder
   );
 
   @override
@@ -2211,6 +2347,20 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? notificationPillSupportLabel,
     Color? notificationPillSystemFill,
     Color? notificationPillSystemLabel,
+    Color? supportCardFill,
+    Color? supportSurfaceFill,
+    Color? supportInk,
+    Color? supportInkMuted,
+    Color? supportRowBorder,
+    Color? supportOnInk,
+    Color? supportCreateTitle,
+    Color? supportCreateSubtitle,
+    Color? supportHeadingSubtitle,
+    Color? supportInputHint,
+    Color? supportComposerHint,
+    Color? supportPillClosedFill,
+    Color? supportPillClosedLabel,
+    Color? supportThreadDivider,
   }) {
     return AppColors(
       background: background ?? this.background,
@@ -2455,6 +2605,24 @@ class AppColors extends ThemeExtension<AppColors> {
           notificationPillSystemFill ?? this.notificationPillSystemFill,
       notificationPillSystemLabel:
           notificationPillSystemLabel ?? this.notificationPillSystemLabel,
+      supportCardFill: supportCardFill ?? this.supportCardFill,
+      supportSurfaceFill: supportSurfaceFill ?? this.supportSurfaceFill,
+      supportInk: supportInk ?? this.supportInk,
+      supportInkMuted: supportInkMuted ?? this.supportInkMuted,
+      supportRowBorder: supportRowBorder ?? this.supportRowBorder,
+      supportOnInk: supportOnInk ?? this.supportOnInk,
+      supportCreateTitle: supportCreateTitle ?? this.supportCreateTitle,
+      supportCreateSubtitle:
+          supportCreateSubtitle ?? this.supportCreateSubtitle,
+      supportHeadingSubtitle:
+          supportHeadingSubtitle ?? this.supportHeadingSubtitle,
+      supportInputHint: supportInputHint ?? this.supportInputHint,
+      supportComposerHint: supportComposerHint ?? this.supportComposerHint,
+      supportPillClosedFill:
+          supportPillClosedFill ?? this.supportPillClosedFill,
+      supportPillClosedLabel:
+          supportPillClosedLabel ?? this.supportPillClosedLabel,
+      supportThreadDivider: supportThreadDivider ?? this.supportThreadDivider,
     );
   }
 
@@ -3148,6 +3316,60 @@ class AppColors extends ThemeExtension<AppColors> {
       notificationPillSystemLabel: Color.lerp(
         notificationPillSystemLabel,
         other.notificationPillSystemLabel,
+        t,
+      )!,
+      supportCardFill: Color.lerp(supportCardFill, other.supportCardFill, t)!,
+      supportSurfaceFill: Color.lerp(
+        supportSurfaceFill,
+        other.supportSurfaceFill,
+        t,
+      )!,
+      supportInk: Color.lerp(supportInk, other.supportInk, t)!,
+      supportInkMuted: Color.lerp(supportInkMuted, other.supportInkMuted, t)!,
+      supportRowBorder: Color.lerp(
+        supportRowBorder,
+        other.supportRowBorder,
+        t,
+      )!,
+      supportOnInk: Color.lerp(supportOnInk, other.supportOnInk, t)!,
+      supportCreateTitle: Color.lerp(
+        supportCreateTitle,
+        other.supportCreateTitle,
+        t,
+      )!,
+      supportCreateSubtitle: Color.lerp(
+        supportCreateSubtitle,
+        other.supportCreateSubtitle,
+        t,
+      )!,
+      supportHeadingSubtitle: Color.lerp(
+        supportHeadingSubtitle,
+        other.supportHeadingSubtitle,
+        t,
+      )!,
+      supportInputHint: Color.lerp(
+        supportInputHint,
+        other.supportInputHint,
+        t,
+      )!,
+      supportComposerHint: Color.lerp(
+        supportComposerHint,
+        other.supportComposerHint,
+        t,
+      )!,
+      supportPillClosedFill: Color.lerp(
+        supportPillClosedFill,
+        other.supportPillClosedFill,
+        t,
+      )!,
+      supportPillClosedLabel: Color.lerp(
+        supportPillClosedLabel,
+        other.supportPillClosedLabel,
+        t,
+      )!,
+      supportThreadDivider: Color.lerp(
+        supportThreadDivider,
+        other.supportThreadDivider,
         t,
       )!,
     );
