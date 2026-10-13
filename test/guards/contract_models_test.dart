@@ -153,6 +153,20 @@ void main() {
       dart: 'lib/features/flashcards/models/flashcard.dart',
       dartClass: 'FlashcardCard',
     ),
+    (
+      label: 'QuizHistoryItem (listQuizHistory)',
+      path: ['QuizHistoryItem'],
+      dart: 'lib/features/quiz/models/quiz_history_item.dart',
+      dartClass: 'QuizHistoryItem',
+    ),
+    (
+      // `subjectName` is required AND nullable - the shape a hand-written
+      // model is most likely to drop.
+      label: 'QuizReview (getQuizReview)',
+      path: ['QuizReview'],
+      dart: 'lib/features/quiz/models/quiz_review_page.dart',
+      dartClass: 'QuizReview',
+    ),
   ];
 
   test('the contract is actually being read', () {

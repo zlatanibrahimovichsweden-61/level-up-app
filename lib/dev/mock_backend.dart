@@ -35,6 +35,7 @@ import 'package:dio/dio.dart';
 import '../core/network/interceptors/error_interceptor.dart';
 import 'mock_legal.dart';
 import 'mock_notifications.dart';
+import 'mock_quiz_history.dart';
 import 'mock_support.dart';
 
 /// Builds the Dio that replaces the real client for the mock run.
@@ -151,6 +152,14 @@ class MockBackendInterceptor extends Interceptor {
   /// Fixtures and rules live in `mock_support.dart`; creates and replies persist
   /// for this session.
   final _support = MockSupportDesk();
+
+  /// Quiz history, the quiz review, favourites and the Solved Questions
+  /// number (CW16 data layer): `GET /quizzes`, `GET /quizzes/{id}`, `PUT`/
+  /// `DELETE /questions/{id}/favorite`, `GET /me/favorites` and `GET
+  /// /me/quiz-summary`. Fixtures and rules live in `mock_quiz_history.dart`;
+  /// favourites persist for this session. Its quizzes are its own: a quiz
+  /// finished through `POST /quizzes/{id}/finish` does not appear in it.
+  final _quizHistory = MockQuizHistory();
 
   @override
   Future<void> onRequest(
@@ -356,6 +365,23 @@ class MockBackendInterceptor extends Interceptor {
                     'retry-after': ['$retryAfterSeconds'],
                   },
           );
+      }
+    }
+
+    // ---- quiz history, review, favourites, solved count (CW16a/b) ----------
+    // Six `stable` operations; the data and the contract's rules (started-order
+    // paging, `limit`/`cursor` validation, the two 403s on a review, idempotent
+    // 204 favourites) are in `mock_quiz_history.dart`. `POST /quizzes` and the
+    // rest of the quiz engine are not its routes and are handled further down.
+    final quizHistoryReply = _quizHistory.handle(method, path, query);
+    if (quizHistoryReply != null) {
+      switch (quizHistoryReply) {
+        case MockQuizHistoryOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockQuizHistoryValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockQuizHistoryProblem(:final status, :final code, :final detail):
+          return _problem(handler, options, status, code, detail);
       }
     }
 
