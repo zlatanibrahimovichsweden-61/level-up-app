@@ -33,6 +33,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../core/network/interceptors/error_interceptor.dart';
+import 'mock_deletion.dart';
 import 'mock_friends.dart';
 import 'mock_legal.dart';
 import 'mock_notifications.dart';
@@ -155,6 +156,12 @@ class MockBackendInterceptor extends Interceptor {
   /// for this session.
   final _support = MockSupportDesk();
 
+  /// Account deletion (CW05): `POST`/`DELETE /me/deletion-request`, the
+  /// `pendingDeletion` on `GET /me`, and the default-deny `403
+  /// account_pending_deletion`. Dormant until a deletion is requested - see
+  /// `mock_deletion.dart`.
+  final _deletion = MockAccountDeletion();
+
   /// The caller's Terms acceptance (CW04b): `GET`/`POST
   /// /me/terms-acceptance`. Rules and state live in `mock_terms.dart`.
   final _terms = MockTermsAcceptance();
@@ -186,6 +193,21 @@ class MockBackendInterceptor extends Interceptor {
     final body = options.data is Map
         ? Map<String, dynamic>.from(options.data as Map)
         : const <String, dynamic>{};
+
+    // ---- account deletion (CW05) ------------------------------------------
+    // Both operations are `stable`. While a request is pending this also
+    // answers `403 account_pending_deletion` for every authenticated call
+    // outside the contract's four-endpoint allowlist; with nothing pending it
+    // answers only the two operations and everything else falls through.
+    final deletionReply = _deletion.handle(method, path);
+    if (deletionReply != null) {
+      switch (deletionReply) {
+        case MockDeletionOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockDeletionProblem(:final status, :final code, :final detail):
+          return _problem(handler, options, status, code, detail);
+      }
+    }
 
     // ---- terms acceptance (CW04b) -----------------------------------------
     final termsReply = _terms.handle(method, path, body);
@@ -303,7 +325,12 @@ class MockBackendInterceptor extends Interceptor {
     // Home is powered entirely by GET /me, so without this the whole tab
     // renders its error state on device.
     if (method == 'GET' && path == '/me') {
-      return _ok(handler, options, 200, _currentProfile());
+      return _ok(
+        handler,
+        options,
+        200,
+        _deletion.decorateProfile(_currentProfile()),
+      );
     }
 
     // `updateMyProfile` (API→UI Wave 20). Contract-shaped: every field is
