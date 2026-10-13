@@ -10,9 +10,17 @@ import '../repository/mistakes_repository.dart';
 /// and `404:7110` are the same screen), so there is no branch here and no
 /// `Track` in the state.
 class MistakesOverviewNotifier extends AsyncNotifier<List<MistakesSubject>> {
+  /// Set once the provider is torn down. See [refresh]. Re-armed on EVERY build:
+  /// Riverpod 3 keeps this instance across rebuilds and runs the dispose
+  /// callbacks on each one.
+  bool _disposed = false;
+
   @override
-  Future<List<MistakesSubject>> build() =>
-      ref.watch(mistakesRepositoryProvider).getMistakes();
+  Future<List<MistakesSubject>> build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+    return ref.watch(mistakesRepositoryProvider).getMistakes();
+  }
 
   /// User-tapped retry. Never auto-retried on failure — see
   /// [mistakesOverviewProvider].
@@ -23,7 +31,11 @@ class MistakesOverviewNotifier extends AsyncNotifier<List<MistakesSubject>> {
     // elsewhere in the app. Do not add a new instance of it.
     final repository = ref.read(mistakesRepositoryProvider);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(repository.getMistakes);
+    final next = await AsyncValue.guard(repository.getMistakes);
+    // Assigning `state` after disposal throws too (the student can leave, or
+    // the session can end, mid-flight). The request itself still completes.
+    if (_disposed) return;
+    state = next;
   }
 }
 
@@ -34,20 +46,29 @@ class MistakesOverviewNotifier extends AsyncNotifier<List<MistakesSubject>> {
 /// showing error/offline, and would keep hammering the endpoint on a dead
 /// network. Retry here is a user-tapped button, never silent.
 ///
-/// A plain (non-autoDispose) notifier: the overview is the flow's landing
-/// screen and survives the drill-down, exactly as `subjectsProvider` does. See
-/// [mistakesTreeProvider] for why the TREE is treated differently.
+/// **autoDispose, and that is the session boundary** (E4-05, the same remedy as
+/// `meProvider`, KNOWN_BUGS BUG-015). The overview is the flow's landing screen
+/// and still survives the drill-down, because it stays mounted below the tree
+/// screens, exactly as `subjectsProvider` does. What it no longer does is outlive
+/// the student: it holds a named minor's per-subject wrong-answer counts, and as
+/// a plain provider `invalidateSessionScope` only rebuilt it with the previous
+/// value kept, so the next student on the handset saw those counts until their
+/// own request landed. A sign-out unmounts the shell, and the last listener
+/// leaving drops the element. See [mistakesTreeProvider] for why the TREE is
+/// dropped even sooner.
 ///
 /// ⚠️ **KNOWN GAP, recorded rather than papered over (2026-09-12).** An earlier
 /// draft of this comment claimed the overview "is invalidated deliberately
 /// after a quiz". **It is not.** The only invalidation today is sign-out
-/// (`session_scope.dart:77`).
+/// (`session_scope.dart`).
 ///
 /// That matters, because finishing any quiz can change these counts: the
 /// contract computes `mistakeCount` on every read and a question stops counting
 /// the moment the student's most recent graded answer to it is right
-/// (`openapi.yaml:882-886`). So a student who clears a lesson and returns to a
-/// warm overview sees a count they have already fixed.
+/// (`openapi.yaml:882-886`). So a student who clears a lesson and returns to an
+/// overview that is still mounted below the quiz sees a count they have already
+/// fixed. (Leaving the Mistakes flow altogether now drops the overview, so the
+/// next entry asks again.)
 ///
 /// It is NOT wired here on purpose. The trigger belongs in the caller that
 /// navigates back from the quiz — never in `initState` (BUG-001) — which means
@@ -58,10 +79,10 @@ class MistakesOverviewNotifier extends AsyncNotifier<List<MistakesSubject>> {
 /// The blast radius is bounded: the TREE is `autoDispose`, so the per-subject
 /// counts a student actually drills into are re-fetched every time.
 final mistakesOverviewProvider =
-    AsyncNotifierProvider<MistakesOverviewNotifier, List<MistakesSubject>>(
-      MistakesOverviewNotifier.new,
-      retry: noMistakesRetry,
-    );
+    AsyncNotifierProvider.autoDispose<
+      MistakesOverviewNotifier,
+      List<MistakesSubject>
+    >(MistakesOverviewNotifier.new, retry: noMistakesRetry);
 
 /// `GET /me/mistakes/subjects/{subjectId}`, keyed by subject.
 ///
@@ -114,13 +135,13 @@ class MistakesTreeNotifier extends AsyncNotifier<MistakesTree> {
   }
 }
 
-/// 🔴 **`autoDispose`, and that is the one real difference from the catalog.**
+/// 🔴 **`autoDispose`, and that is what makes the counts honest.**
 ///
-/// `subjectTreeProvider` is deliberately NOT autoDispose and stays warm for the
-/// whole session — correct, because a catalog tree does not change while the
-/// student is looking at it.
+/// `subjectTreeProvider` is autoDispose now too, but for the session boundary
+/// alone: a catalog tree does not change while the student is looking at it, so
+/// nothing about it would be wrong if it stayed warm.
 ///
-/// A mistakes tree DOES. `mistakeCount` counts a question only while the
+/// A mistakes tree DOES change. `mistakeCount` counts a question only while the
 /// student's most recent graded answer to it was wrong, it is recomputed on
 /// every read and never cached server-side, and two requests seconds apart can
 /// legitimately disagree (`openapi.yaml:882-886`). A warm cache would show a

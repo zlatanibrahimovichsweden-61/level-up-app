@@ -11,11 +11,20 @@ import 'subjects_notifier.dart' show noCatalogRetry;
 /// - every level of the stack watches this one provider;
 /// - opening a subject fetches once, and every level below it reads the cached
 ///   object — no second request, no spinner between levels;
-/// - the family is keyed by `subjectId` and is NOT autoDispose, so walking back
-///   up and into another subject keeps the first tree warm for the session.
+/// - the family is keyed by `subjectId` and every level of the drill-down is
+///   still mounted below the one on screen, so walking down and back up one
+///   level keeps the tree warm.
 ///
 /// Re-fetching per level would be the obvious-looking mistake: three extra
 /// round trips for data the client already has.
+///
+/// **autoDispose, and that is the session boundary** (E4-05, the same remedy as
+/// `meProvider`, KNOWN_BUGS BUG-015). The cost is deliberate and small: leaving
+/// a subject for the Learn list drops its tree, and opening it again asks once
+/// more. The alternative kept the previous student's units, chapters and
+/// lessons readable through every rebuild, so the NEXT student on the same
+/// handset saw them until their own answer landed (`invalidateSessionScope`
+/// rebuilds a listened provider with the old value kept; it never disposes it).
 ///
 /// The state is the sealed [SubjectTree], not one track's shape: the same
 /// provider serves a school student (units → chapters → lessons) and a
@@ -27,16 +36,26 @@ class SubjectTreeNotifier extends AsyncNotifier<SubjectTree> {
 
   final String subjectId;
 
+  /// Set when the provider is torn down, so a Retry still in flight does not
+  /// write to a dead notifier. Re-armed on EVERY build (Riverpod 3 keeps this
+  /// instance across rebuilds and runs the dispose callbacks on each one).
+  bool _disposed = false;
+
   @override
-  Future<SubjectTree> build() =>
-      ref.watch(catalogRepositoryProvider).getSubjectTree(subjectId);
+  Future<SubjectTree> build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+    return ref.watch(catalogRepositoryProvider).getSubjectTree(subjectId);
+  }
 
   /// User-tapped retry only — see [subjectTreeProvider].
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(catalogRepositoryProvider).getSubjectTree(subjectId),
     );
+    if (_disposed) return;
+    state = next;
   }
 }
 
@@ -44,8 +63,8 @@ class SubjectTreeNotifier extends AsyncNotifier<SubjectTree> {
 /// would otherwise auto-retry a failed build and hold the state in
 /// `AsyncLoading`, so the screen would show an endless skeleton instead of the
 /// error/offline view.
-final subjectTreeProvider =
-    AsyncNotifierProvider.family<SubjectTreeNotifier, SubjectTree, String>(
+final subjectTreeProvider = AsyncNotifierProvider.autoDispose
+    .family<SubjectTreeNotifier, SubjectTree, String>(
       SubjectTreeNotifier.new,
       retry: noCatalogRetry,
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
@@ -179,6 +181,134 @@ void main() {
       await container.read(subjectTreeProvider('sub-1').notifier).refresh();
 
       verify(() => repo.getSubjectTree('sub-1')).called(2);
+    });
+  });
+
+  // E4-04 / E4-05. Both providers are autoDispose: the session boundary is the
+  // shell unmounting at sign-out and the last listener leaving, NOT
+  // invalidateSessionScope (Riverpod 3 rebuilds an invalidated provider that is
+  // still listened, with the previous value kept). What must not change is that
+  // a mounted screen keeps the value warm.
+  group('session boundary (autoDispose)', () {
+    test(
+      'subjects: warm while a screen listens, gone with the last one',
+      () async {
+        when(repo.getSubjects).thenAnswer((_) async => subjects());
+        final container = makeContainer();
+        final screen = container.listen(subjectsProvider, (_, _) {});
+        await container.read(subjectsProvider.future);
+
+        // Tab switches and the drill-down: the Learn screen is still mounted.
+        await pumpEventQueue();
+        container.read(subjectsProvider);
+        expect(container.exists(subjectsProvider), isTrue);
+        verify(repo.getSubjects).called(1);
+
+        screen.close();
+        await pumpEventQueue();
+        expect(container.exists(subjectsProvider), isFalse);
+      },
+    );
+
+    test('subjects: a Retry still in flight when the provider is disposed '
+        'raises no unhandled error', () async {
+      when(repo.getSubjects).thenAnswer((_) async => subjects());
+      final container = makeContainer();
+      final screen = container.listen(subjectsProvider, (_, _) {});
+      await container.read(subjectsProvider.future);
+
+      final gate = Completer<List<Subject>>();
+      when(repo.getSubjects).thenAnswer((_) => gate.future);
+      final retry = container.read(subjectsProvider.notifier).refresh();
+      screen.close(); // the session ended under the Retry
+      await pumpEventQueue();
+      expect(container.exists(subjectsProvider), isFalse);
+
+      gate.complete(<Subject>[]);
+      await retry; // writing to the dead notifier would throw here
+    });
+
+    test('subjects: a Retry still lands after the provider was rebuilt in '
+        'use', () async {
+      when(repo.getSubjects).thenAnswer((_) async => subjects());
+      final container = makeContainer();
+      container.listen(subjectsProvider, (_, _) {});
+      await container.read(subjectsProvider.future);
+
+      container.invalidate(subjectsProvider);
+      await container.read(subjectsProvider.future);
+
+      when(repo.getSubjects).thenAnswer((_) async => <Subject>[]);
+      await container.read(subjectsProvider.notifier).refresh();
+
+      expect(container.read(subjectsProvider).value, isEmpty);
+    });
+
+    test('subject tree: warm while a screen listens, gone with the last one, '
+        'and each subject is its own element', () async {
+      when(
+        () => repo.getSubjectTree(any()),
+      ).thenAnswer((_) async => schoolTree());
+      final container = makeContainer();
+      final one = container.listen(subjectTreeProvider('sub-1'), (_, _) {});
+      final two = container.listen(subjectTreeProvider('sub-2'), (_, _) {});
+      await container.read(subjectTreeProvider('sub-1').future);
+      await container.read(subjectTreeProvider('sub-2').future);
+
+      // Units, Chapters and Lessons are all mounted: ONE fetch per subject.
+      container.read(subjectTreeProvider('sub-1'));
+      verify(() => repo.getSubjectTree('sub-1')).called(1);
+
+      one.close();
+      await pumpEventQueue();
+      expect(container.exists(subjectTreeProvider('sub-1')), isFalse);
+      expect(container.exists(subjectTreeProvider('sub-2')), isTrue);
+      two.close();
+    });
+
+    test('subject tree: a Retry still in flight when the provider is disposed '
+        'raises no unhandled error', () async {
+      when(
+        () => repo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) async => schoolTree());
+      final container = makeContainer();
+      final screen = container.listen(subjectTreeProvider('sub-1'), (_, _) {});
+      await container.read(subjectTreeProvider('sub-1').future);
+
+      final gate = Completer<SubjectTree>();
+      when(() => repo.getSubjectTree('sub-1')).thenAnswer((_) => gate.future);
+      final retry = container
+          .read(subjectTreeProvider('sub-1').notifier)
+          .refresh();
+      screen.close();
+      await pumpEventQueue();
+      expect(container.exists(subjectTreeProvider('sub-1')), isFalse);
+
+      gate.complete(schoolTree());
+      await retry;
+    });
+
+    test('subject tree: a Retry still lands after the provider was rebuilt in '
+        'use', () async {
+      when(
+        () => repo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) async => schoolTree());
+      final container = makeContainer();
+      container.listen(subjectTreeProvider('sub-1'), (_, _) {});
+      await container.read(subjectTreeProvider('sub-1').future);
+
+      container.invalidate(subjectTreeProvider('sub-1'));
+      await container.read(subjectTreeProvider('sub-1').future);
+
+      when(
+        () => repo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) async => universityTree());
+      await container.read(subjectTreeProvider('sub-1').notifier).refresh();
+
+      expect(
+        container.read(subjectTreeProvider('sub-1')).value,
+        isA<UniversitySubjectTree>(),
+      );
     });
   });
 

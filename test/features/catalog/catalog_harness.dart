@@ -44,6 +44,17 @@ Future<ProviderContainer> pumpCatalogApp(
   bool online = true,
   Track track = Track.school,
 }) async {
+  // A test may open the app twice (a text-scale comparison does). Unmount the
+  // first tree HERE, while its container's flutter vsync is still registered,
+  // so the autoDispose session providers (subjects, subject tree, Mistakes
+  // overview; E4-04/05) are dropped on the frame. Swapping the scope instead
+  // removes that vsync first and Riverpod schedules their disposal on a
+  // zero-length Timer, which the binding reports as pending.
+  if (find.byType(UncontrolledProviderScope).evaluate().isNotEmpty) {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+  }
+
   final storage = MockSecureStorage();
   when(() => storage.readAccessToken()).thenAnswer((_) async => 'access');
   when(() => storage.clearTokens()).thenAnswer((_) async {});

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
@@ -139,6 +142,93 @@ void main() {
       expect(state, isA<AsyncData<StudentProfile>>());
       expect(state.value!.name, 'Mona Adel');
     });
+  });
+
+  // E4-03. A plain entitlementsProvider outlived the session: invalidating it
+  // while a screen listened rebuilt it (registering a NEW resume listener) and
+  // the element was never disposed, so every later app resume sent a tokenless
+  // GET /me/entitlements. autoDispose ends the resume hook with the shell.
+  group('entitlementsProvider · autoDispose (E4-03)', () {
+    /// resumed -> inactive -> hidden -> paused -> hidden -> inactive -> resumed
+    void resume() {
+      final binding = TestWidgetsFlutterBinding.instance;
+      for (final state in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        binding.handleAppLifecycleStateChanged(state);
+      }
+    }
+
+    test('a resume refetches while a screen listens, and not any more once the '
+        'last listener has gone', () async {
+      when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+      final container = makeContainer();
+      final screen = container.listen(entitlementsProvider, (_, _) {});
+      await container.read(entitlementsProvider.future);
+      verify(repo.getEntitlements).called(1);
+
+      resume();
+      await pumpEventQueue();
+      verify(repo.getEntitlements).called(1);
+
+      screen.close(); // the shell unmounts at the sign-out
+      await pumpEventQueue();
+      expect(container.exists(entitlementsProvider), isFalse);
+
+      resume();
+      resume();
+      await pumpEventQueue();
+      verifyNever(repo.getEntitlements);
+    });
+
+    test('a resume refetch whose answer lands AFTER the provider was disposed '
+        'raises no unhandled error', () async {
+      when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+      final container = makeContainer();
+      final screen = container.listen(entitlementsProvider, (_, _) {});
+      await container.read(entitlementsProvider.future);
+
+      final gate = Completer<List<EntitlementState>>();
+      when(repo.getEntitlements).thenAnswer((_) => gate.future);
+      resume(); // the refetch is now in flight
+      await pumpEventQueue();
+
+      screen.close();
+      await pumpEventQueue();
+      expect(container.exists(entitlementsProvider), isFalse);
+
+      // Landing on a dead notifier would throw into the zone, which the test
+      // binding reports as a failure.
+      gate.complete(<EntitlementState>[]);
+      await pumpEventQueue();
+    });
+
+    test(
+      'a refresh still lands after the provider was rebuilt in use',
+      () async {
+        // A disposal flag left set by the rebuild's dispose callbacks would
+        // swallow the next refetch (Riverpod 3 keeps the notifier instance).
+        when(repo.getEntitlements).thenAnswer((_) async => [baseEntitlement]);
+        final container = makeContainer();
+        container.listen(entitlementsProvider, (_, _) {});
+        await container.read(entitlementsProvider.future);
+
+        container.invalidate(entitlementsProvider);
+        await container.read(entitlementsProvider.future);
+
+        when(
+          repo.getEntitlements,
+        ).thenAnswer((_) async => <EntitlementState>[]);
+        await container.read(entitlementsProvider.notifier).refresh();
+
+        expect(container.read(entitlementsProvider).value, isEmpty);
+      },
+    );
   });
 
   group('entitlementsProvider', () {

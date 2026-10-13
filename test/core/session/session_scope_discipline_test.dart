@@ -161,6 +161,88 @@ void main() {
     );
   });
 
+  /// Providers `session_scope.dart` invalidates that are deliberately NOT
+  /// `autoDispose`. The only honest reason is that `build` fetches nothing, so
+  /// the rebuild an invalidation causes IS the initial state and there is no
+  /// request to make with a deleted token and no previous value worth hiding.
+  /// Adding to this list is a decision; the comment beside each is the record.
+  const plainByDesign = <String, String>{
+    'loginProvider':
+        'build() => null without a request: the rebuild is the idle state. '
+        'The login screen only reads isLoading/hasError from it.',
+    'registrationControllerProvider':
+        'A synchronous Notifier whose build() is null: the rebuild IS the '
+        'empty draft, and a sync notifier has no previous value to carry.',
+    'registrationSubmitProvider':
+        'build() fetches nothing (it resets to a null outcome whenever the '
+        'draft changes): the rebuild is the idle state.',
+  };
+
+  test('every provider the session scope invalidates is autoDispose, bar the '
+      'fetch-free pre-account holders', () {
+    // E4-04/05. `ref.invalidate` on a provider that still has a listener does
+    // NOT dispose it: Riverpod 3 rebuilds it, keeps the previous value through
+    // the rebuild (the next student reads the last one's data until their own
+    // answer lands) and, if build() fetches, fetches with the token the sign-out
+    // just deleted (the 401 is cached into the next session). What actually
+    // drops the state is the shell unmounting and the last listener leaving an
+    // autoDispose element. So "invalidated" proves nothing about a plain
+    // provider, and the first scan above (which counts it as "cleared") is not
+    // enough: this one is.
+    final declared = <String, String>{};
+    for (final file in libSources()) {
+      for (final match in declaration.allMatches(file.readAsStringSync())) {
+        declared[match.group(1)!] = match.group(2)!;
+      }
+    }
+
+    final plain = <String>[
+      for (final name in invalidatedProviders())
+        if (declared[name] case final body?
+            when !body.contains('autoDispose') &&
+                !plainByDesign.containsKey(name))
+          name,
+    ];
+
+    expect(
+      plain,
+      isEmpty,
+      reason:
+          'These providers are invalidated at sign-out but are not '
+          'autoDispose, so a screen that is still mounted keeps the previous '
+          "student's value (and the signed-out 401) alive into the next "
+          'session. Make them autoDispose, or - only if build() fetches '
+          'nothing - add them to plainByDesign WITH the reason:\n'
+          '${plain.join('\n')}',
+    );
+  });
+
+  test('the plain-by-design list has no stale entries', () {
+    final declared = <String, String>{};
+    for (final file in libSources()) {
+      for (final match in declaration.allMatches(file.readAsStringSync())) {
+        declared[match.group(1)!] = match.group(2)!;
+      }
+    }
+    final invalidated = invalidatedProviders();
+
+    final stale = [
+      for (final name in plainByDesign.keys)
+        if (!invalidated.contains(name) ||
+            (declared[name] ?? '').contains('autoDispose'))
+          name,
+    ];
+
+    expect(
+      stale,
+      isEmpty,
+      reason:
+          'These are listed as plain-by-design but are no longer invalidated '
+          'at sign-out, or are autoDispose now. Delete the entries: '
+          '${stale.join(', ')}',
+    );
+  });
+
   test('the exemption list has no stale entries', () {
     final declared = <String>{};
     for (final file in libSources()) {

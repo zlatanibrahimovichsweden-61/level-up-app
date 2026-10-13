@@ -2,14 +2,20 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/router/return_target.dart';
 import 'package:level_up_app/core/storage/secure_storage.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
 import 'package:level_up_app/features/auth/repository/auth_repository.dart';
 import 'package:level_up_app/features/catalog/models/subject.dart';
+import 'package:level_up_app/features/catalog/models/subject_tree.dart';
+import 'package:level_up_app/features/catalog/notifier/subject_tree_notifier.dart';
 import 'package:level_up_app/features/catalog/notifier/subjects_notifier.dart';
 import 'package:level_up_app/features/catalog/repository/catalog_repository.dart';
+import 'package:level_up_app/features/mistakes/models/mistakes_subject.dart';
+import 'package:level_up_app/features/mistakes/notifier/mistakes_notifiers.dart';
+import 'package:level_up_app/features/mistakes/repository/mistakes_repository.dart';
 import 'package:level_up_app/features/profile/models/entitlement_state.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/notifier/me_notifier.dart';
@@ -19,6 +25,7 @@ import 'package:level_up_app/features/registration/notifier/registration_control
 import 'package:mocktail/mocktail.dart';
 
 import '../../features/catalog/catalog_fixtures.dart';
+import '../../features/mistakes/mistakes_fixtures.dart';
 import '../../features/profile/profile_fixtures.dart';
 
 /// Tier-0 finding C-2 — session data leakage across sign-outs.
@@ -47,6 +54,8 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockCatalogRepository extends Mock implements CatalogRepository {}
 
+class _MockMistakesRepository extends Mock implements MistakesRepository {}
+
 /// Student B: the same contract shape, different human.
 Map<String, dynamic> _studentBProfileJson() => <String, dynamic>{
   ...schoolProfileJson(),
@@ -68,12 +77,14 @@ void main() {
   late _MockAuthRepository authRepo;
   late _MockProfileRepository profileRepo;
   late _MockCatalogRepository catalogRepo;
+  late _MockMistakesRepository mistakesRepo;
 
   setUp(() {
     storage = _MockStorage();
     authRepo = _MockAuthRepository();
     profileRepo = _MockProfileRepository();
     catalogRepo = _MockCatalogRepository();
+    mistakesRepo = _MockMistakesRepository();
 
     // A live session: the controller resolves to authenticated on build.
     when(() => storage.readAccessToken()).thenAnswer((_) async => 'access-a');
@@ -89,6 +100,7 @@ void main() {
         authRepositoryProvider.overrideWithValue(authRepo),
         profileRepositoryProvider.overrideWithValue(profileRepo),
         catalogRepositoryProvider.overrideWithValue(catalogRepo),
+        mistakesRepositoryProvider.overrideWithValue(mistakesRepo),
       ],
     );
     addTearDown(container.dispose);
@@ -194,6 +206,172 @@ void main() {
       await container.read(meProvider.future);
       verify(profileRepo.getMe).called(1); // a SECOND call, not a cache hit
     });
+  });
+
+  // E4-04 / E4-05. Scenarios A and B run with NO screen listening, which is the
+  // one order in which a plain `ref.invalidate` does clear a provider. The real
+  // order is the other one: the Learn tab (or a drill-down screen) is mounted
+  // when the session ends, so the invalidated provider is REBUILT while
+  // listened, keeps the previous value through the rebuild, and fetches with the
+  // token the sign-out just deleted; the shell unmounts a frame later and the
+  // next student reads what is left. Each case below walks exactly that order:
+  // a listener (the screen), the sign-out, a rebuild round, the listener closing
+  // (the unmount), then the NEXT student's screen opening with their own answer
+  // still in flight. They fail on the plain (non-autoDispose) providers.
+  group('Scenario C — a screen is still listening when the session ends', () {
+    /// The tick in which the scheduler rebuilds an invalidated, listened
+    /// provider (and the sign-out rebuild's fetch is answered).
+    Future<void> rebuildRound() => pumpEventQueue();
+
+    test('subjects: B sees a loading state, not the previous subjects and '
+        'progress, while their own answer is in flight', () async {
+      final container = makeContainer();
+      await settleAuth(container);
+      stubStudentA();
+      final screen = container.listen(subjectsProvider, (_, _) {});
+      expect(await container.read(subjectsProvider.future), isNotEmpty);
+
+      await container.read(authControllerProvider.notifier).logout();
+      await rebuildRound();
+      screen.close(); // the shell unmounts
+      await rebuildRound();
+
+      final gate = Completer<List<Subject>>();
+      when(catalogRepo.getSubjects).thenAnswer((_) => gate.future);
+      container.listen(subjectsProvider, (_, _) {});
+      final inFlight = container.read(subjectsProvider);
+
+      expect(inFlight.isLoading, isTrue);
+      expect(
+        inFlight.hasValue,
+        isFalse,
+        reason: "A's subjects (with A's progress) are still readable",
+      );
+      expect(inFlight.hasError, isFalse);
+
+      gate.complete(<Subject>[]);
+      expect(await container.read(subjectsProvider.future), isEmpty);
+    });
+
+    test('subjects: the 401 the sign-out rebuild earned is NOT carried into '
+        "the next session - B's screen asks for itself", () async {
+      final container = makeContainer();
+      await settleAuth(container);
+      stubStudentA();
+      final screen = container.listen(subjectsProvider, (_, _) {});
+      await container.read(subjectsProvider.future);
+
+      // From the sign-out on, the server answers like it does with no token.
+      when(catalogRepo.getSubjects).thenAnswer(
+        (_) => Future<List<Subject>>.error(
+          const UnauthorizedException(code: 'authentication_required'),
+        ),
+      );
+      await container.read(authControllerProvider.notifier).logout();
+      await rebuildRound(); // the tokenless rebuild fails
+      screen.close();
+      await rebuildRound();
+
+      stubStudentB();
+      container.listen(subjectsProvider, (_, _) {});
+      expect(
+        container.read(subjectsProvider).hasError,
+        isFalse,
+        reason: "the previous session's signed-out error is the next one's",
+      );
+      expect(await container.read(subjectsProvider.future), isEmpty);
+    });
+
+    test('subject tree: B sees none of the previous units while their own '
+        'answer is in flight', () async {
+      final container = makeContainer();
+      await settleAuth(container);
+      when(
+        () => catalogRepo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) async => schoolTree());
+      final screen = container.listen(subjectTreeProvider('sub-1'), (_, _) {});
+      await container.read(subjectTreeProvider('sub-1').future);
+
+      await container.read(authControllerProvider.notifier).logout();
+      await rebuildRound();
+      screen.close();
+      await rebuildRound();
+
+      final gate = Completer<SubjectTree>();
+      when(
+        () => catalogRepo.getSubjectTree('sub-1'),
+      ).thenAnswer((_) => gate.future);
+      container.listen(subjectTreeProvider('sub-1'), (_, _) {});
+      final inFlight = container.read(subjectTreeProvider('sub-1'));
+
+      expect(inFlight.isLoading, isTrue);
+      expect(inFlight.hasValue, isFalse, reason: "A's unit tree is readable");
+      expect(inFlight.hasError, isFalse);
+
+      gate.complete(universityTree());
+      expect(
+        await container.read(subjectTreeProvider('sub-1').future),
+        isA<UniversitySubjectTree>(),
+      );
+    });
+
+    test('mistakes overview: B sees none of the previous wrong-answer counts '
+        'while their own answer is in flight', () async {
+      final container = makeContainer();
+      await settleAuth(container);
+      when(
+        mistakesRepo.getMistakes,
+      ).thenAnswer((_) async => mistakesOverview());
+      final screen = container.listen(mistakesOverviewProvider, (_, _) {});
+      expect(await container.read(mistakesOverviewProvider.future), isNotEmpty);
+
+      await container.read(authControllerProvider.notifier).logout();
+      await rebuildRound();
+      screen.close();
+      await rebuildRound();
+
+      final gate = Completer<List<MistakesSubject>>();
+      when(mistakesRepo.getMistakes).thenAnswer((_) => gate.future);
+      container.listen(mistakesOverviewProvider, (_, _) {});
+      final inFlight = container.read(mistakesOverviewProvider);
+
+      expect(inFlight.isLoading, isTrue);
+      expect(
+        inFlight.hasValue,
+        isFalse,
+        reason: "A's per-subject mistake counts are still readable",
+      );
+      expect(inFlight.hasError, isFalse);
+
+      gate.complete(<MistakesSubject>[]);
+      expect(await container.read(mistakesOverviewProvider.future), isEmpty);
+    });
+
+    test(
+      'a FORCED sign-out behaves the same (the dead-refresh path)',
+      () async {
+        final container = makeContainer();
+        await settleAuth(container);
+        stubStudentA();
+        final screen = container.listen(subjectsProvider, (_, _) {});
+        await container.read(subjectsProvider.future);
+
+        await container
+            .read(authControllerProvider.notifier)
+            .forceLogout(LogoutReason.sessionExpired);
+        await rebuildRound();
+        screen.close();
+        await rebuildRound();
+
+        expect(container.exists(subjectsProvider), isFalse);
+        final gate = Completer<List<Subject>>();
+        when(catalogRepo.getSubjects).thenAnswer((_) => gate.future);
+        container.listen(subjectsProvider, (_, _) {});
+        expect(container.read(subjectsProvider).hasValue, isFalse);
+        gate.complete(<Subject>[]);
+        await container.read(subjectsProvider.future);
+      },
+    );
   });
 
   group('Scenario B — forced logout during registration', () {

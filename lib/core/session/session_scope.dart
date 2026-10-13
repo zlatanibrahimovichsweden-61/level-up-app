@@ -33,6 +33,23 @@ import '../../features/registration/notifier/school_search_notifier.dart';
 /// non-`autoDispose` notifier appears in `lib/features/` without being
 /// classified here.
 ///
+/// **Invalidating is NOT what clears a provider; `autoDispose` is.** Riverpod 3
+/// never disposes an invalidated element that still has a listener: it REBUILDS
+/// it, keeps the previous value through the rebuild (`copyWithPrevious`) and, if
+/// the rebuild fetches, makes that fetch with the token the sign-out just
+/// deleted. A plain provider invalidated here while its screen was mounted
+/// therefore (a) showed the ending student's data to the next one until the
+/// next one's own request landed and (b) cached the signed-out 401 into the
+/// next session (E4-04/05, BUG-015). What really drops the state is the shell
+/// unmounting at sign-out and the last listener leaving an `autoDispose`
+/// element, so the next session builds from nothing. The calls below remain
+/// because they close the frame-width window before the unmount and drop an
+/// element nobody listens to, but they are not the boundary. So every notifier
+/// in this inventory that FETCHES must be `autoDispose`
+/// (`session_scope_discipline_test.dart` fails otherwise); the only exceptions
+/// are the three pre-account holders, whose `build` fetches nothing and whose
+/// rebuild is simply their initial state.
+///
 /// **What is deliberately NOT here.**
 /// - `authControllerProvider` — this runs *from inside* it; invalidating the
 ///   provider mid-logout would tear down the notifier that is mid-teardown.
@@ -78,10 +95,15 @@ void invalidateSessionScope(Ref ref) {
   // is the shell unmounting at sign-out. This invalidation only rebuilds it for
   // the frame before that, with no token (the 401 `forceLogout` absorbs).
   ref.invalidate(meProvider); // name, phone, DOB, school, governorate
+  // autoDispose too (E4-03): a plain one outlived the shell, and the resume
+  // listener its rebuild registered sent a tokenless request on every resume.
   ref.invalidate(entitlementsProvider); // what this student paid for
   ref.invalidate(editProfileProvider); // in-flight edits to the above
 
   // --- Catalogue: scoped to enrolment, never to entitlement (adr-091). --------
+  // Both autoDispose (E4-04/05). Plain, they kept the previous student's
+  // subjects, PROGRESS and unit trees through the rebuild and cached the
+  // signed-out 401 into the next session.
   ref.invalidate(subjectsProvider);
   ref.invalidate(subjectTreeProvider); // family — clears every subject id
 
@@ -89,11 +111,13 @@ void invalidateSessionScope(Ref ref) {
   // `GET /me/mistakes` returns the subjects this student currently has wrong
   // answers in, with live counts. That is a record of what one named minor is
   // failing at — exactly the Tier-0 C-2 class of leak, and worse than the
-  // catalogue, which is merely their cohort's syllabus. `mistakesOverviewProvider`
-  // is non-autoDispose (it survives the drill-down deliberately), so it MUST be
-  // dropped here. `mistakesTreeProvider` is autoDispose by design — the counts
-  // decay on every read — but is invalidated anyway to close the frame-width
-  // window where a forced logout lands while a tree is still mounted.
+  // catalogue, which is merely their cohort's syllabus. Both providers are
+  // autoDispose (E4-05): the overview used to be plain because it survives the
+  // drill-down, which it still does — it stays mounted below the tree screens —
+  // but plain also meant it outlived the student. The tree is autoDispose by
+  // design too, because the counts decay on every read. The invalidations close
+  // the frame-width window where a forced logout lands while a screen is still
+  // mounted; the unmount is what drops the element.
   ref.invalidate(mistakesOverviewProvider);
   ref.invalidate(mistakesTreeProvider); // family — clears every subject id
 

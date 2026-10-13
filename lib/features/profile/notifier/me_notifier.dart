@@ -75,11 +75,30 @@ Duration? _noRetry(int retryCount, Object error) => null;
 /// Refetched on app RESUME as the contract instructs: a student can buy on the
 /// website and come back, and the app must not keep showing the stale state.
 /// The listener is torn down with the provider.
+///
+/// **autoDispose, and that is what ends the listener with the session** (E4-03,
+/// the same remedy as `meProvider`, KNOWN_BUGS BUG-015). As a plain provider it
+/// outlived the student: `invalidateSessionScope` rebuilt it while a screen was
+/// still listening, the rebuild registered a NEW resume listener, and the
+/// element was never disposed — so every later app resume sent a tokenless
+/// `GET /me/entitlements` for as long as the process lived. Now the sign-out
+/// unmounts the shell, the last listener leaving drops the element, and the
+/// resume hook goes with it.
 class EntitlementsNotifier extends AsyncNotifier<List<EntitlementState>> {
+  /// Set when the provider is torn down, so a resume refetch whose answer lands
+  /// AFTER the session ended does not write to a dead notifier. Re-armed on
+  /// EVERY build (Riverpod 3 keeps this instance across rebuilds and runs the
+  /// dispose callbacks on each one).
+  bool _disposed = false;
+
   @override
   Future<List<EntitlementState>> build() {
+    _disposed = false;
     final listener = AppLifecycleListener(onResume: refresh);
-    ref.onDispose(listener.dispose);
+    ref.onDispose(() {
+      _disposed = true;
+      listener.dispose();
+    });
     return ref.watch(profileRepositoryProvider).getEntitlements();
   }
 
@@ -88,14 +107,19 @@ class EntitlementsNotifier extends AsyncNotifier<List<EntitlementState>> {
   /// paywall the student is looking at would be a visible flicker they never
   /// asked for. The previous value stays on screen until the new one lands.
   Future<void> refresh() async {
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(profileRepositoryProvider).getEntitlements(),
     );
+    if (_disposed) return;
+    state = next;
   }
 }
 
 final entitlementsProvider =
-    AsyncNotifierProvider<EntitlementsNotifier, List<EntitlementState>>(
+    AsyncNotifierProvider.autoDispose<
+      EntitlementsNotifier,
+      List<EntitlementState>
+    >(
       EntitlementsNotifier.new,
       retry: _noRetry, // same reasoning as meProvider
     );

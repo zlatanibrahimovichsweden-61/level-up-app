@@ -5,20 +5,39 @@ import '../repository/catalog_repository.dart';
 
 /// `GET /catalog/subjects` — the Learn tab's landing list.
 ///
-/// A plain (non-autoDispose) [AsyncNotifier] so the list survives tab switches
-/// and the whole Units → Chapters → Lessons drill-down: coming back up must not
-/// re-fetch and re-flash a skeleton.
+/// **autoDispose, and that is the session boundary** (E4-04/05, the same
+/// remedy as `meProvider`, KNOWN_BUGS BUG-015). The list still survives tab
+/// switches and the whole Units → Chapters → Lessons drill-down, because the
+/// Learn branch and its Subjects screen stay mounted (a hidden tab's listener is
+/// paused, not removed), so coming back up does not re-fetch or re-flash a
+/// skeleton. What it no longer does is outlive the student: a sign-out unmounts
+/// the shell and the last listener leaving drops the element, so the NEXT
+/// student's first read builds from nothing. As a plain provider it was only
+/// ever invalidated by `invalidateSessionScope`, which keeps the previous value
+/// through the rebuild — the previous student's subjects and PROGRESS rendered
+/// under the next one while their own request was in flight, and a rebuild made
+/// with no token at the sign-out cached its 401 into the next session.
 class SubjectsNotifier extends AsyncNotifier<List<Subject>> {
+  /// Set when the provider is torn down, so a Retry still in flight does not
+  /// write to a dead notifier. Re-armed on EVERY build: Riverpod 3 keeps this
+  /// instance across rebuilds and runs the dispose callbacks on each one.
+  bool _disposed = false;
+
   @override
-  Future<List<Subject>> build() =>
-      ref.watch(catalogRepositoryProvider).getSubjects();
+  Future<List<Subject>> build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+    return ref.watch(catalogRepositoryProvider).getSubjects();
+  }
 
   /// User-tapped retry. Never auto-retried on failure — see [subjectsProvider].
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
+    final next = await AsyncValue.guard(
       () => ref.read(catalogRepositoryProvider).getSubjects(),
     );
+    if (_disposed) return;
+    state = next;
   }
 }
 
@@ -28,10 +47,11 @@ class SubjectsNotifier extends AsyncNotifier<List<Subject>> {
 /// screen would sit on its skeleton forever rather than showing error/offline,
 /// and would keep hammering the endpoint on a dead network. Retry here is a
 /// user-tapped button, never silent.
-final subjectsProvider = AsyncNotifierProvider<SubjectsNotifier, List<Subject>>(
-  SubjectsNotifier.new,
-  retry: noCatalogRetry,
-);
+final subjectsProvider =
+    AsyncNotifierProvider.autoDispose<SubjectsNotifier, List<Subject>>(
+      SubjectsNotifier.new,
+      retry: noCatalogRetry,
+    );
 
 /// Returning `null` tells Riverpod not to schedule a retry.
 Duration? noCatalogRetry(int retryCount, Object error) => null;
