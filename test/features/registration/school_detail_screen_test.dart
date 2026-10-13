@@ -31,7 +31,7 @@ void main() {
   void seedSchoolDraft(ProviderContainer container) {
     container.read(registrationControllerProvider.notifier)
       ..start(regArgs)
-      ..setIdentity(name: 'Nour Hassan', parentPhone: '+201021871999')
+      ..setIdentity(name: 'Nour Hassan', parentPhone: '+2010000000001')
       ..setTrack(RegTrack.school);
   }
 

@@ -614,7 +614,9 @@ class MockBackendInterceptor extends Interceptor {
   /// `finish` moves (so re-fetching after a quiz shows the award, exactly as it
   /// will in production), the registered city, and whatever `PATCH /me` changed.
   Map<String, dynamic> _currentProfile() {
-    const phone = '+201021871999';
+    // The staging smoke account: eleven digits after +20, so no real Egyptian
+    // mobile can have it (N-26 — the old sample here was a real number).
+    const phone = '+2010000000001';
     final profile = _isUniversity
         ? _universityProfile(
             phone: phone,

@@ -43,7 +43,7 @@ Map<String, dynamic> _schoolBody({
   if (includeSchoolName) 'schoolName': 'Some Free Text',
   'stage': 'secondary1',
   'educationSystem': 'ig',
-  'parentPhone': '+201021871999',
+  'parentPhone': '+2010000000001',
 };
 
 void main() {

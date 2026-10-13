@@ -16,7 +16,7 @@ import '../../core/visual_order.dart';
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600,
-  phone: '+201021871999',
+  phone: '+2010000000001',
 );
 
 Widget _marker(String text) => Scaffold(body: Center(child: Text(text)));
@@ -89,7 +89,7 @@ void main() {
     ) async {
       await _pump(tester, '/register');
 
-      expect(find.text('+201021871999'), findsOneWidget);
+      expect(find.text('+2010000000001'), findsOneWidget);
       // Name, Parent's Number, Referral are the only editable fields — the phone
       // is a read-only Text, so exactly three TextFields exist.
       expect(find.byType(TextField), findsNWidgets(3));

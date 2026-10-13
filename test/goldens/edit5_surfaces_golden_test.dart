@@ -162,7 +162,7 @@ void main() {
             // body, which is where the notifier cancels its own timer.
             child: OtpScreen(
               args: OtpArgs(
-                phone: '+201021871999',
+                phone: '+2010000000001',
                 resendAfterSeconds: 21,
                 expiresInSeconds: 300,
               ),

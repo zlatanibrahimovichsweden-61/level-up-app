@@ -28,7 +28,7 @@ RegistrationDraft _draft({
   String? studyYearId,
   DateTime? dateOfBirth,
   String? name = 'Nour Hassan',
-  String? parentPhone = '+201021871999',
+  String? parentPhone = '+2010000000001',
   String? referralCode = 'FRIEND50',
 }) {
   return RegistrationDraft(
@@ -121,7 +121,7 @@ void main() {
       expect(json['schoolId'], 'school-42');
       expect(json['stage'], 'secondary1');
       expect(json['educationSystem'], 'ig');
-      expect(json['parentPhone'], '+201021871999');
+      expect(json['parentPhone'], '+2010000000001');
     });
 
     test('schoolName does not exist on this contract at all (adr-028 §2)', () {
@@ -330,7 +330,7 @@ void main() {
       expect(json['studyYearId'], 'year-2');
       expect(json['governorateId'], 'gov-giza');
       expect(json['cityId'], 'city-dokki');
-      expect(json['parentPhone'], '+201021871999');
+      expect(json['parentPhone'], '+2010000000001');
     });
 
     test('carries NO countryCode — Egypt-only by shape (adr-010)', () {
@@ -376,7 +376,7 @@ void main() {
         device: _device,
       ).toJson();
       expect(json['name'], 'Nour Hassan');
-      expect(json['parentPhone'], '+201021871999');
+      expect(json['parentPhone'], '+2010000000001');
     });
   });
 

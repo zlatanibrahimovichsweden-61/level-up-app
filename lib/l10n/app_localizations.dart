@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneHint.
   ///
   /// In en, this message translates to:
-  /// **'01021871999'**
+  /// **'01X XXXX XXXX'**
   String get phoneHint;
 
   /// No description provided for @sendOtp.

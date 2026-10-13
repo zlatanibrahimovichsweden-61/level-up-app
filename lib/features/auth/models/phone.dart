@@ -2,7 +2,7 @@
 /// this mirrors the contract's `Phone` schema exactly:
 ///   pattern ^\+[1-9][0-9]{7,14}$  (e.g. +201001234567)
 ///
-/// The Login field collects a local Egyptian number (placeholder 01021871999)
+/// The Login field collects a local Egyptian number (placeholder 01X XXXX XXXX)
 /// behind a fixed +20 chip; [tryParse] normalizes that to E.164 before it ever
 /// reaches the repository. A small plain class (freezed optional per the brief).
 library;
@@ -10,7 +10,7 @@ library;
 class Phone {
   const Phone._(this.e164);
 
-  /// The normalized E.164 string, e.g. `+201021871999`. This is what is sent
+  /// The normalized E.164 string, e.g. `+2010000000001`. This is what is sent
   /// to `POST /auth/otp/request` and `/auth/otp/verify`.
   final String e164;
 

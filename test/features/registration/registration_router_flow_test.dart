@@ -36,8 +36,8 @@ class _MockAuthRepository extends Mock implements AuthRepository {}
 class _MockSecureStorage extends Mock implements SecureStorage {}
 
 const _device = DeviceInfo(deviceId: 'dev-id', platform: 'android');
-const _phoneDigits = '01021871999';
-const _phoneE164 = '+201021871999'; // what Phone.tryParse normalizes it to
+const _phoneDigits = '010000000001';
+const _phoneE164 = '+2010000000001'; // what Phone.tryParse normalizes it to
 
 void main() {
   setUpAll(() => registerFallbackValue(_device));

@@ -36,7 +36,7 @@ import 'golden_harness.dart';
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600,
-  phone: '+201021871999',
+  phone: '+2010000000001',
 );
 
 void main() {

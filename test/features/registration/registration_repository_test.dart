@@ -25,7 +25,7 @@ final _schoolBody = SchoolRegistration(
   schoolId: 'school-42',
   stage: 'secondary1',
   educationSystem: 'ig',
-  parentPhone: '+201021871999',
+  parentPhone: '+2010000000001',
 );
 
 final _universityBody = UniversityRegistration(
@@ -38,7 +38,7 @@ final _universityBody = UniversityRegistration(
   studyYearId: 'year-2',
   governorateId: 'gov-giza',
   cityId: 'city-dokki',
-  parentPhone: '+201021871999',
+  parentPhone: '+2010000000001',
 );
 
 /// The contract's 201 body — `AuthenticatedResult` (tokens + profile).

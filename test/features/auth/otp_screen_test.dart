@@ -26,7 +26,7 @@ class MockAuthRepository extends Mock implements AuthRepository {}
 class MockSecureStorage extends Mock implements SecureStorage {}
 
 const _args = OtpArgs(
-  phone: '+201021871999',
+  phone: '+2010000000001',
   resendAfterSeconds: 0,
   expiresInSeconds: 300,
 );
@@ -112,7 +112,7 @@ void main() {
       // checks for live handles before tearDowns run.
       final semantics = tester.ensureSemantics();
       const args = OtpArgs(
-        phone: '+201021871999',
+        phone: '+2010000000001',
         resendAfterSeconds: 21,
         expiresInSeconds: 300,
       );

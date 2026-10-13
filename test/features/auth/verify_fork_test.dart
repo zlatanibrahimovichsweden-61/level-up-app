@@ -22,7 +22,7 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 
 // resendAfterSeconds: 0 → no countdown timer starts (keeps the unit test clean).
 const _args = OtpArgs(
-  phone: '+201021871999',
+  phone: '+2010000000001',
   resendAfterSeconds: 0,
   expiresInSeconds: 300,
 );
