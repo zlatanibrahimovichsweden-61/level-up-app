@@ -645,6 +645,8 @@ Per `AGENT_WORKFLOW.md` §"Component reuse", a new folder needs a reason. Three:
    just cleared. Putting a decaying resource behind the catalog's deliberately-warm provider would
    be a real bug.
 
+   > ⚠ **Superseded in part (2026-10-12, implementation run; uncommitted in `_impl_ws`, BUILD level):** `subjectTreeProvider` and `mistakesOverviewProvider` are now `autoDispose` too, as the session boundary (`docs/DECISIONS.md` D-025, `docs/KNOWN_BUGS.md` BUG-030). "Stays warm for the session" is no longer true: leaving a subject drops its tree. The decay argument for `mistakesTreeProvider` is unchanged.
+
 ## Files
 
 ```
@@ -683,6 +685,8 @@ final mistakesOverviewProvider = AsyncNotifierProvider<…>(…, retry: noCatalo
 final mistakesTreeProvider =
     AsyncNotifierProvider.autoDispose.family<…, MistakesTree, String>(…, retry: noCatalogRetry);
 ```
+
+> ⚠ **Superseded in part (2026-10-12):** the comment "deliberately NOT autoDispose" above, and the plain `mistakesOverviewProvider`, are out of date. `subjectTreeProvider` and `mistakesOverviewProvider` are `autoDispose` since the implementation run (D-025, BUG-030); `mistakesTreeProvider` stays `autoDispose` for the decay rule.
 
 ⚠️ **`autoDispose` + `await` is the W3-1 hazard.** `ref` is dead after disposal —
 `riverpod-3.3.2/lib/src/core/ref.dart:232-240` throws `UnmountedRefException` — so capture every

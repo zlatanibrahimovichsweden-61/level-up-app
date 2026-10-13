@@ -1014,6 +1014,8 @@ signed out.
 **Revisit when:** another session provider shows the same stale state, or the app gains a session id to key
 providers by.
 
+**Update 2026-10-12:** a session provider did show the same stale state (E4-04 / E4-05); D-025 extends this decision to the subjects list, the subject tree, the Mistakes overview and the entitlements.
+
 ---
 
 ## Environment & platform identity
@@ -1153,3 +1155,124 @@ registered in any console without explicit authorisation.
 **Consequences.** The `NEXT`/`WALK`/`FORMULATE` control rules in `wave_state.md` govern the closed 22-wave list only.
 
 **Revisit when:** the owner changes the protocol.
+
+---
+
+## Implementation run 2026-10-12 (engineering decisions; the owner may veto any of them)
+
+> Built in the separate workspace `F:\level\level_up\_impl_ws`, uncommitted, BUILD level only (`.ai/audits/current/completion/IMPL_RUN_2026-10-12.md`).
+> These are engineering calls made inside a run the owner gated, not owner rulings. Each stands until the owner vetoes it (`COMPLETION_STATE.md` O-23).
+> **On the "Options" lines:** D-025's rejected options come from the wave's own integration request. For D-026 to D-031 the chosen shape is what the wave built;
+> the rejected alternatives are the ones the wave reports' evidence rules out, written by the records pass, and the waves did not necessarily weigh them as such.
+
+### D-025 · A session-scoped provider that fetches is autoDispose: the shell unmounting at sign-out is the session boundary
+
+**Feature:** Session isolation (R2a, E4-04 / E4-05 / E4-03) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** the E4
+audit (`KNOWN_BUGS.md` BUG-030, BUG-031); extends D-020 · **Decided by:** the run; owner may veto
+
+**Context.** D-020 made `meProvider` autoDispose because Riverpod 3 never disposes an invalidated element that still has a listener, and keeps the previous value
+through every rebuild. The three other session providers that fetch (`subjectsProvider`, `subjectTreeProvider`, `mistakesOverviewProvider`) and `entitlementsProvider` were
+left as they were ("unproven", BUG-015). E4 proved the next student saw the previous student's rows, and a signed-out 401, for as long as their own request was in flight.
+
+**Options.** (a) autoDispose, so the element is dropped when the shell unmounts. (b) `ref.invalidate(asReload: true)`: it only changes what `AsyncValue.when` shows;
+`.value` readers (`cachedSubjectName`, the Mistakes subject title) still see the old data. (c) A session-epoch provider, or a provider that watches `authControllerProvider`:
+`.value` stays readable, and `AuthController` invalidating a descendant of itself throws `CircularDependencyError` in debug. (d) Re-invalidate at sign-in: rejected in D-020 (the next
+student's screen still painted the first student's name while the new request loaded).
+
+**Decision.** (a). `subjectsProvider`, `subjectTreeProvider` (family), `mistakesOverviewProvider` and `entitlementsProvider` are autoDispose; each notifier that awaits carries a `_disposed` flag that
+`build()` re-arms (Riverpod 3 keeps the notifier across rebuilds and runs the dispose callbacks on each). `session_scope_discipline_test.dart` makes the rule a guard: every provider
+`invalidateSessionScope` invalidates must be autoDispose, bar an allowlist with reasons (`loginProvider`, `registrationControllerProvider`, `registrationSubmitProvider`: their `build` fetches nothing).
+
+**Consequences.**
+- **Product-visible:** leaving a subject drops its tree, so re-entering costs one more `GET /catalog/subjects/{id}/tree` and a skeleton. The subjects list and the Mistakes overview stay warm while their screens are mounted; drill-down between levels stays warm.
+- A screen still mounted at sign-out makes one tokenless rebuild request (`GET /me`, or the Learn / Mistakes request); `forceLogout`'s idempotence guard absorbs it and stays load-bearing.
+- It depends on the shell unmounting. A path that changes the session without a sign-out is not covered (BUG-026, for CW04).
+- Supersedes the statements in `day10_mistakes_brief.md` that the subject tree and the Mistakes overview are deliberately not autoDispose (dated banners added), and the "Not changed" paragraph of BUG-015.
+- A widget test that pumps two apps in one test while holding an autoDispose provider can leave a zero-length disposal `Timer` pending; unmount the first tree first (the catalog harness `pumpCatalogApp` now does). No journey or other test needed editing.
+
+**Revisit when:** the product wants the subject tree warm across a subject exit, or the app gains a session id to key providers by.
+
+### D-026 · The token refresh is a function on the bare client, shared by the repository and `dioProvider`
+
+**Feature:** Auth / network (R2a, E4-01) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** E4 (`KNOWN_BUGS.md` BUG-029) · **Decided by:** the run; owner may veto
+
+**Context.** `dioProvider` needs a refresher for its interceptor. The closure read `authRepositoryProvider`, which watches `dioProvider`: a provider cycle that release builds never notice and that debug builds
+turn into `CircularDependencyError` at the first 401 (Riverpod 3.3.2 `Ref.read` asserts on the reader's descendants). The closure was already a lazy read at 401 time, so reading later does not help.
+
+**Options.** (a) A top-level `requestTokenRefresh(refreshDio, ...)` in `auth_repository.dart`; `AuthRepository.refresh` delegates to it; `dioProvider` watches only `refreshDioProvider`, which depends on nothing. (b) Keep reading the repository and let the audit rig override `dioProvider`: that is what hid the defect, and it proves nothing about the shipped graph. (c) Keep the cycle and rely on the interceptor's catch: the swallow was the second half of the bug.
+
+**Decision.** (a). The refresh stays on the bare client, so the interceptor cannot re-enter its own retry; single-flight, loop safety and sign-out on a dead refresh are unchanged. `AuthInterceptor.onError` now catches `on Exception` instead of `catch (_)`, so a programmer `Error` reaches the caller as the unknown outcome and leaves the session untouched; a secure-storage fault still passes the original 401 on, typed.
+
+**Consequences.** One implementation of `POST /auth/refresh`. The audit rig's release-semantics override is gone, so every `audit_e4` test runs the real `dioProvider`. **Never run against staging:** the staging DEBUG 15-minute expiry has not been walked.
+
+**Revisit when:** the interceptor gains another refresher, or a second `Error` swallow is found.
+
+### D-027 · The boot assertion compares the compiled `Flavor` to the platform flavor by a mapping, not by equality
+
+**Feature:** Environments (W1, CW18a Dart layer) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, SOURCE + unit / guard tests · **Raised by:** `docs/ENVIRONMENTS.md` §4.3 rules 1 and 4 · **Decided by:** the run; owner may veto
+
+**Context.** Android has two flavors, `prod` and `staging`. `Flavor.dev` is a runtime mode of the staging identity (D-021 Q2), not a third identity. A check "compiled flavor equals platform flavor" would refuse every dev build.
+
+**Options.** (a) Equality: rejected (above). (b) Strict, no null: rejected, because iOS has no flavor until Wave 3, `flutter run` without `--flavor` and `flutter test` all read `appFlavor` as null. (c) A mapping: `Flavor.dev` and `Flavor.staging` accept the platform flavor `staging`, `Flavor.prod` accepts `prod`, a null platform flavor is tolerated, anything else is a `StateError`.
+
+**Decision.** (c), as a pure function (`AppConfig.platformFlavorsFor`, `platformFlavorAgrees`, `verifyPlatformFlavor`), called as the first statement of `bootstrap()` (optional `platformFlavor` parameter, default `appFlavor`, so the order is testable), before the binding, `AppConfig.init` and `runApp`. `main_mock.dart` throws on `kReleaseMode` as the first statement of `main()`, before the binding, `AppConfig.init` and the token wipe. No UI and no copy.
+
+**Consequences.** A mismatch is an unhandled async error (`main_*.dart` are `void main() => bootstrap(...)`): it fails closed but is most likely a blank launch with no on-screen signal. `main_mock` does not go through `bootstrap()`, so it never runs the assertion (Gradle already allows it only under `--flavor staging` in debug / profile). **Not observed in a built app:** the real `appFlavor` under `--flavor staging` and `--flavor prod`, and a release build of `main_mock` being refused (`kReleaseMode` is false under `flutter test`; the refusal is pinned at source level by a workflow guard and a `verify_guards.ps1` probe). The `.example`-in-prod build failure is still OPEN.
+
+**Revisit when:** a flavor build first runs on a device, or iOS gains flavors.
+
+### D-028 · The environment ribbon is engineering-only, dev and staging only, a stock `Banner` pinned to the physical top right
+
+**Feature:** Environments (W1 built it; R2c pinned it) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** `ENVIRONMENTS.md` (dev and staging are one installed identity, so nothing else tells them apart) and the E3 walk · **Decided by:** the run; owner may veto (O-20)
+
+**Context.** Dev and staging builds share an installed identity, so a tester cannot tell them apart. No Figma frame exists and none is needed: this is not a student surface.
+
+**Options.** *Colour:* a new token (rejected: no new token for an engineering marker); `AppColors.destructive` (chosen: the one saturated token that is the same on both canvases, white label about 3.8:1; it is a destructive-intent token borrowed for a marker). *Corner:* top end by the ambient direction (first built; the emulator walk saw it over the OS clock in Arabic); the physical top right (chosen); the bottom corners (rejected: the first and last navigation tabs sit there); a corner driven by `PlatformDispatcher.locale` (not taken: where the OS clock sits on a right-to-left phone is unverified, and a guess would be worse than a stated gap). *Message:* a `Text` with an ARB key (rejected: the stock `Banner` paints the flavor's own upper-cased name, so there is no string and no copy).
+
+**Decision.** `EnvironmentRibbon` in `lib/app.dart`: reads `AppConfig.maybeInstance?.flavor` (not `isDev`, which cannot tell dev from staging), shows `DEV` / `STAGING` on those flavors only, returns the child untouched in prod and when `AppConfig` is uninitialised; `layoutDirection` and `textDirection` pinned to `ltr` so the corner is physically right in every app language; it paints only and never intercepts a tap.
+
+**Consequences.** **Known limit (O-20):** the pin assumes a left-to-right system language; on an Arabic-system phone the OS may mirror its clock to the top right, and the ribbon would sit over it in both app languages. Pinned by a "KNOWN LIMIT" test so a locale-driven change has to flip it. The post-pin ribbon has not been seen on an emulator or device; the corner clearance is layout reasoning from `banner.dart` and `language_pill.dart`, not a measurement.
+
+**Revisit when:** an Arabic-system-language phone is looked at, or the owner prefers another token.
+
+### D-029 · Data layers are built ahead of their screens, with no consumer
+
+**Feature:** Completion program (W3a-d: CW16a / b, CW09, CW04b, CW05, CW06, CW14, CW15, CW08a) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** `04_COMPLETION_ROADMAP.md` §5a · **Decided by:** the run; owner may veto
+
+**Context.** §5a lists, as implementable now with no external answer, "the non-visual layer of every contract-backed wave: repositories, bindings, mock extension and tests. Build it as the first increment of each wave, not as a separate wave." The screens behind these layers wait on frames and owner holds (DG-01..DG-26, H-01..H-21), so the layers have no consumer.
+
+**Options.** (a) Wait for each screen wave. (b) Build the data layer now, with nothing wired. (c) Build it wired behind a flag (rejected: a flag is a second code path to review and there is no consumer to wire).
+
+**Decision.** (b): models (redacted `toString`), repositories with typed errors and `UnknownException('parse: <type>')` for drift, error predicates that match on `code`, a standalone mock desk per feature hooked into `buildMockDio`, `contract_models_test.dart` bindings, and tests. No screen, route, ARB key, colour or `fontSize`; no new dependency; nothing built from `[3.47]` / `[3.48]`; `lookupStudentByPhone` excluded (DR-08); `getMyQuizSummary` deliberately unconsumed (N-17); the push seam is a `NoopPushGateway` the lifecycle never calls.
+
+**Consequences.** Code with no caller until each screen wave starts; mitigated by E4's census that none of these providers is instantiated at signed-out boot, signed-in boot, by walking every reachable route, or by a sign-out. The mocks are not staging evidence: every operation in `IMPL_RUN_2026-10-12.md` §5 is mocked-test except `getLegalDocument`. Each wave must still pass its own owner decisions and frames before a screen consumes a layer; the layers fix the shapes, not the behaviour.
+
+**Revisit when:** a screen wave consumes a layer, or the owner wants unconsumed code out of a release commit set.
+
+### D-030 · A failed next-page request is retried only by its own Retry control
+
+**Feature:** Paging (BUG-028) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** the W4 review and integration r1 · **Decided by:** the run; owner may veto
+
+**Context.** The leaderboard's scroll listener, and the registration school picker's, re-requested a failed page on every scroll tick, including after a 429 or a pending-deletion refusal whose Retry the screen had deliberately withheld.
+
+**Options.** (a) Guard only the withheld kinds (429, pending deletion): rejected, because the notifier's own contract is "never a silent retry" and the unauthenticated school endpoint is per-IP rate limited. (b) Guard every failure kind: the scroll handler returns while `appendError != null`; the footer Retry calls `onLoadMore` directly. (c) Debounce or back off: rejected, a silent retry with a delay is still a silent retry.
+
+**Decision.** (b). After a successful Retry, scrolling pages again (pinned by tests, because a stale flag would stall paging silently).
+
+**Consequences.** The notifications inbox and the support lists never had the problem (button-driven paging). The 3-line guard in `school_picker_field.dart` widens the change set into a registration widget; the owner may drop it with its test file. A later screen with infinite scroll should copy the rule.
+
+**Revisit when:** the product wants automatic retry with a visible state.
+
+### D-031 · A model that carries a credential or a person's data prints only its type name, and a census enforces it by field name
+
+**Feature:** Privacy (R2c, integration r2, the review-fix pass; `KNOWN_BUGS.md` BUG-032) · **Date:** 2026-10-12 · **Status:** Proposed, built in the workspace, BUILD · **Raised by:** E4-02 · **Decided by:** the run; owner may veto
+
+**Context.** Many users are minors and the app logs nothing (E4 proved there is no logging sink in `lib/`), so a leak would come from a future logger, `ProviderObserver` or interpolated error. Freezed prints every field by default.
+
+**Options.** (a) Rely on the "never log" rule (prose; the project's own experience is that prose rules decay). (b) Redact each model by hand and add a guard: chosen. (c) A global `toString` stripper (rejected: no such mechanism exists and it would hide real debugging output).
+
+**Decision.** (b). 16 models print `<Type>(<redacted>)` (`ProfileUpdate` prints its field names, `EmailPatch.set` prints `<redacted>`), with equality, `hashCode`, `copyWith` and JSON unchanged. `test/core/privacy/credential_models_redaction_test.dart` scans every generated `toString` for fields named like a token, phone, email, device id, birth date, code, student id, avatar, a person's name (a bare `name` counts unless the class is on a catalogue allow-list) or student-authored text (`subject`, `details`, `body`, `message`, `comment`, `note(s)`, `feedback`), plus `ProfileAvatar.url`. Its `knownUnredacted` ratchet is empty.
+
+**Consequences.** The census goes by field **name**. A model deliberately left unredacted that still prints reference or catalogue rows (`ProfileGeography`, `ProfileSchool`, `ProfileUniversity`, registration's preset `Avatar`, `FavoriteQuestion`, `QuizQuestion`, `QuizOption`) must be added by name if the contract ever lets a student type free text into it; a new catalogue model that prints its title needs an allow-list entry on purpose. A class that carries a student's photo URL under a field named `url` needs a `_personalFieldsByClass` entry.
+
+**Revisit when:** a logging sink is added, or the contract lets a student type free text into a reference row.

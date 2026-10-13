@@ -550,6 +550,12 @@ value across a sign-out is unproven. A related latent issue in other autoDispose
 set after a rebuild, so e.g. Top Student's Retry after a quiz sticks on its skeleton) was probe-proven and filed as a
 separate task.
 
+**Update 2026-10-12 (the "Not changed" paragraph above is stale).** The 2026-10-12 session audit (E4) proved what was left unproven: the
+subjects list, the subject tree and the Mistakes overview DID carry the previous student's rows (with their progress and per-subject
+mistake counts) to the next student while the next student's own request was in flight, and a Learn tab that was current at sign-out
+cached the signed-out 401 into the next session. Fixed in the implementation workspace (uncommitted, BUILD level only) by making them
+autoDispose, as `meProvider` was: BUG-030, D-025.
+
 ## BUG-016 ✅ Every locked row on Edit Profile was announced twice
 
 **Status:** FIXED 2026-09-28 (API→UI Wave 20). Found by a read-only review lens, confirmed by a throwaway semantics
@@ -677,6 +683,13 @@ English card in the English app is pixel-identical to the pre-fix walk (`device_
 Mistakes) render content-language names in the app's direction by the same mechanism; they are shared screens the fix
 did not touch. And the first-strong rule reads an Arabic sentence that opens on a Latin term ("ATP هو …") as left to
 right, so its closing "." lands at the right: the quiz's rule, reused as the owner asked.
+
+**Update 2026-10-12 (W4, BUILD level, uncommitted in the implementation workspace).** Now covered: the name `Text` of `TreeListRow` (the Units,
+Chapters, Lessons, Lectures and Mistakes trees), `SubjectCard` and `MistakesSubjectCard`, the quiz option label and the AI explanation body
+take `contentTextDirection` and stay aligned at the app's start; badges, chevrons and counts stay UI-directed (`tree_list_row_test.dart`,
+`subject_card_test.dart`, `w4_mistakes_card_direction_test.dart`, `w4_option_explanation_direction_test.dart`,
+`content_text_direction_test.dart`). Still not covered and not checked: quiz setup's scope header, the quiz result and review headers, the
+catalog header titles. The first-strong caveat stands: an Arabic sentence that opens on a Latin term reads left to right.
 
 ## BUG-021 ✅ The nav tabs, Profile rows, the language pill and the Subjects cards were images or progress bars to TalkBack
 
@@ -876,3 +889,310 @@ chip, come back: the name is shown (EN and AR, RTL) and its id is sent; a skip s
 after a refused name the trip through Sign Up_1 keeps the picked school and the corrected name is sent once with it and
 the same token; a new city drops the pick, the same city keeps it; University selections survive; the controller keeps
 the three fields as one answer. Mutation-checked (6 mutations on the screen and the controller, all caught).
+
+---
+
+> **BUG-028 to BUG-052 come from the 2026-10-12 implementation run** (`.ai/audits/current/completion/IMPL_RUN_2026-10-12.md`,
+> evidence in `F:\level\level_up\_impl_ws_ledger`). Every "FIXED" below is fixed **in the separate workspace
+> `F:\level\level_up\_impl_ws`, uncommitted and not in the main tree**, verified at **BUILD level only** (unit, widget, guard and
+> router-driven tests; `flutter analyze` 0; full suite 5233 / 0 / 0). None is device-verified. "Found by" names the pass:
+> E1 = cross-feature journeys, E3 = emulator walk, E4 = session / privacy / network audit, R = the reconciliation.
+
+## BUG-028 ✅ A failed next page was asked for again on every scroll tick (Leaderboard and the registration school picker)
+
+**Status:** FIXED 2026-10-12 (W4 for the 429 footer, integration r1 for every failure kind and the school picker). BUILD.
+Found by the W4 reviewer (the footer offered Retry on a 429) and measured: one drag against an immediately failing page sent 8 requests. E4 re-proved it.
+
+**What breaks.** After a failed append (network error, 5xx, 429, `account_pending_deletion`), scrolling near the bottom fired the same request again,
+tick after tick. On a 429 the withheld Retry was bypassed by scrolling; the school picker (`GET /reference/schools`, anonymous, per-IP limit) hammered an
+endpoint that was already refusing it. `LeaderboardNotifier.loadMore`'s own doc said "never a silent retry"; for ordinary failures that was false.
+
+**Root cause.** The scroll handlers only returned for the 429 and pending-deletion kinds (leaderboard) or never looked at `appendError`
+(`_SchoolSearchSheetState._onScroll`; `SchoolSearchNotifier.loadMore` has no guard either).
+
+**Why tests missed it.** The tests drove one failed page and asserted the footer; none scrolled again while counting requests at the repository.
+
+**Fix.** Both handlers return while `appendError != null`, for every failure kind (`leaderboard_screen.dart:297`, `school_picker_field.dart:177-179`); the footer
+Retry calls `onLoadMore` directly and is unaffected. Pinned by 4 leaderboard cases (network, 500, unknown, non-cursor validation: exactly 1 ask after a drag, none
+after repeated scrolling, 2 after Retry), 7 school-picker tests (EN and AR), and 10 "Retry that succeeds, then scrolling pages again" tests (the stale-flag mutation
+fails all 10). The notifications inbox and the support lists have no scroll listener (button-driven), so they never had it. The school-picker guard widens the change set
+into a registration widget; it can be dropped together with `school_picker_append_failure_test.dart`.
+
+## BUG-029 ✅ A debug build could never refresh an expired access token (E4-01)
+
+**Status:** FIXED 2026-10-12 (R2a). BUILD. **Debug builds only** (`flutter run`, dev or staging flavor); release and profile builds were unaffected. The staging DEBUG
+15-minute-expiry walk has **not** been run.
+
+**What breaks.** Sign in on a debug build, let the 15-minute access token expire (or have the server rotate it), open a screen that makes a protected call:
+0 `POST /auth/refresh`, the 401 reached the screen as `UnauthorizedException`, and the student was stranded on an error screen holding a perfectly good refresh token.
+
+**Root cause.** `dioProvider`'s refresh closure did `ref.read(authRepositoryProvider)`, and `authRepositoryProvider` watches `dioProvider` (`auth_repository.dart`),
+so the closure read one of `dioProvider`'s own descendants. In debug, Riverpod 3.3.2's `Ref.read` runs `_debugAssertCanDependOn` (`ref.dart:611`), which walks the reader's
+descendants and throws `CircularDependencyError`. `AuthInterceptor._performRefresh` does not catch an `Error`, and `catch (_)` in `onError` swallowed it and passed the 401 on.
+
+**Why tests missed it.** The audit rig replaced `dioProvider`; the mock walks replace it with `buildMockDio`; no repository test ran refresh through the real provider
+in debug; and the interceptor's `catch (_)` turned the one loud signal into a 401.
+
+**Fix.** `requestTokenRefresh(bareDio, ...)` is the one implementation of `POST /auth/refresh` (`auth_repository.dart`); `AuthRepository.refresh` delegates to it and
+`dioProvider` watches only `refreshDioProvider` (`core_providers.dart:32-51`), which depends on nothing. `AuthInterceptor.onError` now catches `on Exception`, so a
+programmer `Error` reaches the caller as the unknown outcome and leaves the session alone. Single-flight, loop safety (the refresh stays on the bare client) and sign-out
+on a dead refresh are unchanged. Pinned by `dio_provider_refresh_test.dart` (7 tests through the real provider in debug), the flipped `c_refresh_and_signout_test.dart` C0 / C0b / C0b2,
+and 2 interceptor tests; restoring the old closure fails C0, C0b, C0b2 and 6 of the 7. Decision: D-026.
+
+## BUG-030 ✅ The next student saw the previous student's Learn, Mistakes and subject-tree data, or a stale sign-out error (E4-04, E4-05)
+
+**Status:** FIXED 2026-10-12 (R2a). BUILD; not device-verified. **Updates BUG-015's "Not changed" paragraph, which said this was unproven.** E4 proved it (privacy, major).
+
+**What breaks.** On a shared handset: student A signs in and opens Learn, Mistakes and a subject, then signs out; student B signs in without restarting the app and opens
+Learn while B's own request is still in flight. B's screen showed A's subject list **with A's progress**, A's per-subject mistake counts, and A's unit tree, until B's answer
+landed. A second variant: with Learn as the current tab at sign-out, the signed-out rebuild (no token, a 401) was cached as an `AsyncError`, so the next sign-in opened Learn as
+"Something went wrong" with **zero requests** until Retry.
+
+**Root cause.** `subjectsProvider`, `subjectTreeProvider` and `mistakesOverviewProvider` were not autoDispose and `invalidateSessionScope` only invalidated them.
+Riverpod 3 never disposes an invalidated element that still has a listener: a mounted one rebuilds, a paused one (a hidden tab) stays dirty, and either keeps the previous value;
+`value.when(...)` (`catalog_states.dart`) renders that previous value as data. The same mechanism as BUG-015, left unfixed on three more providers.
+
+**Why tests missed it.** `session_isolation_test.dart` proved the invalidation with nothing listening; the journey tests covered only the profile for "the next student sees their own data";
+and the harness invalidated a provider the student was not on (Riverpod flushes only active providers), so it never asked.
+
+**Fix.** The three providers (and `entitlementsProvider`, BUG-031) are autoDispose, each notifier tracks its own disposal with a flag re-armed on every `build`
+(`subjects_notifier.dart:24-39`). The shell unmounting at sign-out is the session boundary (D-025). `session_scope_discipline_test.dart` now requires every provider
+`invalidateSessionScope` invalidates to be autoDispose bar a reasoned allowlist (`loginProvider`, `registrationControllerProvider`, `registrationSubmitProvider`: their `build`
+fetches nothing). Pinned by `h_cross_student_state_test.dart` H1 to H6 (flipped from characterisations), Scenario C in `session_isolation_test.dart` (5), 6 catalog and 4 Mistakes notifier tests;
+plain `subjectsProvider` fails 14 tests, plain tree and overview fail 20. **Product-visible:** leaving a subject drops its tree, so re-entering costs one more `GET /catalog/subjects/{id}/tree`.
+**Left on purpose:** a screen still mounted at sign-out makes one tokenless rebuild request that `forceLogout`'s guard absorbs (that guard stays load-bearing); BUG-026 (a session swap with no sign-out) is not covered.
+
+## BUG-031 ✅ The entitlements resume listener sent a tokenless request after a forced sign-out (E4-03)
+
+**Status:** FIXED 2026-10-12 (R2a). BUILD. **Latent**: nothing outside `session_scope.dart` reads `entitlementsProvider` today, so no screen could trigger it.
+
+**What breaks.** With a listener on `entitlementsProvider`, a forced sign-out and the listener going away, each app resume sent a `GET /me/entitlements` with no `Authorization` header.
+
+**Root cause.** `me_notifier.dart:81` registers `AppLifecycleListener(onResume: refresh)` and `entitlementsProvider` (`:97`) was not autoDispose; the session-scope rebuild registered a new listener and the element was never disposed.
+
+**Why tests missed it.** No test held the provider across a sign-out and a resume; a late answer landing after disposal also wrote to a dead notifier.
+
+**Fix.** autoDispose plus a `_disposed` flag re-armed each build; removing the guard fails the late-answer test (mutate by line: `MeNotifier` has an identical guard at line 50, `EntitlementsNotifier` at 113).
+`f_timers_and_repeats_test.dart` T3 / T3b and 3 `me_notifier_test.dart` tests. `T6` ("nothing refetches on resume") will fail by design the day a screen reads entitlements.
+
+## BUG-032 ✅ Credential and personal-data classes printed their secrets in `toString` (E4-02)
+
+**Status:** FIXED 2026-10-12 (R2c, integration r2, the review-fix pass). BUILD. **Latent**: no logging sink exists in `lib/` (E4 proved it), so nothing leaked; it would on the day a logger, `ProviderObserver` or interpolated error appeared.
+
+**What breaks.** `'$tokens'`, an uncaught-error dump or a test report printed `TokenPair(accessToken: ..., refreshToken: ...)`, `RegistrationDraft(registrationToken, phone, name)`, `DeviceInfo(deviceId)`, `Phone(+20...)`, `ProfileUpdate({name, email})`, `EmailPatch.set(email)`;
+later passes found the same in `StudentProfile` (name, phone, email, date of birth, avatar), `ProfileCity` free text, `SchoolRegistration` / `UniversityRegistration` (the register bodies), `LeaderboardEntry` (other students' ids, names, avatar URLs), and the support models (`subject`, `details`, `body`) and `ProfileAvatar.url`.
+
+**Root cause.** Freezed generates a `toString` that prints every field unless the class body declares one; the newer models (friends, referral, recovery, terms, deletion) were redacted by convention, the older ones predate it.
+
+**Why tests missed it.** Nothing asserted `toString`. The first census guard matched only token / phone / email / device-id / birth-date / code names, and its title claimed more than it checked; it was widened twice (student id, avatar, bare `name` unless on a catalogue allow-list; then student-authored text names and `ProfileAvatar.url`), and the E4 control was a tautology until replaced by a probe that can fail.
+
+**Fix.** 16 models print only their type name (`<Type>(<redacted>)`; `ProfileUpdate` prints field names only; `EmailPatch.set` prints `<redacted>`), with `const X._()` and a regenerated `.freezed.dart` (a full `build_runner build`; md5 of all 58 generated files compared). Equality, `hashCode`, `copyWith` and JSON are unchanged.
+`credential_models_redaction_test.dart` (sentinel probe, generated-file layer, hand-written source scan, and the name census with an empty `knownUnredacted` list) and `e_privacy_logs_storage_test.dart` P3d. The census goes by field **name**; see `IMPL_RUN_2026-10-12.md` §7 for the models deliberately left unredacted. Decision: D-031.
+
+## BUG-033 ✅ The OTP code row overflowed its card on phones narrower than about 396 dp (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD (real fonts, fake time); not seen on a device. Found by E1 at 360 x 800 (also 375, 390, 320); it upgrades audit finding F-5-07 and is RESPONSIVE #8.
+
+**What breaks.** The six code boxes (6 x 48 + 5 x 8 = 328 dp) are wider than the card's inner width (screen width minus 68): 36 px over at 360, 21 at 375, 6 at 390, 76 at 320. At 360 the sixth box crossed the screen edge; at 320 only 6 of its 48 px were visible.
+
+**Root cause.** `Pinput.builder` (pre-fix `otp_screen.dart:338`) with fixed 48 dp cells; overflow origin `pinput-6.0.2 widgets.dart:33`.
+
+**Why tests missed it.** The OTP tests ran at the default test surface (800 wide); the audit's own tests also used it because the test font overflows even at 390.
+
+**Fix.** `LayoutBuilder > FittedBox(scaleDown) > SizedBox(width: max(328, available)) > Pinput` (`otp_screen.dart:377-378`); from 396 dp up the scale is 1 and the tree is unchanged (80 probe goldens byte-identical at 412 / 402 / 396 / 600 dp, EN / AR, light / dark; the reviewer reproduced them). Digit order stays LTR. A uniform scale is a build choice (DESIGN_ISSUES #133), not a Figma reading.
+`r2b_otp_layout_test.dart` (34 tests; the old block fails 19) and the small-phone journey sweep, whose known-overflow set is now empty.
+
+## BUG-034 ✅ The OTP success view's Continue was unreachable when the view was taller than the screen (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD. Found by E1 (major).
+
+**What breaks.** On a phone turned sideways (915 x 412, 640 x 360, 800 x 360; neither platform config forbids landscape) or at 320 x 568 / 360 x 568 with the OS text at 2.0x, the success view overflowed by 33 to 87 px and Continue was drawn but not tappable: it lay outside its `Column`'s own bounds, where a render box refuses a hit. Sign-in could not finish; the only response was OS Back (BUG-035).
+
+**Root cause.** `_SuccessView` was a non-scrolling `Padding > Column` (pre-fix `otp_screen.dart:635-690`, overflow at `:648`) while `_InputView` above it already scrolled.
+
+**Why tests missed it.** No journey walked a sign-in on a small or sideways screen; the sign-in walkers were excluded there.
+
+**Fix.** `LayoutBuilder > SingleChildScrollView > ConstrainedBox(minHeight) > Padding > Column` (the legal viewer's pattern); a view that fits stays centred and does not scroll. `r2b_otp_success_test.dart` (reachable and tappable at 915x412, 640x360, 320x568@2x, 360x568@2x, EN and AR; the old layout fails 8) and the sign-in walkers now run at every size.
+
+## BUG-035 ✅ OS Back on the OTP success view landed on Login while signed in (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD.
+
+**What breaks.** After a mock magic code the "Successful ... Continue" view was left by OS Back (key or gesture): the route popped to `/login`, showing the Login form while `AuthController` was `AuthAuthenticated` and tokens were stored; Send OTP there started another OTP flow while signed in (a third `POST /auth/otp/request` was observed). The review also found that two exits in one frame consumed the return target twice, so the second answered Home and overrode the remembered place.
+
+**Root cause.** No `PopScope` on the success branch, and the signed-in redirect off `/login` (`app_router.dart:83-97`) runs only on a navigation or refresh, not on a pop. `_continueToApp` was not idempotent.
+
+**Why tests missed it.** Journeys asserted Continue, never the platform back on that view; one exit per test.
+
+**Fix.** `_continueToApp()` is shared by Continue and a `PopScope(canPop: false)` inside `_SuccessView` (`otp_screen.dart:84-86`, `:694`); a one-shot `_leavingSuccessView` flag (`:47-48`) makes the second same-frame exit a no-op. `r2b_otp_success_test.dart` (OS Back goes to the remembered place, one consume with the student id; 6 same-frame tests, EN and AR, all fail without the flag), `back_navigation_journey_test.dart` `walkOtpSuccessBack`, `sign_out_guard_journey_test.dart`.
+
+## BUG-036 ✅ Login's Send OTP had no re-entrancy guard (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD.
+
+**What breaks.** Two taps on Send OTP in the same frame sent two `POST /auth/otp/request` (two SMS). One frame apart the button was already a spinner and only one went out. Every other submit tested (Save profile, create ticket, send reply, quiz Start, Confirm, Finish, Verify, Continue) already had a notifier-level guard.
+
+**Root cause.** `LoginNotifier.sendOtp` set `AsyncLoading` without returning when already loading; the only guard was the disabled button (`login_screen.dart`), which takes effect on the next frame. A realistic trigger: input events queued behind a janky frame on a low-end handset, or assistive tap automation.
+
+**Why tests missed it.** `double_tap_journey_test.dart` pinned only the one-frame-apart case; removing the UI guard (mutation M20) was the only way to see it.
+
+**Fix.** `if (state.isLoading) return null;` at the top of `sendOtp` (`login_notifier.dart:26`), mirroring `EditProfileNotifier.save`. Caveat: `LoginNotifier.build` is `async => null`, so `loginProvider` is `AsyncLoading` for one microtask and the guard also ignores a call in that window; a direct caller must await `loginProvider.future` first. `r2b_login_reentrancy_test.dart` and `walkSameFrameSendOtp` (EN, AR).
+
+## BUG-037 ✅ OS Back on Sign Up_1 closed the app, while its back chip went to Login (E1)
+
+**Status:** FIXED 2026-10-12 (R2b for the live form, integration r2 for the expired view on all four wizard screens). BUILD.
+
+**What breaks.** Onboarding > Log In > a valid number > OTP > any non-magic 6-digit code lands on Sign Up_1 at `/register`. The OS Back asked the OS to close the app (location stayed `/register`); the chip went to `/login`. Registration progress (the draft and the 10-minute token) lives in memory only. The same held for the expired-registration view on `/register`, and on the other three wizard screens, which render the same view.
+
+**Root cause.** The OTP screen replaces itself with `go('/register')`, so nothing sits beneath it, and neither the screen nor `RegistrationExpiredView` had a `PopScope`.
+
+**Why tests missed it.** `back_navigation_journey_test.dart` deliberately did not assert OS Back there; the chip was covered.
+
+**Fix.** `_backToLogin()` is shared by the chip and a `PopScope(canPop: false)` around the live form (`signup_identity_screen.dart:88`, `:157-161`); `RegistrationExpiredView` has its own `PopScope` whose handler does what its button does (`reset()`, then `go('/login')`), so the four wizard screens that render it are covered at the view, not at one call site. Nested `PopScope`s each fire, so no screen may wrap the view again.
+`signup_back_target_test.dart` (live form: chip and OS Back leave, draft kept by identity; expired view: 4 OS Back tests EN / AR, each failing without the wrapper) and the signed-out back-chain journeys.
+
+## BUG-038 ✅ Onboarding's bottom sheet could not scroll on the smallest phone at the largest text (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD. Found by E1 at 320 x 568, OS text 2.0x (EN and AR); 320 x 640, 360 x 568 and 360 x 640 were fine.
+
+**What breaks.** The sheet overflowed the bottom by 44 px (EN) / 38 px (AR): "Log In" sat at y 542 to 582 on a 568-high screen and a tap did nothing (location stayed `/`). "Get Started" still worked.
+
+**Root cause.** The sheet is content-sized with a non-scrolling `Column` (`onboarding_screen.dart`, pre-fix `:218`).
+
+**Why tests missed it.** The onboarding tests ran at the default surface; the sweep excluded 320 x 568 at 2.0x for the sign-in walkers.
+
+**Fix.** The sheet's `Padding` became a `SingleChildScrollView` with the same padding (`onboarding_screen.dart:218`); a sheet that fits is laid out as before. An extra "stop below the language pill" cap added by the first pass was removed on review. Consequence: a sheet taller than the screen fills it, and the pill drawn above overlays the top of the content at scroll offset 0 at that size (DESIGN_ISSUES #133). `r2b_onboarding_scroll_test.dart` (15; reverting fails all 15).
+
+## BUG-039 ✅ The Go-to-University confirm dialog overflowed on a short phone at large text (E1)
+
+**Status:** FIXED 2026-10-12 (R2b). BUILD. Found at 360 x 640, OS text 2.0x, English: 13 px over; Arabic and the other combinations were clean.
+
+**Root cause.** The dialog's `Column` sat inside a plain `Padding` (`profile_confirm_dialog.dart`, pre-fix `:148`).
+
+**Why tests missed it.** The dialog was only opened at the default surface; the small-phone sweep found it.
+
+**Fix.** The `Padding` is a `SingleChildScrollView` with the same padding (`:144`). The whole card scrolls, including the title row with the X, so at large text on a short phone the X can scroll away (Back and the barrier still dismiss it; keeping the title pinned would be a layout decision). `r2b_confirm_dialog_scroll_test.dart`. The dialog's Confirm is unchanged (still disabled, no track-switch UI).
+
+## BUG-040 ✅ The OTP screen's phone number outlived sign-out (NR-29)
+
+**Status:** FIXED 2026-10-12 (W1). BUILD (router-driven tests). Recorded P3 in the 2026-10-06 release-readiness reconciliation; closed at SOURCE plus router tests, not on a device.
+
+**What breaks.** `lastOtpArgs` (the phone number) was kept in the router closure after sign-out, so a stale `/login/otp` could rebuild with it.
+
+**Root cause.** The closure variable was never cleared (pre-fix `app_router.dart:101-134`).
+
+**Why tests missed it.** No router test held OTP args across a sign-out. (The row proposed clearing it in `invalidateSessionScope`; it was fixed in `routerProvider`'s auth listener instead.)
+
+**Fix.** `lastOtpArgs` is declared above the auth listener and set to null when the status moves into `AuthUnauthenticated` from another status (`app_router.dart:209-219`); it is kept across the post-verify flip to `AuthAuthenticated`, and a repeat of signed-out is not a session end (that would crash `lastOtpArgs!` on a visible OTP page). `w1_otp_args_signout_test.dart` (8; each of 3 mutations fails 1 to 4).
+
+## BUG-041 ✅ The quiz routes force-unwrapped a missing `extra`
+
+**Status:** FIXED 2026-10-12 (W1). BUILD.
+
+**What breaks.** `/quiz/setup` and `/quiz/:quizId/result` did `state.extra! as QuizSetupArgs` / `as QuizResultArgs`: a cold deep link or a restored process (no `extra`) threw instead of showing the existing "unavailable" screen that `/quiz/:quizId` already used.
+
+**Why tests missed it.** Every router test navigated with the args supplied.
+
+**Fix.** Both builders switch on `state.extra` and fall back to `_QuizUnavailableScreen` (four `_QuizUnavailableScreen` fallbacks in `app_router.dart`, two of them for these routes); "Back to Learn" goes to `/learn`. `w1_quiz_route_fallback_test.dart` (8: no extra and a wrong type, EN and AR).
+
+## BUG-042 ✅ The catalog's error / offline message overflowed on short screens and hid its Retry, then threw in an unbounded parent
+
+**Status:** FIXED 2026-10-12 (R2b filed it; integration r2 fixed it; the review-fix pass corrected the fix). BUILD. Found by the E1 small-phone sweep.
+
+**What breaks.** `CatalogMessage` (the icon, the line and the Retry button of an empty, failed or offline catalog screen) was a centred non-scrolling `Column`: 33 to 59 px of overflow on phones on their side and on 320 x 568 at 2.0x in Arabic, and at landscape 640 x 360 the Retry button was laid out under the bottom navigation, so a tap hit the navigation instead. The first fix's `minHeight: constraints.maxHeight` then threw in a parent with unbounded height (a `ListView`).
+
+**Why tests missed it.** The widget had no test below the default surface; the overflow-only tolerance first proposed was not enough, because the walk could not tap Retry at all.
+
+**Fix.** `LayoutBuilder > SingleChildScrollView > ConstrainedBox(minHeight: hasBoundedHeight ? maxHeight : 0)` (`catalog_states.dart`). `catalog_message_scroll_test.dart` (6, including the unbounded-parent case; the infinite floor fails it) and the offline walk now completes at every size (the two skipped landscape combinations and the known-overflow set are gone).
+
+## BUG-043 ✅ The DEV / STAGING ribbon overprinted the Arabic status-bar clock (E3) — with a known limit still open
+
+**Status:** FIXED 2026-10-12 (R2c). BUILD (pixels in widget tests). **Engineering-only and dev / staging only**: it is not a student surface and is absent in production. The post-pin ribbon has not been seen on an emulator or device.
+
+**What breaks.** The stock `Banner` at `BannerLocation.topEnd` took the app's layout direction, so in Arabic it sat top-LEFT, over the OS clock of the (left-to-right system language) emulator, 'DEV' touching '2:36'. It never blocked a tap.
+
+**Fix.** `layoutDirection` and `textDirection` pinned to `ltr`, so the corner is physically top right in every app language (`app.dart`, `EnvironmentRibbon`). `w1_env_indicator_test.dart` (14: English and Arabic ribbon at the top right by painter parameters and pixels, taps pass through in both directions, prod and uninitialised `AppConfig` show none).
+
+**Known limit, OPEN (O-20).** The pin assumes a left-to-right SYSTEM language. On a phone whose own language is right-to-left the OS may mirror its status bar (clock at the top right; not observed), and the ribbon would then sit over it in both app languages. A "KNOWN LIMIT" test pins today's behaviour so a locale-driven change has to flip it.
+
+## BUG-044 🟡 The avatar image disk cache is never purged at sign-out (E4)
+
+**Status:** OPEN — found 2026-10-12 by E4 at **SOURCE level only** (the plugin needs `path_provider`, absent under `flutter test`, so it could not be run). Engineering decision.
+
+**What breaks.** A custom avatar (the contract: "the student's own photo on the avatars CDN") is shown through `CachedNetworkImage` on Home, Profile, Edit Profile, the avatar sheet and the support message row. After sign-out the cached file is still in the app's cache directory on a shared handset. It sits inside the app sandbox (Android backup is off in every channel, E4 P5), and these loads leave through `dart:io` outside Dio, so they carry no `Authorization`.
+
+**Root cause.** `grep` for `emptyCache`, `DefaultCacheManager`, `removeFile` and `imageCache` in `lib/` finds nothing; nothing clears it at logout or forced logout.
+
+**Why tests missed it.** The cache manager cannot run in a widget test; E4 only censused the sites.
+
+**Fix (proposed, not done).** Purge the cache manager at `invalidateSessionScope` time; then prove it on a device. `i_image_traffic_test.dart` must stay a single-test file (the cache manager is a process-wide singleton).
+
+## BUG-045 🟡 In the dark theme a text-field placeholder is pixel-identical to typed text (E3, K-5)
+
+**Status:** OPEN — **designer decision** ("do not invent": a dark hint colour). Known since the 2026-08 audit as K-5 (`.ai/audits/current/known-issues.md`, the reconciliation row K-5); there is **no `DESIGN_ISSUES.md` entry**. Seen again on the emulator walk (`59b_dark_name_vs_email_hint_crop.png`: both peak at luminance 232; in light the hint is visibly lighter, 106 against 54).
+
+**What breaks.** Dark Login ("01X XXXX XXXX") and the empty email on Edit Profile ("you@example.com") read as already filled in beside a filled name field.
+
+**Root cause.** `app_colors.dart` sets dark `hint` to `#FCFBF9`, the same as dark `textPrimary` (used by `form_fields.dart`). BUG-006 hit the same equality for a dropdown and was worked around locally by dimming.
+
+**Fix.** Needs a dimmer dark hint token from the designer. O-22.
+
+## BUG-046 🟡 Dark podium: the rank numerals for places 2 and 3 are illegible (E3)
+
+**Status:** OPEN — **designer** (`DESIGN_ISSUES.md` #93, "built as drawn", `podium.dart` `_RankBadge`). Seen again on the emulator walk (`41b_podium_badges_crop.png`); light is fine. O-22.
+
+**Why tests missed it.** (Inferred; not searched for.) The colours are the frame's own values and the podium tests assert structure and semantics, not the contrast of a numeral on its badge.
+
+## BUG-047 🟡 At OS text scale 2.0 several labels truncate or clip (E3)
+
+**Status:** OPEN — **owner / designer**: the text-scale policy is RESPONSIVE #4 (a product decision, not taken) and `DESIGN_ISSUES.md` #125 covers "Leaderbo…" and the podium at 1.3x. Found by the emulator walk, English and Arabic, light and dark; the full name is still in the semantics node.
+
+**What breaks.** Bottom-navigation labels ("Lead…", "Mess…", "Acco…"; Arabic "المتصد…") with neighbours touching (`main_shell.dart:302`, `:371`, one line, no clamp); Home's level-card captions ("current l…", "Pts Bala…", English); the Arabic Profile title's last descender cut by a straight line (`profile_screen.dart:132-147`, a 35 dp `SizedBox`, mechanism inferred not proven); the Subjects search placeholder against the top border of its field (`subjects_screen.dart:209-230`, fixed height, 16 dp vertical padding); leaderboard podium and row names and points truncated, "1,890 نقطة" and "2,140 نقطة" touching (`podium.dart:160,168`, `leaderboard_row.dart`); the Arabic language-pill label sitting above centre (not investigated).
+
+**Why tests missed it.** The tests assert no `RenderFlex` overflow; these are silent ellipsis or clip cases, and the test font is wider than the real one, so size assertions are not device facts (RESPONSIVE caveat).
+
+**Fix.** None until the policy is decided; applied RESPONSIVE items (#2, #5, #6, #8, #12) do not cover them. Related and not duplicated here: DESIGN_ISSUES #125 and #132 §2 (TitledChrome titles wrap mid-word at 2.0x on narrow phones).
+
+## BUG-048 🟡 The legal viewer's tables break words mid-word at 2.0x on narrow phones (E2)
+
+**Status:** OPEN — **designer / owner** (DG-05 table behaviour; `CW04a_REPORT.md` §8 already lists it as an open question; O-21). Measured on the **live** Privacy bodies (four public GETs, 2026-10-12 10:26 UTC) through the real `LegalDocumentScreen` in headless tests with the bundled fonts.
+
+**What breaks.** At 2.0x on 360 dp each two-column cell is 144 dp wide; a 10 to 13 letter word needs 147 to 172 dp, so the line wrapper breaks it by character: 11 mid-word breaks in 9 cells across the 3 English Privacy tables ("governorate" renders as "gove" / "rnorate"), 1 at 411 dp, 1 in Arabic at 360 dp (a 12-letter Latin word in an Arabic cell). None at 1.0x, none in Terms, none in body text; no clipping, no overflow, no lost text. Cells are also vertically centred (the package default), so a short cell floats beside a tall one.
+
+**Root cause.** `legal_markdown.dart:92-94`: the package default `FlexColumnWidth` splits two columns 50/50 and is not overridden.
+
+**Why tests missed it.** The 2.0x / 320 dp test asserts no overflow, not the absence of mid-word breaks.
+
+**Fix.** A design call that must not change the served text (content-aware widths, or stack each row as label over value at large text). The other 31 matrix cases pass, including a single visible title, header semantics, direction in Arabic, scroll to the end and contrast 13.5:1 light / 11.3:1 dark.
+
+## BUG-049 🟡 `success_badge.svg` loses its drop-shadow `<filter>` (E3)
+
+**Status:** OPEN — **designer** (`DESIGN_ISSUES.md` #28 already covers it and records the shadow's values; nothing new). Logged on the emulator walk as `unhandled element <filter/>; Picture key: Svg loader` when the OTP success view appears. The badge draws without its shadow (`assets/images/success_badge.svg:9-15`).
+
+**Why tests missed it.** (Inferred; not searched for.) `flutter_svg` only logs the dropped element, so nothing fails; the only sign is the log line.
+
+## BUG-050 🟡 Support thread: a short LTR message in the Arabic UI aligns differently from a wrapped one (E3)
+
+**Status:** OPEN — a **designer question** (intent). In the Arabic thread a wrapped English message starts at the left edge and a one-line English reply hugs the right edge under the author name.
+
+**Root cause.** `support_message_row.dart:114-124`: a `Text` with a content-derived `textDirection` and no `textAlign`, in an RTL `Column` with `crossAxisAlignment.start`.
+
+**Why tests missed it.** The thread tests used Arabic text in the Arabic UI and long English text; no short one-line English message in the Arabic UI.
+
+## BUG-051 🟡 The offline banner sits flush against the next element on Learn and Leaderboard (E3)
+
+**Status:** OPEN — engineering (a spacer). Airplane mode: the red banner has about 2 px of gap against the Subjects search field and the Leaderboard scope toggle; Home and Profile space it properly.
+
+**Root cause.** `subjects_screen.dart:59-60` and `leaderboard_screen.dart:63` place `OfflineBanner` with no following spacer.
+
+**Why tests missed it.** (Inferred; not searched for.) The walk found it by eye on the emulator; nothing in this pass measured the gap in a test.
+
+## BUG-052 🟡 The contract-model guard accepts a field name that only appears inside a string
+
+**Status:** OPEN — engineering (test guard; `test/guards/rules.dart`). Found by W3b and again by W3d, each by renaming a field and watching the binding stay green.
+
+**What breaks.** `dartDeclaresField` matches `\bfield\s*[,)}]` anywhere in a class body, so a `toString` that interpolates `$level,` satisfies a required-field binding even with the real constructor parameter deleted (reproduced with `Friend.level` and `MyInvite.pointsEarned`).
+
+**Why it matters.** The new models avoid it by building `toString` from `toJson()` or by redacting, and say so in comments; a future model will not know. `contractRequiredFields` also cannot reach inline (path) schemas: 6 of the W3c bodies are inline and are covered by `test/dev/contract_inline.dart` instead.
+
+**Fix (proposed, not done).** Tighten the matcher to constructor parameters only.

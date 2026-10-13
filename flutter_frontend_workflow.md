@@ -234,7 +234,7 @@ Tokens are written by `OtpNotifier.verify` (authenticated fork) or `Registration
 
 ### 3.1 Router
 
-One `GoRouter` in `lib/core/router/app_router.dart` (366 lines), exposed as `routerProvider`. `initialLocation: '/'`, `refreshListenable` mirrors auth, `redirect` is `authRedirect`. There is **no deep-link configuration** on either platform (no intent filters beyond the launcher, no associated domains) — deep links are an internal navigation concept only.
+One `GoRouter` in `lib/core/router/app_router.dart` (652 lines at 2026-10-12; this audit's original "366 lines" is stale), exposed as `routerProvider`. `initialLocation: '/'`, `refreshListenable` mirrors auth, `redirect` is `authRedirect`. There is **no deep-link configuration** on either platform (no intent filters beyond the launcher, no associated domains) — deep links are an internal navigation concept only.
 
 ### 3.2 Complete route map
 
@@ -247,7 +247,6 @@ One `GoRouter` in `lib/core/router/app_router.dart` (366 lines), exposed as `rou
  │                └── /register/track  SignupTrackScreen
  │                     ├── /register/school      SchoolDetailScreen ──┐
  │                     └── /register/university UniversityDetailScreen ┴─ POST /auth/register ► /home
- ├── /track-select  _Placeholder('Track select') ······ DEAD ROUTE — nothing navigates here
  │
  ├── StatefulShellRoute.indexedStack  →  MainShell (5-tab notched nav bar, one Navigator per branch)
  │    ├── [0] /home         HomeScreen
@@ -259,9 +258,9 @@ One `GoRouter` in `lib/core/router/app_router.dart` (366 lines), exposed as `rou
  │    ├── [3] /message      MessagePlaceholderScreen  ("Coming soon" — no endpoint exists)
  │    └── [4] /account      ProfileScreen
  │
- ├── /quiz/setup            QuizSetupScreen   extra: QuizSetupArgs (required, `extra!`)   ─┐ outside the shell:
+ ├── /quiz/setup            QuizSetupScreen   extra: QuizSetupArgs (null → fallback)      ─┐ outside the shell:
  ├── /quiz/:quizId          QuizScreen        extra: Quiz  (null → _QuizUnavailableScreen)  │ full-screen tasks,
- │    └── result            QuizResultScreen  extra: QuizResultArgs (`extra!`), pushReplacement │ nav bar hidden
+ │    └── result            QuizResultScreen  extra: QuizResultArgs (null → fallback), pushReplacement │ nav bar hidden
  ├── /profile               ProfileScreen (same hub as /account, reachable outside the shell)
  │    └── edit              EditProfileScreen
  ├── /settings              SettingsScreen
@@ -277,7 +276,7 @@ Removed on 2026-09-04: `/subscription` and `/subscription/return` (purchase surf
 ### 3.3 Parameters and payloads
 
 - **Path parameters** carry catalog ids (`subjectId`, `unitId`, `chapterId`, `quizId`). All three catalog levels read the *same* cached `subjectTreeProvider(subjectId)`; the ids select from the tree, they are not fetch keys.
-- **`extra`** carries in-memory objects that cannot be rebuilt from the server: `OtpArgs`, `RegistrationArgs`, `QuizSetupArgs`, `Quiz`, `QuizResultArgs`. Only `/quiz/:quizId` guards a null `extra` gracefully; `/otp`, `/quiz/setup` and `/quiz/:quizId/result` use `state.extra!` and would throw on a cold link.
+- **`extra`** carries in-memory objects that cannot be rebuilt from the server: `OtpArgs`, `RegistrationArgs`, `QuizSetupArgs`, `Quiz`, `QuizResultArgs`. `/quiz/:quizId`, `/quiz/setup` and `/quiz/:quizId/result` fall back to `_QuizUnavailableScreen` on a missing or wrong-typed `extra` (the last two since 2026-10-12); `/otp` reads `state.extra` through the router's remembered `lastOtpArgs`, which is cleared when a session ends (since 2026-10-12), and redirects to `/login` when it has none.
 
 ### 3.4 Navigation patterns
 

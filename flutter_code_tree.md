@@ -291,11 +291,11 @@ lib/core/router/
 └── app_router.dart
 ```
 
-- **Screens:** two private ones live here — `_QuizUnavailableScreen` (cold deep-link to `/quiz/:quizId` with no `Quiz` in `extra`; unrecoverable by design because quiz state is memory-only) and `_Placeholder`.
+- **Screens:** one private one lives here — `_QuizUnavailableScreen` (a cold deep-link to `/quiz/:quizId` with no `Quiz` in `extra`, and, since 2026-10-12, `/quiz/setup` and `/quiz/:quizId/result` when their `extra` is missing or of the wrong type; unrecoverable by design because quiz state is memory-only).
 - **State:** Riverpod `routerProvider` (`Provider<GoRouter>`); `AuthController` state is mirrored into a `ValueNotifier` fed to `refreshListenable`. `authRedirect(AuthStatus, String)` is a pure function, unit-tested directly: `AuthUnknown` waits, unauthenticated off an auth route → `/login`, authenticated sitting on `/` or `/login` → `/home`. The whole `/register*` wizard is pre-auth.
-- **Routes:** `/`, `/login`, `/otp`, `/register`(+`/track`,`/school`,`/university`), `/track-select`, shell branches `/home` · `/leaderboard` · `/learn` (nested `mistakes/subject/:subjectId/unit/:unitId/chapter/:chapterId` and `subject/:subjectId/…`) · `/message` · `/account`, then outside the shell `/quiz/setup`, `/quiz/:quizId`(+`result`,`result/review`), `/profile`(+`edit`), `/settings`, `/refer`, `/support`, `/friends`, `/legal/privacy`, `/legal/terms`.
+- **Routes:** `/`, `/login`, `/otp`, `/register`(+`/track`,`/school`,`/university`), shell branches `/home` · `/leaderboard` · `/learn` (nested `mistakes/subject/:subjectId/unit/:unitId/chapter/:chapterId` and `subject/:subjectId/…`) · `/message` · `/account`, then outside the shell `/quiz/setup`, `/quiz/:quizId`(+`result`,`result/review`), `/profile`(+`edit`), `/settings`, `/refer`, `/support`, `/friends`, `/legal/privacy`, `/legal/terms`.
 - **Tests:** `test/core/router/app_router_test.dart`; exercised further by `test/features/registration/registration_router_flow_test.dart` and `test/features/catalog/catalog_navigation_test.dart`.
-- Surprising: three gates. `/track-select` is the last `_Placeholder`; `/leaderboard` serves `LeaderboardPlaceholderScreen` even though the real screen is built and tested, because `GET /leaderboard` is `draft` at the vendored pin; `/friends` is routed but has **no entry point** in the app — no frame draws the row.
+- Surprising: one gate. `/friends` is routed (`app_router.dart:591`) but has **no entry point** in the app — no frame draws the row, and nothing in `lib/` navigates to it. `/leaderboard` is **not** a gate: it builds the real `LeaderboardScreen` (`app_router.dart:339-340`); the placeholder was removed on 2026-09-22 when D-008 closed (`GET /leaderboard` is `x-stability: stable` at the pin). The snapshot's earlier wording that it served `LeaderboardPlaceholderScreen` was stale, and so were the same claims in the Leaderboard and Shell sections below (each now carries a note).
 
 ### core/session — `lib/core/session/`
 
@@ -553,7 +553,7 @@ lib/features/leaderboard/
 - **Repositories / API:** `LeaderboardRepository` → `GET /leaderboard?scope=&cursor=&limit=`. `GET /leaderboard/me` is deliberately **not** called: no synthetic self-rank row.
 - **Tests:** `test/features/leaderboard/{leaderboard_notifier,leaderboard_screen}_test.dart` + `leaderboard_fixtures.dart`
 
-Surprising: **the screen is built and tested but not reachable.** `app_router.dart:152-163` mounts `LeaderboardPlaceholderScreen` on the `/leaderboard` branch instead, because `GET /leaderboard` is `x-stability: draft` at our pin (already stable upstream); the swap is one line, the audit is not (D-008). Also: `items.isEmpty` alone is **not** empty — the server may return zero rows with `hasMore: true`, so `isEmpty` requires both. `limit` is asserted, never clamped. `LeaderboardEntry` carries no `level` even though the Figma podium writes one.
+**[Stale since 2026-09-22 (D-008 closed): the next sentence is the 2026-09-19 snapshot. The screen IS reachable now: `/leaderboard` builds `LeaderboardScreen` (`app_router.dart:339-340`), `GET /leaderboard` is `x-stability: stable` at the pin, and `LeaderboardPlaceholderScreen` no longer exists in `lib/`.]** Surprising: **the screen is built and tested but not reachable.** `app_router.dart:152-163` mounts `LeaderboardPlaceholderScreen` on the `/leaderboard` branch instead, because `GET /leaderboard` is `x-stability: draft` at our pin (already stable upstream); the swap is one line, the audit is not (D-008). Also: `items.isEmpty` alone is **not** empty — the server may return zero rows with `hasMore: true`, so `isEmpty` requires both. `limit` is asserted, never clamped. `LeaderboardEntry` carries no `level` even though the Figma podium writes one.
 
 ---
 
@@ -769,12 +769,12 @@ lib/features/shell/
   screens/tab_placeholder.dart
 ```
 
-- **Screens:** `TabPlaceholder`, `LeaderboardPlaceholderScreen`, `MessagePlaceholderScreen`.
+- **Screens:** `TabPlaceholder`, `MessagePlaceholderScreen` (`LeaderboardPlaceholderScreen`, listed here in the 2026-09-19 snapshot, no longer exists: the route builds `LeaderboardScreen`).
 - **Widgets:** `MainShell`, `_NavTab`, `_CentreTab` (raised into the bar's own notch), `_NavBarPainter`, `_NavBarClipper`.
 - **State:** none — no providers or notifiers; the shell is driven entirely by `go_router`'s `navigationShell`.
 - **Repositories / API:** none.
 - **Tests:** `test/features/shell/main_shell_test.dart`, `test/features/shell/nav_centre_tab_test.dart`, `test/goldens/nav_bar_golden_test.dart` (ten goldens, light/dark × tabs 0–4).
-- **Surprising:** `LeaderboardPlaceholderScreen` gates a **fully built and tested** `lib/features/leaderboard/` behind a placeholder purely because `GET /leaderboard` is still `draft` at the pinned contract — held, not unwritten. `MainShell`'s own doc comment ("Only Home is real so far; the other four are coming-soon placeholders") is stale: `tab_placeholder.dart` records that Learn became the real Subjects screen on Day 5 and Account the real `ProfileScreen` on Day 8. The bar is hand-rolled rather than a Material `NavigationBar`.
+- **Surprising:** **[Stale since 2026-09-22 (D-008 closed): the leaderboard is no longer gated; `/leaderboard` builds `LeaderboardScreen` and the placeholder class is gone.]** `LeaderboardPlaceholderScreen` gates a **fully built and tested** `lib/features/leaderboard/` behind a placeholder purely because `GET /leaderboard` is still `draft` at the pinned contract — held, not unwritten. `MainShell`'s own doc comment ("Only Home is real so far; the other four are coming-soon placeholders") is stale: `tab_placeholder.dart` records that Learn became the real Subjects screen on Day 5 and Account the real `ProfileScreen` on Day 8. The bar is hand-rolled rather than a Material `NavigationBar`.
 
 ### subscription — `lib/features/subscription/`
 Nothing is implemented. An empty scaffold retained from before the app went purchase-silent.

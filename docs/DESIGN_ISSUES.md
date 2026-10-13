@@ -22,7 +22,7 @@
 | 4 | University field order breaks the University→Faculty→Year data cascade | 🟠 | Designer | built by cascade |
 | 5 | OTP screen shows **4** digit boxes; contract requires **6** | 🟠 | Designer | built as 6 |
 | 6 | Phone prefix shows `+02`; Egypt is `+20` | 🟠 | Designer | built as +20 |
-| 7 | Referral / Invitation Code field has no backend field in the contract | 🟠 | PM + Seif | `TODO(contract)` |
+| 7 | Referral / Invitation Code: the School track now sends it (`inviteCode`, stable); University does not (the pin still words it draft; owner decision O-18); the notice and caption are held | 🟠 | Owner (O-18, H-01) + Designer (DG-22) | School sends, University unsent |
 | 8 | Login "Create New Account" implies a direct-registration path that can't exist | 🟠 | Designer | Day-3 fix |
 | 9 | Legal URLs (User Agreement/Privacy/Cookie) not provided | 🟡 | Product/Legal | `TODO(legal)` |
 | 10 | ~~No in-app theme toggle although a full dark theme exists~~ — **RESOLVED** (Day 8 Settings) | ✅ | — | `theme_provider.dart` |
@@ -123,11 +123,17 @@ Built as **6** in code (contract wins).
 **Where:** Login (`82:819`) + Sign Up_1. **What:** the chip shows `+02`; Egypt's dial code is `+20`.
 Looks like a typo. **Fix:** designer corrects to `+20`. Built as `+20` in code.
 
-## 7. 🟠 Referral / Invitation Code has no backend
-**Where:** Sign Up_1 ("Referral Code (Optional)" / "earn points together"). **What:** neither
-register body accepts a referral/invitation code. **Fix we need:** PM + Seif decide — is this M1
-scope? If yes, Seif adds a contract field; if no, remove it from the design.
-**Meanwhile in code:** the field is shown and collected but **never submitted**, marked `TODO(contract)`.
+## 7. 🟠 Referral / Invitation Code: the School track sends it, University does not (the pin still says draft)
+**Where:** Sign Up_1 ("Referral Code (Optional)" / "earn points together"). **History:** the contract once had no field for it, so the
+code was collected and thrown away (`TODO(contract)`). **Now (2026-10-12, implementation workspace, uncommitted, BUILD level):** the
+**School** registration body carries it as `inviteCode` (stable since 3.44.0-m1; `openapi.yaml:4144-4151`), trimmed, and the key is omitted
+when the field is blank; the 201's `inviteCodeApplied` is parsed and shown nowhere. A code can never block registration
+(`openapi.yaml:390-391`) and the client does not validate it.
+**University does not send it.** The pin's prose still words the field as draft (`openapi.yaml:4179-4186`). Seif's answer (stable since 3.44;
+the pin's wording is a known error) is `BACKEND_HANDOFF.md` BH-B7 / BH-B8, tagged `[3.47]`, so it is not in the pin. Sending it before a
+re-vendor is an **owner decision** (`COMPLETION_STATE.md` O-18), **not a Seif re-ask**: one line in `UniversityRegistration.fromDraft` plus tests.
+**Still held:** the "not applied" notice (DG-22), the "Earn points together" caption and the reward copy (H-01: the contract pays +10 to the
+inviter only, the frame says 500 to both). **Fix we need:** the designer's notice and caption; the owner's O-18 and H-01.
 
 ## 8. 🟠 "Create New Account" flow
 **Where:** Login (`82:819`). **What:** the button implies a direct registration path, but the
@@ -5254,6 +5260,7 @@ under the chip (#131 §11, AVD 2026-10-10).
 | Leaderboard header | Leaderboard | the row is already 48 (the share `IconButton`). The box sits flush to the chip's end and reaches 13 toward the screen edge. Start inset 20 → 7 |
 | Quiz Result / Quiz Review headers | Result, Review | side insets −6.5, Review's floor 35 → 48, title inset +6.5 |
 | Sign Up_1 / Sign Up_2 rows | Sign up (identity, track) | the box sits flush to the chip's start and reaches into the space before the language pill. The row is 48, so the top inset and the gap under the row each give back (48 − 36.10) / 2 |
+| `RegistrationHeader` | School and University registration detail (**added 2026-10-12**, W2) | the same arrangement: box flush to the start, row 48, the top inset (`8 − slop`) and the gap after the row (`gap − slop`) each give back `RegistrationHeader.slop` = (48 − 36.10) / 2 |
 
 `LanguagePill.height` is now public; the sign-up rows need it.
 
@@ -5263,7 +5270,7 @@ under the chip (#131 §11, AVD 2026-10-10).
 of pixels, none in the chip's strip). The title is now `TextAlign.center` within a box rounded up to a whole pixel.
 A control run with the old alignment matched 32/32. Regression tests:
 - `test/core/widgets/back_chip_target_test.dart` (19)
-- `test/features/registration/signup_back_target_test.dart` (8)
+- `test/features/registration/signup_back_target_test.dart` (8 at O-15; 20 after 2026-10-12 added the School and University detail headers, EN and AR; it has grown again with R2b's Sign Up_1 OS Back tests)
 - one each in the Leaderboard, Quiz Result and Quiz Review tests
 
 Each of three behavioural mutations fails them: padded drawn as 35, a 35 `TitledChrome` bar, and a 35 catalog
@@ -5271,8 +5278,8 @@ header. The Mistakes tests now measure the header's 35 band, not its 48 box.
 
 **Still open.**
 1. **Not migrated, still 35 dp targets:** OTP (`otp_screen.dart`), the unknown-route page (`route_error_screen.dart`),
-   the support thread header (`support_ticket_screen.dart`) and School/University detail (`RegistrationHeader`, whose
-   screens are N-26/CW02 files). Their files carry other waves' uncommitted work, so they were left alone. Each is a
+   the support thread header (`support_ticket_screen.dart`). (School/University detail, `RegistrationHeader`, was migrated
+   2026-10-12: see the Update below.) Their files carry other waves' uncommitted work, so they were left alone. Each is a
    one-site change once those waves are committed.
 2. **Large-text wrapping:** at 2.0×, English "Notifications" breaks inside the word on 360 dp and narrower, and
    "Terms & Conditions" does on 320 dp. There is no mid-word break at 411 dp and none in Arabic. Every title stays
@@ -5289,6 +5296,43 @@ header. The Mistakes tests now measure the header's 35 band, not its 48 box.
      Leaderboard and Units, at 1.0× and at 2.0× font scale.
    - **Support list title bar** (AR, 1.0×): pixel-identical to the pre-O-15 CW12a capture.
    - **2.0×:** the AR Support title and the EN "Notifications" title are whole and clear of the chip.
+
+**Update 2026-10-12 (implementation workspace, uncommitted, BUILD level).** `RegistrationHeader` (School and University detail) is migrated (W2):
+the 35 chip keeps its pixels in a 48 box flush to the start. Geometry tests, School and University, EN and AR: the chip stays 35 × 35 at the old
+edge, the chip centre, the pill top and the title top are where they were, the target and the header row and the semantics node are 48, a tap 10 dp
+past the chip's inner edge and one 5 dp below it go back, and a tap 20 dp past does not. There is **no before/after pixel diff** (the header has no
+golden): "same pixels" rests on those assertions, mutation checks and unchanged goldens. **Still waiting for their wave's commit, still 35 dp:** the OTP
+screen, the unknown-route page and the support thread header. **Owner-held, unchanged:** the language pill (#89), the Mistakes pill (#80) and the Settings
+language track (#112). Items 2 and 3 of "Still open" (large-text wrapping, 320 dp) are not changed by this update.
+
+## 133. 🟡 BUILT 2026-10-12, uncommitted — build choices no frame draws (OTP code row, onboarding sheet, scrolling short screens, derived widths) and the engineering-only environment ribbon
+
+> **Classification:** implementation choices, not Figma readings. BUILD level only (the bundled fonts, headless); none was seen on a device. Nothing here
+> waits on the designer unless an Ask says so. Records: `KNOWN_BUGS.md` BUG-033, BUG-034, BUG-038, BUG-039, BUG-042, BUG-043; `docs/RESPONSIVE.md` #5, #8, #12;
+> `DECISIONS.md` D-028.
+
+**1. The OTP code row below about 396 dp (RESPONSIVE #8).** The frame draws six 48 dp boxes 8 dp apart (328 dp). A card whose inner width is the
+screen width minus 68 cannot hold that under about 396 dp, so the row now scales uniformly (`FittedBox`, `scaleDown`): by 292 / 328 = 0.89 at 360 dp and
+252 / 328 = 0.77 at 320 dp (computed from the card width, not measured on a device). From 396 dp up it is the frame's row, pixel-identical. The digit
+order stays left-to-right. **Ask (designer):** is a uniformly scaled row acceptable on narrow phones, or should the boxes narrow instead?
+
+**2. The onboarding sheet.** The sheet is content-sized. On a screen that cannot hold it (320 × 568 at 2.0× text) its content now scrolls, and a sheet taller
+than the screen fills it; at that size the language pill drawn above overlays the top of the content at scroll offset 0, and Log In and Get Started are
+reachable by scrolling (before, Log In was not reachable at all). A cap that stopped the sheet below the pill row was built and removed on review (nobody
+asked for it and it has no Figma basis). **Ask (designer / owner):** whether the sheet should stop below the pill row (a small `ConstrainedBox`, clamped
+with `math.max(0, …)`; a visual decision).
+
+**3. Scrolling instead of overflowing.** The OTP success view, the Go-to-University confirm dialog (the whole card scrolls, including the title row with the X,
+so on a short phone at large text the X can scroll out of sight; Back and the barrier still dismiss it) and the catalog's error / offline message scroll when
+the room is short and are laid out as before when it fits. No frame draws the short-screen case.
+
+**4. Derived widths below the frame.** Quiz Setup's length chips (frame 171 × 45, two per row, 15 apart) take `(rowWidth − 15) / 2` on rows narrower than
+357 dp (screens under about 397 dp) and are exactly 171 above; the tree-row progress caption is capped at the room the row has and ellipsises. Derived, not drawn.
+
+**5. The environment ribbon (CW18a) is engineering-only.** `EnvironmentRibbon` is a corner banner reading DEV or STAGING on dev and staging builds and
+absent in production. It is **not a student-facing element, appears in no Figma frame and carries no copy** (the stock `Banner` paints the flavor's own
+name). Colour: `AppColors.destructive`, borrowed (no neutral saturated token exists). Corner: pinned to the physical top right in both app languages.
+The pin assumes a left-to-right system language; the Arabic-system-language check is open (`COMPLETION_STATE.md` O-20). It never intercepts a tap.
 
 # Appendix — edit4's open ledger, as of 2026-09-20
 
