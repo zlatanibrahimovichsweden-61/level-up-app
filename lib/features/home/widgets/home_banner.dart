@@ -24,9 +24,11 @@ class HomeBanner extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
 
     return Container(
-      height: 140,
+      // 140 is the floor, not the height: the title is `displayLarge`, which
+      // grows with the text scale and wraps in Arabic, so a fixed box clipped
+      // it. Identical at 1.0x.
+      constraints: const BoxConstraints(minHeight: 140),
       padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
-      alignment: AlignmentDirectional.centerStart,
       decoration: BoxDecoration(
         color: ext.cardFill,
         borderRadius: BorderRadius.circular(15),
@@ -36,17 +38,25 @@ class HomeBanner extends StatelessWidget {
         // surface's rule rather than inventing a second one.
         border: Border.all(color: ext.homeAccent, width: 0.5),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.auto_stories_outlined, size: 32, color: ext.homeAccent),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              l10n.learnTodayLeadTomorrow,
-              style: AppType.displayLarge.copyWith(color: ext.textPrimary),
+      // `heightFactor: 1`: the Align takes its child's height (never the room
+      // it is offered), so the box is the floor or the content, whichever is
+      // taller, in a bounded parent as in Home's scrolling column. A bare
+      // `alignment:` on the Container would stretch it to fill a bounded one.
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        heightFactor: 1,
+        child: Row(
+          children: [
+            Icon(Icons.auto_stories_outlined, size: 32, color: ext.homeAccent),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                l10n.learnTodayLeadTomorrow,
+                style: AppType.displayLarge.copyWith(color: ext.textPrimary),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

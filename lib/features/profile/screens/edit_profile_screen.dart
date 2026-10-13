@@ -210,7 +210,7 @@ class _FormState extends ConsumerState<_Form> {
       context,
       selectedId: _pickedAvatarId ?? widget.profile.avatar.id,
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     setState(() {
       _pickedAvatarId = picked.id;
       _pickedAvatarUrl = picked.url;
@@ -645,6 +645,11 @@ class _AvatarFallback extends StatelessWidget {
 
 /// "Save Change" · Figma `180:4081` — 60pt tall, 20pt radius, primary fill.
 ///
+/// 60 is a MINIMUM, not a fixed height (`ConstrainedBox`, resp-q6): at the
+/// default text scale the button is exactly the frame's 60, and a label that
+/// scales up or wraps (larger text, the Arabic copy) grows the button instead of
+/// being clipped inside a fixed box.
+///
 /// Wrapped in [PrimaryCta] (edit5.md §7.11a, design item #12): light draws the
 /// CTA's (0.5, 0.5) blur-4 black shadow (`348:8911`), dark adds the `#AE87E7`
 /// glow layer over it (`348:8909`). The wrapper's `enabled` mirrors
@@ -663,8 +668,8 @@ class _SaveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 60,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 60),
       child: PrimaryCta(
         enabled: !busy,
         child: FilledButton(

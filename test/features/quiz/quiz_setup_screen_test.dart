@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
+import 'package:level_up_app/core/providers/core_providers.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
@@ -11,8 +13,11 @@ import 'package:level_up_app/core/widgets/offline_banner.dart';
 import 'package:level_up_app/features/quiz/models/quiz_mode.dart';
 import 'package:level_up_app/features/quiz/models/quiz_setup_args.dart';
 import 'package:level_up_app/features/quiz/models/quiz_type.dart';
+import 'package:level_up_app/features/quiz/repository/quiz_repository.dart';
 import 'package:level_up_app/features/quiz/screens/quiz_screen.dart';
+import 'package:level_up_app/features/quiz/screens/quiz_setup_screen.dart';
 import 'package:level_up_app/features/quiz/widgets/limit_sheet.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'quiz_fixtures.dart';
@@ -858,6 +863,179 @@ void main() {
         tester.widget<SvgPicture>(cross()).colorFilter,
         const ColorFilter.mode(Color(0xFFFCFBF9), BlendMode.srcIn),
       );
+    });
+  });
+
+  // CW17 / RESPONSIVE.md #5. The frame's chips are 171 wide, two to a row with a
+  // 15 gap (357) inside the frame's 362. On a phone narrower than 397 dp (360,
+  // 375, 390 - most of them) that no longer fit, so the third of the old
+  // fixed-width chips fell to a row of its own and EACH chip took a row. The
+  // chip now takes half of what the row has, capped at the frame's 171, so the
+  // frame width and wider are exactly as drawn and narrower ones keep the drawn
+  // two-up layout. Widths below the frame's are derived, not drawn.
+  group('length chips follow the width (RESPONSIVE #5)', () {
+    Rect chip(WidgetTester tester, String label) => tester.getRect(
+      find
+          .ancestor(
+            of: find.text(label),
+            matching: find.byType(ElevatedSurface),
+          )
+          .first,
+    );
+
+    Future<void> openAt(
+      WidgetTester tester, {
+      required double width,
+      required String locale,
+      double textScale = 1.0,
+    }) async {
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = Size(width, 900);
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      tester.platformDispatcher.textScaleFactorTestValue = textScale;
+      // The screen alone, not through the router: the router boots on Home,
+      // whose level card overflows at 2.0x in Arabic (a separate, recorded
+      // RESPONSIVE item) and would fail a test about these chips.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            isOnlineProvider.overrideWith((ref) => Stream.value(true)),
+            quizRepositoryProvider.overrideWithValue(MockQuizRepository()),
+          ],
+          child: MaterialApp(
+            locale: Locale(locale),
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const QuizSetupScreen(args: _schoolArgs),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    for (final locale in ['en', 'ar']) {
+      final rtl = locale == 'ar';
+      for (final textScale in [1.0, 2.0]) {
+        // Widths narrower than the frame: two up, filling the row.
+        for (final (width, chipWidth) in [
+          (360.0, 152.5), // (360 - 40 - 15) / 2
+          (375.0, 160.0), // (375 - 40 - 15) / 2
+          (390.0, 167.5), // (390 - 40 - 15) / 2
+        ]) {
+          testWidgets(
+            '$width dp · $locale · ${textScale}x · two up, each $chipWidth wide',
+            (tester) async {
+              await openAt(
+                tester,
+                width: width,
+                locale: locale,
+                textScale: textScale,
+              );
+              final l10n = AppLocalizations.of(
+                tester.element(find.byType(QuizSetupScreen)),
+              );
+              final ten = chip(tester, l10n.quizSizeOption(10));
+              final thirty = chip(tester, l10n.quizSizeOption(30));
+              final fifty = chip(tester, l10n.quizSizeOption(50));
+
+              for (final c in [ten, thirty, fifty]) {
+                expect(c.width, chipWidth);
+                expect(c.height, 45);
+              }
+              // 10 and 30 share the first row, 50 is alone on the second, and
+              // the rows keep the frame's 15.
+              expect(thirty.top, ten.top);
+              expect(fifty.top, ten.bottom + 15);
+              // They fill the row between the 20 dp gutters, in reading order.
+              if (rtl) {
+                expect(ten.right, width - 20);
+                expect(thirty.left, 20);
+                expect(fifty.right, width - 20);
+              } else {
+                expect(ten.left, 20);
+                expect(thirty.right, width - 20);
+                expect(fifty.left, 20);
+              }
+              expect(
+                ten.right <= thirty.left || thirty.right <= ten.left,
+                true,
+              );
+              expect(tester.takeException(), isNull);
+            },
+          );
+        }
+
+        // The frame's width and wider: exactly the drawn 171 chip, unchanged.
+        for (final width in [402.0, 411.0, 430.0]) {
+          testWidgets(
+            '$width dp · $locale · ${textScale}x · exactly the frame\'s 171',
+            (tester) async {
+              await openAt(
+                tester,
+                width: width,
+                locale: locale,
+                textScale: textScale,
+              );
+              final l10n = AppLocalizations.of(
+                tester.element(find.byType(QuizSetupScreen)),
+              );
+              final ten = chip(tester, l10n.quizSizeOption(10));
+              final thirty = chip(tester, l10n.quizSizeOption(30));
+              final fifty = chip(tester, l10n.quizSizeOption(50));
+
+              for (final c in [ten, thirty, fifty]) {
+                expect(c.size, const Size(171, 45));
+              }
+              expect(thirty.top, ten.top);
+              expect(fifty.top, ten.bottom + 15);
+              // 171 + 15 + 171 from the leading gutter.
+              if (rtl) {
+                expect(ten.right, width - 20);
+                expect(thirty.right, width - 20 - 171 - 15);
+                expect(fifty.right, width - 20);
+              } else {
+                expect(ten.left, 20);
+                expect(thirty.left, 20 + 171 + 15);
+                expect(fifty.left, 20);
+              }
+              expect(tester.takeException(), isNull);
+            },
+          );
+        }
+      }
+    }
+
+    testWidgets('a narrower chip still selects: tapping 50 sends 50', (
+      tester,
+    ) async {
+      final quiz = MockQuizRepository();
+      when(
+        () => quiz.createQuiz(
+          scope: any(named: 'scope'),
+          length: any(named: 'length'),
+          mode: any(named: 'mode'),
+        ),
+      ).thenAnswer((_) async => quizFor());
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = const Size(360, 900);
+      addTearDown(tester.view.reset);
+
+      await openSetup(tester, quiz: quiz);
+      await tester.tap(find.text('50 Questions'));
+      await tester.pump();
+      await tester.tap(find.text('Start learning'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => quiz.createQuiz(
+          scope: any(named: 'scope'),
+          length: QuizLength.fifty,
+          mode: any(named: 'mode'),
+        ),
+      ).called(1);
     });
   });
 }

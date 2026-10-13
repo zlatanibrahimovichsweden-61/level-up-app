@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -52,6 +54,9 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
   /// Ephemeral UI state — `setState`, never a provider. It is not server data,
   /// and the frame pre-selects 30.
   QuizLength _length = defaultQuizLength;
+
+  /// The gap between chips, across and down (`146:2315` auto layout).
+  static const _chipGap = 15.0;
 
   @override
   Widget build(BuildContext context) {
@@ -126,19 +131,39 @@ class _QuizSetupScreenState extends ConsumerState<QuizSetupScreen> {
                         style: AppType.h3.copyWith(color: ext.textPrimary),
                       ),
                       const SizedBox(height: 20),
-                      Wrap(
-                        spacing: 15,
-                        runSpacing: 15,
-                        children: [
-                          for (final length in QuizLength.values)
-                            _LengthChip(
-                              label: l10n.quizSizeOption(length.value),
-                              selected: _length == length,
-                              onTap: creation.isLoading
-                                  ? null
-                                  : () => setState(() => _length = length),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // The frame's chip is 171, two to a row with a 15
+                          // gap (357) in the frame's 362. On a phone narrower
+                          // than 397 dp the two no longer fit, so each chip
+                          // takes half of what the row has - restoring the
+                          // drawn two-up layout instead of one chip per row.
+                          // At or above 397 dp this is exactly 171, so the
+                          // frame width is unchanged. Widths below the
+                          // frame's are derived, not drawn.
+                          final chipWidth = math.max(
+                            0.0,
+                            math.min(
+                              _LengthChip.frameWidth,
+                              (constraints.maxWidth - _chipGap) / 2,
                             ),
-                        ],
+                          );
+                          return Wrap(
+                            spacing: _chipGap,
+                            runSpacing: _chipGap,
+                            children: [
+                              for (final length in QuizLength.values)
+                                _LengthChip(
+                                  label: l10n.quizSizeOption(length.value),
+                                  selected: _length == length,
+                                  width: chipWidth,
+                                  onTap: creation.isLoading
+                                      ? null
+                                      : () => setState(() => _length = length),
+                                ),
+                            ],
+                          );
+                        },
                       ),
 
                       // 422 and every other non-sheet failure, inline. A 422
@@ -240,11 +265,18 @@ class _LengthChip extends StatelessWidget {
   const _LengthChip({
     required this.label,
     required this.selected,
+    required this.width,
     required this.onTap,
   });
 
+  /// The frame's chip width (`146:2315` / `146:2316`).
+  static const frameWidth = 171.0;
+
   final String label;
   final bool selected;
+
+  /// [frameWidth] where the row has room for two, narrower where it has not.
+  final double width;
   final VoidCallback? onTap;
 
   @override
@@ -258,7 +290,7 @@ class _LengthChip extends StatelessWidget {
       selected: selected,
       child: ElevatedSurface(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        width: 171,
+        width: width,
         height: 45,
         color: selected ? theme.colorScheme.primary : ext.quizOptionFill,
         shadows: elevation.lengthChipShadows,

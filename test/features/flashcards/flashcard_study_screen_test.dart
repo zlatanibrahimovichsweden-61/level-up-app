@@ -433,6 +433,49 @@ void main() {
       expect(find.byIcon(Icons.bookmark_border), findsNothing);
     });
 
+    // CW17 resp-q2 / RESPONSIVE.md #2, on the real screen. The progress row is
+    // the counter's 18 dp line at the default scale and GROWS with the text
+    // (the shared header's own pins are in `w4_study_progress_row_*_test.dart`
+    // under test/core/widgets): at 2.0x the counter's line is 28 dp, and a
+    // fixed 18 dp box clamped the paragraph while its glyphs kept their size.
+    for (final locale in ['en', 'ar']) {
+      testWidgets('2x text · the counter is drawn whole, inside the header · '
+          '$locale', (tester) async {
+        await _open(
+          tester,
+          repo: _repo(_deck(10)),
+          textScale: 2,
+          locale: locale,
+        );
+        final l10n = AppLocalizations.of(tester.element(header));
+        final counter = find.text(l10n.quizProgress(1, 10));
+        expect(counter, findsOneWidget);
+
+        // The line the glyphs really occupy, laid out with the paragraph's own
+        // inputs: a paragraph's rect is clamped to the room it is given.
+        final paragraph = tester.renderObject<RenderParagraph>(counter);
+        final painter = TextPainter(
+          text: paragraph.text,
+          textDirection: paragraph.textDirection,
+          textScaler: paragraph.textScaler,
+        )..layout();
+        final natural = painter.height;
+        painter.dispose();
+
+        final counterRect = rect(tester, counter);
+        final headerRect = rect(tester, header);
+        expect(
+          counterRect.height,
+          greaterThanOrEqualTo(natural - 0.01),
+          reason: 'a clamped box paints its glyphs outside it',
+        );
+        expect(counterRect.bottom, lessThanOrEqualTo(headerRect.bottom));
+        // It only ever GREW: never shorter than the frame's 89.18.
+        expect(headerRect.height, greaterThanOrEqualTo(89.18 - 0.01));
+        expect(tester.takeException(), isNull);
+      });
+    }
+
     // The owner's instruction: the title is centred on the SCREEN, not on the
     // room beside the ✕ (the frame's own sits 26.5 dp off it, 225:5607).
     for (final (name, locale, title) in [

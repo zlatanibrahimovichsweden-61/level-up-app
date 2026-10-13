@@ -9,6 +9,7 @@ import 'package:level_up_app/core/theme/app_elevation.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/core/widgets/elevation/primary_cta.dart';
+import 'package:level_up_app/core/widgets/study_session_chrome.dart';
 import 'package:level_up_app/features/profile/notifier/me_notifier.dart';
 import 'package:level_up_app/features/quiz/models/explanation_result.dart';
 import 'package:level_up_app/features/quiz/models/quiz.dart';
@@ -17,6 +18,7 @@ import 'package:level_up_app/features/quiz/screens/quiz_screen.dart';
 import 'package:level_up_app/features/quiz/widgets/limit_sheet.dart';
 import 'package:level_up_app/features/quiz/widgets/question_option_tile.dart';
 import 'package:level_up_app/features/quiz/widgets/question_stem_text.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'quiz_fixtures.dart';
@@ -141,6 +143,55 @@ void main() {
       expect(find.textContaining('Point'), findsNothing);
       expect(find.textContaining('+1'), findsNothing);
     });
+
+    // CW17 resp-q2 / RESPONSIVE.md #2, on the real screen. The progress row is
+    // the counter's 18 dp line at the default scale and GROWS with the text
+    // (the shared header's own pins are in `w4_study_progress_row_*_test.dart`
+    // under test/core/widgets): at 2.0x the counter's line is 28 dp, and a
+    // fixed 18 dp box clamped the paragraph while its glyphs kept their size.
+    //
+    // The scale is raised AFTER the quiz is on screen: the harness boots the
+    // real router through Home, whose own LevelCard overflows at 2.0x in
+    // Arabic (a separate, recorded RESPONSIVE item) and would fail the boot.
+    // Home sits offstage under the quiz and is not painted.
+    for (final locale in ['en', 'ar']) {
+      testWidgets('2x text · the counter is drawn whole, inside the header · '
+          '$locale', (tester) async {
+        await openQuiz(tester, locale: locale);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(StudySessionHeader)),
+        );
+        final counter = find.text(l10n.quizProgress(1, 3));
+        expect(counter, findsOneWidget);
+
+        // The line the glyphs really occupy, laid out with the paragraph's own
+        // inputs: a paragraph's rect is clamped to the room it is given.
+        final paragraph = tester.renderObject<RenderParagraph>(counter);
+        final painter = TextPainter(
+          text: paragraph.text,
+          textDirection: paragraph.textDirection,
+          textScaler: paragraph.textScaler,
+        )..layout();
+        final natural = painter.height;
+        painter.dispose();
+
+        final counterRect = tester.getRect(counter);
+        final headerRect = tester.getRect(find.byType(StudySessionHeader));
+        expect(
+          counterRect.height,
+          greaterThanOrEqualTo(natural - 0.01),
+          reason: 'a clamped box paints its glyphs outside it',
+        );
+        expect(counterRect.bottom, lessThanOrEqualTo(headerRect.bottom));
+        // It only ever GREW: never shorter than the frame's 89.18.
+        expect(headerRect.height, greaterThanOrEqualTo(89.18 - 0.01));
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   group('the per-question submit model', () {

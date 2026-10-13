@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
@@ -7,6 +8,8 @@ import 'package:level_up_app/core/theme/app_theme.dart';
 import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/features/catalog/widgets/tree_list_row.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
+
+import '../../goldens/golden_harness.dart';
 
 /// The drill-down row's PALETTE and its index disc · edit3.md #42.
 ///
@@ -438,6 +441,173 @@ void main() {
         ext.mistakesRowBorder,
       );
       expect(disc(tester).color, ext.mistakesBadgeFill);
+    }
+  });
+
+  // RESPONSIVE.md #12 (measured 2026-09-25 with the app's own fonts): the
+  // caption beside a progress bar overflowed 17 px at 320 dp and 2.0x in
+  // English, and at 250 dp from 1.3x. The caption now takes at most the room the
+  // row has and ellipsises past it. A caption that fits is laid out exactly as
+  // it always was.
+  //
+  // Last in the file, because it loads the real fonts for the rest of this
+  // isolate - the test face draws every glyph a full em wide and would turn
+  // every row here into an overflow case.
+  group('the caption gives way instead of overflowing (RESPONSIVE #12)', () {
+    setUpAll(loadAppFonts);
+
+    Future<AppLocalizations> pumpRow(
+      WidgetTester tester, {
+      required String locale,
+      required double width,
+      required double scale,
+      int answered = 480,
+      int total = 480,
+    }) async {
+      final l10n = await AppLocalizations.delegate.load(Locale(locale));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale(locale),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: width,
+                child: TreeListRow(
+                  index: 1,
+                  name: 'Cell Biology',
+                  progress: 0.45,
+                  caption: l10n.questionsCount(answered, total),
+                  onTap: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return l10n;
+    }
+
+    /// The width the caption would take with all the room it wanted.
+    double naturalWidth(WidgetTester tester, String caption) {
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.text(caption),
+      );
+      final painter = TextPainter(
+        text: paragraph.text,
+        textDirection: paragraph.textDirection,
+        textScaler: paragraph.textScaler,
+        maxLines: 1,
+      )..layout();
+      final width = painter.width;
+      painter.dispose();
+      return width;
+    }
+
+    Rect barRect(WidgetTester tester) => tester.getRect(
+      find.descendant(
+        of: find.byType(TreeListRow),
+        matching: find.byType(LinearProgressIndicator),
+      ),
+    );
+
+    for (final locale in ['en', 'ar']) {
+      final rtl = locale == 'ar';
+
+      // Wide enough: the caption is laid out in full, the bar fills the rest -
+      // what the row always did. (Every size here fits in the app's fonts.)
+      for (final (width, scale) in [(411.0, 1.0), (375.0, 1.0), (363.0, 1.3)]) {
+        testWidgets('$width dp · $locale · ${scale}x · unchanged: whole '
+            'caption, bar fills the rest', (tester) async {
+          final l10n = await pumpRow(
+            tester,
+            locale: locale,
+            width: width,
+            scale: scale,
+          );
+          final caption = l10n.questionsCount(480, 480);
+          final text = tester.getRect(find.text(caption));
+          final bar = barRect(tester);
+
+          expect(tester.takeException(), isNull);
+          expect(
+            text.width,
+            closeTo(naturalWidth(tester, caption), 0.01),
+            reason: 'not ellipsised',
+          );
+          // 8 between the bar and the caption, and nothing left over.
+          if (rtl) {
+            expect(bar.left - text.right, closeTo(8, 0.01));
+          } else {
+            expect(text.left - bar.right, closeTo(8, 0.01));
+          }
+        });
+      }
+
+      // The narrow cases: nothing overflows, the caption stays inside the text
+      // column and ellipsises, and the bar takes what is left (it may take
+      // none).
+      // The widths are the ROW's: a screen minus the list's two 20 gutters, so
+      // RESPONSIVE.md's "320 dp" screen is a 280 row and its "250 dp" one 210.
+      for (final (width, scale, answered, total) in [
+        // A 4-digit counter on a 320 dp screen at 2.0x: RESPONSIVE.md's
+        // measured 17 px. (A 3-digit one fits there; it is below.)
+        (280.0, 2.0, 1234, 5678),
+        (280.0, 1.3, 1234, 5678),
+        (280.0, 2.0, 480, 480),
+        (210.0, 1.3, 480, 480), // the measured "from 1.3x" (a 250 dp screen)
+        (210.0, 2.0, 480, 480),
+        (320.0, 2.0, 480, 480),
+        (250.0, 2.0, 480, 480),
+      ]) {
+        testWidgets('$width dp · $locale · ${scale}x · $answered/$total · no '
+            'overflow, caption inside the row', (tester) async {
+          final l10n = await pumpRow(
+            tester,
+            locale: locale,
+            width: width,
+            scale: scale,
+            answered: answered,
+            total: total,
+          );
+          final caption = l10n.questionsCount(answered, total);
+          final row = tester.getRect(find.byType(TreeListRow));
+          final text = tester.getRect(find.text(caption));
+          final bar = barRect(tester);
+          final chevron = tester.getRect(
+            find.descendant(
+              of: find.byType(TreeListRow),
+              matching: find.byType(Icon),
+            ),
+          );
+
+          expect(tester.takeException(), isNull);
+          expect(row.left <= text.left && text.right <= row.right, isTrue);
+          // Clear of the chevron, on the side it is not.
+          if (rtl) {
+            expect(text.left, greaterThanOrEqualTo(chevron.right));
+          } else {
+            expect(text.right, lessThanOrEqualTo(chevron.left));
+          }
+          // The bar never overlaps the caption.
+          expect(bar.width, greaterThanOrEqualTo(0));
+          if (rtl) {
+            expect(bar.left, greaterThanOrEqualTo(text.right));
+          } else {
+            expect(bar.right, lessThanOrEqualTo(text.left));
+          }
+        });
+      }
     }
   });
 }

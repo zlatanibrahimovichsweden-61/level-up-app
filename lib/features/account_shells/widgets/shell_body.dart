@@ -100,16 +100,28 @@ class DisabledActionButton extends StatelessWidget {
           child: Opacity(
             opacity: kProfileDisabledOpacity,
             child: Container(
-              height: 60,
-              alignment: Alignment.center,
+              // 60 is the floor, not the height: the frame's label is one
+              // line at the default text scale, and a larger scale (or a
+              // longer Arabic label that wraps) must grow the button instead
+              // of overflowing a fixed box. Identical at 1.0x.
+              constraints: const BoxConstraints(minHeight: 60),
               padding: const EdgeInsetsDirectional.symmetric(horizontal: 32),
               decoration: BoxDecoration(
                 color: cs.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                label,
-                style: AppType.buttonLarge.copyWith(color: cs.onPrimary),
+              // `heightFactor: 1`: the Align takes its label's height (never
+              // the room it is offered), so the button is the floor or the
+              // label, whichever is taller, in a bounded parent as in
+              // ShellBody's column. A bare `alignment:` on the Container
+              // would stretch it to fill a bounded one.
+              child: Align(
+                alignment: Alignment.center,
+                heightFactor: 1,
+                child: Text(
+                  label,
+                  style: AppType.buttonLarge.copyWith(color: cs.onPrimary),
+                ),
               ),
             ),
           ),

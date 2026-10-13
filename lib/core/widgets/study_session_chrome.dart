@@ -230,10 +230,14 @@ class StudyProgressBar extends StatelessWidget {
       // 20 from both screen edges, the frame's 362-wide row: the header's own
       // 7 plus 13.
       padding: const EdgeInsets.symmetric(horizontal: 20 - 7),
-      child: SizedBox(
+      child: ConstrainedBox(
         // The frame's row is its counter's 18 dp line; the bar is centred on
-        // it.
-        height: 18,
+        // it. 18 is the row's FLOOR, not its height: the counter is
+        // `captionSmall` (10/14), whose line grows with the text scale (28 at
+        // 2.0x), and a fixed box clamped the paragraph while its glyphs kept
+        // their natural size, off the bar's centre and over the header's rule.
+        // Identical at the default scale.
+        constraints: const BoxConstraints(minHeight: 18),
         child: Row(
           children: [
             Expanded(

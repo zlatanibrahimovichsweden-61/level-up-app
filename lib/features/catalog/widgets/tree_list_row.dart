@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -123,6 +125,9 @@ class TreeListRow extends StatelessWidget {
     16.5,
   );
 
+  /// The gap between the progress bar and its caption.
+  static const _captionGap = 8.0;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -239,44 +244,60 @@ class TreeListRow extends StatelessWidget {
                           ),
                         if (progress != null) ...[
                           const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Expanded(
-                                // The bar says nothing to a screen reader
-                                // when the caption beside it says it in
-                                // words. Its own semantics carry
-                                // `SemanticsRole.progressBar` and a 0–100
-                                // range, and merged into this row they made
-                                // Android expose every Lectures row as a
-                                // ProgressBar instead of a Button, "37" read
-                                // first (Wave 08 walk, W08-6). Without a
-                                // caption the bar is the only readout, so it
-                                // keeps them.
-                                child: ExcludeSemantics(
-                                  excluding: caption != null,
-                                  // Mirrors itself under RTL via
-                                  // Directionality.
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 6,
-                                    backgroundColor: ext.progressTrack,
-                                    color: progressColor,
-                                    borderRadius: BorderRadius.circular(52),
+                          // LayoutBuilder: the caption may take no more than
+                          // the room the row has, so a narrow row at a large
+                          // text scale ellipsises it instead of overflowing
+                          // (RESPONSIVE.md #12). The bar still takes what the
+                          // caption leaves, so a caption that fits changes
+                          // nothing.
+                          LayoutBuilder(
+                            builder: (context, constraints) => Row(
+                              children: [
+                                Expanded(
+                                  // The bar says nothing to a screen reader
+                                  // when the caption beside it says it in
+                                  // words. Its own semantics carry
+                                  // `SemanticsRole.progressBar` and a 0–100
+                                  // range, and merged into this row they made
+                                  // Android expose every Lectures row as a
+                                  // ProgressBar instead of a Button, "37" read
+                                  // first (Wave 08 walk, W08-6). Without a
+                                  // caption the bar is the only readout, so it
+                                  // keeps them.
+                                  child: ExcludeSemantics(
+                                    excluding: caption != null,
+                                    // Mirrors itself under RTL via
+                                    // Directionality.
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 6,
+                                      backgroundColor: ext.progressTrack,
+                                      color: progressColor,
+                                      borderRadius: BorderRadius.circular(52),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              if (caption != null) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  caption!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppType.captionSmall.copyWith(
-                                    color: progressColor,
+                                if (caption != null) ...[
+                                  const SizedBox(width: _captionGap),
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: math.max(
+                                        0.0,
+                                        constraints.maxWidth - _captionGap,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      caption!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppType.captionSmall.copyWith(
+                                        color: progressColor,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ],
                       ],
