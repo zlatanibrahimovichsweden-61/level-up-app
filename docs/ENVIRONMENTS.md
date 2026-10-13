@@ -392,7 +392,7 @@ supports "not reached" rather than "rejected"; this record does not claim more t
 
 ## 10. Deferred work and inputs received (belong to later waves or other chapters)
 
-**From Seif, 2026-10-06 (answers Q5–Q7 — inputs, not decided here):**
+**From Seif, 2026-10-06 (answers Q5–Q7 — inputs, not decided here; extended and in part superseded by his reply of 2026-10-09 — Firebase, production host, APNs, test data — see `docs/BACKEND_HANDOFF.md` §A, §G, §H):**
 
 - **Production API base URL — planned, not live:** host `api.level-upworld.com`, so the planned base URL is
   `https://api.level-upworld.com/api/v1` (the path is carried over from today's contract, not separately

@@ -5,7 +5,7 @@ How autonomous work is run on this project. Companion to
 **building features** and **remediation waves**.
 
 Current project state lives in **`docs/WAVE_STATUS.md`** — read it first. Live
-risks live in **`docs/RISKS.md`**.
+risks live in **`docs/RISKS.md`**. For backend-dependent work also read **`docs/BACKEND_HANDOFF.md`** (what Seif confirmed, per contract edition) before asking Seif anything.
 
 ---
 

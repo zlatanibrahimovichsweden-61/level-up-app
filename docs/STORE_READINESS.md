@@ -11,7 +11,7 @@
 > file remains the authority on *policy* (Google/Apple rules, the data map, the
 > pre-submission checklist); the audit is the authority on *what is actually true of the
 > build*. Rows corrected on 2026-09-05 are marked **[2026-09-05]**. Verdict there:
-> **NOT READY** — no production backend URL, no signing key, no store identity.
+> **NOT READY** — no production backend URL, no signing key, no store identity. Backend answers to the `UNKNOWN (backend)` rows (reviewer access, retention, hosting, Firebase, legal URLs; Seif, 2026-10-09) are in `docs/BACKEND_HANDOFF.md` — planned items there are not live.
 
 **Scope rule:** the API contract is NOT ready and is OUT OF SCOPE — nothing here edits
 `contract/`. Contract-dependent items are marked **BLOCKED BY CONTRACT**.

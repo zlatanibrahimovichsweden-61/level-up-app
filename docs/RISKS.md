@@ -7,7 +7,7 @@ with neither is not a risk, it is a wish.
 **Last reviewed:** 2026-10-09 (completion-program baseline — `.ai/audits/current/completion/00_BASELINE.md`; R-3, R-8, R-9 updated). Previously 2026-10-06 (release-readiness reconciliation — `.ai/audits/current/release_readiness_reconciliation_2026-10-06.md`)
 
 Severity reflects **impact × likelihood of going unnoticed**. A defect nothing
-can detect ranks above a louder one that any gate would catch.
+can detect ranks above a louder one that any gate would catch. Seif's 2026-10-09 inputs to R-8, R-9 (Firebase ownership only) and R-10 are digested in `docs/BACKEND_HANDOFF.md`.
 
 ---
 
