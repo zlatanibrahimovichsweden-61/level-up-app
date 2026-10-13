@@ -36,11 +36,13 @@ import '../core/network/interceptors/error_interceptor.dart';
 import 'mock_deletion.dart';
 import 'mock_friends.dart';
 import 'mock_legal.dart';
+import 'mock_modules.dart';
 import 'mock_notifications.dart';
 import 'mock_quiz_history.dart';
 import 'mock_recovery.dart';
 import 'mock_support.dart';
 import 'mock_terms.dart';
+import 'mock_track_transfer.dart';
 
 /// Builds the Dio that replaces the real client for the mock run.
 ///
@@ -186,6 +188,16 @@ class MockBackendInterceptor extends Interceptor {
   /// finished through `POST /quizzes/{id}/finish` does not appear in it.
   final _quizHistory = MockQuizHistory();
 
+  /// The Track transfer (CW14): `POST /me/track-transfer`. Rules in
+  /// `mock_track_transfer.dart`; the track and the school stage are this
+  /// interceptor's, so they are passed in.
+  final _trackTransfer = MockTrackTransferDesk();
+
+  /// The University block the student chose in a transfer, overlaid on
+  /// `GET /me` afterwards. Null until a transfer happens; cleared whenever the
+  /// session becomes a different student.
+  Map<String, dynamic>? _transferredUniversity;
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -289,6 +301,7 @@ class MockBackendInterceptor extends Interceptor {
       // wizard can be walked.
       if (code == _kAuthenticatedCode || code == _kUniversityCode) {
         _track = code == _kUniversityCode ? 'university' : 'school';
+        _transferredUniversity = null;
         return _ok(handler, options, 200, <String, dynamic>{
           'result': 'authenticated',
           'tokens': _tokenPair(),
@@ -317,6 +330,7 @@ class MockBackendInterceptor extends Interceptor {
       // university — otherwise the Learn tab would contradict what you just
       // signed up as.
       _track = body['track'] == 'university' ? 'university' : 'school';
+      _transferredUniversity = null;
       // Remembered so a LATER `GET /me` echoes the city the student actually
       // registered with. A free-text registration whose profile comes back
       // coded on the next fetch would prove nothing.
@@ -493,6 +507,56 @@ class MockBackendInterceptor extends Interceptor {
         case MockQuizHistoryValidation(:final errors):
           return _validationFailed(handler, options, errors);
         case MockQuizHistoryProblem(:final status, :final code, :final detail):
+          return _problem(handler, options, status, code, detail);
+      }
+    }
+
+    // ---- catalog modules (CW16b) ------------------------------------------
+    // `listModules` is `stable`: school gets `[]`, university gets the grouping
+    // overlay in `mock_modules.dart`.
+    switch (const MockModules().handle(
+      method,
+      path,
+      university: _isUniversity,
+    )) {
+      case MockModulesOk(:final data):
+        return _ok(handler, options, 200, data);
+      case null:
+        break;
+    }
+
+    // ---- Track transfer (CW14) --------------------------------------------
+    // `POST /me/track-transfer` is `stable`; the refusals, in the contract's
+    // order, are in `mock_track_transfer.dart`. The desk is told the session's
+    // track and school stage and the reference universities; on success this
+    // interceptor flips to University and answers the University profile.
+    // The stage is read only for the one request the desk answers: building the
+    // whole profile for every other request would be wasted work.
+    final isTransferRequest = method == 'POST' && path == '/me/track-transfer';
+    final transferReply = _trackTransfer.handle(
+      method,
+      path,
+      body,
+      track: _track,
+      stage: !isTransferRequest || _isUniversity
+          ? null
+          : (_currentProfile()['school'] as Map<String, dynamic>?)?['stage']
+                as String?,
+      universities: _universities,
+    );
+    if (transferReply != null) {
+      switch (transferReply) {
+        case MockTrackTransferDone(:final university):
+          _track = 'university';
+          _transferredUniversity = university;
+          return _ok(handler, options, 200, _currentProfile());
+        case MockTrackTransferValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockTrackTransferProblem(
+          :final status,
+          :final code,
+          :final detail,
+        ):
           return _problem(handler, options, status, code, detail);
       }
     }
@@ -873,6 +937,10 @@ class MockBackendInterceptor extends Interceptor {
             totalPoints: _totalPoints,
             city: _registeredCity,
           );
+    final transferred = _transferredUniversity;
+    if (_isUniversity && transferred != null) {
+      profile['university'] = transferred;
+    }
     final edits = _profileEdits[_track];
     if (edits == null) return profile;
 
