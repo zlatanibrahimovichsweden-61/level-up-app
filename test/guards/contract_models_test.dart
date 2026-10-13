@@ -193,6 +193,18 @@ void main() {
       dart: 'lib/features/friends/models/friend_models.dart',
       dartClass: 'SendFriendRequestResult',
     ),
+    (
+      label: 'DeviceInfo (confirmRecovery / verifyOtp request)',
+      path: ['DeviceInfo'],
+      dart: 'lib/features/auth/models/device_info.dart',
+      dartClass: 'DeviceInfo',
+    ),
+    (
+      label: 'TokenPair (AuthenticatedResult.tokens)',
+      path: ['TokenPair'],
+      dart: 'lib/features/auth/models/token_pair.dart',
+      dartClass: 'TokenPair',
+    ),
   ];
 
   test('the contract is actually being read', () {

@@ -38,6 +38,7 @@ import 'mock_friends.dart';
 import 'mock_legal.dart';
 import 'mock_notifications.dart';
 import 'mock_quiz_history.dart';
+import 'mock_recovery.dart';
 import 'mock_support.dart';
 import 'mock_terms.dart';
 
@@ -162,6 +163,11 @@ class MockBackendInterceptor extends Interceptor {
   /// `mock_deletion.dart`.
   final _deletion = MockAccountDeletion();
 
+  /// The lost-phone recovery ladder (CW06): the four `/auth/recovery/*`
+  /// operations and the magic phones and codes that reach each branch. Rules
+  /// and state live in `mock_recovery.dart`.
+  final _recovery = MockRecoveryLadder();
+
   /// The caller's Terms acceptance (CW04b): `GET`/`POST
   /// /me/terms-acceptance`. Rules and state live in `mock_terms.dart`.
   final _terms = MockTermsAcceptance();
@@ -206,6 +212,29 @@ class MockBackendInterceptor extends Interceptor {
           return _ok(handler, options, status, data);
         case MockDeletionProblem(:final status, :final code, :final detail):
           return _problem(handler, options, status, code, detail);
+      }
+    }
+
+    // ---- lost-phone recovery (CW06) ---------------------------------------
+    // The four operations are `stable` and anonymous. The success of the last
+    // step needs the session's profile, which only this interceptor can build.
+    final recoveryReply = _recovery.handle(method, path, body);
+    if (recoveryReply != null) {
+      switch (recoveryReply) {
+        case MockRecoveryOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockRecoveryValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockRecoveryProblem(:final status, :final code, :final detail):
+          return _problem(handler, options, status, code, detail);
+        case MockRecoveryAuthenticated(:final phone):
+          return _ok(handler, options, 200, <String, dynamic>{
+            'result': 'authenticated',
+            'tokens': _tokenPair(),
+            'profile': _isUniversity
+                ? _universityProfile(phone: phone)
+                : _schoolProfile(phone: phone),
+          });
       }
     }
 
