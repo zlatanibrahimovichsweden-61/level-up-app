@@ -170,9 +170,15 @@ class _SchoolSearchSheetState extends ConsumerState<_SchoolSearchSheet> {
   }
 
   /// Appends the next page as the end of the list comes into view. This is
-  /// paging, not a retry: a failed append surfaces its own button.
+  /// paging, not a retry: a failed append surfaces its own button, and until
+  /// that is tapped a scroll must not ask again. Without the check below every
+  /// tick near the bottom re-sent the failed request, to an unauthenticated
+  /// `/reference/*` route that has a per-IP limit.
   void _onScroll() {
     if (!_scrollController.hasClients) return;
+    if (ref.read(schoolSearchProvider(_filter)).value?.appendError != null) {
+      return;
+    }
     final position = _scrollController.position;
     if (position.pixels >= position.maxScrollExtent - 240) {
       ref.read(schoolSearchProvider(_filter).notifier).loadMore();

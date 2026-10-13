@@ -411,6 +411,181 @@ void main() {
     });
   });
 
+  // The footer of a board that is already on screen. A failed append keeps the
+  // rows; whether it may offer Retry is the first page's call
+  // ([boardRetryAllowed]): a 429 recovers on its own clock (`getLeaderboard`:
+  // "Honour Retry-After", `openapi.yaml:2568`) and a pending deletion answers
+  // the same 403 on every tap. The footer used to be a bare Retry for all of
+  // them, and a scroll near the bottom re-fired the request regardless.
+  group('a failed append (the footer)', () {
+    // Counted by hand: mocktail's `verify` skips calls it already verified, so
+    // two reads of it in one test would not see the same history.
+    var secondPageAsks = 0;
+    var thirdPageAsks = 0;
+    setUp(() {
+      secondPageAsks = 0;
+      thirdPageAsks = 0;
+    });
+
+    /// A second page that fails on its first ask and is answered on the next
+    /// (the footer's Retry), followed by a third and last page.
+    void givenRecoveringSecondPage(Object error) {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: null,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => boardPage(
+          ranks: [for (var rank = 1; rank <= 14; rank++) rank],
+          hasMore: true,
+          nextCursor: 'cursor-2',
+        ),
+      );
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: 'cursor-2',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async {
+        secondPageAsks++;
+        if (secondPageAsks == 1) throw error;
+        return boardPage(
+          ranks: [for (var rank = 15; rank <= 28; rank++) rank],
+          hasMore: true,
+          nextCursor: 'cursor-3',
+        );
+      });
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: 'cursor-3',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async {
+        thirdPageAsks++;
+        return boardPage(ranks: const [29, 30]);
+      });
+    }
+
+    void givenFailingSecondPage(Object error) {
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: null,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => boardPage(
+          ranks: [for (var rank = 1; rank <= 14; rank++) rank],
+          hasMore: true,
+          nextCursor: 'cursor-2',
+        ),
+      );
+      when(
+        () => board.getLeaderboard(
+          scope: any(named: 'scope'),
+          cursor: 'cursor-2',
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async {
+        secondPageAsks++;
+        throw error;
+      });
+    }
+
+    /// To the end of the list, the way a student gets there.
+    Future<void> scrollToFooter(WidgetTester tester) async {
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+    }
+
+    // `LeaderboardNotifier.loadMore` promises "never a silent retry". The scroll
+    // listener broke that for every failure kind that keeps its Retry: each
+    // tick near the bottom asked again (eight requests in one drag against a
+    // page that fails at once). A failed append now waits for the button.
+    final ordinaryFailures = <String, Object>{
+      'network error': const NetworkException(),
+      'server error': const ApiException(status: 500, code: 'internal_error'),
+      'unknown': const UnknownException(),
+      'validation (not the cursor)': const ValidationException(
+        errors: {
+          'limit': ['bad'],
+        },
+      ),
+    };
+    for (final MapEntry(key: name, value: error) in ordinaryFailures.entries) {
+      testWidgets(
+        '$name · one failed append is one request; scrolling asks no more, '
+        'only Retry does',
+        (tester) async {
+          givenFailingSecondPage(error);
+          await openLeaderboard(tester, me: schoolProfile());
+
+          // One drag to the end: the failure lands while the list is still at
+          // the bottom, which is where a scroll tick used to fire again.
+          await scrollToFooter(tester);
+          expect(find.text('Retry'), findsOneWidget);
+          expect(secondPageAsks, 1);
+
+          // Up and down again, twice over: the footer's button is the only
+          // way to ask again, so none of this reaches the server.
+          await tester.drag(find.byType(ListView), const Offset(0, 3000));
+          await tester.pumpAndSettle();
+          await scrollToFooter(tester);
+          await scrollToFooter(tester);
+          expect(secondPageAsks, 1);
+          expect(find.text('Retry'), findsOneWidget);
+
+          // The button asks exactly once, and its failure waits again.
+          await tester.tap(find.text('Retry'));
+          await tester.pumpAndSettle();
+          expect(secondPageAsks, 2);
+          await scrollToFooter(tester);
+          expect(secondPageAsks, 2);
+          expect(find.text('Retry'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    // The other half of "only Retry asks again": once a Retry has been
+    // answered the failure is over, and paging by scroll must work again. A
+    // stale `appendError` would stall the board for good, and the tests above
+    // (which only ever see failures) would stay green.
+    for (final MapEntry(key: name, value: error) in ordinaryFailures.entries) {
+      testWidgets(
+        '$name · after a Retry that succeeds, scrolling pages again',
+        (tester) async {
+          givenRecoveringSecondPage(error);
+          await openLeaderboard(tester, me: schoolProfile());
+
+          await scrollToFooter(tester);
+          expect(find.text('Retry'), findsOneWidget);
+          expect(secondPageAsks, 1);
+
+          // The button's ask is answered: the footer's failure is gone, and
+          // nothing but the student's scroll has asked for the next page.
+          await tester.tap(find.text('Retry'));
+          await tester.pumpAndSettle();
+          expect(secondPageAsks, 2);
+          expect(find.text('Retry'), findsNothing);
+          expect(thirdPageAsks, 0);
+
+          // Now a scroll to the new end is paging again - exactly once.
+          await scrollToFooter(tester);
+          expect(thirdPageAsks, 1);
+          expect(secondPageAsks, 2);
+          expect(find.text('Student 30'), findsOneWidget);
+          expect(find.text('Retry'), findsNothing);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  });
+
   // O-15 / DESIGN_ISSUES #132: the row is already 48 tall (the share
   // IconButton's padded target), so the chip's 48 box only had to find room
   // sideways — it reaches toward the screen edge, never into the title.

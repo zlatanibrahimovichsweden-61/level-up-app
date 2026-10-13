@@ -576,6 +576,56 @@ void main() {
       verifyList(cursor: 'c2').called(2);
     });
 
+    testWidgets('a failed append: scrolling to and fro asks nothing more, only '
+        'Retry does', (tester) async {
+      // The list pages by BUTTON, never by scroll, so a long list scrolled
+      // after a failed append must send no further request. Counted at the
+      // repository, where the server would see it.
+      var asks = 0;
+      listCall().thenAnswer(
+        (_) async => ticketsPage(
+          [
+            for (var n = 1; n <= 30; n++)
+              ticketSummary(
+                '5c000000-0000-4000-8000-${n.toString().padLeft(12, '0')}',
+                reference: 'TK-$n',
+              ),
+          ],
+          hasMore: true,
+          nextCursor: 'c2',
+        ),
+      );
+      listCall(cursor: 'c2').thenAnswer((_) async {
+        asks++;
+        throw const ApiException(status: 500, code: 'internal_server_error');
+      });
+
+      await pumpList(tester);
+      final list = find
+          .byWidgetPredicate((w) => w is Scrollable && w.axis == Axis.vertical)
+          .first;
+      await tester.drag(list, const Offset(0, -20000));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('support_load_more')));
+      await tester.pump();
+      await tester.pump();
+      expect(asks, 1);
+      expect(find.byKey(const Key('support_append_retry')), findsOneWidget);
+
+      for (var pass = 0; pass < 3; pass++) {
+        await tester.drag(list, const Offset(0, 20000));
+        await tester.pump();
+        await tester.drag(list, const Offset(0, -20000));
+        await tester.pump();
+      }
+      expect(asks, 1);
+
+      await tester.tap(find.byKey(const Key('support_append_retry')));
+      await tester.pump();
+      await tester.pump();
+      expect(asks, 2);
+    });
+
     testWidgets('a rate-limited append keeps its text and offers no button', (
       tester,
     ) async {

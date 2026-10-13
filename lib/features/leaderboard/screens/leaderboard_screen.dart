@@ -287,6 +287,14 @@ class _BoardListState extends State<_BoardList> {
 
   void _onScroll() {
     if (!_controller.hasClients) return;
+    // A failed append stays failed until the student acts: a scroll must not
+    // quietly do what the footer's button asks to be tapped for
+    // ([LeaderboardNotifier.loadMore]: "never a silent retry"). It applies to
+    // EVERY failure kind - where the footer offers Retry, that button is the
+    // only way to ask again; where it withholds Retry (rate limited, pending
+    // deletion), nothing is. Without this, each scroll tick near the bottom
+    // fired a fresh request: eight in one drag against a failing page.
+    if (widget.results.appendError != null) return;
     final position = _controller.position;
     if (position.pixels >= position.maxScrollExtent - 240) {
       // The notifier already no-ops when exhausted or in flight, so this can

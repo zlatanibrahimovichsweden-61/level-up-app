@@ -752,6 +752,56 @@ void main() {
       expect(messageRow('m2'), findsOneWidget);
     });
 
+    testWidgets('a failed page: scrolling to and fro asks nothing more, only '
+        'Retry does', (tester) async {
+      // The thread pages by BUTTON, never by scroll, so a long thread scrolled
+      // after a failed page must send no further request. Counted at the
+      // repository, where the server would see it.
+      var asks = 0;
+      stubThread();
+      pageCall().thenAnswer(
+        (_) async => messagesPage(
+          [
+            for (var n = 1; n <= 30; n++)
+              supportMessage(
+                'm$n',
+                authorKind: n.isEven ? 'staff' : 'student',
+                body: 'Reply number $n, long enough to take a couple of lines.',
+              ),
+          ],
+          hasMore: true,
+          nextCursor: 'c2',
+        ),
+      );
+      pageCall(cursor: 'c2').thenAnswer((_) async {
+        asks++;
+        throw const ApiException(status: 500, code: 'internal_server_error');
+      });
+
+      await pumpThread(tester);
+      expect(asks, 1);
+      final list = find.byType(ListView).first;
+
+      for (var pass = 0; pass < 3; pass++) {
+        await tester.drag(list, const Offset(0, 20000));
+        await tester.pump();
+        await tester.drag(list, const Offset(0, -20000));
+        await tester.pump();
+      }
+      expect(asks, 1);
+      expect(
+        find.byKey(const Key('support_thread_append_retry')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const Key('support_thread_append_retry')),
+      );
+      await tester.tap(find.byKey(const Key('support_thread_append_retry')));
+      await settle(tester);
+      expect(asks, 2);
+    });
+
     testWidgets('it opens scrolled to the END of a long thread', (
       tester,
     ) async {
