@@ -109,7 +109,7 @@ String? authRedirect(AuthStatus status, String matchedLocation) {
 ///   the path (`/learn/subject/1/unit/2` rebuilds `/learn` and `/learn/subject/1`
 ///   beneath it), the bottom nav, and a working back chip.
 /// - Every top-level route outside it — `/profile*`, `/settings`, `/refer`,
-///   `/support`, `/friends`, `/legal/*`, `/track-select`, `/quiz*` — would
+///   `/support`, `/friends`, `/legal/*`, `/quiz*` — would
 ///   open with NOTHING beneath it, no nav bar, a dead back chip
 ///   (`TitledChrome` is `maybePop()`) and an Android BACK that exits the app. It
 ///   was `/home` before this existed, so those fall back to `/home`.
@@ -198,17 +198,29 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authListenable = ValueNotifier<AuthStatus>(
     ref.read(authControllerProvider),
   );
-  ref.listen<AuthStatus>(authControllerProvider, (_, next) {
-    authListenable.value = next;
-  });
-  ref.onDispose(authListenable.dispose);
 
   // The args the OTP page was last opened with. go_router re-parses the STORED
   // location on every refresh, and the stored form drops an `extra` it cannot
   // JSON-encode — so the auth flip that a correct code causes rebuilt the OTP
   // page with a null `extra` (a red screen under the success view). The route
   // keeps what it was given; a fresh `go` with new args replaces it.
+  //
+  // Declared above the auth listener because that listener ends them (NR-29).
   OtpArgs? lastOtpArgs;
+
+  ref.listen<AuthStatus>(authControllerProvider, (previous, next) {
+    // The args carry the phone number the code was sent to, and this closure
+    // outlives the session (`invalidateSessionScope` cannot reach it). They are
+    // dropped when a session ENDS — the move into signed-out from any other
+    // status — and kept across the flip a correct code causes (to
+    // authenticated), where the success view still needs them. A repeat of
+    // signed-out (the one-time message being consumed on Login) is not an end.
+    if (next is AuthUnauthenticated && previous is! AuthUnauthenticated) {
+      lastOtpArgs = null;
+    }
+    authListenable.value = next;
+  });
+  ref.onDispose(authListenable.dispose);
 
   // Read by the redirect below to see what is on screen. Assigned by the
   // `return` at the end; go_router never runs a redirect inside its constructor.
@@ -299,10 +311,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register/university',
         builder: (_, _) => const UniversityDetailScreen(),
-      ),
-      GoRoute(
-        path: '/track-select',
-        builder: (_, _) => const _Placeholder('Track select'),
       ),
       // The signed-in app lives inside the 5-tab nav shell. `indexedStack`
       // keeps one Navigator per branch, so each tab preserves its own state
@@ -477,8 +485,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       // QuizSetupArgs constructor the Learn stack used.
       GoRoute(
         path: '/quiz/setup',
-        builder: (_, state) =>
-            QuizSetupScreen(args: state.extra! as QuizSetupArgs),
+        builder: (_, state) => switch (state.extra) {
+          final QuizSetupArgs args => QuizSetupScreen(args: args),
+          _ => const _QuizUnavailableScreen(),
+        },
       ),
       // The `Quiz` rides as `extra` because quiz state is IN MEMORY ONLY:
       // questions are never cached, and `GET /quizzes/{quizId}` is `draft`, so
@@ -502,8 +512,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           // /learn.
           GoRoute(
             path: 'result',
-            builder: (_, state) =>
-                QuizResultScreen(args: state.extra! as QuizResultArgs),
+            builder: (_, state) => switch (state.extra) {
+              final QuizResultArgs args => QuizResultScreen(args: args),
+              _ => const _QuizUnavailableScreen(),
+            },
             routes: [
               // Nested under the result for the same reason the result is
               // nested under the quiz: review belongs to the quiz just
@@ -511,7 +523,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               // history needs `GET /quizzes/{quizId}`, which is draft —
               // seif_fight S14.
               //
-              // Unlike its two ancestors this does NOT force-unwrap `extra`.
+              // Like its two ancestors this does NOT force-unwrap `extra`.
               // The review payload is in-memory only, so a cold deep-link or a
               // process restart lands here with nothing to rebuild from; it
               // says so rather than throwing a cast error.
@@ -601,7 +613,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// A cold deep-link to `/quiz/:quizId` (no `Quiz` in `extra`) or to
+/// A cold deep-link to `/quiz/setup` (no `QuizSetupArgs` in `extra`),
+/// `/quiz/:quizId` (no `Quiz`), `/quiz/:quizId/result` (no `QuizResultArgs`) or
 /// `/quiz/:quizId/result/review` (no `QuizReviewArgs`).
 ///
 /// Unrecoverable by design, not by omission: quiz state is in memory only
@@ -634,30 +647,6 @@ class _QuizUnavailableScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Temporary destination so the skeleton runs. Replaced screen-by-screen.
-///
-/// [title] is a DEVELOPER label naming the unbuilt route, not product copy —
-/// it only reaches the app bar so a half-built build is navigable. The body
-/// uses the existing `comingSoon` key, because that line is the one a student
-/// actually reads, in an app whose baseline locale is Arabic.
-///
-/// Only `/track-select` uses it now. `/subscription` and `/subscription/return`
-/// went with the purchase surface (adr-049 — the app is purchase-silent;
-/// D-007), which settled the product decision Wave 3 recorded in
-/// `.ai/audits/current/wave3-implementation.md`: removed, not built.
-class _Placeholder extends StatelessWidget {
-  const _Placeholder(this.title);
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(AppLocalizations.of(context).comingSoon)),
     );
   }
 }

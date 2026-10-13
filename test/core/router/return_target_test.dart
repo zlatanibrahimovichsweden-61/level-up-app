@@ -419,7 +419,6 @@ void main() {
         '/register/school',
         '/register/university',
         // top-level routes outside the shell
-        '/track-select',
         '/profile',
         '/profile/edit',
         '/settings',
