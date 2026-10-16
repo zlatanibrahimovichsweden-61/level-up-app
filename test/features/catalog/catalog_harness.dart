@@ -42,6 +42,7 @@ Future<ProviderContainer> pumpCatalogApp(
   String locale = 'en',
   ThemeData? theme,
   bool online = true,
+  Stream<bool>? onlineStream,
   Track track = Track.school,
 }) async {
   final storage = MockSecureStorage();
@@ -73,7 +74,9 @@ Future<ProviderContainer> pumpCatalogApp(
       // that is never read is not a stub worth writing.
       if (mistakes != null)
         mistakesRepositoryProvider.overrideWithValue(mistakes),
-      isOnlineProvider.overrideWith((ref) => Stream.value(online)),
+      isOnlineProvider.overrideWith(
+        (ref) => onlineStream ?? Stream.value(online),
+      ),
     ],
   );
   addTearDown(container.dispose);

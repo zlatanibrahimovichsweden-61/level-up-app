@@ -1293,6 +1293,114 @@ void main() {
     });
   });
 
+  // SEIF1014 follow-up: the University module picker's pill. Light is read off
+  // Figma 1411:16920 / 1411:17138; there is no dark frame, so dark keeps the
+  // look the pill had before the frame - the notification chip's values.
+  group('B10 module picker tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    const ink = Color(0xFF384F47); // Brand.greenPrimary
+    const white = Color(0xFFFFFFFF);
+    const lavender = Color(0xFFAE87E7); // Brand.purplePrimary
+    const cream = Color(0xFFFCFBF9);
+
+    final tokens = <_Token>[
+      _Token(
+        'modulePillSelectedFill',
+        (c) => c.modulePillSelectedFill,
+        (c, v) => c.copyWith(modulePillSelectedFill: v),
+        ink, // 1411:17130
+        lavender,
+      ),
+      _Token(
+        'modulePillSelectedLabel',
+        (c) => c.modulePillSelectedLabel,
+        (c, v) => c.copyWith(modulePillSelectedLabel: v),
+        white, // 1411:17130
+        const Color(0xFF232428),
+      ),
+      _Token(
+        'modulePillIdleFill',
+        (c) => c.modulePillIdleFill,
+        (c, v) => c.copyWith(modulePillIdleFill: v),
+        white, // 1411:17132
+        const Color(0x3327282C),
+      ),
+      _Token(
+        'modulePillIdleLabel',
+        (c) => c.modulePillIdleLabel,
+        (c, v) => c.copyWith(modulePillIdleLabel: v),
+        ink, // 1411:17132
+        cream,
+      ),
+    ];
+
+    test('the frame\'s values in light, the unchanged look in dark', () {
+      for (final t in tokens) {
+        expect(t.read(light), t.light, reason: '${t.name} in light');
+        expect(t.read(dark), t.dark, reason: '${t.name} in dark');
+      }
+      // The idle pill's 1 px hairline: drawn in light, none in dark.
+      expect(light.modulePillIdleBorder, const Color(0xFFDEDEDE)); // 1411:17132
+      expect(dark.modulePillIdleBorder, isNull);
+    });
+
+    test('dark is the look the pill had before the frame, token for token '
+        '(PROVISIONAL DG-26 dark)', () {
+      expect(dark.modulePillSelectedFill, dark.notificationChipSelectedFill);
+      expect(dark.modulePillSelectedLabel, dark.notificationChipSelectedLabel);
+      expect(dark.modulePillIdleFill, dark.notificationChipIdleFill);
+      expect(dark.modulePillIdleLabel, dark.notificationChipIdleLabel);
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      for (final t in tokens) {
+        final one = t.put(light, probe);
+        expect(t.read(one), probe, reason: '${t.name} copyWith');
+        for (final other in tokens.where((o) => o != t)) {
+          expect(
+            other.read(one),
+            other.read(light),
+            reason: '${t.name} copyWith moved ${other.name}',
+          );
+        }
+        expect(one.modulePillIdleBorder, light.modulePillIdleBorder);
+      }
+
+      // The nullable border: copyWith sets it and leaves the rest alone.
+      final border = light.copyWith(modulePillIdleBorder: probe);
+      expect(border.modulePillIdleBorder, probe);
+      expect(border.modulePillSelectedFill, light.modulePillSelectedFill);
+
+      // Lerp towards probes, since two tokens are equal on both canvases.
+      var target = light.copyWith(modulePillIdleBorder: probe);
+      for (final t in tokens) {
+        target = t.put(target, probe);
+      }
+      final end = light.lerp(target, 1);
+      final start = light.lerp(target, 0);
+      for (final t in tokens) {
+        expect(t.read(end), probe, reason: '${t.name} lerp to 1');
+        expect(t.read(start), t.read(light), reason: '${t.name} lerp to 0');
+      }
+      expect(end.modulePillIdleBorder, probe);
+      expect(start.modulePillIdleBorder, light.modulePillIdleBorder);
+
+      // The theme animates light -> dark: a border that is null on the far
+      // side fades out (Color.lerp scales its alpha) and null on both stays
+      // null.
+      expect(dark.lerp(dark, 0.5).modulePillIdleBorder, isNull);
+      expect(
+        light.lerp(dark, 0).modulePillIdleBorder,
+        light.modulePillIdleBorder,
+      );
+      expect(light.lerp(dark, 0.5).modulePillIdleBorder!.a, closeTo(0.5, 0.01));
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.

@@ -3,15 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/exceptions.dart';
 import '../../../core/providers/core_providers.dart';
+import '../models/catalog_module.dart';
 import '../models/subject.dart';
 import '../models/subject_tree.dart';
 
 /// The only place that touches Dio for the catalog browse stack.
 ///
-/// Both endpoints are `x-stability: stable` and authenticated, so they ride the
-/// main [dioProvider] and the AuthInterceptor attaches the Bearer.
+/// All three endpoints are `x-stability: stable` and authenticated, so they ride
+/// the main [dioProvider] and the AuthInterceptor attaches the Bearer.
 ///
-/// Neither call takes scope parameters: the server derives the student's scope
+/// No call takes scope parameters: the server derives the student's scope
 /// from the token (adr-013). If you ever find yourself adding `?stage=` here,
 /// the contract is being worked around.
 class CatalogRepository {
@@ -33,6 +34,33 @@ class CatalogRepository {
       rethrow;
     } on Object catch (e) {
       // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
+    }
+  }
+
+  /// `GET /catalog/modules` (`listModules`) - the University picker's grouping,
+  /// a BARE array that is `[]` for a school student and may be empty for a
+  /// University one. Ordered by the server (`displayOrder`, then `name`); the
+  /// order is kept exactly as served.
+  ///
+  /// No scope parameters, like [getSubjects]: the server derives the caller
+  /// from the token. A module is an overlay on navigation and never a scope
+  /// (adr-036 §3), so nothing here may be sent back as one.
+  Future<List<CatalogModule>> getModules() async {
+    try {
+      final res = await _dio.get<List<dynamic>>('/catalog/modules');
+      return (res.data ?? const [])
+          .map((e) => CatalogModule.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio - real-API schema drift throws a
       // core TypeError/FormatException here, not a DioException. Wrap it so
       // the typed boundary holds. runtimeType only: response bodies carry
       // minors' data and must never leak into an error detail.

@@ -275,6 +275,10 @@
 
   "subjectsTitle": "Subjects",
   "searchSubjects": "Search Subjects",
+  "allSubjects": "All subjects",
+  "@allSubjects": {
+    "description": "The module picker's first pill (DG-26). The view name is the contract's and Seif's; the Arabic was confirmed by the owner on 2026-10-15."
+  },
   "mistakes": "Mistakes",
   "questionsCount": "{answered} / {total} questions",
   "@questionsCount": {

@@ -419,6 +419,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get searchSubjects => 'ابحث عن مادة';
 
   @override
+  String get allSubjects => 'كل المواد';
+
+  @override
   String get mistakes => 'أخطائي';
 
   @override

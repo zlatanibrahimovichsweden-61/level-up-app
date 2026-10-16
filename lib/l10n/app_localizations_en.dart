@@ -419,6 +419,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchSubjects => 'Search Subjects';
 
   @override
+  String get allSubjects => 'All subjects';
+
+  @override
   String get mistakes => 'Mistakes';
 
   @override

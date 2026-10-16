@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/notifier/login_notifier.dart';
 import '../../features/auth/notifier/otp_notifier.dart';
+import '../../features/catalog/notifier/modules_notifier.dart';
 import '../../features/catalog/notifier/subject_tree_notifier.dart';
 import '../../features/catalog/notifier/subjects_notifier.dart';
 import '../../features/mistakes/notifier/mistakes_notifiers.dart';
@@ -84,6 +85,8 @@ void invalidateSessionScope(Ref ref) {
   // --- Catalogue: scoped to enrolment, never to entitlement (adr-091). --------
   ref.invalidate(subjectsProvider);
   ref.invalidate(subjectTreeProvider); // family — clears every subject id
+  ref.invalidate(modulesProvider); // per-student grouping of that catalogue
+  ref.invalidate(selectedModuleProvider); // a fresh session shows All subjects
 
   // --- Mistakes: a per-student answer history, and the most revealing of it. ---
   // `GET /me/mistakes` returns the subjects this student currently has wrong

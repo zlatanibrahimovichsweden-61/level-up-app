@@ -329,4 +329,110 @@ void main() {
       expect(missingInline(mutated.join('\n'), b), ['status']);
     });
   }
+
+  /// `listModules` (3.37.0-m1, CW16b-M): the same kind of binding as
+  /// [inlineBindings] - a bare array of an INLINE item - and read by the same
+  /// `missingInline` check, but in its own list. The permanent probe in the
+  /// loop above removes `status` from the class it is given, and `status` is
+  /// not a field of a module, so a row added THERE would fail that probe for
+  /// the wrong reason. The record type is the same, so the helper is shared.
+  ///
+  /// `subjectIds` is the field worth protecting: it is the whole payload the
+  /// picker acts on, and dropping it from the model would leave every module
+  /// decoding as an empty one.
+  const moduleBindings =
+      <
+        ({
+          String label,
+          String path,
+          String method,
+          String dart,
+          String dartClass,
+        })
+      >[
+        (
+          label: 'listModules (GET /catalog/modules) items',
+          path: '/catalog/modules',
+          method: 'get',
+          dart: 'lib/features/catalog/models/catalog_module.dart',
+          dartClass: 'CatalogModule',
+        ),
+      ];
+
+  for (final b in moduleBindings) {
+    test('${b.label} - every contract-required field is modelled', () {
+      final dart = File(b.dart).readAsStringSync();
+
+      // Class-scoped, exactly like the other bindings: a binding naming a class
+      // the file no longer declares fails here rather than widening back to the
+      // whole file.
+      final body = dartClassBody(dart, b.dartClass);
+      expect(
+        body,
+        isNotNull,
+        reason:
+            '${b.dart} declares no `class ${b.dartClass}`. Either the model was '
+            'renamed or moved - update this binding - or it was deleted, which '
+            'is a contract question for docs/seif_fight.md. Do NOT widen this '
+            'back to the whole file.',
+      );
+
+      final missing = missingInline(body!, b);
+
+      expect(
+        missing,
+        isEmpty,
+        reason:
+            'contract/openapi.yaml marks ${missing.join(", ")} as REQUIRED on '
+            'the items of ${b.method.toUpperCase()} ${b.path}, but ${b.dart} '
+            'does not take ${missing.length == 1 ? "it" : "them"} as a '
+            'constructor parameter on ${b.dartClass}.\n'
+            'The contract wins: add the field to the model and regenerate '
+            '(`dart run build_runner build`). Do NOT delete this binding - if '
+            'the field genuinely should not be modelled, that is a question for '
+            'docs/seif_fight.md, not a guard to switch off.',
+      );
+    });
+
+    // MUTATION PROBE, permanent. Proves the guard above can FAIL, without ever
+    // breaking a repo file: the real source is read, narrowed to the class, and
+    // the `subjectIds` parameter is removed from that STRING in memory. The same
+    // check must then name `subjectIds` - and name nothing on the unmodified
+    // body.
+    test('${b.label} - mutation probe: dropping `subjectIds` from the model '
+        'is caught', () {
+      final dart = File(b.dart).readAsStringSync();
+      final body = dartClassBody(dart, b.dartClass)!;
+
+      // Unmodified: nothing missing (and `subjectIds` really is a required
+      // field of the item, so the probe below is about something the contract
+      // says).
+      expect(missingInline(body, b), isEmpty);
+      expect(
+        contractOperationItemRequiredFields(
+          contract,
+          path: b.path,
+          method: b.method,
+        ),
+        contains('subjectIds'),
+        reason:
+            'the probe removes `subjectIds`, so the contract must require it',
+      );
+
+      final lines = body.split('\n');
+      final mutated = [
+        for (final line in lines)
+          if (!RegExp(r'\bsubjectIds\s*[,)}]').hasMatch(line)) line,
+      ];
+      expect(
+        mutated.length,
+        lessThan(lines.length),
+        reason:
+            'no `subjectIds` parameter line was found to remove - the probe '
+            'would be vacuous',
+      );
+
+      expect(missingInline(mutated.join('\n'), b), ['subjectIds']);
+    });
+  }
 }

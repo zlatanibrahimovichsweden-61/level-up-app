@@ -10,9 +10,11 @@ import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/subject.dart';
+import '../notifier/modules_notifier.dart';
 import '../notifier/subjects_notifier.dart';
 import '../widgets/catalog_scaffold.dart';
 import '../widgets/catalog_states.dart';
+import '../widgets/module_picker.dart';
 import '../widgets/subject_card.dart';
 
 /// Subjects — the Learn tab's landing screen · Figma `337:5702`.
@@ -20,6 +22,21 @@ import '../widgets/subject_card.dart';
 /// Powered by ONE call, `GET /catalog/subjects`, which the server scopes to the
 /// authenticated student (adr-013) — this screen sends no scope parameters and
 /// must never start.
+///
+/// **A University student also gets a module picker** (CW16b-M, `GET
+/// /catalog/modules`): a pill row between the search field and the grid that
+/// narrows the list to the subjects a module holds. It is navigation and
+/// nothing else (adr-036 §3) and it is drawn ONLY from settled, non-empty
+/// modules data. For a school student (`[]`), and while modules load, fail or
+/// are offline, the screen is exactly what it was without it: no row, no
+/// spinner, no error from modules, and the subjects never wait for them.
+///
+/// Modules are never retried silently by Riverpod. A FAILED read is fetched
+/// again only when the student taps this screen's Retry, or when the connection
+/// comes back while the screen is mounted (owner decision 2026-10-15, SEIF1014
+/// follow-up); until then a failure simply means no row. A read that is loaded,
+/// loading or reloading is never requested again, and the refetch is
+/// fire-and-forget: the subjects neither wait for it nor fail with it.
 ///
 /// Tapping a card opens `/learn/subject/{id}`, which triggers the single tree
 /// fetch that the whole drill-down then reads from.
@@ -42,6 +59,21 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
     super.dispose();
   }
 
+  /// Requests the modules again, but ONLY if the last read FAILED.
+  ///
+  /// Loaded, loading and reloading are left alone: `hasError && !isLoading` is
+  /// "failed and not already being fetched" (Riverpod 3 keeps `hasError` true
+  /// while an invalidated read reloads, so `hasError` alone would re-request on
+  /// every tap). The invalidation is not awaited and nothing here reads the
+  /// result - the subjects neither wait for it nor fail with it, and the row
+  /// stays hidden (see `pickableModules`) until the new read lands.
+  void _refetchFailedModules() {
+    final modules = ref.read(modulesProvider);
+    if (modules.hasError && !modules.isLoading) {
+      ref.invalidate(modulesProvider);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -49,6 +81,27 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
     // Distinct offline STATE: only when connectivity is definitively down
     // (null = unknown/first frame → treated as online, don't block).
     final offline = ref.watch(isOnlineProvider).value == false;
+
+    // The connection coming back: only a change from DEFINITELY offline to
+    // online counts. The first value (unknown -> online) and online -> online
+    // are not a reconnect. A listener, not part of what is drawn - it runs in
+    // response to a change, never mutating a provider during build.
+    ref.listen<AsyncValue<bool>>(isOnlineProvider, (previous, next) {
+      if (previous?.value == false && next.value == true) {
+        _refetchFailedModules();
+      }
+    });
+
+    // The picker's data, or null - and null is "the screen as it always was".
+    // Settled, non-empty modules only: a school student (`[]`), loading,
+    // reloading, failed and offline all land here. Watched, never awaited, so
+    // the subjects above never wait for it and its failure never reaches them.
+    final modules = pickableModules(ref.watch(modulesProvider));
+    final selectedId = ref.watch(selectedModuleProvider);
+    // A selection the server no longer serves falls back to All subjects.
+    final module = modules == null
+        ? null
+        : resolveSelectedModule(selectedId, modules);
 
     return CatalogScaffold(
       title: l10n.subjectsTitle,
@@ -58,25 +111,73 @@ class _SubjectsScreenState extends ConsumerState<SubjectsScreen> {
         children: [
           if (offline) const OfflineBanner(),
           Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 25),
+            // 25 to the grid. With the picker row it is the frame's 25 to the
+            // DRAWN pill (Figma `1411:16920`), which is less to its 48 tap box.
+            padding: EdgeInsetsDirectional.fromSTEB(
+              20,
+              0,
+              20,
+              modules == null ? 25 : ModulePicker.gapToTapBox,
+            ),
             child: _SearchField(
               controller: _controller,
               onChanged: (value) => setState(() => _query = value),
             ),
           ),
+          // Between the search field and the grid, as Figma `1411:16920` /
+          // `1411:17138` place it. PROVISIONAL(design): DG-26 - the row over
+          // the subjects' loading skeleton and error view: no frame draws
+          // either, so it stays up above them.
+          if (modules != null)
+            ModulePicker(
+              modules: modules,
+              selectedId: module?.id,
+              onChanged: (id) =>
+                  ref.read(selectedModuleProvider.notifier).select(id),
+            ),
           Expanded(
             child: CatalogAsyncView<List<Subject>>(
               value: subjects,
               isEmpty: (data) => data.isEmpty,
               emptyMessage: l10n.noSubjects,
-              onRetry: () => ref.read(subjectsProvider.notifier).refresh(),
+              onRetry: () {
+                ref.read(subjectsProvider.notifier).refresh();
+                // Fire-and-forget, and only for a read that FAILED.
+                _refetchFailedModules();
+              },
               skeleton: const _SubjectsSkeleton(),
-              onLoaded: (data) => _SubjectsGrid(
-                subjects: filterSubjects(data, _query),
-                // The list has rows but the FILTER matched none — a different
-                // message from "you have no subjects", and not an error.
-                noMatchMessage: l10n.noSubjectsMatch,
-              ),
+              onLoaded: (data) {
+                // Without the row, exactly the list as it was. A stale
+                // selection is ignored: no row means no module is in play.
+                if (modules == null) {
+                  return _SubjectsGrid(
+                    subjects: filterSubjects(data, _query),
+                    // The list has rows but the FILTER matched none — a
+                    // different message from "you have no subjects", and not
+                    // an error.
+                    noMatchMessage: l10n.noSubjectsMatch,
+                  );
+                }
+
+                final inView = subjectsForModule(module, data);
+                // PROVISIONAL(design): DG-26 - a module with no loaded subjects
+                // shows the screen's own "no subjects" state, the one
+                // `CatalogAsyncView` draws for an empty list. Judged BEFORE
+                // the search, so a search that empties a non-empty view keeps
+                // the "no match" line below instead.
+                if (inView.isEmpty) {
+                  return CatalogMessage(
+                    icon: Icons.inbox_outlined,
+                    text: l10n.noSubjects,
+                  );
+                }
+                return _SubjectsGrid(
+                  // PROVISIONAL(design): DG-26 - search narrows the CHOSEN
+                  // view (a module, or All), not the whole catalogue.
+                  subjects: filterSubjects(inView, _query),
+                  noMatchMessage: l10n.noSubjectsMatch,
+                );
+              },
             ),
           ),
         ],

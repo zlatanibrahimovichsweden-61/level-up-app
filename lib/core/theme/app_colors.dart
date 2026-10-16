@@ -148,6 +148,11 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.subjectCardProgress,
     required this.mistakesPillFill,
     required this.mistakesPillAccent,
+    required this.modulePillSelectedFill,
+    required this.modulePillSelectedLabel,
+    required this.modulePillIdleFill,
+    required this.modulePillIdleLabel,
+    required this.modulePillIdleBorder,
     required this.treeRowFill,
     required this.treeRowBorder,
     required this.treeRowBadgeFill,
@@ -1158,6 +1163,45 @@ class AppColors extends ThemeExtension<AppColors> {
   /// The pill used to read `colorScheme.error`, which is not this value.
   final Color mistakesPillAccent;
 
+  // --- University module picker (SEIF1014 follow-up) -------------------------
+  //
+  // Figma `1411:16920` / `1411:17138`, light, English. ONLY the light canvas is
+  // drawn: no dark frame and no Arabic frame exist for the row. Every dark
+  // value below is therefore the provisional look the pill had before the
+  // frame, UNCHANGED - the value of the notification chip token it was built
+  // from. `PROVISIONAL(design): DG-26 (dark)`.
+
+  /// The SELECTED module pill's fill. Light `#384F47` (= [Brand.greenPrimary]),
+  /// no border, no shadow (Figma `1411:17130`, `1411:17350`); dark: the
+  /// provisional look the pill had before the frame, unchanged - `#AE87E7`,
+  /// the value of [notificationChipSelectedFill]. `PROVISIONAL(design): DG-26
+  /// (dark)`.
+  final Color modulePillSelectedFill;
+
+  /// The SELECTED pill's label: Inter SemiBold 14. Light `#FFFFFF` (Figma
+  /// `1411:17130`); dark: the provisional look the pill had before the frame,
+  /// unchanged - `#232428`, the value of [notificationChipSelectedLabel].
+  /// `PROVISIONAL(design): DG-26 (dark)`.
+  final Color modulePillSelectedLabel;
+
+  /// An IDLE module pill's fill. Light `#FFFFFF` (Figma `1411:17132`), with the
+  /// hairline in [modulePillIdleBorder] and no shadow; dark: the provisional
+  /// look the pill had before the frame, unchanged - `#27282C` at 20% under
+  /// Glass, the value of [notificationChipIdleFill]. `PROVISIONAL(design):
+  /// DG-26 (dark)`.
+  final Color modulePillIdleFill;
+
+  /// An IDLE pill's label: Inter SemiBold 14. Light `#384F47` (Figma
+  /// `1411:17132`); dark: the provisional look the pill had before the frame,
+  /// unchanged - `#FCFBF9`, the value of [notificationChipIdleLabel].
+  /// `PROVISIONAL(design): DG-26 (dark)`.
+  final Color modulePillIdleLabel;
+
+  /// An IDLE pill's 1 px border. Light `#DEDEDE` (Figma `1411:17132`); `null`
+  /// in dark, where the pill had no border before the frame and still has none
+  /// (`PROVISIONAL(design): DG-26 (dark)`). The selected pill never has one.
+  final Color? modulePillIdleBorder;
+
   /// A catalog / Mistakes drill-down row. `337:5926`.
   final Color treeRowFill;
 
@@ -1790,6 +1834,11 @@ class AppColors extends ThemeExtension<AppColors> {
     subjectCardProgress: Color(0xFFAE87E7), // Figma 135:631
     mistakesPillFill: Color(0xFFFCFBF9), // light Subjects header
     mistakesPillAccent: Color(0xFFEF4444), // Figma 404:7421 — same in both
+    modulePillSelectedFill: Brand.greenPrimary, // #384F47 — Figma 1411:17130
+    modulePillSelectedLabel: Color(0xFFFFFFFF), // Figma 1411:17130
+    modulePillIdleFill: Color(0xFFFFFFFF), // Figma 1411:17132
+    modulePillIdleLabel: Color(0xFF384F47), // Figma 1411:17132
+    modulePillIdleBorder: Color(0xFFDEDEDE), // Figma 1411:17132 — 1 px
     treeRowFill: Color(0xFFFCFBF9), // catalog Button rows
     treeRowBorder: Color(0xFF4B675E), // catalog Button rows
     treeRowBadgeFill: Color(0xFFF4E6FF), // catalog row disc
@@ -2041,6 +2090,14 @@ class AppColors extends ThemeExtension<AppColors> {
     subjectCardProgress: Color(0xFFAE87E7), // Figma 337:5745
     mistakesPillFill: Color(0x33565656), // #565656 @20% — Figma 404:7421
     mistakesPillAccent: Color(0xFFEF4444), // Figma 404:7421
+    // Module picker - NO dark frame. PROVISIONAL(design): DG-26 (dark): the
+    // look the pill had before the frame, unchanged (the values of the
+    // notificationChip* tokens it was built from, named beside each).
+    modulePillSelectedFill: Brand.purplePrimary, // = chip selected fill
+    modulePillSelectedLabel: Color(0xFF232428), // = chip selected label
+    modulePillIdleFill: Color(0x3327282C), // = chip idle fill
+    modulePillIdleLabel: Color(0xFFFCFBF9), // = chip idle label
+    modulePillIdleBorder: null, // no border before the frame, none now
     treeRowFill: Color(0xFF27282C), // Figma 337:5926
     treeRowBorder: Color(0xFFFCFBF9), // Figma 337:5926
     treeRowBadgeFill: Color(0x3327282C), // #27282C @20% — Figma 337:5926
@@ -2279,6 +2336,11 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? subjectCardProgress,
     Color? mistakesPillFill,
     Color? mistakesPillAccent,
+    Color? modulePillSelectedFill,
+    Color? modulePillSelectedLabel,
+    Color? modulePillIdleFill,
+    Color? modulePillIdleLabel,
+    Color? modulePillIdleBorder,
     Color? treeRowFill,
     Color? treeRowBorder,
     Color? treeRowBadgeFill,
@@ -2515,6 +2577,13 @@ class AppColors extends ThemeExtension<AppColors> {
       subjectCardProgress: subjectCardProgress ?? this.subjectCardProgress,
       mistakesPillFill: mistakesPillFill ?? this.mistakesPillFill,
       mistakesPillAccent: mistakesPillAccent ?? this.mistakesPillAccent,
+      modulePillSelectedFill:
+          modulePillSelectedFill ?? this.modulePillSelectedFill,
+      modulePillSelectedLabel:
+          modulePillSelectedLabel ?? this.modulePillSelectedLabel,
+      modulePillIdleFill: modulePillIdleFill ?? this.modulePillIdleFill,
+      modulePillIdleLabel: modulePillIdleLabel ?? this.modulePillIdleLabel,
+      modulePillIdleBorder: modulePillIdleBorder ?? this.modulePillIdleBorder,
       treeRowFill: treeRowFill ?? this.treeRowFill,
       treeRowBorder: treeRowBorder ?? this.treeRowBorder,
       treeRowBadgeFill: treeRowBadgeFill ?? this.treeRowBadgeFill,
@@ -3061,6 +3130,31 @@ class AppColors extends ThemeExtension<AppColors> {
         other.mistakesPillAccent,
         t,
       )!,
+      modulePillSelectedFill: Color.lerp(
+        modulePillSelectedFill,
+        other.modulePillSelectedFill,
+        t,
+      )!,
+      modulePillSelectedLabel: Color.lerp(
+        modulePillSelectedLabel,
+        other.modulePillSelectedLabel,
+        t,
+      )!,
+      modulePillIdleFill: Color.lerp(
+        modulePillIdleFill,
+        other.modulePillIdleFill,
+        t,
+      )!,
+      modulePillIdleLabel: Color.lerp(
+        modulePillIdleLabel,
+        other.modulePillIdleLabel,
+        t,
+      )!,
+      modulePillIdleBorder: Color.lerp(
+        modulePillIdleBorder,
+        other.modulePillIdleBorder,
+        t,
+      ),
       treeRowFill: Color.lerp(treeRowFill, other.treeRowFill, t)!,
       treeRowBorder: Color.lerp(treeRowBorder, other.treeRowBorder, t)!,
       treeRowBadgeFill: Color.lerp(

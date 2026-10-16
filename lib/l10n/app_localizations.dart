@@ -842,6 +842,12 @@ abstract class AppLocalizations {
   /// **'Search Subjects'**
   String get searchSubjects;
 
+  /// The module picker's first pill (DG-26). The view name is the contract's and Seif's; the Arabic was confirmed by the owner on 2026-10-15.
+  ///
+  /// In en, this message translates to:
+  /// **'All subjects'**
+  String get allSubjects;
+
   /// No description provided for @mistakes.
   ///
   /// In en, this message translates to:

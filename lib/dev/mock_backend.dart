@@ -535,6 +535,16 @@ class MockBackendInterceptor extends Interceptor {
       );
     }
 
+    // `listModules`: University only - a school student gets `[]` (contract).
+    if (method == 'GET' && path == '/catalog/modules') {
+      return _ok(
+        handler,
+        options,
+        200,
+        _isUniversity ? _universityModules : const <dynamic>[],
+      );
+    }
+
     final tree = RegExp(r'^/catalog/subjects/([^/]+)/tree$').firstMatch(path);
     if (method == 'GET' && tree != null) {
       final subjectId = tree.group(1)!;
@@ -1822,6 +1832,31 @@ final _universitySubjects = <dynamic>[
     0,
   ), // untouched — still tappable
   _subject('uni-histology', 'الأنسجة', 58, 210),
+];
+
+/// `GET /catalog/modules` for a University student: this mirrors Seif's staging
+/// account U1 (his message of 2026-10-13) and is TEST DATA, not a catalog.
+///
+/// Two modules in term 1, both holding Physiology; Histology, Anatomy and
+/// Biochemistry are in NO module, which the contract calls legal and expected
+/// (adr-036 §3) - it is what makes the picker's permanent "All subjects" view
+/// visible on a device. `termId` is optional on the wire and is omitted. A
+/// module groups subjects for navigation and nothing else.
+final _universityModules = <dynamic>[
+  <String, dynamic>{
+    'id': '0197b2f3-0009-7cc3-9b4e-000000000001',
+    'name': 'Foundation Module',
+    'displayOrder': 1,
+    'termNumber': 1,
+    'subjectIds': <String>['uni-physio'],
+  },
+  <String, dynamic>{
+    'id': '0197b2f3-0009-7cc3-9b4e-000000000002',
+    'name': 'Cardiovascular Module',
+    'displayOrder': 2,
+    'termNumber': 1,
+    'subjectIds': <String>['uni-physio'],
+  },
 ];
 
 /// `hasFlashcards` and `flashcardCount` are both contract-REQUIRED on this
