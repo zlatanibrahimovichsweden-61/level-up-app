@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/reference_models.dart';
 import '../models/registration_args.dart';
 import '../models/registration_draft.dart';
 
@@ -70,6 +71,10 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
   // not leave a governorate/school id behind, or the body would carry a field
   // the server forbids. The body factory hard-nulls them too (belt and braces),
   // but clearing here is what keeps the visible form honest.
+  //
+  // The school is one answer in three fields — the id, the picked row and the
+  // skip — and every setter that drops the id drops all three: the school is
+  // scoped by city, so a new place means a new question (BUG-027).
 
   /// Country picked. [requiresGovernorate] comes from the country row itself
   /// (`GET /reference/countries`) — the adr-010 switch. Changing country resets
@@ -88,6 +93,8 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
         cityId: null,
         cityName: null,
         schoolId: null,
+        pickedSchool: null,
+        schoolSkipped: false,
       );
     });
   }
@@ -100,6 +107,8 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
         governorateId: governorateId,
         cityId: null,
         schoolId: null,
+        pickedSchool: null,
+        schoolSkipped: false,
       );
     });
   }
@@ -110,7 +119,13 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
   void setCity(String cityId) {
     _update((draft) {
       if (draft.cityId == cityId && draft.cityName == null) return draft;
-      return draft.copyWith(cityId: cityId, cityName: null, schoolId: null);
+      return draft.copyWith(
+        cityId: cityId,
+        cityName: null,
+        schoolId: null,
+        pickedSchool: null,
+        schoolSkipped: false,
+      );
     });
   }
 
@@ -124,20 +139,38 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
     final trimmed = cityName?.trim();
     final normalized = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
     _update(
-      (draft) =>
-          draft.copyWith(cityName: normalized, cityId: null, schoolId: null),
+      (draft) => draft.copyWith(
+        cityName: normalized,
+        cityId: null,
+        schoolId: null,
+        pickedSchool: null,
+        schoolSkipped: false,
+      ),
     );
   }
 
   /// EG: the coded school id from the searchable list. Optional since adr-028
   /// §2 — a student who cannot find their school simply never calls this.
-  void setSchool(String schoolId) =>
-      _update((draft) => draft.copyWith(schoolId: schoolId));
+  ///
+  /// [row] is the picked row itself, kept so the School form can show the
+  /// school's NAME again when the student comes back to it (BUG-027); without
+  /// it the field can only show the search hint. Only the id is submitted.
+  /// Picking un-skips.
+  void setSchool(String schoolId, {NamedRef? row}) => _update(
+    (draft) => draft.copyWith(
+      schoolId: schoolId,
+      pickedSchool: row,
+      schoolSkipped: false,
+    ),
+  );
 
   /// adr-028 §2 — "I can't find my school". Drops any previously-picked id so
-  /// the body omits `schoolId` entirely; the screen tracks that the student
-  /// answered rather than just left it blank.
-  void clearSchool() => _update((draft) => draft.copyWith(schoolId: null));
+  /// the body omits `schoolId` entirely, and records that the student answered
+  /// rather than just left it blank.
+  void skipSchool() => _update(
+    (draft) =>
+        draft.copyWith(schoolId: null, pickedSchool: null, schoolSkipped: true),
+  );
 
   // --- School academic -----------------------------------------------------
 
@@ -176,6 +209,17 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
   /// (the server answers `validation_failed` for them).
   void setStudyYear(String studyYearId) =>
       _update((draft) => draft.copyWith(studyYearId: studyYearId));
+
+  /// The server refused [name] with `422 name_not_allowed`. Recorded only on
+  /// the draft of the [registrationToken] it was submitted with: a refusal that
+  /// lands after that draft was dropped or replaced belongs to no one now.
+  void refuseName({required String registrationToken, required String name}) {
+    _update((draft) {
+      if (draft.registrationToken != registrationToken) return draft;
+      if (draft.refusedNames.contains(name)) return draft;
+      return draft.copyWith(refusedNames: {...draft.refusedNames, name});
+    });
+  }
 
   /// Abandon the registration (e.g. token expired, or user backs out to login).
   void reset() => state = null;

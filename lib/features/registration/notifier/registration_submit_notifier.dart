@@ -13,6 +13,7 @@ import '../models/registration_draft.dart';
 import '../models/registration_validation.dart';
 import '../models/school_registration.dart';
 import '../models/university_registration.dart';
+import '../registration_error_copy.dart';
 import '../repository/registration_repository.dart';
 import 'registration_controller.dart';
 
@@ -37,13 +38,35 @@ class RegistrationSubmitted {
 ///                                   geography-conditionality violation lands)
 ///     · [UnauthorizedException] `registration_token_invalid` → restart /login
 ///     · [ApiException] 409 `phone_already_registered`        → restart /login
+///     · [ApiException] 422 `name_not_allowed` → back to Sign Up_1, the name
+///                                   marked; draft and token kept, the name
+///                                   recorded so it is never sent again
 ///     · [NetworkException]/[OfflineException]                → offline view
 ///
 /// This is an [AsyncNotifier] rather than fetch-on-build because it is a
 /// command: `build` seeds idle and does no work.
 class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
+  /// An outcome belongs to the registration it was submitted for, so a new
+  /// token (a fresh OTP verify) or a dropped draft puts this back to idle: a
+  /// name refused on one attempt is never shown against the next attempt's
+  /// empty form. Only the token is listened to, so editing the draft resets
+  /// nothing.
+  ///
+  /// `listen`, not `watch`: a rebuild would recreate this notifier (Riverpod 3)
+  /// and break a submit still in flight — the expiry view can drop the draft
+  /// mid-request. An in-flight submit is left to land its own outcome.
   @override
-  FutureOr<RegistrationSubmitted?> build() => null;
+  FutureOr<RegistrationSubmitted?> build() {
+    ref.listen(
+      registrationControllerProvider.select(
+        (draft) => draft?.registrationToken,
+      ),
+      (_, _) {
+        if (!state.isLoading) state = const AsyncData(null);
+      },
+    );
+    return null;
+  }
 
   /// Builds the discriminated body from the draft and posts it.
   ///
@@ -74,8 +97,23 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
       return;
     }
 
+    // A name the server already refused for this registration is not sent
+    // again: the contract says not to retry it, and the answer would be the
+    // same. Like the expiry check above, the server's own answer stands in for
+    // the round-trip. It is set afresh on every tap, so the detail screen that
+    // is showing always sends the student back to Sign Up_1 — even one opened
+    // again after the refusal landed while the student had already left it,
+    // which an unchanged state would not tell.
+    if (draft.refusedNames.contains(draft.name)) {
+      state = AsyncError(
+        const ApiException(status: 422, code: 'name_not_allowed'),
+        StackTrace.current,
+      );
+      return;
+    }
+
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    final outcome = await AsyncValue.guard(() async {
       // Contract 2.0.0-m1 made `device` required on both register bodies. It is
       // the SAME DeviceInfo that `/auth/otp/verify` sent — same provider, same
       // SecureStorage `deviceId` — because the `registrationToken` is bound to
@@ -101,6 +139,16 @@ class RegistrationSubmitNotifier extends AsyncNotifier<RegistrationSubmitted?> {
 
       return const RegistrationSubmitted();
     });
+
+    // Remember a refused name on its own draft BEFORE the outcome lands, so
+    // Sign Up_1 already knows it when the screen sends the student there.
+    final name = draft.name;
+    if (isNameNotAllowed(outcome.error) && name != null) {
+      ref
+          .read(registrationControllerProvider.notifier)
+          .refuseName(registrationToken: draft.registrationToken, name: name);
+    }
+    state = outcome;
   }
 
   /// Back to idle — used when the student edits a field after a failure, so the

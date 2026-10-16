@@ -53,22 +53,6 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
   /// (Wave 03, W03-1).
   static const _gap = 25.0;
 
-  /// The chosen school row, kept locally so the field can show its NAME while
-  /// the draft carries only the opaque id that gets submitted.
-  NamedRef? _selectedSchool;
-
-  /// adr-028 §2 — the student used "I can't find my school". Distinct from
-  /// "nothing chosen yet": both submit without a `schoolId`, but only this one
-  /// should render as a resolved field.
-  bool _schoolSkipped = false;
-
-  /// Anything that invalidates the school scope drops both the selection and
-  /// the skip: the field is scoped by city, so a new city means a new question.
-  void _clearSchool() => setState(() {
-    _selectedSchool = null;
-    _schoolSkipped = false;
-  });
-
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
     change();
@@ -162,7 +146,6 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           countryCode: country.code,
                           requiresGovernorate: country.requiresGovernorate,
                         );
-                        _clearSchool();
                       }),
                     ),
                     const SizedBox(height: _gap),
@@ -181,10 +164,8 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                         onRetry: () => ref.invalidate(
                           governoratesProvider(draft.countryCode!),
                         ),
-                        onSelected: (id) => _edit(() {
-                          controller.setGovernorate(id);
-                          setState(() => _selectedSchool = null);
-                        }),
+                        onSelected: (id) =>
+                            _edit(() => controller.setGovernorate(id)),
                       ),
                       const SizedBox(height: _gap),
                     ],
@@ -218,14 +199,10 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                           governorateId: draft.governorateId,
                         )),
                       ),
-                      onCitySelected: (id) => _edit(() {
-                        controller.setCity(id);
-                        _clearSchool();
-                      }),
-                      onCityNameChanged: (name) => _edit(() {
-                        controller.setCityName(name);
-                        _clearSchool();
-                      }),
+                      onCitySelected: (id) =>
+                          _edit(() => controller.setCity(id)),
+                      onCityNameChanged: (name) =>
+                          _edit(() => controller.setCityName(name)),
                     ),
                     const SizedBox(height: _gap),
 
@@ -265,28 +242,24 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                         // Null under a free-text city — the search then scopes
                         // by governorate alone rather than being disabled.
                         cityId: draft.cityId,
-                        selected: _selectedSchool,
-                        skipped: _schoolSkipped,
+                        // From the draft, not this screen's state, so the
+                        // picked name (or the skip) is still shown when the
+                        // student leaves the form and comes back (BUG-027).
+                        selected: draft.pickedSchool,
+                        skipped: draft.schoolSkipped,
                         errorText: errorFor(RegFields.schoolId),
-                        onSelected: (school) => _edit(() {
-                          setState(() {
-                            _selectedSchool = school;
-                            _schoolSkipped = false; // picking un-skips
-                          });
-                          controller.setSchool(school.id);
-                        }),
-                        onSkip: () => _edit(() {
-                          setState(() {
-                            _selectedSchool = null;
-                            _schoolSkipped = true;
-                          });
-                          controller.clearSchool();
-                        }),
+                        onSelected: (school) => _edit(
+                          () => controller.setSchool(school.id, row: school),
+                        ),
+                        onSkip: () => _edit(controller.skipSchool),
                       ),
                     ],
 
+                    // A refused name is shown on Sign Up_1, where this form
+                    // is already sliding back to; it gets no banner here.
                     if (submitState.hasError &&
-                        !restartsRegistration(submitState.error))
+                        !restartsRegistration(submitState.error) &&
+                        !isNameNotAllowed(submitState.error))
                       SubmitFailureBanner(
                         message: registrationErrorMessage(
                           l10n,
@@ -370,6 +343,17 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(registrationControllerProvider.notifier).reset();
         });
+        return;
+      }
+
+      if (next.hasError && isNameNotAllowed(next.error)) {
+        // `422 name_not_allowed`: the name is asked on Sign Up_1, so that is
+        // where it gets fixed. The draft and its token are kept, and the error
+        // stays in the submit provider for Sign Up_1 to mark the name with.
+        // `go` rebuilds the one-screen stack OTP left, and the screens after it
+        // refill from the draft, the picked school's name included (BUG-027).
+        // Nothing is resent from here.
+        context.go('/register');
         return;
       }
 

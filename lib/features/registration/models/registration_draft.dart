@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'reference_models.dart';
+
 part 'registration_draft.freezed.dart';
 
 /// The registration track — the discriminator `POST /auth/register` switches on
@@ -53,6 +55,17 @@ abstract class RegistrationDraft with _$RegistrationDraft {
     String? cityId,
     String? cityName,
     String? schoolId,
+
+    /// The school row picked from the search (its id and both names), held
+    /// beside [schoolId] so the School form shows the school's NAME again when
+    /// the student leaves it and comes back (BUG-027). Display only: the body
+    /// sends [schoolId], never this.
+    NamedRef? pickedSchool,
+
+    /// adr-028 §2 — the student tapped "I can't find my school". It submits no
+    /// `schoolId`, like "nothing chosen yet", but the field reads as answered.
+    /// Held here rather than on the screen for the same reason (BUG-027).
+    @Default(false) bool schoolSkipped,
     // --- School academic ---
     String? stage,
     String? educationSystem,
@@ -60,6 +73,14 @@ abstract class RegistrationDraft with _$RegistrationDraft {
     String? universityId,
     String? facultyId,
     String? studyYearId,
+
+    /// Names the server refused with `422 name_not_allowed` during THIS
+    /// registration (this token), exactly as they were sent. The contract says
+    /// not to retry the same name, so Sign Up_1 keeps such a name marked and
+    /// will not go on with it, and the submit will not send it again; only a
+    /// different name moves on (owner, 2026-10-10). A new token starts a new
+    /// draft, and with it an empty set.
+    @Default(<String>{}) Set<String> refusedNames,
   }) = _RegistrationDraft;
 
   /// The friendly client guard: once the token's TTL has passed, every step

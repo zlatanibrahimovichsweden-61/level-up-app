@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/network/exceptions.dart';
 import '../models/profile_update.dart';
 import '../models/student_profile.dart';
+import '../profile_error_copy.dart';
 import '../repository/profile_repository.dart';
 import 'me_notifier.dart';
 
@@ -19,6 +21,9 @@ import 'me_notifier.dart';
 /// - `AsyncData(StudentProfile)`→ 200, the updated profile the server returned
 /// - `AsyncError(...)`          → the screen maps it:
 ///     · [ValidationException] → per-field inline errors from the field map
+///     · `422 name_not_allowed`→ the name field marked, like a `400` on it,
+///                               and the name recorded so it is never sent
+///                               again (see [isRefused])
 ///     · offline/network       → the offline line
 ///     · anything else         → the generic line
 ///
@@ -30,9 +35,29 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
   /// True once this notifier has been disposed — see [save].
   bool _disposed = false;
 
+  /// Names the server refused with `422 name_not_allowed` on this visit to
+  /// Edit Profile, as they were sent (trimmed, by [ProfileUpdate.diff]).
+  ///
+  /// The sign-up rule, applied here (O-17, owner 2026-10-11): a refused name is
+  /// never sent again, because the same name only brings the same answer back.
+  /// Kept here and not on any registration state; it lives and dies with this
+  /// screen-scoped notifier, as sign-up's lives and dies with one registration.
+  /// A new visit starts from the saved name, so nothing refused is on screen.
+  final Set<String> _refusedNames = {};
+
+  /// Was [name] refused on this visit? Compared trimmed, as it is sent, so
+  /// spaces around a refused name never make it a new one. Null (the name is
+  /// not part of the save) never is.
+  bool isRefused(String? name) =>
+      name != null && _refusedNames.contains(name.trim());
+
   @override
   FutureOr<StudentProfile?> build() {
     ref.onDispose(() => _disposed = true);
+    // Sign-out's session reset invalidates this provider
+    // (`invalidateSessionScope`), and a rebuild can keep this instance: one
+    // student's typed names must never carry over to the next.
+    _refusedNames.clear();
     return null;
   }
 
@@ -46,6 +71,18 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
     // Nothing changed. Spending a round trip to tell the server so would flash
     // a spinner over a request whose response is the payload we already hold.
     if (update.isEmpty) return true;
+
+    // A name the server already refused on this visit is not sent again, with
+    // whatever else changed beside it: sending the rest without it would save
+    // something other than what the student asked for. The refusal is stated
+    // afresh, so Save shows it again even after an edit took it off.
+    if (isRefused(update.name)) {
+      state = AsyncError<StudentProfile?>(
+        const ApiException(status: 422, code: 'name_not_allowed'),
+        StackTrace.current,
+      );
+      return false;
+    }
 
     state = const AsyncLoading<StudentProfile?>();
     final result = await AsyncValue.guard(
@@ -67,6 +104,12 @@ class EditProfileNotifier extends AsyncNotifier<StudentProfile?> {
     // or the router's — which is a larger change than this hazard justifies.
     if (_disposed) return !result.hasError;
 
+    // Recorded before the outcome lands, so the screen that rebuilds on it
+    // already knows the name is refused.
+    final name = update.name;
+    if (name != null && isProfileNameNotAllowed(result.error)) {
+      _refusedNames.add(name.trim());
+    }
     state = result;
     if (result.hasError) return false;
 

@@ -272,8 +272,10 @@ class _UniversityDetailScreenState
                           _edit(() => controller.setCityName(name)),
                     ),
 
+                    // A refused name is shown on Sign Up_1 (see School).
                     if (submitState.hasError &&
-                        !restartsRegistration(submitState.error))
+                        !restartsRegistration(submitState.error) &&
+                        !isNameNotAllowed(submitState.error))
                       SubmitFailureBanner(
                         message: registrationErrorMessage(
                           l10n,
@@ -336,6 +338,13 @@ class _UniversityDetailScreenState
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(registrationControllerProvider.notifier).reset();
         });
+        return;
+      }
+
+      if (next.hasError && isNameNotAllowed(next.error)) {
+        // `422 name_not_allowed`: back to Sign Up_1, where the name is asked.
+        // The draft and its token are kept; see the School screen's twin.
+        context.go('/register');
         return;
       }
 

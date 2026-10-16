@@ -18,7 +18,20 @@ mixin _$RegistrationDraft {
 /// keys. Never both at once: every setter that populates one clears the
 /// other, which is what makes `cityUnionFromDraft`'s "both → throw"
 /// unreachable through the UI.
- String? get cityId; String? get cityName; String? get schoolId; String? get stage; String? get educationSystem; String? get universityId; String? get facultyId; String? get studyYearId;
+ String? get cityId; String? get cityName; String? get schoolId;/// The school row picked from the search (its id and both names), held
+/// beside [schoolId] so the School form shows the school's NAME again when
+/// the student leaves it and comes back (BUG-027). Display only: the body
+/// sends [schoolId], never this.
+ NamedRef? get pickedSchool;/// adr-028 §2 — the student tapped "I can't find my school". It submits no
+/// `schoolId`, like "nothing chosen yet", but the field reads as answered.
+/// Held here rather than on the screen for the same reason (BUG-027).
+ bool get schoolSkipped; String? get stage; String? get educationSystem; String? get universityId; String? get facultyId; String? get studyYearId;/// Names the server refused with `422 name_not_allowed` during THIS
+/// registration (this token), exactly as they were sent. The contract says
+/// not to retry the same name, so Sign Up_1 keeps such a name marked and
+/// will not go on with it, and the submit will not send it again; only a
+/// different name moves on (owner, 2026-10-10). A new token starts a new
+/// draft, and with it an empty set.
+ Set<String> get refusedNames;
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +42,16 @@ $RegistrationDraftCopyWith<RegistrationDraft> get copyWith => _$RegistrationDraf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.pickedSchool, pickedSchool) || other.pickedSchool == pickedSchool)&&(identical(other.schoolSkipped, schoolSkipped) || other.schoolSkipped == schoolSkipped)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId)&&const DeepCollectionEquality().equals(other.refusedNames, refusedNames));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,stage,educationSystem,universityId,facultyId,studyYearId]);
+int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,pickedSchool,schoolSkipped,stage,educationSystem,universityId,facultyId,studyYearId,const DeepCollectionEquality().hash(refusedNames)]);
 
 @override
 String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
+  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, pickedSchool: $pickedSchool, schoolSkipped: $schoolSkipped, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, refusedNames: $refusedNames)';
 }
 
 
@@ -49,11 +62,11 @@ abstract mixin class $RegistrationDraftCopyWith<$Res>  {
   factory $RegistrationDraftCopyWith(RegistrationDraft value, $Res Function(RegistrationDraft) _then) = _$RegistrationDraftCopyWithImpl;
 @useResult
 $Res call({
- String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
+ String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, NamedRef? pickedSchool, bool schoolSkipped, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId, Set<String> refusedNames
 });
 
 
-
+$NamedRefCopyWith<$Res>? get pickedSchool;
 
 }
 /// @nodoc
@@ -66,7 +79,7 @@ class _$RegistrationDraftCopyWithImpl<$Res>
 
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? pickedSchool = freezed,Object? schoolSkipped = null,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,Object? refusedNames = null,}) {
   return _then(_self.copyWith(
 registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
 as String,tokenExpiresAt: null == tokenExpiresAt ? _self.tokenExpiresAt : tokenExpiresAt // ignore: cast_nullable_to_non_nullable
@@ -82,15 +95,30 @@ as bool?,governorateId: freezed == governorateId ? _self.governorateId : governo
 as String?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,schoolId: freezed == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
-as String?,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as String?,pickedSchool: freezed == pickedSchool ? _self.pickedSchool : pickedSchool // ignore: cast_nullable_to_non_nullable
+as NamedRef?,schoolSkipped: null == schoolSkipped ? _self.schoolSkipped : schoolSkipped // ignore: cast_nullable_to_non_nullable
+as bool,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String?,educationSystem: freezed == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String?,universityId: freezed == universityId ? _self.universityId : universityId // ignore: cast_nullable_to_non_nullable
 as String?,facultyId: freezed == facultyId ? _self.facultyId : facultyId // ignore: cast_nullable_to_non_nullable
 as String?,studyYearId: freezed == studyYearId ? _self.studyYearId : studyYearId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,refusedNames: null == refusedNames ? _self.refusedNames : refusedNames // ignore: cast_nullable_to_non_nullable
+as Set<String>,
   ));
 }
+/// Create a copy of RegistrationDraft
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NamedRefCopyWith<$Res>? get pickedSchool {
+    if (_self.pickedSchool == null) {
+    return null;
+  }
 
+  return $NamedRefCopyWith<$Res>(_self.pickedSchool!, (value) {
+    return _then(_self.copyWith(pickedSchool: value));
+  });
+}
 }
 
 
@@ -172,10 +200,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  NamedRef? pickedSchool,  bool schoolSkipped,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId,  Set<String> refusedNames)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RegistrationDraft() when $default != null:
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.pickedSchool,_that.schoolSkipped,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId,_that.refusedNames);case _:
   return orElse();
 
 }
@@ -193,10 +221,10 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  NamedRef? pickedSchool,  bool schoolSkipped,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId,  Set<String> refusedNames)  $default,) {final _that = this;
 switch (_that) {
 case _RegistrationDraft():
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.pickedSchool,_that.schoolSkipped,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId,_that.refusedNames);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +241,10 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String registrationToken,  DateTime tokenExpiresAt,  String phone,  String? name,  String? parentPhone,  String? referralCode,  RegTrack? track,  DateTime? dateOfBirth,  String? countryCode,  bool? requiresGovernorate,  String? governorateId,  String? cityId,  String? cityName,  String? schoolId,  NamedRef? pickedSchool,  bool schoolSkipped,  String? stage,  String? educationSystem,  String? universityId,  String? facultyId,  String? studyYearId,  Set<String> refusedNames)?  $default,) {final _that = this;
 switch (_that) {
 case _RegistrationDraft() when $default != null:
-return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId);case _:
+return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.name,_that.parentPhone,_that.referralCode,_that.track,_that.dateOfBirth,_that.countryCode,_that.requiresGovernorate,_that.governorateId,_that.cityId,_that.cityName,_that.schoolId,_that.pickedSchool,_that.schoolSkipped,_that.stage,_that.educationSystem,_that.universityId,_that.facultyId,_that.studyYearId,_that.refusedNames);case _:
   return null;
 
 }
@@ -228,7 +256,7 @@ return $default(_that.registrationToken,_that.tokenExpiresAt,_that.phone,_that.n
 
 
 class _RegistrationDraft extends RegistrationDraft {
-  const _RegistrationDraft({required this.registrationToken, required this.tokenExpiresAt, required this.phone, this.name, this.parentPhone, this.referralCode, this.track, this.dateOfBirth, this.countryCode, this.requiresGovernorate, this.governorateId, this.cityId, this.cityName, this.schoolId, this.stage, this.educationSystem, this.universityId, this.facultyId, this.studyYearId}): super._();
+  const _RegistrationDraft({required this.registrationToken, required this.tokenExpiresAt, required this.phone, this.name, this.parentPhone, this.referralCode, this.track, this.dateOfBirth, this.countryCode, this.requiresGovernorate, this.governorateId, this.cityId, this.cityName, this.schoolId, this.pickedSchool, this.schoolSkipped = false, this.stage, this.educationSystem, this.universityId, this.facultyId, this.studyYearId, final  Set<String> refusedNames = const <String>{}}): _refusedNames = refusedNames,super._();
   
 
 @override final  String registrationToken;
@@ -249,11 +277,39 @@ class _RegistrationDraft extends RegistrationDraft {
 @override final  String? cityId;
 @override final  String? cityName;
 @override final  String? schoolId;
+/// The school row picked from the search (its id and both names), held
+/// beside [schoolId] so the School form shows the school's NAME again when
+/// the student leaves it and comes back (BUG-027). Display only: the body
+/// sends [schoolId], never this.
+@override final  NamedRef? pickedSchool;
+/// adr-028 §2 — the student tapped "I can't find my school". It submits no
+/// `schoolId`, like "nothing chosen yet", but the field reads as answered.
+/// Held here rather than on the screen for the same reason (BUG-027).
+@override@JsonKey() final  bool schoolSkipped;
 @override final  String? stage;
 @override final  String? educationSystem;
 @override final  String? universityId;
 @override final  String? facultyId;
 @override final  String? studyYearId;
+/// Names the server refused with `422 name_not_allowed` during THIS
+/// registration (this token), exactly as they were sent. The contract says
+/// not to retry the same name, so Sign Up_1 keeps such a name marked and
+/// will not go on with it, and the submit will not send it again; only a
+/// different name moves on (owner, 2026-10-10). A new token starts a new
+/// draft, and with it an empty set.
+ final  Set<String> _refusedNames;
+/// Names the server refused with `422 name_not_allowed` during THIS
+/// registration (this token), exactly as they were sent. The contract says
+/// not to retry the same name, so Sign Up_1 keeps such a name marked and
+/// will not go on with it, and the submit will not send it again; only a
+/// different name moves on (owner, 2026-10-10). A new token starts a new
+/// draft, and with it an empty set.
+@override@JsonKey() Set<String> get refusedNames {
+  if (_refusedNames is EqualUnmodifiableSetView) return _refusedNames;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableSetView(_refusedNames);
+}
+
 
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
@@ -265,16 +321,16 @@ _$RegistrationDraftCopyWith<_RegistrationDraft> get copyWith => __$RegistrationD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RegistrationDraft&&(identical(other.registrationToken, registrationToken) || other.registrationToken == registrationToken)&&(identical(other.tokenExpiresAt, tokenExpiresAt) || other.tokenExpiresAt == tokenExpiresAt)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.name, name) || other.name == name)&&(identical(other.parentPhone, parentPhone) || other.parentPhone == parentPhone)&&(identical(other.referralCode, referralCode) || other.referralCode == referralCode)&&(identical(other.track, track) || other.track == track)&&(identical(other.dateOfBirth, dateOfBirth) || other.dateOfBirth == dateOfBirth)&&(identical(other.countryCode, countryCode) || other.countryCode == countryCode)&&(identical(other.requiresGovernorate, requiresGovernorate) || other.requiresGovernorate == requiresGovernorate)&&(identical(other.governorateId, governorateId) || other.governorateId == governorateId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&(identical(other.cityName, cityName) || other.cityName == cityName)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.pickedSchool, pickedSchool) || other.pickedSchool == pickedSchool)&&(identical(other.schoolSkipped, schoolSkipped) || other.schoolSkipped == schoolSkipped)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.educationSystem, educationSystem) || other.educationSystem == educationSystem)&&(identical(other.universityId, universityId) || other.universityId == universityId)&&(identical(other.facultyId, facultyId) || other.facultyId == facultyId)&&(identical(other.studyYearId, studyYearId) || other.studyYearId == studyYearId)&&const DeepCollectionEquality().equals(other._refusedNames, _refusedNames));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,stage,educationSystem,universityId,facultyId,studyYearId]);
+int get hashCode => Object.hashAll([runtimeType,registrationToken,tokenExpiresAt,phone,name,parentPhone,referralCode,track,dateOfBirth,countryCode,requiresGovernorate,governorateId,cityId,cityName,schoolId,pickedSchool,schoolSkipped,stage,educationSystem,universityId,facultyId,studyYearId,const DeepCollectionEquality().hash(_refusedNames)]);
 
 @override
 String toString() {
-  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId)';
+  return 'RegistrationDraft(registrationToken: $registrationToken, tokenExpiresAt: $tokenExpiresAt, phone: $phone, name: $name, parentPhone: $parentPhone, referralCode: $referralCode, track: $track, dateOfBirth: $dateOfBirth, countryCode: $countryCode, requiresGovernorate: $requiresGovernorate, governorateId: $governorateId, cityId: $cityId, cityName: $cityName, schoolId: $schoolId, pickedSchool: $pickedSchool, schoolSkipped: $schoolSkipped, stage: $stage, educationSystem: $educationSystem, universityId: $universityId, facultyId: $facultyId, studyYearId: $studyYearId, refusedNames: $refusedNames)';
 }
 
 
@@ -285,11 +341,11 @@ abstract mixin class _$RegistrationDraftCopyWith<$Res> implements $RegistrationD
   factory _$RegistrationDraftCopyWith(_RegistrationDraft value, $Res Function(_RegistrationDraft) _then) = __$RegistrationDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId
+ String registrationToken, DateTime tokenExpiresAt, String phone, String? name, String? parentPhone, String? referralCode, RegTrack? track, DateTime? dateOfBirth, String? countryCode, bool? requiresGovernorate, String? governorateId, String? cityId, String? cityName, String? schoolId, NamedRef? pickedSchool, bool schoolSkipped, String? stage, String? educationSystem, String? universityId, String? facultyId, String? studyYearId, Set<String> refusedNames
 });
 
 
-
+@override $NamedRefCopyWith<$Res>? get pickedSchool;
 
 }
 /// @nodoc
@@ -302,7 +358,7 @@ class __$RegistrationDraftCopyWithImpl<$Res>
 
 /// Create a copy of RegistrationDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? registrationToken = null,Object? tokenExpiresAt = null,Object? phone = null,Object? name = freezed,Object? parentPhone = freezed,Object? referralCode = freezed,Object? track = freezed,Object? dateOfBirth = freezed,Object? countryCode = freezed,Object? requiresGovernorate = freezed,Object? governorateId = freezed,Object? cityId = freezed,Object? cityName = freezed,Object? schoolId = freezed,Object? pickedSchool = freezed,Object? schoolSkipped = null,Object? stage = freezed,Object? educationSystem = freezed,Object? universityId = freezed,Object? facultyId = freezed,Object? studyYearId = freezed,Object? refusedNames = null,}) {
   return _then(_RegistrationDraft(
 registrationToken: null == registrationToken ? _self.registrationToken : registrationToken // ignore: cast_nullable_to_non_nullable
 as String,tokenExpiresAt: null == tokenExpiresAt ? _self.tokenExpiresAt : tokenExpiresAt // ignore: cast_nullable_to_non_nullable
@@ -318,16 +374,31 @@ as bool?,governorateId: freezed == governorateId ? _self.governorateId : governo
 as String?,cityId: freezed == cityId ? _self.cityId : cityId // ignore: cast_nullable_to_non_nullable
 as String?,cityName: freezed == cityName ? _self.cityName : cityName // ignore: cast_nullable_to_non_nullable
 as String?,schoolId: freezed == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
-as String?,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as String?,pickedSchool: freezed == pickedSchool ? _self.pickedSchool : pickedSchool // ignore: cast_nullable_to_non_nullable
+as NamedRef?,schoolSkipped: null == schoolSkipped ? _self.schoolSkipped : schoolSkipped // ignore: cast_nullable_to_non_nullable
+as bool,stage: freezed == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
 as String?,educationSystem: freezed == educationSystem ? _self.educationSystem : educationSystem // ignore: cast_nullable_to_non_nullable
 as String?,universityId: freezed == universityId ? _self.universityId : universityId // ignore: cast_nullable_to_non_nullable
 as String?,facultyId: freezed == facultyId ? _self.facultyId : facultyId // ignore: cast_nullable_to_non_nullable
 as String?,studyYearId: freezed == studyYearId ? _self.studyYearId : studyYearId // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,refusedNames: null == refusedNames ? _self._refusedNames : refusedNames // ignore: cast_nullable_to_non_nullable
+as Set<String>,
   ));
 }
 
+/// Create a copy of RegistrationDraft
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$NamedRefCopyWith<$Res>? get pickedSchool {
+    if (_self.pickedSchool == null) {
+    return null;
+  }
 
+  return $NamedRefCopyWith<$Res>(_self.pickedSchool!, (value) {
+    return _then(_self.copyWith(pickedSchool: value));
+  });
+}
 }
 
 // dart format on
