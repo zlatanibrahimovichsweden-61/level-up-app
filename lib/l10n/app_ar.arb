@@ -303,5 +303,8 @@
   "flashcardSetupHelper": "هذه الفلاش كارد المتاحة لهذا الاختبار",
   "flashcardGotIt": "فهمت",
   "flashcardAgain": "مرة أخرى",
-  "flashcardPreviewUsedUp": "لقد استخدمت البطاقات المجانية لهذا الأسبوع."
+  "flashcardPreviewUsedUp": "لقد استخدمت البطاقات المجانية لهذا الأسبوع.",
+  "notifFilterAll": "الكل",
+  "notifModerationWarningTitle": "رسالة بخصوص حسابك",
+  "notifModerationWarningBody": "وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل التطبيق."
 }

@@ -7,8 +7,12 @@ import 'package:level_up_app/l10n/app_localizations.dart';
 
 /// The bell's unread dot is GATED, and a golden can only show that it is
 /// missing — not that it is missing *on purpose*. This test names the reason:
-/// there is no notifications endpoint in the contract, so nothing can set the
-/// flag, and the frame's dot must not be drawn unconditionally.
+/// the unread count exists (`GET /me/notifications/unread-count`,
+/// `openapi.yaml:1226`) but is not wired until CW07b — every student gets an
+/// `enrolment_opened` welcome item the inbox does not render (Seif SQ-20), so a
+/// dot driven by the server's count would stay lit over an inbox that shows
+/// nothing. Until the count and the rendered kinds agree nothing sets the flag,
+/// and the frame's dot must not be drawn unconditionally.
 
 Future<void> _pump(
   WidgetTester tester, {
@@ -61,7 +65,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         // No hasUnreadNotifications argument at all — exactly how Home builds
-        // it, since the contract gives it nothing to pass.
+        // it, since nothing is wired to pass one before CW07b.
         home: const Scaffold(
           body: HomeHeader(name: 'Yara', avatarUrl: ''),
         ),
@@ -75,7 +79,7 @@ void main() {
   testWidgets('the dot renders when the flag is true, in the canvas hue', (
     tester,
   ) async {
-    // Guards the widget itself, not the app: when an endpoint does arrive, this
+    // Guards the widget itself, not the app: when CW07b wires the count, this
     // is what flipping the flag must produce.
     await _pump(tester, hasUnread: true);
     expect(_dotsColoured(AppColors.light.bellUnreadDot), findsOneWidget);

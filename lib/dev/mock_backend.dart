@@ -33,6 +33,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import '../core/network/interceptors/error_interceptor.dart';
+import 'mock_notifications.dart';
 
 /// Builds the Dio that replaces the real client for the mock run.
 ///
@@ -137,6 +138,11 @@ class MockBackendInterceptor extends Interceptor {
   /// CLEARED address, not an absent one (the contract's tri-state). Emptied by
   /// a registration, which is a different student.
   final _profileEdits = <String, Map<String, Object?>>{};
+
+  /// The Notifications inbox (CW07a): `GET /me/notifications` and
+  /// `POST /me/notifications/{id}/read`. Its fixtures and rules live in
+  /// `mock_notifications.dart`; read marks persist for this session.
+  final _notifications = MockNotificationsInbox();
 
   @override
   Future<void> onRequest(
@@ -274,6 +280,28 @@ class MockBackendInterceptor extends Interceptor {
       return _ok(handler, options, 200, <String, dynamic>{
         'items': _entitlements,
       });
+    }
+
+    // ---- notifications inbox (CW07a) --------------------------------------
+    // Both operations are `stable`; the data and the contract's rules (paging,
+    // `limit`/`category`/`cursor` validation, idempotent read, 404) are in
+    // `mock_notifications.dart`. `GET /me/notifications/unread-count` is not
+    // served - the app does not call it yet - so it falls through to the
+    // generic 404 below.
+    final notificationsReply = _notifications.handle(method, path, query);
+    if (notificationsReply != null) {
+      switch (notificationsReply) {
+        case MockNotificationsOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockNotificationsValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockNotificationsProblem(
+          :final status,
+          :final code,
+          :final detail,
+        ):
+          return _problem(handler, options, status, code, detail);
+      }
     }
 
     // ---- leaderboard ------------------------------------------------------

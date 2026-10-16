@@ -1735,6 +1735,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve used this week\'s free flashcards.'**
   String get flashcardPreviewUsedUp;
+
+  /// The Notifications inbox's first filter chip: the absence of the contract's `category` filter, i.e. every category. EN is Figma 180:8556 without its '(6)' count (no such total exists in the contract); AR is the word already shipped in quizReviewFilterAll. DERIVED, not designer-written: flagged for the owner's confirmation (CW07a, docs/DESIGN_ISSUES.md).
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notifFilterAll;
+
+  /// Title of a kind=moderation_warning inbox item. Copied character for character from contract/openapi.yaml (the listMyNotifications description, pin eddb6ac), where it is the client-approved copy (approved in writing 2026-10-07). Do not reword, re-punctuate or normalise it; change it only when the contract does. The Arabic text is in app_ar.arb.
+  ///
+  /// In en, this message translates to:
+  /// **'A message about your account'**
+  String get notifModerationWarningTitle;
+
+  /// Body of a kind=moderation_warning inbox item. Copied character for character from contract/openapi.yaml (the listMyNotifications description, pin eddb6ac), where it is the client-approved copy (approved in writing 2026-10-07). Do not reword, re-punctuate or normalise it; change it only when the contract does. It tells the student to contact Support from the app while Support is still a shell (CW12 should follow).
+  ///
+  /// In en, this message translates to:
+  /// **'We received a report about content from your account that does not follow the Level Up community rules. This is a warning. Please keep your messages and photos respectful. If this happens again, your account may be banned. If you think this is a mistake, contact Support from the app.'**
+  String get notifModerationWarningBody;
 }
 
 class _AppLocalizationsDelegate
