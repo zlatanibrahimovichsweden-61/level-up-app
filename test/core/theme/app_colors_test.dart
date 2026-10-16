@@ -642,18 +642,24 @@ void main() {
     const dark = AppColors.dark;
 
     test('the frames\' values in both palettes', () {
-      // The switch is the same on both canvases: `642:8525` / `642:8587` track,
-      // `642:8526` / `642:8588` knob.
+      // The ON switch is the same on both canvases: `642:8525` / `642:8587`
+      // track, `642:8526` / `642:8588` knob.
       for (final palette in [light, dark]) {
         expect(palette.settingsToggleOnTrack, const Color(0xFFAE87E7));
         expect(palette.settingsToggleKnob, const Color(0xFFFFFFFF));
-        // Not designed — the app's inactive grey, [mutedText]'s value, until
-        // the designer draws OFF (docs/DESIGN_ISSUES.md #107).
-        expect(palette.settingsToggleOffTrack, const Color(0xFFB3B3B3));
-        expect(palette.settingsToggleOffTrack, palette.mutedText);
       }
       expect(light.settingsRowLabel, const Color(0xFF384F47)); // 642:8524
       expect(dark.settingsRowLabel, const Color(0xFFFCFBF9)); // 642:8586
+    });
+
+    test('the OFF track is the designer\'s own, different per canvas '
+        '(SEIF1014 follow-up)', () {
+      // The designer drew OFF: light `1409:8770` `#D1D1D1`, dark `1409:24806`
+      // `#5C5C5C`. Until then it was `#B3B3B3` (mutedText's value) on both.
+      expect(light.settingsToggleOffTrack, const Color(0xFFD1D1D1));
+      expect(dark.settingsToggleOffTrack, const Color(0xFF5C5C5C));
+      expect(light.settingsToggleOffTrack, isNot(light.mutedText));
+      expect(dark.settingsToggleOffTrack, isNot(dark.mutedText));
     });
 
     test('every one is wired through copyWith and lerp', () {

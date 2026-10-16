@@ -19,9 +19,9 @@ import 'settings_harness.dart';
 /// Settings' surfaces and its new language control · edit5 items #28 and #50.
 ///
 /// Pumped through `settings_harness.dart`, which boots the real `LevelUpApp`:
-/// the Notification Preferences back-light depends on `meProvider`'s track and
-/// the canvas depends on `themeModeProvider`, so both have to be the app's own
-/// rather than a hand-built `MaterialApp`'s.
+/// the canvas depends on `themeModeProvider` and the block list on
+/// `meProvider`'s answer, so both have to be the app's own rather than a
+/// hand-built `MaterialApp`'s.
 void main() {
   Future<void> goDark(WidgetTester tester, ProviderContainer container) async {
     container.read(themeModeProvider.notifier).select(ThemeMode.dark);
@@ -83,74 +83,71 @@ void main() {
   });
 
   // ---------------------------------------------------------------------
-  group('#28 the Notification Preferences back-light', () {
-    testWidgets('light: none, on either track', (tester) async {
-      await pumpAppAt(
+  group(
+    '#28 the Notification Preferences block, and its back-light, are gone',
+    () {
+      // None of the six Settings frames draws the block, and the contract stores
+      // no notification preference. Its card carried the screen's only
+      // back-lights (B8 school, B15 university); with the card gone, no Settings
+      // card has one, on either track and either canvas.
+      testWidgets('light: no block on either track', (tester) async {
+        await pumpAppAt(
+          tester,
+          '/settings',
+          profile: settingsRepo(me: universityProfile()),
+        );
+        expect(find.text('Notification Preferences'), findsNothing);
+        expect(find.byType(SettingsSection), findsNWidgets(2));
+      });
+
+      testWidgets('dark school: no block, and no card carries a back-light', (
         tester,
-        '/settings',
-        profile: settingsRepo(me: universityProfile()),
-      );
-      expect(cardFor(tester, 'Notification Preferences').backlights, isEmpty);
-    });
+      ) async {
+        final container = await pumpAppAt(
+          tester,
+          '/settings',
+          profile: settingsRepo(me: schoolProfile()),
+        );
+        await goDark(tester, container);
 
-    testWidgets('dark school: B8 at (0, 33)', (tester) async {
-      final container = await pumpAppAt(
-        tester,
-        '/settings',
-        profile: settingsRepo(me: schoolProfile()),
-      );
-      await goDark(tester, container);
+        expect(find.text('Notification Preferences'), findsNothing);
+        expect(find.byType(SettingsSection), findsNWidgets(2));
+        expect(cardFor(tester, 'Mode').backlights, isEmpty);
+        expect(cardFor(tester, 'Rank').backlights, isEmpty);
+      });
 
-      final light = cardFor(
-        tester,
-        'Notification Preferences',
-      ).backlights.single;
-      expect(light, AppElevation.dark.notificationPreferencesBacklightSchool);
-      expect(light.offset, const Offset(0, 33));
-      expect(light.size, const Size(100, 14));
-    });
+      testWidgets('dark university: the same', (tester) async {
+        final container = await pumpAppAt(
+          tester,
+          '/settings',
+          profile: settingsRepo(me: universityProfile()),
+        );
+        await goDark(tester, container);
 
-    testWidgets('dark university: B15, six pixels higher', (tester) async {
-      final container = await pumpAppAt(
-        tester,
-        '/settings',
-        profile: settingsRepo(me: universityProfile()),
-      );
-      await goDark(tester, container);
+        expect(find.text('Notification Preferences'), findsNothing);
+        expect(find.byType(SettingsSection), findsNWidgets(2));
+        expect(cardFor(tester, 'Mode').backlights, isEmpty);
+        expect(cardFor(tester, 'Rank').backlights, isEmpty);
+      });
 
-      final light = cardFor(
-        tester,
-        'Notification Preferences',
-      ).backlights.single;
-      expect(
-        light,
-        AppElevation.dark.notificationPreferencesBacklightUniversity,
-      );
-      expect(
-        light.offset,
-        const Offset(0, 27),
-        reason: 'B15 and B8 are six pixels apart and both are kept verbatim',
-      );
-    });
+      testWidgets('…and while /me has not answered', (tester) async {
+        final repo = settingsRepo();
+        when(repo.getMe).thenThrow(const NetworkException());
 
-    testWidgets('no back-light while /me has not answered', (tester) async {
-      // The track is a server fact. Guessing one would put the haze at the
-      // wrong height for half the students until the request lands.
-      final repo = settingsRepo();
-      when(repo.getMe).thenThrow(const NetworkException());
+        final container = await pumpAppAt(tester, '/settings', profile: repo);
+        await goDark(tester, container);
 
-      final container = await pumpAppAt(tester, '/settings', profile: repo);
-      await goDark(tester, container);
+        expect(find.text('Notification Preferences'), findsNothing);
+        expect(cardFor(tester, 'Rank').backlights, isEmpty);
+      });
 
-      expect(cardFor(tester, 'Notification Preferences').backlights, isEmpty);
-    });
-
-    testWidgets('Rank never gets one, on either canvas', (tester) async {
-      final container = await pumpAppAt(tester, '/settings');
-      await goDark(tester, container);
-      expect(cardFor(tester, 'Rank').backlights, isEmpty);
-    });
-  });
+      testWidgets('Rank never gets one, on either canvas', (tester) async {
+        final container = await pumpAppAt(tester, '/settings');
+        await goDark(tester, container);
+        expect(cardFor(tester, 'Rank').backlights, isEmpty);
+      });
+    },
+  );
 
   // ---------------------------------------------------------------------
   group('#50 Languages is a segmented track', () {
@@ -162,8 +159,8 @@ void main() {
       expect(trackFinder(), findsOneWidget);
       expect(
         find.byType(SettingsSection),
-        findsNWidgets(3),
-        reason: 'Mode, Rank and Notification Preferences — Languages is out',
+        findsNWidgets(2),
+        reason: 'Mode and Rank — Languages is out, and so is Notifications',
       );
       // Mode still has its two; Languages contributed two more before.
       expect(find.byType(SettingsChoiceRow), findsNWidgets(2));

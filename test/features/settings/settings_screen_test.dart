@@ -16,7 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../profile/profile_fixtures.dart';
 import 'settings_harness.dart';
 
-/// Settings · Figma `176:1840`.
+/// Settings · Figma `1409:8642` (School, light, English).
 ///
 /// Three claims this file exists to hold down:
 ///
@@ -27,18 +27,21 @@ import 'settings_harness.dart';
 /// 2. **Languages and Mode drive the REAL app**, not a local copy of the state.
 ///    Both assertions read the value off the root widget and the palette off
 ///    the rendered tree.
-/// 3. **The four notification toggles are structurally dead**, not merely
-///    callback-free.
+/// 3. **There is no Notification Preferences block.** None of the six Settings
+///    frames draws one and the contract has nowhere to store a notification
+///    preference (`updateMyProfile` takes only name, email, avatarId,
+///    leaderboardVisible and scoreHidden), so the screen has no block of
+///    disabled toggles, on either track, in either language.
 void main() {
   setUpAll(() => registerFallbackValue(const ProfileUpdate()));
 
-  /// The disabled toggles, by `Key`, with the entry that tracks them.
-  const notificationRows = <String, String>{
-    'settings_notif_announcements': 'S28 — nothing persists a preference',
-    'settings_notif_promotions': 'S28',
-    'settings_notif_support': 'S28',
-    'settings_notif_system': 'S28',
-  };
+  /// The four keys the removed block's rows carried.
+  const removedNotificationKeys = <String>[
+    'settings_notif_announcements',
+    'settings_notif_promotions',
+    'settings_notif_support',
+    'settings_notif_system',
+  ];
 
   Finder atSettings() => find.byType(SettingsScreen);
 
@@ -51,11 +54,11 @@ void main() {
 
       expect(atSettings(), findsOneWidget);
       expect(find.text('Settings — not built yet'), findsNothing);
-      // The four blocks the frame draws.
+      // The three blocks the frames draw.
       expect(find.text('Languages'), findsOneWidget);
       expect(find.text('Mode'), findsOneWidget);
       expect(find.text('Rank'), findsOneWidget);
-      expect(find.text('Notification Preferences'), findsOneWidget);
+      expect(find.text('Notification Preferences'), findsNothing);
     });
 
     testWidgets('adds no request of its own — /me is still fetched once', (
@@ -90,6 +93,62 @@ void main() {
       );
       expect(switches.single.value, isTrue, reason: 'leaderboardVisible: true');
     });
+
+    testWidgets('the first row is the frame\'s "Show me on leaderboards" '
+        '(1409:8705)', (tester) async {
+      await pumpAppAt(tester, '/settings');
+
+      expect(find.text('Show me on leaderboards'), findsOneWidget);
+      expect(
+        find.text('Show me on the leaderboard'),
+        findsNothing,
+        reason: 'the old wording is gone',
+      );
+      // The second row keeps "points": the frame's English says "score" and
+      // its Arabic «نقاطي»; the owner kept "points" on 2026-10-15.
+      expect(find.text('Hide my points'), findsOneWidget);
+      expect(find.text('Hide my score'), findsNothing);
+    });
+
+    testWidgets('…and in Arabic «أظهرني في لوحة المتصدرين» (1409:24821)', (
+      tester,
+    ) async {
+      await pumpAppAt(tester, '/settings', locale: 'ar');
+
+      expect(find.text('أظهرني في لوحة المتصدرين'), findsOneWidget);
+      expect(find.text('إخفاء نقاطي'), findsOneWidget);
+    });
+
+    for (final language in ['en', 'ar']) {
+      testWidgets('no help line under either switch · $language (owner '
+          'decision 2026-10-15: no frame draws one)', (tester) async {
+        await pumpAppAt(tester, '/settings', locale: language);
+
+        // The two retired lines, in both languages.
+        for (final retired in const [
+          "Turn this off and you won't be listed at all.",
+          "You'll still be listed — without your score.",
+          'لو أوقفته، لن تظهر في القائمة نهائيًا.',
+          'ستظل في القائمة — بدون ظهور نقاطك.',
+        ]) {
+          expect(find.text(retired), findsNothing, reason: retired);
+        }
+        // Each Rank row has its label and nothing else to read.
+        for (final row in [
+          'settings_leaderboard_visible',
+          'settings_score_hidden',
+        ]) {
+          expect(
+            find.descendant(
+              of: find.byKey(Key(row)),
+              matching: find.byType(Text),
+            ),
+            findsOneWidget,
+            reason: '$row: the label only',
+          );
+        }
+      });
+    }
 
     testWidgets('flipping leaderboardVisible sends ONLY leaderboardVisible', (
       tester,
@@ -422,74 +481,92 @@ void main() {
     });
   });
 
-  group('Notification Preferences — four dead toggles (S28)', () {
-    testWidgets('all four render', (tester) async {
-      await pumpAppAt(tester, '/settings');
-
-      expect(find.text('Announcements'), findsOneWidget);
-      expect(find.text('Promotions'), findsOneWidget);
-      expect(find.text('Support'), findsOneWidget);
-      expect(find.text('System'), findsOneWidget);
-    });
-
-    for (final entry in notificationRows.entries) {
-      testWidgets('${entry.key} is structurally non-interactive', (
-        tester,
-      ) async {
-        await pumpAppAt(tester, '/settings');
-        expectDeadControl(tester, entry.key);
-      });
+  group('Notification Preferences — the block is gone', () {
+    /// Everything the removed block drew, in [ar]'s language: its heading, its
+    /// four row labels, the "not available yet" line, and its four keys. What
+    /// is left is Rank's two switches and nothing else.
+    void expectBlockAbsent(WidgetTester tester, {required bool ar}) {
+      final texts = ar
+          ? const [
+              'تفضيلات الإشعارات',
+              'الإعلانات',
+              'العروض',
+              'الدعم',
+              'النظام',
+              'إعدادات الإشعارات غير متاحة بعد.',
+            ]
+          : const [
+              'Notification Preferences',
+              'Announcements',
+              'Promotions',
+              'Support',
+              'System',
+              'Notification settings aren\'t available yet.',
+            ];
+      for (final text in texts) {
+        expect(find.text(text), findsNothing, reason: '"$text" is not drawn');
+      }
+      for (final key in removedNotificationKeys) {
+        expect(find.byKey(Key(key)), findsNothing, reason: '$key is gone');
+      }
+      expect(
+        find.byWidgetPredicate((w) {
+          final key = w.key;
+          return key is ValueKey<String> &&
+              key.value.startsWith('settings_notif_');
+        }),
+        findsNothing,
+        reason: 'no settings_notif_* key anywhere on the screen',
+      );
+      // Rank's two are the only switches left, and nothing disabled stands in.
+      expect(find.byType(SettingsSwitchRow), findsNWidgets(2));
+      expect(find.byType(SettingsToggle), findsNWidgets(2));
+      expect(
+        tester
+            .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
+            .map((row) => row.onChanged != null),
+        everyElement(isTrue),
+        reason: 'every switch left is a working one',
+      );
     }
 
-    testWidgets('tapping one changes nothing and sends nothing', (
+    for (final track in ['school', 'university']) {
+      for (final language in ['en', 'ar']) {
+        testWidgets('a $track student sees no Notification Preferences in '
+            '$language', (tester) async {
+          await pumpAppAt(
+            tester,
+            '/settings',
+            locale: language,
+            profile: settingsRepo(
+              me: track == 'school' ? schoolProfile() : universityProfile(),
+            ),
+          );
+
+          expectBlockAbsent(tester, ar: language == 'ar');
+          // The three blocks that remain are all still there.
+          expect(find.byKey(const Key('settings_language_en')), findsOneWidget);
+          expect(find.byKey(const Key('settings_mode_light')), findsOneWidget);
+          expect(
+            find.byKey(const Key('settings_leaderboard_visible')),
+            findsOneWidget,
+          );
+        });
+      }
+    }
+
+    testWidgets('…and not before /me answers, nor when it fails', (
       tester,
     ) async {
       final repo = settingsRepo();
+      when(repo.getMe).thenThrow(const NetworkException());
       await pumpAppAt(tester, '/settings', profile: repo);
 
-      for (final key in notificationRows.keys) {
-        await tester.tap(find.byKey(Key(key)), warnIfMissed: false);
+      expect(find.text('Notification Preferences'), findsNothing);
+      for (final key in removedNotificationKeys) {
+        expect(find.byKey(Key(key)), findsNothing, reason: key);
       }
-      await tester.pumpAndSettle();
-
-      verifyNever(() => repo.updateMe(any()));
-      for (final key in notificationRows.keys) {
-        final control = tester.widget<SettingsToggle>(
-          find.descendant(
-            of: find.byKey(Key(key)),
-            matching: find.byType(SettingsToggle),
-          ),
-        );
-        // ON is the FRAME's state (`176:1840` draws all four purple), adopted
-        // once the frame could be read. What this asserts is that it did not
-        // MOVE — a dead control that still slides under a finger is the thing
-        // this group exists to prevent, whichever position it starts in.
-        expect(control.value, isTrue, reason: '$key must not have moved');
-        expect(
-          tester.widget<SettingsSwitchRow>(find.byKey(Key(key))).onChanged,
-          isNull,
-        );
-      }
-    });
-
-    testWidgets('each announces itself disabled, with a reason', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await pumpAppAt(tester, '/settings');
-
-      for (final key in notificationRows.keys) {
-        expect(
-          tester.getSemantics(find.byKey(Key(key))),
-          isSemantics(
-            hasEnabledState: true,
-            isEnabled: false,
-            hint: 'Notification settings aren\'t available yet.',
-          ),
-          reason: '$key must say why it cannot be used',
-        );
-      }
-      handle.dispose();
+      expect(find.byType(SettingsToggle), findsNothing);
     });
   });
 
@@ -509,10 +586,10 @@ void main() {
       expect(find.text('الأوضاع'), findsOneWidget);
       expect(find.text('المظهر'), findsNothing);
       expect(find.text('الترتيب'), findsOneWidget);
-      expect(find.text('تفضيلات الإشعارات'), findsOneWidget);
+      expect(find.text('تفضيلات الإشعارات'), findsNothing);
     });
 
-    testWidgets('Arabic + dark, and the disabled reason is localized too', (
+    testWidgets('Arabic + dark, and still no Notification Preferences', (
       tester,
     ) async {
       await pumpAppAt(tester, '/settings', locale: 'ar');
@@ -524,9 +601,11 @@ void main() {
         paletteAt(tester, atSettings()).background,
         AppColors.dark.background,
       );
-      expect(find.text('إعدادات الإشعارات غير متاحة بعد.'), findsOneWidget);
-      // Dark must not quietly re-enable anything.
-      expectDeadControl(tester, 'settings_notif_system');
+      expect(find.text('تفضيلات الإشعارات'), findsNothing);
+      expect(find.text('إعدادات الإشعارات غير متاحة بعد.'), findsNothing);
+      for (final key in removedNotificationKeys) {
+        expect(find.byKey(Key(key)), findsNothing, reason: key);
+      }
     });
 
     testWidgets('offline pins the banner and Rank still reads from cache', (

@@ -1520,12 +1520,6 @@ abstract class AppLocalizations {
   /// **'Rank'**
   String get settingsRank;
 
-  /// No description provided for @settingsNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification Preferences'**
-  String get settingsNotifications;
-
   /// Written in Arabic in BOTH ARB files, on purpose. A student who has ended up in a script they can't read has to be able to recognise the row that gets them out; 'Arabic' in Latin script is no help to someone looking for العربية.
   ///
   /// In en, this message translates to:
@@ -1553,14 +1547,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLeaderboardVisible.
   ///
   /// In en, this message translates to:
-  /// **'Show me on the leaderboard'**
+  /// **'Show me on leaderboards'**
   String get settingsLeaderboardVisible;
-
-  /// No description provided for @settingsLeaderboardVisibleHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn this off and you won\'t be listed at all.'**
-  String get settingsLeaderboardVisibleHelp;
 
   /// No description provided for @settingsScoreHidden.
   ///
@@ -1568,23 +1556,11 @@ abstract class AppLocalizations {
   /// **'Hide my points'**
   String get settingsScoreHidden;
 
-  /// The frame draws ONE 'Show Rank' switch; the contract has two independent booleans with different adr-023 defaults (seif_fight.md S27). These two help lines are what makes the difference between them legible.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'ll still be listed — without your score.'**
-  String get settingsScoreHiddenHelp;
-
   /// No description provided for @notifAnnouncements.
   ///
   /// In en, this message translates to:
   /// **'Announcements'**
   String get notifAnnouncements;
-
-  /// No description provided for @notifPromotions.
-  ///
-  /// In en, this message translates to:
-  /// **'Promotions'**
-  String get notifPromotions;
 
   /// No description provided for @notifSupport.
   ///
@@ -1597,12 +1573,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System'**
   String get notifSystem;
-
-  /// Why all four notification toggles are disabled: nothing in the contract stores a notification preference (seif_fight.md S28).
-  ///
-  /// In en, this message translates to:
-  /// **'Notification settings aren\'t available yet.'**
-  String get settingsNotificationsUnavailable;
 
   /// No description provided for @friendsTitle.
   ///

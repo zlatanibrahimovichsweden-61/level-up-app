@@ -891,10 +891,13 @@ class AppColors extends ThemeExtension<AppColors> {
   /// `337:8199`). API→UI Wave 21; it was Flutter's stock `Switch` before.
   final Color settingsToggleOnTrack;
 
-  /// The switch's track when OFF. **Not designed**: every frame draws the
-  /// switch ON. `#B3B3B3` is [mutedText]'s value — the app's inactive grey,
-  /// the same on both canvases — used as a stand-in until the designer draws
-  /// the OFF state (owner ruling 2026-09-29, docs/DESIGN_ISSUES.md #107).
+  /// The switch's track when OFF: light `#D1D1D1` (`1409:8770`), dark
+  /// `#5C5C5C` (`1409:24806`) - the designer has now drawn it (SEIF1014
+  /// follow-up, 2026-10-15). The owner's 2026-09 ruling kept `#B3B3B3`
+  /// ([mutedText]'s value, the same on both canvases) ONLY until the designer
+  /// drew OFF, which these frames do. The track is lower in contrast than the
+  /// old grey; the knob's position and the switch's semantics still carry the
+  /// state (docs/DESIGN_ISSUES.md #107).
   final Color settingsToggleOffTrack;
 
   /// The switch's knob: 16 dp, `#FFFFFF` on both canvases (`642:8526`,
@@ -1790,7 +1793,7 @@ class AppColors extends ThemeExtension<AppColors> {
     avatarSheetDivider: Color(0x994B675E), // #4B675E @60% — Figma 216:3343
     settingsRowLabel: Brand.greenPrimary, // #384F47 — Figma 642:8524
     settingsToggleOnTrack: Brand.purplePrimary, // #AE87E7 — Figma 642:8525
-    settingsToggleOffTrack: Color(0xFFB3B3B3), // not designed — see the field
+    settingsToggleOffTrack: Color(0xFFD1D1D1), // Figma 1409:8770
     settingsToggleKnob: Color(0xFFFFFFFF), // Figma 642:8526
     flashcardProgressFill: Color(0xFF5A7F73), // Figma 225:5616
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 247:3260 — same in dark
@@ -2034,7 +2037,7 @@ class AppColors extends ThemeExtension<AppColors> {
     avatarSheetDivider: Color(0x994B675E), // Figma 337:8137 — same as light
     settingsRowLabel: Color(0xFFFCFBF9), // Figma 642:8586
     settingsToggleOnTrack: Brand.purplePrimary, // #AE87E7 — Figma 642:8587
-    settingsToggleOffTrack: Color(0xFFB3B3B3), // not designed — same as light
+    settingsToggleOffTrack: Color(0xFF5C5C5C), // Figma 1409:24806
     settingsToggleKnob: Color(0xFFFFFFFF), // Figma 642:8588
     flashcardProgressFill: Brand.purplePrimary, // #AE87E7 — Figma 349:15348
     flashcardCardFill: Color(0xFFFCFBF9), // Figma 337:14513 — stays light

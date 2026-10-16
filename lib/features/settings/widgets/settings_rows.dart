@@ -134,9 +134,10 @@ class _RadioRing extends StatelessWidget {
 /// **A null [onChanged] is a real disabled state, not a no-op callback.** The
 /// row is dimmed to [kProfileDisabledOpacity], wrapped in an [IgnorePointer] so
 /// nothing in it can receive a gesture, and announced with [disabledHint] as
-/// the reason. Four of the toggles on this screen have no endpoint to persist
-/// them (`seif_fight.md` S28) and a switch that slides and then silently
-/// forgets would be worse than one that visibly cannot move.
+/// the reason: a switch that slides and then silently forgets would be worse
+/// than one that visibly cannot move. (The four Notification Preferences
+/// toggles that used it had no endpoint, `seif_fight.md` S28; the block was
+/// removed on 2026-10-15 because no Settings frame draws it any more.)
 ///
 /// [disabledHint] is null while a save is IN FLIGHT: the row is briefly
 /// non-interactive for a reason the student does not need announced, because it
@@ -151,20 +152,15 @@ class SettingsSwitchRow extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
-    this.help,
     this.onChanged,
     this.disabledHint,
   });
 
+  /// The row's only text. The two Rank rows used to carry a help line under
+  /// it; no frame draws one, and the owner dropped both on 2026-10-15 (which
+  /// retired the stale line in docs/KNOWN_BUGS.md BUG-017).
   final String label;
   final bool value;
-
-  /// The line under the label. These two toggles ask questions a student cannot
-  /// answer from four words, so the explanation is part of the control rather
-  /// than a tooltip. ⚠️ The "Hide my points" line is stale: under adr-111 a
-  /// score-hidden student is taken off the board, not listed without a score
-  /// (docs/KNOWN_BUGS.md BUG-017, waiting on the owner's wording).
-  final String? help;
 
   final ValueChanged<bool>? onChanged;
   final String? disabledHint;
@@ -180,24 +176,9 @@ class SettingsSwitchRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: AppType.bodyLarge.copyWith(
-                    color: ext.settingsRowLabel,
-                  ),
-                ),
-                if (help != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    help!,
-                    style: AppType.captionRegular.copyWith(color: ext.hint),
-                  ),
-                ],
-              ],
+            child: Text(
+              label,
+              style: AppType.bodyLarge.copyWith(color: ext.settingsRowLabel),
             ),
           ),
           const SizedBox(width: 12),
@@ -217,12 +198,12 @@ class SettingsSwitchRow extends StatelessWidget {
     // [SettingsToggle] only paints, so the ROW says what a switch says: its
     // toggled state, enabled or not, and — only when enabled — the tap that
     // flips it; disabled, [disabledHint] gives the reason. `MergeSemantics`
-    // folds the label and the help line in exactly once: the disabled row used
-    // to add `label:` on top of its own `Text` and was announced
-    // "Announcements, Announcements" (docs/KNOWN_BUGS.md BUG-018).
+    // folds the label in exactly once: the disabled row used to add `label:`
+    // on top of its own `Text` and was announced "Announcements,
+    // Announcements" (docs/KNOWN_BUGS.md BUG-018).
     //
     // Enabled, the whole row is the target, not just the 48 x 24 switch — the
-    // label and its explanation are the part a student actually reads.
+    // label is the part a student actually reads.
     return MergeSemantics(
       child: Semantics(
         toggled: value,
@@ -259,10 +240,10 @@ class SettingsSwitchRow extends StatelessWidget {
 /// **Paint only.** It has no gesture and no semantics of its own: the row it
 /// sits in is the tap target and says "switch, on" ([SettingsSwitchRow]).
 ///
-/// **ON is the only state the design draws.** The track is `#AE87E7` on both
-/// canvases and the knob `#FFFFFF`. OFF moves the knob to the other end over
-/// [AppColors.settingsToggleOffTrack], a stand-in grey until the designer draws
-/// it (docs/DESIGN_ISSUES.md #107).
+/// **ON and OFF are both drawn.** ON: the track is `#AE87E7` on both canvases
+/// and the knob `#FFFFFF`. OFF (drawn 2026-10-15, `1409:8770` light,
+/// `1409:24806` dark) moves the knob to the other end over
+/// [AppColors.settingsToggleOffTrack] (docs/DESIGN_ISSUES.md #107).
 ///
 /// **The knob's ends are PHYSICAL, not directional.** The Arabic frame mirrors
 /// the row — the switch moves to the left edge (`549:21822`) — but keeps the ON

@@ -19,10 +19,11 @@ import '../../profile/profile_error_copy.dart';
 import '../widgets/settings_rows.dart';
 import '../widgets/settings_section.dart';
 
-/// Settings · Figma `176:1840`, routed at `/settings`. Replaces the
-/// `_Placeholder` the Profile hub has been pointing at since Step 1.
+/// Settings · Figma `1409:8642` (School, light, English), routed at
+/// `/settings`. Replaces the `_Placeholder` the Profile hub has been pointing at
+/// since Step 1.
 ///
-/// Four blocks, and they do not all have the same relationship to the server:
+/// Three blocks, and they do not all have the same relationship to the server:
 ///
 /// - **Languages** and **Mode** are pure client preferences. They are wired to
 ///   `localeProvider` and `themeModeProvider` and need no endpoint, which is
@@ -30,8 +31,13 @@ import '../widgets/settings_section.dart';
 /// - **Rank** is two `PATCH /me` fields (adr-023). It renders from `GET /me`
 ///   and writes through Step 2's `ProfileRepository.updateMe` — the same single
 ///   path, not a second one.
-/// - **Notification Preferences** has no storage anywhere in the contract, so
-///   all four toggles render disabled (`seif_fight.md` **S28**).
+///
+/// **There is no Notification Preferences block.** None of the six Settings
+/// frames draws one, and the contract has nowhere to store a notification
+/// preference (`updateMyProfile` takes only name, email, avatarId,
+/// `leaderboardVisible` and `scoreHidden`; `seif_fight.md` **S28**). The four
+/// disabled toggles this screen used to carry were a stand-in for a frame that
+/// is no longer drawn, and were removed rather than left as dead controls.
 ///
 /// **The whole screen does not sit behind a `StateWidget`, and that is the
 /// point.** A student whose `/me` is failing can still switch to Arabic and
@@ -71,8 +77,6 @@ class SettingsScreen extends ConsumerWidget {
                     _ModeSection(),
                     SizedBox(height: _blockGap),
                     _RankSection(),
-                    SizedBox(height: _blockGap),
-                    _NotificationsSection(),
                   ],
                 ),
               ),
@@ -258,8 +262,10 @@ class _ModeSection extends ConsumerWidget {
 /// them would mean silently choosing a privacy policy for a minor. Both are
 /// drawn. ⚠️ Since adr-111 BOTH take a student off the board; `scoreHidden`
 /// also costs them their own rank (`403 score_hidden_leaderboard_unavailable`).
-/// The old reading, "listed, but without my score", survives in the help line
-/// (docs/KNOWN_BUGS.md BUG-017).
+/// Neither switch has a help line: no frame draws one, and the owner dropped
+/// both on 2026-10-15, which also retired BUG-017's stale "listed, but without
+/// my score" line (docs/KNOWN_BUGS.md). The second label keeps "points", not
+/// the English frame's "score" (owner decision, same day).
 ///
 /// Writes go through Step 2's [EditProfileNotifier] — the same command over the
 /// same `ProfileRepository.updateMe`, so there is exactly one `PATCH /me` path
@@ -318,7 +324,6 @@ class _RankSection extends ConsumerWidget {
         SettingsSwitchRow(
           key: const Key('settings_leaderboard_visible'),
           label: l10n.settingsLeaderboardVisible,
-          help: l10n.settingsLeaderboardVisibleHelp,
           value: profile.privacy.leaderboardVisible,
           onChanged: busy
               ? null
@@ -327,93 +332,10 @@ class _RankSection extends ConsumerWidget {
         SettingsSwitchRow(
           key: const Key('settings_score_hidden'),
           label: l10n.settingsScoreHidden,
-          help: l10n.settingsScoreHiddenHelp,
           value: profile.privacy.scoreHidden,
           onChanged: busy
               ? null
               : (value) => write(ProfileUpdate(scoreHidden: value)),
-        ),
-      ],
-    );
-  }
-}
-
-/// Notification Preferences — four toggles, no storage.
-///
-/// TODO(contract): seif_fight.md **S28** — nothing in the contract persists a
-/// notification preference. `PUT /me/fcm-token` is `x-stability: stable` but
-/// registers a DEVICE token for push, not a student's choice of what to
-/// receive, so there is still no endpoint to build these against. All four
-/// render disabled: a switch that slides and forgets is worse than one that
-/// visibly cannot.
-///
-/// They render **ON**, which is the frame's answer (`176:1840` draws all four
-/// purple) rather than ours. This step first shipped them off, reasoning that
-/// any value here is invented — true, but the frame was not available at the
-/// time and it settles the question. Both states are equally fictional for a
-/// control nothing can persist, so the design wins for free. See
-/// docs/DESIGN_ISSUES.md #48.
-///
-/// ---
-///
-/// **It is the one Settings card with a back-light, and which one depends on
-/// the student's track.** School is B8 (`348:8975`, 100 x 14 at (0, 33)) and
-/// university is B15 (`349:12114`, the same ellipse at (0, 27)); six pixels of
-/// y apart and both kept verbatim rather than averaged (edit1.md R2), the same
-/// way Home's level card keeps its pair.
-///
-/// **No back-light until `/me` has answered.** The track is a server fact, and
-/// guessing one would put the haze at the wrong height on half the students'
-/// phones for as long as the request takes. The section renders without it and
-/// gains it when the profile arrives — which is also why this widget watches
-/// `meProvider` although nothing else in it needs the profile. On the light
-/// canvas the tokens are null and the list is empty on both tracks.
-class _NotificationsSection extends ConsumerWidget {
-  const _NotificationsSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final ext = theme.extension<AppColors>()!;
-    final elevation = theme.extension<AppElevation>()!;
-    final hint = l10n.settingsNotificationsUnavailable;
-
-    final track = ref.watch(meProvider).value?.track;
-    final backlight = switch (track) {
-      Track.school => elevation.notificationPreferencesBacklightSchool,
-      Track.university => elevation.notificationPreferencesBacklightUniversity,
-      null => null,
-    };
-
-    return SettingsSection(
-      title: l10n.settingsNotifications,
-      backlights: [?backlight],
-      note: Text(hint, style: AppType.captionRegular.copyWith(color: ext.hint)),
-      children: [
-        SettingsSwitchRow(
-          key: const Key('settings_notif_announcements'),
-          label: l10n.notifAnnouncements,
-          value: true, // the frame draws all four ON — see the class doc
-          disabledHint: hint,
-        ),
-        SettingsSwitchRow(
-          key: const Key('settings_notif_promotions'),
-          label: l10n.notifPromotions,
-          value: true, // the frame draws all four ON — see the class doc
-          disabledHint: hint,
-        ),
-        SettingsSwitchRow(
-          key: const Key('settings_notif_support'),
-          label: l10n.notifSupport,
-          value: true, // the frame draws all four ON — see the class doc
-          disabledHint: hint,
-        ),
-        SettingsSwitchRow(
-          key: const Key('settings_notif_system'),
-          label: l10n.notifSystem,
-          value: true, // the frame draws all four ON — see the class doc
-          disabledHint: hint,
         ),
       ],
     );

@@ -818,9 +818,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsRank => 'Rank';
 
   @override
-  String get settingsNotifications => 'Notification Preferences';
-
-  @override
   String get languageArabicName => 'العربية';
 
   @override
@@ -833,34 +830,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDark => 'Dark';
 
   @override
-  String get settingsLeaderboardVisible => 'Show me on the leaderboard';
-
-  @override
-  String get settingsLeaderboardVisibleHelp =>
-      'Turn this off and you won\'t be listed at all.';
+  String get settingsLeaderboardVisible => 'Show me on leaderboards';
 
   @override
   String get settingsScoreHidden => 'Hide my points';
 
   @override
-  String get settingsScoreHiddenHelp =>
-      'You\'ll still be listed — without your score.';
-
-  @override
   String get notifAnnouncements => 'Announcements';
-
-  @override
-  String get notifPromotions => 'Promotions';
 
   @override
   String get notifSupport => 'Support';
 
   @override
   String get notifSystem => 'System';
-
-  @override
-  String get settingsNotificationsUnavailable =>
-      'Notification settings aren\'t available yet.';
 
   @override
   String get friendsTitle => 'Friends';

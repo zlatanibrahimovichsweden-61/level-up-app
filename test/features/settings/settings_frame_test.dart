@@ -16,7 +16,7 @@ import '../../goldens/golden_harness.dart';
 import '../profile/profile_fixtures.dart';
 import 'settings_harness.dart';
 
-/// Settings against its frames — API→UI Wave 21 (`176:1840`, dark `337:8141`,
+/// Settings against its frames — API→UI Wave 21 (`1409:8642`, dark `337:8141`,
 /// Arabic `549:21759`).
 ///
 /// **The bundled fonts are loaded here, and that is why this is its own file.**
@@ -130,16 +130,10 @@ void main() {
       expect(capTop(rank) - card(tester, 'Mode').bottom, closeTo(25, 0.05));
       expect(card(tester, 'Rank').top - baselineOf(rank), closeTo(25, 0.05));
 
-      final notifications = heading(tester, 'Notification Preferences');
-      expect(
-        capTop(notifications) - card(tester, 'Rank').bottom,
-        closeTo(25, 0.05),
-      );
-      expect(
-        card(tester, 'Notification Preferences').top -
-            baselineOf(notifications),
-        closeTo(25, 0.05),
-      );
+      // Rank is the last block: none of the six frames draws a Notification
+      // Preferences block after it.
+      expect(find.text('Notification Preferences'), findsNothing);
+      expect(find.byType(SettingsSection), findsNWidgets(2));
     });
 
     testWidgets('headings sit on the content edge, on either side', (
@@ -149,7 +143,7 @@ void main() {
 
       // `642:8518` "Rank" at x 20, the card's own edge — no inset.
       expect(heading(tester, 'Languages').left, languageTrack(tester).left);
-      for (final title in ['Mode', 'Rank', 'Notification Preferences']) {
+      for (final title in ['Mode', 'Rank']) {
         expect(heading(tester, title).left, card(tester, title).left);
       }
     });
@@ -158,7 +152,7 @@ void main() {
       await pumpAppAt(tester, '/settings', locale: 'ar');
 
       expect(heading(tester, 'اللغة').right, languageTrack(tester).right);
-      for (final title in ['الأوضاع', 'الترتيب', 'تفضيلات الإشعارات']) {
+      for (final title in ['الأوضاع', 'الترتيب']) {
         expect(heading(tester, title).right, card(tester, title).right);
       }
     });
@@ -177,7 +171,7 @@ void main() {
         expect(style.color, palette.settingsRowLabel, reason: text);
       }
 
-      const labels = ['Show me on the leaderboard', 'Announcements', 'Light'];
+      const labels = ['Show me on leaderboards', 'Hide my points', 'Light'];
       for (final text in labels) {
         expectRowLabel(text, AppColors.light);
       }
@@ -193,7 +187,7 @@ void main() {
       await pumpAppAt(tester, '/settings');
 
       expect(find.byType(Switch), findsNothing);
-      expect(find.byType(SettingsToggle), findsNWidgets(6));
+      expect(find.byType(SettingsToggle), findsNWidgets(2)); // Rank's two
     });
 
     testWidgets('ON: 48 x 24 in #AE87E7, a 16 white knob 4 from the end', (
@@ -233,15 +227,67 @@ void main() {
       expect(trackColour(tester, row), AppColors.light.settingsToggleOffTrack);
     });
 
+    testWidgets('OFF paints the theme\'s own settingsToggleOffTrack, on both '
+        'canvases', (tester) async {
+      // Read off the rendered theme rather than a literal: the token's VALUE is
+      // pinned where it is defined (`app_colors_test.dart`), and this holds
+      // only that the switch uses it in light and in dark.
+      await pumpAppAt(tester, '/settings');
+      const row = 'settings_score_hidden'; // the fixture: false
+      final element = tester.element(find.byKey(const Key(row)));
+
+      expect(
+        trackColour(tester, row),
+        Theme.of(element).extension<AppColors>()!.settingsToggleOffTrack,
+      );
+
+      await tester.tap(find.byKey(const Key('settings_mode_dark')));
+      await tester.pumpAndSettle();
+      expect(
+        trackColour(tester, row),
+        paletteAt(tester, find.byKey(const Key(row))).settingsToggleOffTrack,
+      );
+      expect(
+        paletteAt(tester, find.byKey(const Key(row))).background,
+        AppColors.dark.background,
+        reason: 'that second read really is the dark palette',
+      );
+    });
+
     testWidgets('a row is the frame\'s 52: 14 over and under the switch', (
       tester,
     ) async {
-      await pumpAppAt(tester, '/settings');
-
       // `176:2387`: padding 14 / 16 inside the card's 0.5 hairline, a 24 switch.
-      const first = 'settings_notif_announcements';
-      final notifications = card(tester, 'Notification Preferences');
-      for (final row in [first, 'settings_notif_system']) {
+      // The 52 is the ROW COMPONENT's; the real Rank rows are held to it in
+      // the next test.
+      await tester.pumpWidget(
+        goldenApp(
+          brightness: Brightness.light,
+          child: SizedBox(
+            width: 362,
+            child: SettingsSection(
+              title: 'Probe',
+              children: [
+                SettingsSwitchRow(
+                  key: const Key('probe_first'),
+                  label: 'First',
+                  value: true,
+                  onChanged: (_) {},
+                ),
+                SettingsSwitchRow(
+                  key: const Key('probe_second'),
+                  label: 'Second',
+                  value: false,
+                  onChanged: (_) {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final probe = card(tester, 'Probe');
+
+      for (final row in ['probe_first', 'probe_second']) {
         final rect = tester.getRect(find.byKey(Key(row)));
         expect(rect.height, closeTo(52, 0.01), reason: row);
         expect(
@@ -251,7 +297,47 @@ void main() {
         );
       }
       expect(
-        tester.getRect(find.byKey(const Key(first))).top - notifications.top,
+        tester.getRect(find.byKey(const Key('probe_first'))).top - probe.top,
+        closeTo(0.5, 0.01),
+        reason: 'inside the hairline, not under it',
+      );
+    });
+
+    for (final language in ['en', 'ar']) {
+      testWidgets('no help line under either Rank switch · $language: each row '
+          'is its label and 14 over and under, the frame\'s 52 in English '
+          '(owner decision 2026-10-15)', (tester) async {
+        await pumpAppAt(tester, '/settings', locale: language);
+
+        for (final row in [
+          'settings_leaderboard_visible',
+          'settings_score_hidden',
+        ]) {
+          final height = tester.getRect(find.byKey(Key(row))).height;
+          final label = tester.getRect(
+            find.descendant(
+              of: find.byKey(Key(row)),
+              matching: find.byType(Text),
+            ),
+          );
+          expect(height, closeTo(label.height + 28, 0.01), reason: row);
+          // `1409:8642` is English; the Arabic label's line is a little
+          // taller in the test fonts, so 52 is held in English only.
+          if (language == 'en') {
+            expect(height, closeTo(52, 0.01), reason: row);
+          }
+        }
+      });
+    }
+
+    testWidgets('a Rank row also starts inside the hairline', (tester) async {
+      await pumpAppAt(tester, '/settings');
+
+      expect(
+        tester
+                .getRect(find.byKey(const Key('settings_leaderboard_visible')))
+                .top -
+            card(tester, 'Rank').top,
         closeTo(0.5, 0.01),
         reason: 'inside the hairline, not under it',
       );
@@ -264,13 +350,13 @@ void main() {
       await tester.tap(find.byKey(const Key('settings_mode_dark')));
       await tester.pumpAndSettle();
 
-      const row = 'settings_notif_announcements';
-      final notifications = card(tester, 'Notification Preferences');
+      const row = 'settings_leaderboard_visible';
+      final rank = card(tester, 'Rank');
       // `337:8196` sits on the card's edge; its switch ends 16 in (`337:8199`).
-      expect(tester.getRect(find.byKey(const Key(row))).top, notifications.top);
+      expect(tester.getRect(find.byKey(const Key(row))).top, rank.top);
       expect(
         tester.getRect(toggleIn(row)).right,
-        closeTo(notifications.right - 16, 0.01),
+        closeTo(rank.right - 16, 0.01),
       );
     });
 
@@ -278,15 +364,12 @@ void main() {
       'in Arabic the row mirrors but ON keeps its knob on the right',
       (tester) async {
         await pumpAppAt(tester, '/settings', locale: 'ar');
-        const row = 'settings_notif_announcements';
+        const row = 'settings_leaderboard_visible'; // the fixture: true
 
         final toggle = tester.getRect(toggleIn(row));
         final knob = tester.getRect(knobIn(row));
         // `549:21822` at x 36.5: the card's edge + 16.5.
-        expect(
-          toggle.left,
-          closeTo(card(tester, 'تفضيلات الإشعارات').left + 16.5, 0.01),
-        );
+        expect(toggle.left, closeTo(card(tester, 'الترتيب').left + 16.5, 0.01));
         // `549:21823` at 64.5–80.5 inside 36.5–84.5: 4 from the RIGHT end.
         expect(knob.right, closeTo(toggle.right - 4, 0.01));
       },
@@ -301,7 +384,7 @@ void main() {
       final row = find.byKey(const Key('settings_leaderboard_visible'));
 
       final node = tester.getSemantics(row);
-      expect(node.label, startsWith('Show me on the leaderboard'));
+      expect(node.label, startsWith('Show me on leaderboards'));
       expect(
         node,
         isSemantics(
@@ -315,7 +398,7 @@ void main() {
 
       // The stock Switch used to carry the action; the row carries it now.
       tester.semantics.tap(
-        find.semantics.byLabel(RegExp('^Show me on the leaderboard')),
+        find.semantics.byLabel(RegExp('^Show me on leaderboards')),
       );
       await tester.pumpAndSettle();
       expect(sentUpdate(repo).toJson(), <String, dynamic>{
@@ -327,21 +410,43 @@ void main() {
     testWidgets(
       'a disabled row says its label ONCE, and the reason (BUG-018)',
       (tester) async {
+        // No screen has a permanently disabled row any more (the Notification
+        // Preferences block is gone), but the row component still has the
+        // state and the Rank rows pass through it during a save — so it is held
+        // here on a probe, with a reason, as the removed block used to supply.
         final handle = tester.ensureSemantics();
-        await pumpAppAt(tester, '/settings');
+        await tester.pumpWidget(
+          goldenApp(
+            brightness: Brightness.light,
+            child: const SizedBox(
+              width: 362,
+              child: Column(
+                children: [
+                  SettingsSwitchRow(
+                    key: Key('probe_a'),
+                    label: 'Alpha',
+                    value: true,
+                    disabledHint: 'Reason it cannot be used.',
+                  ),
+                  SettingsSwitchRow(
+                    key: Key('probe_b'),
+                    label: 'Beta',
+                    value: true,
+                    disabledHint: 'Reason it cannot be used.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
 
-        final labels = {
-          'settings_notif_announcements': 'Announcements',
-          'settings_notif_promotions': 'Promotions',
-          'settings_notif_support': 'Support',
-          'settings_notif_system': 'System',
-        };
+        const labels = {'probe_a': 'Alpha', 'probe_b': 'Beta'};
         for (final entry in labels.entries) {
           expect(
             tester.getSemantics(find.byKey(Key(entry.key))),
             isSemantics(
               label: entry.value,
-              hint: 'Notification settings aren\'t available yet.',
+              hint: 'Reason it cannot be used.',
               hasToggledState: true,
               isToggled: true,
               hasEnabledState: true,
@@ -387,12 +492,7 @@ void main() {
       final handle = tester.ensureSemantics();
       await pumpAppAt(tester, '/settings');
 
-      for (final title in [
-        'Languages',
-        'Mode',
-        'Rank',
-        'Notification Preferences',
-      ]) {
+      for (final title in ['Languages', 'Mode', 'Rank']) {
         expect(
           tester.getSemantics(find.text(title)),
           isSemantics(label: title, isHeader: true),
@@ -465,7 +565,8 @@ void main() {
         await pumpAppAt(tester, '/settings', profile: repo, settle: false);
 
         expect(find.byKey(const Key('settings_rank_loading')), findsOneWidget);
-        expect(find.byType(SettingsToggle), findsNWidgets(4)); // the four S28
+        // Nothing else on the screen is a switch: there is no S28 block.
+        expect(find.byType(SettingsToggle), findsNothing);
         expect(find.byKey(const Key('settings_language_ar')), findsOneWidget);
         expect(find.byKey(const Key('settings_mode_dark')), findsOneWidget);
 

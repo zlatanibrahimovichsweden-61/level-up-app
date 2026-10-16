@@ -303,17 +303,27 @@ class _Menu extends ConsumerWidget {
           label: l10n.profileTermsConditions,
           onTap: () => context.push('/legal/terms'),
         ),
-        const SizedBox(height: 16),
-        // Go to Uni: the ROW opens the dialog; the dialog's confirm is what is
-        // disabled. Track switching has no endpoint and adr-003's dual point
-        // pools make it a data-model question — see the dialog below.
-        ProfileMenuRow(
-          key: const Key('profile_row_go_to_uni'),
-          icon: Icons.trending_up,
-          label: l10n.profileGoToUniversity,
-          tone: ProfileRowTone.emphasis,
-          onTap: () => _showGoToUni(context, l10n),
-        ),
+        // Go to Uni: School students only. The three University Profile frames
+        // (`309:7940`, `349:12919`, `549:26384`) do not draw the row, and
+        // `transferToUniversity` answers a University student `409
+        // track_transfer_not_allowed` — contract/error-codes.md says never to
+        // offer the transfer again. The row and the spacer before it go
+        // together.
+        //
+        // The ROW opens the dialog; the dialog's confirm is what is disabled.
+        // `transferToUniversity` exists and is `x-stability: stable` in the
+        // vendored contract; the transfer flow itself is not built here (wave
+        // CW14), so the row keeps its current behaviour.
+        if (profile.track == Track.school) ...[
+          const SizedBox(height: 16),
+          ProfileMenuRow(
+            key: const Key('profile_row_go_to_uni'),
+            icon: Icons.trending_up,
+            label: l10n.profileGoToUniversity,
+            tone: ProfileRowTone.emphasis,
+            onTap: () => _showGoToUni(context, l10n),
+          ),
+        ],
         const SizedBox(height: 16),
         ProfileMenuRow(
           key: const Key('profile_row_logout'),

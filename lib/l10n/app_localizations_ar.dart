@@ -813,9 +813,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsRank => 'الترتيب';
 
   @override
-  String get settingsNotifications => 'تفضيلات الإشعارات';
-
-  @override
   String get languageArabicName => 'العربية';
 
   @override
@@ -831,30 +828,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsLeaderboardVisible => 'أظهرني في لوحة المتصدرين';
 
   @override
-  String get settingsLeaderboardVisibleHelp =>
-      'لو أوقفته، لن تظهر في القائمة نهائيًا.';
-
-  @override
   String get settingsScoreHidden => 'إخفاء نقاطي';
 
   @override
-  String get settingsScoreHiddenHelp => 'ستظل في القائمة — بدون ظهور نقاطك.';
-
-  @override
   String get notifAnnouncements => 'الإعلانات';
-
-  @override
-  String get notifPromotions => 'العروض';
 
   @override
   String get notifSupport => 'الدعم';
 
   @override
   String get notifSystem => 'النظام';
-
-  @override
-  String get settingsNotificationsUnavailable =>
-      'إعدادات الإشعارات غير متاحة بعد.';
 
   @override
   String get friendsTitle => 'الأصدقاء';

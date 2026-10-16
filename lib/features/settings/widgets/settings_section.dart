@@ -66,8 +66,7 @@ class SettingsHeading extends StatelessWidget {
   }
 }
 
-/// One titled block of the Settings screen — Rank, Notification Preferences,
-/// and (blocked) Mode.
+/// One titled block of the Settings screen — Rank, and (blocked) Mode.
 ///
 /// The frame groups a block's rows inside a single outlined card rather than
 /// giving every row its own, which is the one place Settings departs from the
@@ -105,9 +104,10 @@ class SettingsSection extends StatelessWidget {
   /// is (a disabled section's reason, a save failure).
   final Widget? note;
 
-  /// Dark-canvas back-lights behind this card's frost. Only Notification
-  /// Preferences has one, and which one depends on the student's track, so the
-  /// screen passes it rather than the card choosing (edit5.md §7.5.3).
+  /// Dark-canvas back-lights behind this card's frost, passed by the screen
+  /// rather than chosen by the card (edit5.md §7.5.3). Only the Notification
+  /// Preferences block had one, and it was removed on 2026-10-15 (no Settings
+  /// frame draws it), so no screen passes any today.
   ///
   /// Empty on the light canvas always: `ElevatedSurface` asserts a back-light
   /// is never handed over without a [GlassStyle] to be seen through

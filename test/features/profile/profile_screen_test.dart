@@ -135,20 +135,76 @@ void main() {
       }
     });
 
-    testWidgets('the university track gets the identical hub', (tester) async {
-      // One Account feature for both tracks — the University Student Flow
-      // mirrors this cluster, exactly as it did for Home and the quiz.
+    testWidgets(
+      'the university track gets the same hub minus Go to University',
+      (tester) async {
+        // One Account feature for both tracks — the University Student Flow
+        // mirrors this cluster, exactly as it did for Home and the quiz — except
+        // for the one row that only makes sense for a School student. The three
+        // University frames (`309:7940`, `349:12919`, `549:26384`) do not draw
+        // "Go to University", and `transferToUniversity` answers a University
+        // student `409 track_transfer_not_allowed` (contract/error-codes.md:
+        // never offer the transfer again).
+        await pumpProfileScreen(
+          tester,
+          profile: profileRepo(me: universityProfile()),
+        );
+
+        expect(find.text('Mona Adel'), findsOneWidget);
+        expect(find.text('2,450'), findsOneWidget);
+        expect(
+          find.byType(ProfileMenuRow),
+          findsNWidgets(8),
+          reason: 'the School hub\'s nine, one fewer',
+        );
+        expect(find.text('Go to University'), findsNothing);
+        expect(find.byKey(const Key('profile_row_go_to_uni')), findsNothing);
+        // Everything else is still there, Logout last.
+        for (final label in [
+          'Settings',
+          'Favorite questions',
+          'Your progress',
+          'Refer a Friend',
+          'Customer Support',
+          'Privacy & policy',
+          'Terms & Conditions',
+          'Logout',
+        ]) {
+          expect(
+            find.text(label),
+            findsOneWidget,
+            reason: '$label row missing',
+          );
+        }
+      },
+    );
+
+    testWidgets('…and in Arabic a university student has no «التحويل إلى '
+        'الجامعة» row either', (tester) async {
       await pumpProfileScreen(
         tester,
         profile: profileRepo(me: universityProfile()),
+        locale: 'ar',
       );
 
-      expect(find.text('Mona Adel'), findsOneWidget);
-      expect(find.text('2,450'), findsOneWidget);
+      expect(find.byType(ProfileMenuRow), findsNWidgets(8));
+      expect(find.text('التحويل إلى الجامعة'), findsNothing);
+      expect(find.byKey(const Key('profile_row_go_to_uni')), findsNothing);
+      expect(find.text('تسجيل الخروج'), findsOneWidget);
+    });
+
+    testWidgets('a school student keeps Go to University, in Arabic too', (
+      tester,
+    ) async {
+      await pumpProfileScreen(
+        tester,
+        profile: profileRepo(me: schoolProfile()),
+        locale: 'ar',
+      );
+
       expect(find.byType(ProfileMenuRow), findsNWidgets(9));
-      // Still offered the switch: the contract cannot express a track change in
-      // either direction, so the row is not branched on `track`.
-      expect(find.text('Go to University'), findsOneWidget);
+      expect(find.text('التحويل إلى الجامعة'), findsOneWidget);
+      expect(find.byKey(const Key('profile_row_go_to_uni')), findsOneWidget);
     });
   });
 
