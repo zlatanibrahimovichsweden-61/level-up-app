@@ -247,4 +247,171 @@ void main() {
       expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
     },
   );
+
+  /// CW02 slice A. Contract: a non-2xx without a parsable body and `code` is an
+  /// UNKNOWN outcome — treat it like `internal_error`. For the refresh call that
+  /// means it is NOT proof the session is dead: only `refresh_token_invalid` /
+  /// `session_superseded` sign the student out.
+  test('refresh answered by a body-less 503 (unknown outcome) → NO logout, '
+      'tokens untouched, the typed error surfaces', () async {
+    var refreshCalls = 0;
+    // The real refresh path: a BARE Dio carrying only ErrorInterceptor
+    // (`DioClient.createBare`) answering 503 with no body, as a proxy/edge
+    // does, unwrapped the way `AuthRepository.refresh` unwraps it. So the
+    // `unknown` here is what ErrorInterceptor really produces.
+    final bareRefreshDio = Dio(BaseOptions(baseUrl: 'https://test.local'))
+      ..interceptors.add(ErrorInterceptor())
+      ..httpClientAdapter = _FakeAdapter(
+        (_) async => ResponseBody.fromString('', 503),
+      );
+    final dio = buildDio(
+      refresh: ({required refreshToken, required deviceId}) async {
+        refreshCalls++;
+        try {
+          await bareRefreshDio.post<dynamic>('/auth/refresh');
+        } on DioException catch (e) {
+          throw e.error! as AppException;
+        }
+        throw StateError('the bare refresh Dio was expected to fail');
+      },
+      adapter: (options) async => _unauthorized('authentication_required'),
+    );
+
+    await expectLater(
+      dio.get<dynamic>('/protected'),
+      throwsA(
+        predicate(
+          (e) =>
+              e is DioException &&
+              e.error is ApiException &&
+              e.error is! UnauthorizedException &&
+              (e.error! as ApiException).status == 503 &&
+              (e.error! as ApiException).code == 'unknown',
+        ),
+      ),
+    );
+
+    expect(refreshCalls, 1);
+    // Auth state unchanged and the stored session neither cleared nor rewritten.
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    verifyNever(() => storage.clearTokens());
+    verifyNever(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    );
+  });
+
+  // The same unknown-outcome rule for the 4xx a refresh can answer without a
+  // body. What the code does TODAY (`_performRefresh`): it signs out only on the
+  // two NAMED codes, `refresh_token_invalid` and `session_superseded`; a refresh
+  // 401/400 that names nothing is `code: 'unknown'`, so it is rethrown typed and
+  // the student stays signed in with the same stored tokens. Pinned as it is —
+  // the contract's rule for a body-less non-2xx is "treat it like
+  // internal_error", and which refresh 4xx codes the server really sends is a
+  // Seif question, not something to guess here.
+  for (final status in [401, 400]) {
+    test('refresh answered by a body-less $status (unknown outcome) → NO '
+        'logout, tokens untouched, the typed error surfaces', () async {
+      var refreshCalls = 0;
+      final bareRefreshDio = Dio(BaseOptions(baseUrl: 'https://test.local'))
+        ..interceptors.add(ErrorInterceptor())
+        ..httpClientAdapter = _FakeAdapter(
+          (_) async => ResponseBody.fromString('', status),
+        );
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          try {
+            await bareRefreshDio.post<dynamic>('/auth/refresh');
+          } on DioException catch (e) {
+            throw e.error! as AppException;
+          }
+          throw StateError('the bare refresh Dio was expected to fail');
+        },
+        adapter: (options) async => _unauthorized('authentication_required'),
+      );
+
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is DioException &&
+                e.error is ApiException &&
+                // 401 keeps its dedicated type; 400 without a body is NOT a
+                // validation error (no `validation_failed` code).
+                (e.error is UnauthorizedException) == (status == 401) &&
+                e.error is! ValidationException &&
+                (e.error! as ApiException).status == status &&
+                (e.error! as ApiException).code == 'unknown',
+          ),
+        ),
+      );
+
+      expect(refreshCalls, 1);
+      expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+      verifyNever(() => storage.clearTokens());
+      verifyNever(
+        () => storage.writeTokens(
+          access: any(named: 'access'),
+          refresh: any(named: 'refresh'),
+        ),
+      );
+    });
+  }
+
+  test('a 401 with NO body (or none carrying a code) → no refresh, no logout, '
+      'surfaced as UnauthorizedException(unknown)', () async {
+    var refreshCalls = 0;
+    // Only `authentication_required` starts a refresh and only
+    // `session_superseded` (or a dead refresh) signs out; a 401 that names
+    // nothing does neither.
+    final unnamed = <String, ResponseBody Function()>{
+      'an empty body': () => ResponseBody.fromString('', 401),
+      'a proxy HTML page': () => ResponseBody.fromString(
+        '<html><body>401</body></html>',
+        401,
+        headers: {
+          Headers.contentTypeHeader: ['text/html'],
+        },
+      ),
+      'a ProblemDetails-like map without a code': () =>
+          _json(401, {'title': 'Unauthorized', 'status': 401}),
+    };
+
+    for (final entry in unnamed.entries) {
+      final dio = buildDio(
+        refresh: ({required refreshToken, required deviceId}) async {
+          refreshCalls++;
+          return _newTokens;
+        },
+        adapter: (options) async => entry.value(),
+      );
+
+      await expectLater(
+        dio.get<dynamic>('/protected'),
+        throwsA(
+          predicate(
+            (e) =>
+                e is DioException &&
+                e.error is UnauthorizedException &&
+                (e.error! as UnauthorizedException).code == 'unknown',
+          ),
+        ),
+        reason: entry.key,
+      );
+    }
+
+    expect(refreshCalls, 0);
+    expect(container.read(authControllerProvider), isA<AuthAuthenticated>());
+    verifyNever(() => storage.clearTokens());
+    verifyNever(
+      () => storage.writeTokens(
+        access: any(named: 'access'),
+        refresh: any(named: 'refresh'),
+      ),
+    );
+  });
 }

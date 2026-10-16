@@ -1,7 +1,18 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show AsyncValue;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/network/exceptions.dart';
 import 'package:level_up_app/core/network/interceptors/error_interceptor.dart';
+import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/features/auth/auth_error_copy.dart';
+import 'package:level_up_app/features/catalog/widgets/catalog_states.dart';
+import 'package:level_up_app/features/flashcards/widgets/flashcards_error_copy.dart';
+import 'package:level_up_app/features/leaderboard/board_failure.dart';
+import 'package:level_up_app/features/profile/profile_error_copy.dart';
+import 'package:level_up_app/features/quiz/widgets/quiz_error_copy.dart';
+import 'package:level_up_app/features/registration/registration_error_copy.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 
 /// Drives [ErrorInterceptor.onError] directly and captures what it rejected
 /// with — the mapped [AppException] the repositories unwrap.
@@ -277,4 +288,338 @@ void main() {
       });
     },
   );
+
+  /// CW02 slice A. The contract's rule (`openapi.yaml`, `ProblemDetails`): "A
+  /// non-2xx without a parsable body and `code` is an unknown outcome; treat it
+  /// like `internal_error`." The group above pins it at 502 and for a bodyless
+  /// 401/400; this one adds the statuses and body shapes it leaves out. The
+  /// 502 HTML page, the 502 null body and the bodyless 401 are NOT repeated.
+  group('unknown outcome — other statuses and body shapes', () {
+    test('503 with a null or an empty body → ApiException(503, unknown)', () {
+      for (final body in <Object?>[null, '']) {
+        final mapped = _map(_response(503, body));
+
+        expect(
+          mapped,
+          isA<ApiException>(),
+          reason: 'body: ${body.runtimeType}',
+        );
+        expect((mapped as ApiException).status, 503);
+        expect(mapped.code, 'unknown');
+      }
+    });
+
+    test('500 with a ProblemDetails-like map lacking code → '
+        'ApiException(500, unknown)', () {
+      final mapped = _map(_response(500, {'title': 'x', 'status': 500}));
+
+      expect(mapped, isA<ApiException>());
+      expect((mapped as ApiException).status, 500);
+      expect(mapped.code, 'unknown');
+    });
+
+    test(
+      '403 with {} → ApiException(403, unknown), not a pending deletion',
+      () {
+        final mapped = _map(_response(403, <String, Object?>{}));
+
+        expect(mapped, isA<ApiException>());
+        expect(mapped, isNot(isA<UnauthorizedException>()));
+        expect((mapped as ApiException).status, 403);
+        expect(mapped.code, 'unknown');
+        // The retry/redirect rules for account_pending_deletion must never be
+        // triggered by a body that merely says nothing.
+        expect(isAccountPendingDeletion(mapped), isFalse);
+      },
+    );
+
+    test('a `code` that is not a string → unknown, whatever its JSON type', () {
+      // The 502 table above already covers the integer 502; these are the other
+      // JSON types, at a different status.
+      final nonStrings = <String, Object?>{
+        'an integer': 7,
+        'a double': 7.5,
+        'a bool': true,
+        'null': null,
+        'a list': <Object?>['internal_error'],
+        'a map': <String, Object?>{'value': 'internal_error'},
+      };
+      for (final entry in nonStrings.entries) {
+        final mapped = _map(_response(500, {'code': entry.value}));
+
+        expect(
+          mapped,
+          isA<ApiException>(),
+          reason: 'code is ${entry.key} — must not crash or be typed',
+        );
+        expect((mapped as ApiException).status, 500);
+        expect(mapped.code, 'unknown', reason: 'code is ${entry.key}');
+      }
+    });
+
+    test('an unknown outcome is never mistaken for a typed failure', () {
+      // A 429 with no body is not `rate_limited` (it would need the code), and
+      // no body-less answer is Offline: the contract treats it like
+      // internal_error, which has copy and a Retry of its own.
+      final bodyless429 = _map(_response(429, null));
+      expect(bodyless429, isA<ApiException>());
+      expect(bodyless429, isNot(isA<RateLimitedException>()));
+      expect((bodyless429 as ApiException).status, 429);
+      expect(bodyless429.code, 'unknown');
+
+      for (final status in [500, 502, 503, 504]) {
+        final mapped = _map(_response(status, null));
+        expect(isOffline(mapped), isFalse, reason: 'status $status');
+        expect(mapped, isNot(isA<NetworkException>()), reason: '$status');
+        expect(mapped, isNot(isA<ValidationException>()), reason: '$status');
+        expect(mapped, isNot(isA<RateLimitedException>()), reason: '$status');
+      }
+    });
+
+    test('the three timeouts stay NetworkException (Offline), not unknown', () {
+      // The rule covers a non-2xx RESPONSE. A timeout has no response at all.
+      // (connectionError is pinned in "other statuses keep their existing
+      // mapping" above.)
+      for (final type in [
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.sendTimeout,
+        DioExceptionType.receiveTimeout,
+      ]) {
+        final mapped = _map(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            type: type,
+          ),
+        );
+
+        expect(mapped, isA<NetworkException>(), reason: '$type');
+        expect(isOffline(mapped), isTrue, reason: '$type');
+        expect(mapped.code, isNot('unknown'), reason: '$type');
+      }
+    });
+
+    test('a cancel, a bad certificate and an unclassified failure with no '
+        'response are UnknownException — never Offline', () {
+      // The other half of the test above, pinned AS BUILT: these three have no
+      // response either, and `ErrorInterceptor` does not count them as
+      // connectivity failures — a cancelled request, a rejected TLS certificate
+      // and Dio's own "unknown" bucket (e.g. a reset mid-response) take the
+      // default arm, UnknownException, not Offline. The contract's
+      // unknown-outcome rule covers non-2xx responses, not these; moving any of
+      // them to Offline (or the timeouts out of it) must be a deliberate change
+      // that updates this test.
+      for (final type in [
+        DioExceptionType.cancel,
+        DioExceptionType.badCertificate,
+        DioExceptionType.unknown,
+      ]) {
+        final mapped = _map(
+          DioException(
+            requestOptions: RequestOptions(path: '/auth/register'),
+            type: type,
+          ),
+        );
+
+        expect(mapped, isA<UnknownException>(), reason: '$type');
+        expect(isOffline(mapped), isFalse, reason: '$type');
+        expect(mapped, isNot(isA<NetworkException>()), reason: '$type');
+        expect(mapped.code, 'unknown', reason: '$type');
+      }
+    });
+  });
+
+  /// CW02 slice A — "treat it like `internal_error`", proven against every
+  /// error-copy funnel in lib/. `internal_error` has no branch of its own
+  /// anywhere in the app, so the guarantee is that `unknown` takes the same
+  /// default arm: this group fails the day someone gives `unknown` (or
+  /// `internal_error`) its own copy, its own Retry rule or its own redirect
+  /// without doing the same for the other.
+  group('unknown is shown exactly like internal_error', () {
+    late AppLocalizations en;
+    late AppLocalizations ar;
+
+    setUpAll(() async {
+      en = await AppLocalizations.delegate.load(const Locale('en'));
+      ar = await AppLocalizations.delegate.load(const Locale('ar'));
+    });
+
+    const internalError = ApiException(status: 500, code: 'internal_error');
+
+    /// The same situation reaching a screen four ways: hand-built, and as the
+    /// real [ErrorInterceptor] maps a body-less proxy answer and a body-less 500.
+    Map<String, Object> unknownVariants() => {
+      'ApiException(500, unknown)': const ApiException(
+        status: 500,
+        code: 'unknown',
+      ),
+      'a bodyless 503 through ErrorInterceptor': _map(_response(503, null)),
+      'a bodyless 500 through ErrorInterceptor': _map(_response(500, null)),
+      'a 500 whose map lacks code through ErrorInterceptor': _map(
+        _response(500, {'title': 'x', 'status': 500}),
+      ),
+    };
+
+    /// Real `internal_error` answers, as the interceptor maps them.
+    Map<String, Object> internalErrorVariants() => {
+      'ApiException(500, internal_error)': internalError,
+      'a 500 internal_error through ErrorInterceptor': _map(
+        _response(500, {
+          'code': 'internal_error',
+          'title': 'Internal Server Error',
+          'status': 500,
+        }),
+      ),
+    };
+
+    // Every function in lib/ that takes (AppLocalizations, error) and returns
+    // the copy a student reads. `FlashcardsErrorCopy` has value equality, so its
+    // Retry decision is compared with its message.
+    final copyFunnels = <String, Object? Function(AppLocalizations, Object)>{
+      'authErrorMessage': authErrorMessage,
+      'registrationErrorMessage': registrationErrorMessage,
+      'referenceErrorMessage': referenceErrorMessage,
+      'profileSaveErrorMessage': profileSaveErrorMessage,
+      'quizErrorMessage': quizErrorMessage,
+      'flashcardsErrorCopy (message + canRetry)': flashcardsErrorCopy,
+      'boardFailureText': boardFailureText,
+    };
+
+    // Every error-only predicate that decides what a failure does: offers a
+    // Retry, opens a sheet, restarts registration, styles an OTP box, or is the
+    // pending-deletion branch.
+    final decisions = <String, bool Function(Object)>{
+      'suppressesRetry': suppressesRetry,
+      'opensLimitSheet': opensLimitSheet,
+      'boardRetryAllowed': boardRetryAllowed,
+      'isOffline': isOffline,
+      'isInvalidOtp': isInvalidOtp,
+      'restartsRegistration': restartsRegistration,
+      'isAccountPendingDeletion': isAccountPendingDeletion,
+    };
+
+    test('both locales loaded, so the EN/AR comparison below is real', () {
+      expect(en.genericError, isNotEmpty);
+      expect(ar.genericError, isNotEmpty);
+      expect(en.genericError, isNot(ar.genericError));
+    });
+
+    for (final funnel in copyFunnels.entries) {
+      test('${funnel.key} — identical output, EN and AR', () {
+        for (final l10n in [en, ar]) {
+          final lang = identical(l10n, en) ? 'EN' : 'AR';
+          final reference = funnel.value(l10n, internalError);
+
+          for (final variant in {
+            ...unknownVariants(),
+            ...internalErrorVariants(),
+          }.entries) {
+            expect(
+              funnel.value(l10n, variant.value),
+              reference,
+              reason: '$lang: ${variant.key} must read like internal_error',
+            );
+          }
+        }
+      });
+    }
+
+    test('that shared answer is the generic message, with Retry on offer', () {
+      for (final l10n in [en, ar]) {
+        final lang = identical(l10n, en) ? 'EN' : 'AR';
+        for (final funnel in copyFunnels.entries) {
+          final out = funnel.value(l10n, internalError);
+          final shown = out is FlashcardsErrorCopy ? out.message : out;
+          expect(shown, l10n.genericError, reason: '$lang ${funnel.key}');
+        }
+        expect(
+          flashcardsErrorCopy(l10n, internalError).canRetry,
+          isTrue,
+          reason: lang,
+        );
+      }
+    });
+
+    for (final decision in decisions.entries) {
+      test('${decision.key} — identical decision', () {
+        final reference = decision.value(internalError);
+        for (final variant in unknownVariants().entries) {
+          expect(
+            decision.value(variant.value),
+            reference,
+            reason: '${variant.key} must decide like internal_error',
+          );
+        }
+      });
+    }
+
+    test(
+      'the shared decision is: no suppression, Retry allowed, no redirect',
+      () {
+        // Pinned so both sides cannot drift the same way together.
+        expect(suppressesRetry(internalError), isFalse);
+        expect(boardRetryAllowed(internalError), isTrue);
+        expect(opensLimitSheet(internalError), isFalse);
+        expect(isOffline(internalError), isFalse);
+        expect(isAccountPendingDeletion(internalError), isFalse);
+      },
+    );
+
+    test('field-level mappers ignore both alike', () {
+      for (final error in [
+        ...unknownVariants().values,
+        ...internalErrorVariants().values,
+      ]) {
+        expect(rejectedFields(error), isEmpty);
+        expect(fieldIssuesFrom(error), isEmpty);
+      }
+    });
+
+    for (final locale in const [Locale('en'), Locale('ar')]) {
+      testWidgets(
+        'CatalogAsyncView — identical error state (${locale.languageCode})',
+        (tester) async {
+          final l10n = locale.languageCode == 'en' ? en : ar;
+
+          // Everything the error state shows: its text lines and whether a
+          // Retry button is on offer.
+          Future<(List<String>, bool)> render(Object error) async {
+            await tester.pumpWidget(
+              MaterialApp(
+                locale: locale,
+                theme: AppTheme.light,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: CatalogAsyncView<int>(
+                    value: AsyncValue<int>.error(error, StackTrace.empty),
+                    isEmpty: (_) => false,
+                    emptyMessage: 'empty',
+                    onRetry: () {},
+                    onLoaded: (_) => const SizedBox.shrink(),
+                    skeleton: const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            );
+            await tester.pump();
+            final texts = tester
+                .widgetList<Text>(find.byType(Text))
+                .map((t) => t.data ?? '')
+                .toList();
+            return (texts, find.byType(FilledButton).evaluate().isNotEmpty);
+          }
+
+          final reference = await render(internalError);
+          expect(reference.$1, contains(l10n.genericError));
+          expect(reference.$2, isTrue, reason: 'Retry is offered');
+
+          for (final variant in unknownVariants().entries) {
+            final shown = await render(variant.value);
+            expect(shown.$1, reference.$1, reason: variant.key);
+            expect(shown.$2, reference.$2, reason: variant.key);
+          }
+        },
+      );
+    }
+  });
 }
