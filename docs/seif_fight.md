@@ -17,7 +17,7 @@
 > has always been — nothing in it is deleted; a handful of entries are updated where a later
 > pin re-anchored their citations or narrowed their asks (S6, S37), and three new entries
 > (S39–S41) are filed from the 2026-09-04 Phase 2 contract-impact audit. Part A records history
-> and accountability; Part B records open questions. Neither blocks a build.
+> and accountability; Part B records open questions. Neither blocks a build. **2026-10-10 — Seif's written reply of 2026-10-09 answers many entries below; it is digested in `docs/BACKEND_HANDOFF.md` (§L1 lists which). Entries stay as filed.**
 
 ---
 

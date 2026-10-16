@@ -45,7 +45,7 @@ semantic tokens. Extract with it, then verify on a device against the frame.
 | State management | `01_Flutter_Specs/State_Management.md` + `.claude/skills/river`, `.claude/skills/bloc` | Riverpod everywhere; **Bloc only for the quiz engine** |
 | Screen states | `.claude/skills/screen-states/SKILL.md` | loading / empty / error / offline × AR/EN = 8 checks |
 | Building a screen | `.claude/skills/build-screen/SKILL.md` | The standard loop |
-| API contract | `contract/` + `.claude/skills/seif-api-contract` | Never invent shapes — raise a change request |
+| API contract | `contract/` + `.claude/skills/seif-api-contract` | Never invent shapes — raise a change request. **Backend facts Seif confirmed in writing (status, contract edition, open questions): `docs/BACKEND_HANDOFF.md`** — subordinate to the contract |
 | Networking & errors | `01_Flutter_Specs/Networking_and_API.md`, `contract/error-codes.md` | |
 | Models & serialization | `01_Flutter_Specs/Models_and_Serialization.md` | freezed + json_serializable, **generated code is committed** |
 | Navigation | `01_Flutter_Specs/Navigation_and_Deep_Links.md` | GoRouter, one file: `lib/core/router/app_router.dart` |

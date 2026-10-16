@@ -30,7 +30,7 @@ Everything below is sourced from those files.
    - `docs/RISKS.md` — the live risk register. Eight open risks, each with an owner.
    - `docs/PROJECT_GUIDE.md` — the index. Says where every rule lives and which source wins.
    - `docs/AGENT_WORKFLOW.md` — the canonical loop and the DO-NOT-GUESS protocol.
-   - `contract/SOURCE.md` — which contract commit is pinned right now.
+   - `contract/SOURCE.md` — which contract commit is pinned right now. Backend work: also `docs/BACKEND_HANDOFF.md` — its "Mandatory guidance" and lookup table first.
 3. Read a `docs/day*_brief.md` only when working on that feature. They are **dated records**,
    not current state. Contract references in every brief are **stale** — Days 00–7b cite
    `23f0535`, Days 7c–8 cite `ee2ed8f`, Day 9 cites `61905ce`, and the pin has since moved to
@@ -134,7 +134,7 @@ Do §14 (THE COOKIE). It is the migration's completion signal.
 | Decisions with their reasoning and rejected alternatives | `docs/DECISIONS.md` |
 | Runtime defects, incl. "why tests missed it" | `docs/KNOWN_BUGS.md` |
 | Design ↔ contract gaps (48 entries) | `docs/DESIGN_ISSUES.md` |
-| Open questions for Seif (backend) | `docs/seif_fight.md` |
+| Backend facts Seif confirmed; open questions for Seif | `docs/BACKEND_HANDOFF.md` (§L = answered vs still open), then `docs/seif_fight.md` |
 | Responsive & text-scaling rules (**proposed, not applied**) | `docs/RESPONSIVE.md` |
 | Which contract commit is pinned | `contract/SOURCE.md` |
 | The ordered fix queue | `.ai/audits/current/known-issues.md` |
@@ -164,6 +164,10 @@ powershell -ExecutionPolicy Bypass -File tool\verify_guards.ps1
   Build only against `x-stability: stable`. Never invent a shape — file it in
   `docs/seif_fight.md`.
 - **Do not edit anything under `contract/`.** It is vendored from Seif's repo.
+- **Backend-dependent work starts at `docs/BACKEND_HANDOFF.md`** (Seif's reply of 2026-10-09): read
+  its "Mandatory guidance" and lookup table first, then the row for your topic. Planned is not live;
+  `[3.47]` items are not in the pin (the pin is whatever `contract/SOURCE.md` says, not the 184d6ec
+  in §1.2); do not re-ask Seif what it answers. It extends the contract and never overrides it.
 - **No colour outside `lib/core/theme/`.** Guard-enforced, zero exceptions across 36k lines.
 - **No new hardcoded `fontSize`.** The ratchet is **0** — one inline `fontSize` outside
   `lib/core/theme/` fails the suite in two places. The guard bans inline `fontWeight:` too, so

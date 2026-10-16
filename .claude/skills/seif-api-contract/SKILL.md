@@ -13,7 +13,7 @@ Why this is rigid: an invented field or endpoint compiles fine, demos fine, and 
 
 1. Find the spec: look for `openapi*.{json,yaml,yml}` or `swagger*.{json,yaml}` in the repo (conventionally under `contract/`). The user may also paste an excerpt — treat a pasted excerpt as authoritative for this task.
 2. Read ONLY the section the feature needs (its paths + referenced schemas). Don't load the whole spec into context.
-3. **If the spec file, endpoint, or field does not exist: STOP.** Do not scaffold "temporary" shapes. Say exactly what is missing and draft a change request instead (template at the end). Building against a missing artifact is never the helpful option here.
+3. **If the spec file, endpoint, or field does not exist: STOP.** Do not scaffold "temporary" shapes. Say exactly what is missing and draft a change request instead (template at the end). Building against a missing artifact is never the helpful option here. Before drafting that change request or asking Seif, check `docs/BACKEND_HANDOFF.md`: it holds the facts Seif has confirmed (the contract, not that file, is authoritative for shapes) and the questions already answered.
 
 ## Models — freezed + json_serializable, mirroring the contract exactly
 

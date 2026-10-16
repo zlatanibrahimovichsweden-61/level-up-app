@@ -1070,7 +1070,7 @@ command now carries `--flavor` (`ENVIRONMENTS.md` §4). Wave 3 applies the iOS h
 on a Mac. The old `com.levelup.level_up_app` install on test devices is an orphan and can be uninstalled. Firebase and
 the keystore remain gated on their own prerequisites (`ENVIRONMENTS.md` §7, §10).
 
-**Revisit when:** never for Q1 after the first store upload (irreversible); Q2–Q3 when an environment is added.
+**Revisit when:** never for Q1 after the first store upload (irreversible); Q2–Q3 when an environment is added. **Update (forward link, 2026-10-10):** Seif's reply of 2026-10-09 extends Q5–Q7 (two Firebase projects, production host, APNs path); the text above stays as the record — see `docs/BACKEND_HANDOFF.md` §A, §G.
 
 ---
 
