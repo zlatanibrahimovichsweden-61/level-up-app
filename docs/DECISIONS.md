@@ -1220,3 +1220,9 @@ University year picker is unchanged in this wave and still reads `universitiesPr
 
 **Revisit when:** the designer specifies the "Soon" treatment (`docs/DESIGN_ISSUES.md` #133), or Seif changes the
 open-set rule.
+
+**2026-10-15 (SEIF1014 follow-up).** The owner set the Arabic mark (and the two refusal messages) to the app's
+spelling «قريبًا», the same as `comingSoon`. The designer's light English frames (`1409:26374`, `1409:26436`,
+`1409:26495`) now draw the treatment: the mark moved outside the row's dimming (built); the sheet presentation, the
+colours and the refusal card wait for tokens, dark and Arabic frames (#133). The refusal frame keeps the refused value
+selected; this decision still clears it, because a refused choice is `soon` and cannot stay selected (rule 2).

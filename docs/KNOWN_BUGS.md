@@ -567,10 +567,10 @@ no `InkWell`), which the row always passed.
 **Fix.** `excludeSemantics: true` on that `Semantics`, so the node says the label, the value and the locked hint once.
 Pinned by "I2: a locked row is announced once" in `edit_profile_screen_test.dart`, which fails on the old widget.
 
-## BUG-017 🟠 "Hide my points" tells a student they stay on the leaderboard; the contract takes them off it
+## BUG-017 ✅ "Hide my points" told a student they stay on the leaderboard; the contract takes them off it
 
-**Status:** OPEN 2026-09-29 (API→UI Wave 21). Found reading the contract for Settings. Waiting on the owner for the new
-wording in English and Arabic; the copy is not invented.
+**Status:** FIXED 2026-10-15 (SEIF1014 second follow-up) by removal: the owner dropped both Rank help lines, because no
+Settings frame draws one. Opened 2026-09-29 (API→UI Wave 21), found reading the contract for Settings.
 
 **What breaks.** Settings > Rank explains the `scoreHidden` switch as "You'll still be listed — without your score." /
 "ستظل في القائمة — بدون ظهور نقاطك." Under adr-111 a score-hidden student is removed from every board before ranking,
@@ -584,9 +584,11 @@ models already follow adr-111 (`leaderboard_models.dart:58`); the Settings copy 
 **Why tests missed it.** The tests assert that the switch sends only `scoreHidden`. None compares what the explanation
 promises with what the contract does.
 
-**Fix.** Owed: a new help line for "Hide my points", and a check of the line under "Show me on the leaderboard" (true,
-but it does not say that the student still sees their own rank), both in English and Arabic, approved by the owner.
-seif_fight **S27** carries the contract side.
+**Fix.** The two help lines are gone: `settingsLeaderboardVisibleHelp` and `settingsScoreHiddenHelp` were removed from
+both ARB files, and `SettingsSwitchRow` no longer has a help slot. The switches are unchanged. Pinned by "no help line
+under either switch" (`settings_screen_test.dart`, English and Arabic: neither old line is on screen, each Rank row
+holds only its label) and the Rank row height test in `settings_frame_test.dart` (52 in English, the label plus
+14 + 14 in both languages). seif_fight **S27** still carries the contract side (two booleans, one drawn switch).
 
 ## BUG-018 ✅ A disabled Settings switch was announced with its label twice
 

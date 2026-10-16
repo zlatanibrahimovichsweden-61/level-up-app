@@ -510,3 +510,17 @@ It asks the questions above in one short message; it is not a second request. Th
 > Please answer in the table from our first message (section 8), row DG-05. Thanks!
 
 **Not done:** not sent. Nothing in it is approved, and Figma was not opened.
+
+## 2026-10-15 — the updated file checked against the contract (SEIF1014 follow-up)
+
+Read over the Figma MCP (file `P6044i0giD9TmdQ7C2AmLq`, page "design"); every new frame is light, English only.
+Details and the full mismatch table: `SEIF1014_REPORT.md` §11; open items in `docs/DESIGN_ISSUES.md` #133–#137.
+
+| Item | New frames | State |
+| --- | --- | --- |
+| DG-01 / DG-02 | B1: Settings row `1409:8774`, confirm `1409:8786`, requested `1409:8945`, pending `1409:9047`, cancelled `1409:9157`, can't cancel `1409:9259` | The rows above saying "no deletion frame exists" and "confirm paragraph HELD (paid/refund)" are out of date: the frames exist and 3.52 has neither word. Nothing built (CW05). Gaps: #137; Seif: S48 |
+| DG-26 | B10 `1411:16920` / `1411:17138`; B9 `1411:10150` | Light picker built; dark/RTL, Term chip Arabic, B9 copy open (#134, #135). B9 book icon `1411:10344` exported to `assets/icons/subjects_empty_book.svg` 2026-10-15, not wired (card not built) |
+| DG-32 (School) | B12 `1409:26374`, `1409:26436`, `1409:26495`, `1409:26646`, `1409:26838`; University `1409:26536` | Soon mark built on the School pickers and (2026-10-15, owner decision) the University year; sheet, colours, refusal card, dark/Arabic open (#133) |
+| DG-33 | Settings School light is now `1409:8642` (`176:1840` is gone); Arabic Rank drawn (`1409:24813`) | Arabic half closed (#111); Notification Preferences removed, Rank label, OFF track built (#136). Owner 2026-10-15: both Rank help lines dropped (none drawn); "points" kept over the English frame's "score" — the English frame should change |
+| DG-57 | No Notification Preferences block on any Settings frame | Promotions toggle gone from Settings (built) |
+| DG-58 | "Upgrade to premium" still on all six Profile frames | **Not done** (P0) |

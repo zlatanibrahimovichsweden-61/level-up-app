@@ -1272,6 +1272,10 @@ floating with nothing to group them. When #45 is answered, the card goes with th
 
 ## 46. 🟠 "Show Rank" is one switch where the contract has two independent booleans
 
+> **2026-10-15 (SEIF1014 follow-up):** answered by the designer — every current Settings frame draws two Rank rows
+> ("Show me on leaderboards" `1409:8705`, "Hide my score" `1409:8769`; Arabic `1409:24821`, `1409:24826`), which is
+> what the app builds. The two help lines under them are not drawn (owner call, #136). Remaining wording gap: #136.
+
 **Where:** Setting (`176:1840`) — a single **Show Rank** toggle.
 Code: `lib/features/settings/screens/settings_screen.dart`.
 
@@ -1286,6 +1290,8 @@ was filed), and adr-023 defaults them differently (`:2481-2485`; was `:1380-1382
 > **2026-09-29 (API→UI Wave 21): the `scoreHidden` row above is stale.** Since adr-111 a score-hidden student is taken
 > off every board, and `GET /leaderboard/me` refuses them their own rank (`openapi.yaml:2076-2083`, `:2181-2183`). See
 > seif_fight S27 and KNOWN_BUGS BUG-017 (the app's help line still says "listed, without your score").
+> **2026-10-15:** that help line is gone — the owner dropped both Rank help lines (no frame draws one); BUG-017 is
+> fixed by removal (#136).
 
 These are not two spellings of one setting. A student who wants to compete but not publish their
 score picks the second without the first; a student who wants out entirely picks the first. One
@@ -1391,7 +1397,7 @@ shadows would be the wrong trade.
 
 ## 48. 🟡 Settings applies changes immediately; the frame draws a "Save Change" button
 
-**Where:** Setting (`176:1840`). Code: `lib/features/settings/screens/settings_screen.dart`.
+**Where:** Setting (`176:1840`; since 2026-10-15 the file's School light Settings is `1409:8642`, which still draws "Save Change", as do `309:8452`, `337:8141`, `349:12113`, and «حفظ» on `549:21759` / `565:14612`). Code: `lib/features/settings/screens/settings_screen.dart`.
 
 **What.** The frame ends with a full-width dark-green button, h≈60 / r≈30 — the same treatment as
 Edit Profile's. The build has no such button: every control on the screen applies the moment it is
@@ -4639,7 +4645,12 @@ radial gradient disc (`#4B675E` → `#95CDBB`), as Edit Profile's avatar now doe
 
 ---
 
-## 107. ✅ BUILT 2026-09-29 (API→UI Wave 21, owner ruling) — The Settings switch is the frame's 48 x 24 stadium, not Flutter's; 🟡 its OFF state is not designed
+## 107. ✅ BUILT 2026-09-29 (API→UI Wave 21, owner ruling) — The Settings switch is the frame's 48 x 24 stadium, not Flutter's; ✅ its OFF state drawn 2026-10-15 and built (`1409:8770` light `#D1D1D1`, `1409:24806` dark `#5C5C5C`)
+
+> **2026-10-15 (SEIF1014 follow-up):** the frames now draw OFF — a `#D1D1D1` (light) / `#5C5C5C` (dark) track with the
+> white knob 4 dp from the start. `settingsToggleOffTrack` follows them, replacing the owner's interim `#B3B3B3`. The
+> track contrast is lower than before (about 1.5:1 light, 2.3:1 dark, computed, not measured); the knob position and
+> the switch semantics still carry the state. (#136)
 
 > **Classification:** frame-proven for ON (Rank `642:8525`, dark `642:8587`; Notification Preferences `176:2394` …
 > `176:2421`, dark `337:8199` …; Arabic `549:21822` …); OFF by owner ruling 2026-09-29.
@@ -4742,7 +4753,10 @@ ARB's spelling stays.
 
 ---
 
-## 111. 🟡 The Arabic Settings frame has no Rank block
+## 111. ✅ RESOLVED 2026-10-15 — The Arabic Settings frame has no Rank block (now drawn: `549:21759` / `565:14612`, "الترتيب")
+
+> **2026-10-15:** both Arabic Settings frames now draw the Rank block (`1409:24813`, `1409:24832`), and the app already
+> shows it in Arabic. Closed. (#136)
 
 > **Classification:** frame gap.
 
@@ -5289,6 +5303,186 @@ header. The Mistakes tests now measure the header's 35 band, not its 48 box.
      Leaderboard and Units, at 1.0× and at 2.0× font scale.
    - **Support list title bar** (AR, 1.0×): pixel-identical to the pre-O-15 CW12a capture.
    - **2.0×:** the AR Support title and the EN "Notifications" title are whole and clear of the chip.
+
+## 133. 🟠 OPEN — Registration "Soon" (School grade and system, University year): light English frames drawn 2026-10-15 (the mark built on all three pickers); the sheet, dark and Arabic are open
+
+> **Classification:** designer decision + frame not drawn. Built 2026-10-14 in wave SEIF1014 (change set SSG), from
+> contract 3.52.0-m1 (`listSchoolStages`, `listEducationSystems.status`) and Seif's 2026-10-12 message ("show 'Soon'
+> items visibly but not selectable, with a small 'Soon / قريباً' label"). **Status: OPEN. Owner: designer.**
+> Decision record: `DECISIONS.md` D-026. Report: `.ai/audits/current/completion/SEIF1014_REPORT.md`.
+
+**What was built (provisional, existing parts only).** In the School screen's Grade and Education System pickers
+(frame `337:5269` shows the closed fields only; no frame draws an open menu, a disabled row or a mark), a `soon` row
+is shown, dimmed by the existing `disabledControlOpacity`, cannot be selected, and carries a small mark
+"Soon" / «قريبًا» at the row's END edge (right in English, left in Arabic), in `AppType.labelMedium` with the `hint`
+colour token. (Built with Seif's spelling «قريباً», alef + fathatan; **owner decision 2026-10-15:** the mark and the
+two refusal messages use the app's existing spelling «قريبًا», fathatan on the beh, the same as `comingSoon`.) Its accessible name is "<label>, Soon"
+(AVD 2026-10-14: `.ai/audits/current/completion/seif1014_shots/ssg_mock/`). An unknown status or an omitted stage is dimmed with no mark. No new token, no
+new style.
+
+**The disagreement.** University study-year rows (`university_detail_screen.dart`, Wave 04) are also "visible, not
+selectable" for `soon` years, but carry **no** wording — the screen's comment calls a suffix "new copy nobody has
+approved". Seif's message is the approval for the two School pickers only, and the SEIF1014 prompt forbids changing
+the University picker, so the two "soon" treatments now differ.
+
+**2026-10-15 — resolved: the two pickers now agree** (owner decision, as frame `1409:26536` draws it). A University
+`soon` year carries the School pickers' mark exactly: the same key `registrationSoonMark` («قريبًا»), the same
+`AppType.buttonSmall` (SemiBold 12) in `hint`, the same row treatment (label dimmed, mark at full strength at the end
+edge, spoken "<year>, Soon"). Selection is unchanged: only `active` can be chosen; an unknown or empty status is
+disabled with no mark; a year with no status does not parse. No new string. Tests:
+`test/features/registration/university_year_soon_test.dart` (English and Arabic, text scale 1.3); the School test
+that said the mark was "the School form's alone" now expects it on the University year too.
+
+**Contrast, for the designer (independent review, 2026-10-14):** the mark sits inside the row's 0.6 dimming, so on
+the light canvas the `hint` grey `#696969` blends to about `#A4A4A4` over the menu fill `#FDFDFD` — about **2.45:1**
+(undimmed it is about 5.4:1). WCAG 1.4.3 exempts inactive controls, so this is not a failure, but the mark is the
+one element that explains the dimming; drawing it outside the dimming is a one-line change once you decide.
+
+**Asks (designer):** (1) the "Soon" row treatment — position, style, colour, in both canvases and both directions;
+(2) whether University `soon` years get the same mark; ~~(3) whether the existing `comingSoon` string «قريبًا»
+(fathatan on the beh) and the new mark «قريباً» (alef + fathatan) should converge, and on which spelling~~ —
+**decided by the owner 2026-10-15: «قريبًا» everywhere** (the three SSG keys changed; `comingSoon` unchanged).
+
+**2026-10-15 — frames drawn (light, English only).** `1409:26374` "B12 Sign up – grade picker with “Soon”",
+`1409:26436` "… education system picker with “Soon”", `1409:26495` "… grade not open (server refusal)"; and
+`1409:26536` "B12 Uni sign up – academic year with “Soon”" (answers ask 2: yes, University years get the mark — the
+contract has `years[].status`; built later the same day on the owner's decision, see above). **Built:** the mark is drawn
+at full strength outside the row's dimming, in `AppType.buttonSmall` (12/w600, the frame's SemiBold 12), still
+`hint`-coloured. **Not built, for the designer:** the frames use a bottom sheet (title, hint line, radio cards, a
+lavender selected card, a grey Soon card, a lavender "Soon" pill) where the app uses the shared dropdown of every
+registration picker — the title and hint ("Choose your grade", "Grades marked “Soon” aren’t open yet.") are English
+only, the label size (Inter Medium 17) is not on the type scale, the pill and Soon-card colours (`#EFE6FB`, `#7B52C4`,
+`#F3F3F2`, `#A3A3A3`) are not tokens and have no dark value, and whether every registration picker becomes a sheet is
+the owner's call; the refusal notice is a floating filled card (`#FDECEC` / `#9B1C1C`, 15/21, shadow) where the app
+uses the shared plain error row — no tokens, no dark; the refusal frame keeps the refused grade and marks no field,
+but a refused choice is `soon` and cannot stay selected (D-026), so the app clears it and marks the field — please
+draw that; no frame for `education_system_not_available`; no loading / error / offline / disabled-button states; no
+dark or Arabic frame; grade names disagree between frames ("Preparatory 1" in the sheet, "Grade 12" in the form,
+«الاول الاعدادى» in the Arabic base) — the app keeps its approved labels; the refusal sample (American + Grade 12) would
+get the education-system message, not the grade one; education-system names and order come from the server. **Dark (review, 2026-10-15):** the mark now sits outside the
+dimming in the `hint` colour, which in dark is the cream `#FCFBF9`, so a Soon row's mark is brighter than its dimmed
+label — the hierarchy inverts on the dark canvas until a dark frame exists; no code change until the designer draws
+it.
+
+## 134. 🟠 OPEN — University module picker (CW16b, DG-26): light frames drawn and built 2026-10-15; dark and RTL missing
+
+> **Classification:** frame not drawn (DG-26 "University module picker — NEW FRAME REQUIRED",
+> `.ai/audits/current/completion/03_DESIGNER_HANDOFF.md`). Built 2026-10-14 in wave SEIF1014 (Job 3) against
+> `listModules` (stable since 3.37.0-m1) and Seif's 2026-10-13 sample-modules message. (The Arabic «كل المواد» was
+> provisional until the owner confirmed it on 2026-10-15.)
+> **Status: OPEN. Owner: designer (visuals).** Every provisional decision is marked
+> `// PROVISIONAL(design): DG-26` in code.
+
+**Provisional decisions, each awaiting the frame:**
+1. **Placement** — a pill row between the Subjects search field and the grid, shown only when the student has at
+   least one module (school students get `[]`, so their screen is unchanged).
+2. **Pill style** — a re-creation of the notifications filter chip (`180:8555` selected / `180:8557` idle) from the
+   same existing tokens, scrolling sideways, starting at the start edge.
+3. **"All subjects" first and selected by default**, then the modules in server order (`displayOrder`, then `name`).
+   The contract requires the All view permanently; a subject in no module shows only there.
+4. **Search filters within the chosen view.**
+5. **An empty module** (no loaded subject) shows the screen's existing "No subjects yet" state.
+6. **Copy** — EN "All subjects" (the contract's and Seif's name for the view); AR «كل المواد» — **confirmed by
+   the owner 2026-10-15** (no longer provisional; the ARB description says so).
+7. **Not built** (no frame or handoff asks for them): term headers ("Term 2") and an "Other subjects" section, both of
+   which Seif's message mentions as optional.
+8. **As built, also provisional:** the row depends on the modules read only, so it also shows above the subjects
+   list's loading or error view; a pill is capped at the screen width less 40 and wraps a long module name; the
+   selected pill used the selected-chip fill (superseded 2026-10-15: light now follows the frame, see below). AVD against staging (U1), EN + AR:
+   `.ai/audits/current/completion/seif1014_shots/u1_*.png`.
+9. **Known gap, waits for the frame (independent review, 2026-10-14):** the row is rebuilt at scroll offset 0, so
+   with many modules a selection restored after visiting a subject can sit off-screen (the grid is right; only the
+   highlighted pill is out of view). The frame should say whether the row scrolls the selected pill into view.
+
+**2026-10-15 — light frames drawn:** `1411:16920` "B10 Uni Subjects – module picker (All subjects)" and `1411:17138`
+"… module selected" (pickers `1411:17129` / `1411:17347`). **They settle, and the app now follows (built
+2026-10-15):** item 1 (placement, with a 25 visual gap above and below the row), item 3 (All subjects first and
+selected by default), the light half of item 2 (selected: `#384F47` fill, white label; idle: white fill, 1 px
+`#DEDEDE` border, no shadow; both 14/w600, padding 14/8, stadium; the frames draw the selected pill 33 tall and the
+idle one 35 with its border, and the app equalises both to 35 so the row does not jump; the 25 gaps are exact at
+text scale 1.0 and about 23 at 1.3) through five new `modulePill*` tokens whose
+dark values keep the earlier provisional look. Item 7 is settled differently: no term headers and no "Other
+subjects", but a per-card Term chip (#135). **Still open:** the dark and Arabic frames; items 4, 5 and 9; a long
+module name; the row over the subjects' loading / error view; the picker's own loading / error states (DG-26).
+
+**Asks (designer):** the dark and RTL picker frames, a long module name, and the open items above. ~~**Ask (owner):** confirm or replace «كل المواد».~~
+**Answered 2026-10-15:** «كل المواد» confirmed.
+
+## 135. 🟠 OPEN — University Subjects: the "Term N" chip and the "before the term opens" empty card (frames 2026-10-15)
+
+> **Classification:** copy missing in Arabic + frame missing dark/RTL + one backend question (S49). Found by the
+> SEIF1014 follow-up Figma check (2026-10-15). **Status: OPEN. Owner: designer (copy, dark, RTL); Seif (S49).**
+
+**Frames (light, English only):** `1411:16920` / `1411:17138` (B10, every subject card carries a "Term 1" / "Term 2"
+chip: fill `#F4E6FF`, label `#7C3AED` Inter SemiBold 11, at the card's bottom end); `1411:16711` (University content
+in a frame named "…for school student"); `1411:10150` "B9 Uni Subjects – empty before term opens" (card `1411:10343`:
+book icon `1411:10344`, "No subjects yet", "Your subjects will appear here when your term opens. We'll let you know.";
+no search field, no picker).
+
+**Contract:** `listSubjects` gives `termNumber` (1 or 2 today, null for School) and says "render the term label
+client-side (localized AR/EN)"; "An unreleased term is ABSENT, not flagged … `[]` is a NORMAL response"; no
+notification kind announces a term.
+
+**Not built, and why:** (1) the Term chip — the frames give it in English only and no approved Arabic exists (the
+provisional-copy rule); `#7C3AED` has no token and there is no dark value; 11/w600 is only `AppType.navActive`.
+(2) The B9 card — its body line is English-only and promises a notice the backend does not send (S49); no dark frame;
+the School empty state has no frame. The app keeps its approved "No subjects yet" state. **2026-10-15, owner
+decision:** the book icon `1411:10344` was exported read-only to `assets/icons/subjects_empty_book.svg` (64 x 64,
+stroke `#AE87E7`, `docs/ASSET_MANIFEST.md`). It is **not wired**: the card was not built, and the decision was not to
+build it now, so nothing uses the file yet.
+
+**Asks (designer):** the Arabic "Term {n}" label and the chip's dark colours; whether the frame's "Term 1 in the start
+column, Term 2 in the end column" is a rule or sample placement (the contract says "group and order on `termNumber`";
+the app keeps the server's order); a B9 body line that covers every empty case without "We'll let you know" unless
+Seif confirms a notice (S49), in both languages, and its dark frame; rename `1411:16711`.
+
+## 136. 🟠 OPEN — Settings and Profile frames, 2026-10-15 check (DG-33, DG-57, DG-58)
+
+> **Classification:** mixed — four items built, the rest for the designer or the owner. Found by the SEIF1014
+> follow-up Figma check (2026-10-15). **Status: OPEN. Owner: designer; owner where marked.**
+
+**Frames:** Settings `1409:8642` (School, light EN, new), `309:8452` (University light), `337:8141` / `349:12113`
+(dark), `549:21759` / `565:14612` (Arabic); Profile `1409:25524` (School light EN, new), `309:7940`, `337:7433`,
+`349:12919`, `549:21052`, `549:26384`. The old School light Settings `176:1840` no longer exists.
+
+**Built 2026-10-15 (the contract allows the frames):** (a) **Notification Preferences removed** — no frame draws it
+and the contract stores no preference (BH-E12), which also removes the last Promotions toggle (DG-57); (b) the Rank
+row reads "Show me on leaderboards" (EN `1409:8705`; the Arabic already matched `1409:24821`); (c) the OFF switch
+track now uses the drawn colours (#107); (d) "Go to University" shows for School students only — the University frames
+omit it and the contract refuses the transfer to a University student (`409 track_transfer_not_allowed`).
+
+**For the designer:** "Hide my score" (EN) vs «إخفاء نقاطي» (AR, "points") — **decided by the owner 2026-10-15: the
+app keeps "points"** (the glossary term; please change the English frame); the dark frames keep an orphan back-light ellipse under Rank (`348:8975`, `349:12114`); the "Save Change"
+button vs immediate saves (#48); the three unlabelled Mode swatches (#45); "Upgrade to premium" is still on every
+Profile frame (DG-58, P0 — must go); "Level 7 · Hero" ("Hero" does not exist, BH-E12); the Arabic Profile copy differs
+from the approved copy and is misspelt (إدعو صديقًا, الدعم الفنى, ملف الشخصى, اذهب إلى الجامعة) — the app keeps its
+copy; the University Arabic Profile title is in English (`549:26409`); the new Subscription card (`1409:25686`) is held
+(H-04). ~~**For the owner:** the two Rank help lines are not drawn (keep with corrected copy, or drop — BUG-017).~~
+**Decided and built 2026-10-15:** the owner dropped both help lines because no frame draws them — the lines, their two
+ARB keys in both languages and the help slot on the switch row are gone, which retires BUG-017's stale line. The
+switches are unchanged; each Rank row is now the frame's bare 52 in English.
+
+## 137. 🟠 OPEN — Account deletion frames (B1, DG-01 / DG-02): checked against the contract, nothing built (CW05)
+
+> **Classification:** report only — CW05 is not authorised. Found by the SEIF1014 follow-up Figma check
+> (2026-10-15). **Status: OPEN. Owner: designer; Seif (S48); owner (CW05).**
+
+**Frames (light, English only):** Settings row `1409:8774` (in `1409:8642`, "Account" → "Delete account"); confirm
+`1409:8786`; requested (logged out) `1409:8945`; pending – cancel? `1409:9047`; cancelled `1409:9157`; can no longer
+cancel `1409:9259`.
+
+**Matches the contract:** the confirm paragraph is the contract's suggested English word for word (Arabic exists only
+in the contract, awaiting Ahmed's approval); no payment, refund or subscription wording; the logged-out "requested"
+screen (the `202` is the token's last use); the pending allowlist (cancel or log out); the cancelled screen's
+leaderboard line.
+
+**For the designer:** Arabic and dark for every frame; the checkbox's unchecked state and the disabled delete button;
+submitting, offline, error and `409` states on confirm, and cancelling / error states on pending; dates as "on or
+after" (`effectiveAt` is "no earlier than", up to ~24 h later) and the Arabic date format; "Log out" vs the app's
+"Logout" and its confirm dialog; whether the support address is tappable; the text styles 26/w700, 20/w600, 18/w500 and
+15/w400 are not on the type scale; four colours are not tokens. **Waiting on Seif (S48):** cancel after `effectiveAt`;
+"Everything is just as you left it"; the certainty of "can't be restored". S46 ("permanent" vs the 30-day restore)
+still stands.
 
 # Appendix — edit4's open ledger, as of 2026-09-20
 

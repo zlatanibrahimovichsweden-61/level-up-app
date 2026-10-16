@@ -627,7 +627,7 @@ audit §9C) · **S42–S44 filed 2026-09-12** with `docs/day10_mistakes_brief.md
 | S25 | Rank "HERO" — no rank tier string; `level` is an int and `badges` is an int | 🔴 | Open (Day 8) | — (omitted) |
 | S26 | Settings Mode draws three themes; the app has two palettes | 🟠 | Open (Day 8) | `settings_screen.dart` |
 | S27 | Show Rank is one switch; the contract has two independent booleans | 🟠 | Open (Day 8) | `settings_screen.dart` |
-| S28 | Notification Preferences — four toggles, nothing persists them | 🟠 | Open (Day 8) | `settings_screen.dart` |
+| S28 | Notification Preferences — four toggles, nothing persists them | ⚪ | Parked 2026-10-15: no Settings frame draws the block any more and the app removed it (DESIGN_ISSUES #136); reopen if preferences return | none (block removed) |
 | S29 | Upload photo — `PUT /me/avatar` is draft AND moderated | 🟠 | Open (Day 8) | `avatar_sheets.dart:121` |
 | S30 | Privacy & policy / Terms — no endpoint needed, but NO COPY SUPPLIED | 🟠 | Open (Day 8) | `profile_screen.dart` ×2, `legal_document_screen.dart` |
 | S31 | Go to Uni — track switching; no endpoint, and adr-003 makes it a data-model question | 🔴 | Open (Day 8) | `profile_screen.dart` |
@@ -645,6 +645,10 @@ audit §9C) · **S42–S44 filed 2026-09-12** with `docs/day10_mistakes_brief.md
 | S43 | A leaf badged "8 mistakes" replays a 10/30/50-question *ever wrong* quiz — no guidance on what to show | 🟠 | Open (2026-09-12, Day 10 brief) | not yet built |
 | S44 | Neither Mistakes operation can be exercised: the only test account's catalog is empty, so it can never have a wrong answer | 🔴 | Open (2026-09-12, Day 10 brief) | `tool/smoke/real_api_smoke_test.dart` |
 | S45 | `updateMyProfile`: is an unknown (well-formed) `avatarId` a 400 or a 404, and is `errors` always on its 400? | 🟡 | Open (2026-09-28, API→UI Wave 20) | `lib/dev/mock_backend.dart` (`_profilePatchViolations`) |
+| S46 | The public Account Deletion page: what may it say before the in-app path exists, and does "permanent" stand next to the 30-day restore? | 🟠 | Open (2026-10-14, wave SEIF1014 Job 4; draft reply not sent) | none — nothing for deletion is built (CW05) |
+| S47 | `listModules`: is the order of a module's `subjectIds` meaningful? | 🟡 | Open (2026-10-14, wave SEIF1014 Job 3) | `lib/features/catalog/notifier/modules_notifier.dart` (`subjectsForModule`) |
+| S48 | Account deletion, three edges the new B1 frames depend on: cancel after `effectiveAt`; what cancelling restores; telling "erasure started" from "nothing pending" | 🟠 | Open (2026-10-15, SEIF1014 follow-up; CW05 not authorised) | none — nothing for deletion is built (CW05) |
+| S49 | University Subjects, empty before the term opens: is a term-release notice planned ("We'll let you know")? | 🟡 | Open (2026-10-15, SEIF1014 follow-up) | none — the line is not built (DESIGN_ISSUES #135) |
 
 > **S22 and S23 were never allocated.** Not a gap in the record — the numbers were skipped when
 > the Day 8 brief reserved S24 onward. Nothing is missing; do not renumber to close it, because
@@ -1188,6 +1192,9 @@ a palette and we will build it as one. If it is a third palette, it needs tokens
 
 ## S27. 🟠 "Show Rank" is one switch where the contract has two booleans
 
+> **2026-10-15:** the designer's current Settings frames draw two Rank rows (`1409:8705`, `1409:8769`; Arabic
+> `1409:24821`, `1409:24826`) — the design half is answered and matches the build (DESIGN_ISSUES #46, #136).
+
 **Where:** Setting (`176:1840`) draws a single **Show Rank** toggle.
 **What:** `PATCH /me` accepts **`leaderboardVisible`** (am I listed at all) and **`scoreHidden`**
 (listed, but with my score suppressed) — `openapi.yaml:846-847` at the 3.23.0-m1 pin (`:620-621` when
@@ -1209,8 +1216,15 @@ answers `403 score_hidden_leaderboard_unavailable` (`:2181-2183`, `:2236`). The 
 score suppressed" reading above is therefore stale, and so is the app's help line for "Hide my
 points" (KNOWN_BUGS **BUG-017**). The designer ask stands. Whether the two switches are still worth
 showing separately is a product question for the owner.
+**2026-10-15:** the app's help lines are gone (owner decision: no frame draws one), so BUG-017 is fixed by
+removal; the two switches stay, and the second keeps "points", not the English frame's "score" (owner
+decision, same day). Nothing here changes for Seif.
 
 ## S28. 🟠 Notification Preferences — four toggles, nothing stores them
+
+> **Parked 2026-10-15 (SEIF1014 follow-up):** none of the six Settings frames draws Notification Preferences any more,
+> and the contract still stores no preference (BH-E12), so the app removed the block and its three keys. Nothing is
+> asked of Seif unless the product brings preferences back.
 
 **Where:** Setting (`176:1840`) — Announcements · Promotions · Support · System.
 **What:** nothing in the contract persists a notification preference. `PUT /me/fcm-token` is a
@@ -1650,6 +1664,100 @@ banner shows, no field is marked). The mock answers an unknown id with a `400` o
 **Ask:** state both in the contract.
 
 **Impact if unanswered:** none on the app today; the mock may imitate the wrong status.
+
+## S46. 🟠 The public Account Deletion page — what it may say before the in-app path exists, and "permanent"
+
+> **Filed 2026-10-14, wave SEIF1014 Job 4**, from Seif's message of 2026-10-13
+> (`docs/SEIF_MESSAGE_2026-10-13_school-stages-stable.md`). S38 covers the endpoint and the store blocker and
+> `docs/BACKEND_HANDOFF.md` BH-C5 the confirm copy; neither asks these two questions.
+
+**Where:** the website page `https://level-upworld.com/account-deletion` (BH-D1: "information only; the real deletion
+is in-app"); `requestAccountDeletion` (`POST /me/deletion-request`, the confirm-copy paragraph at 3.52.0-m1);
+`docs/STORE_READINESS.md`.
+
+**What:** Seif asked for the exact in-app path, EN and AR, for the web developer to publish as written. The current
+build has **no** in-app deletion path: no Settings row, route, screen, repository call or ARB key
+(`.ai/audits/current/completion/SEIF1014_REPORT.md`, Job 4). CW05 builds it and waits for the designer's frames
+(DG-01, and DG-33 for the Settings row), Ahmed's final approval of the confirm copy, and the owner's go-ahead, so no
+date can be given. (1) Both stores expect a working in-app path and a public URL at submission: what may the page say
+in the meantime? (2) The confirm copy says "Deleting your account is permanent", while the account can still be
+restored by logging in within the 30-day grace window (BH-C5). Can the page and the confirm screen say the same
+thing about that?
+
+**Today:** nothing is built; the page must not describe a path, and the example path in Seif's message
+(Profile → Settings → Delete account) does not exist (the tab is "Account" / «حسابي», and Settings has no Delete
+account row).
+
+**Ask:** (1) the interim page text, or that the page waits for CW05; (2) whether "permanent" stays, given the grace
+window.
+
+**Impact if unanswered:** the page and the app can disagree with each other and with the store reviewers' check.
+
+## S47. 🟡 `listModules` — is the order of a module's `subjectIds` meaningful?
+
+> **Filed 2026-10-14, wave SEIF1014 Job 3** (the provisional module picker, CW16b modules half).
+
+**Where:** `contract/openapi.yaml`, `GET /catalog/modules` (`listModules`): the response is "Order by `displayOrder`,
+then `name`", and `subjectIds` is "Subjects in this module that pass the release gate. May be empty." — no order is
+stated for the ids.
+
+**What:** a module view lists the subjects in the order `subjectIds` arrives, never re-sorted (the owner's rule for
+this wave). Is that order set by an admin, or should a module view follow `listSubjects`' order instead?
+
+**Today:** `subjectsForModule` keeps `subjectIds` order as served.
+
+**Ask:** state the order of `subjectIds` (or say it carries none).
+
+**Impact if unanswered:** display order only; nothing is hidden or gated.
+
+## S48. 🟠 Account deletion — three edges the designer's new B1 frames depend on
+
+> **Filed 2026-10-15, SEIF1014 follow-up** (Figma check of the B1 frames `1409:8786` confirm, `1409:8945`
+> requested, `1409:9047` pending, `1409:9157` cancelled, `1409:9259` can no longer cancel; light, English).
+> CW05 is not authorised: nothing is built. S46 (the public page, "permanent") is separate and still open.
+
+**Where:** `contract/openapi.yaml` `requestAccountDeletion` (`effectiveAt` is "no earlier than"; "the daily job may
+execute it up to ~24 h later"), `cancelAccountDeletion` (`404 no_pending_deletion` "Also returned once erasure has
+begun executing"), `StudentProfile.pendingDeletion.effectiveAt` ("Cancel with DELETE /me/deletion-request before
+then"); `contract/contract-changelog.md` (3.3.0 entry: the two 404 meanings are "nothing for the client to tell
+apart"; "the remaining time is not restored by cancelling").
+
+**What:** (1) **Cancel between `effectiveAt` and the job.** `pendingDeletion` says cancel "before" `effectiveAt`, but
+the `404` says withdrawal stops only once erasure has begun, up to ~24 h later. Does `DELETE /me/deletion-request`
+still answer `204` in that gap? The pending frame offers "Cancel deletion" until the date. (2) **What cancelling
+restores.** The cancelled frame says "Everything is just as you left it." The contract promises the account is
+unrestricted and leaderboards return; the push token is deleted at request time, and an older entry said paid time is
+not restored. Is anything else not restored (so the sentence must go)? The replacement must not mention payments or
+subscriptions (purchase silence). (3) **"Can no longer be cancelled".** The frame `1409:9259` states it as certain,
+but a `404` also means "nothing pending" (e.g. a retry after a `204` lost in transit). Once erasure has started, what
+do `GET /me` and sign-in return, so the app can confirm before showing that screen?
+
+**Today:** nothing is built; the findings are in `.ai/audits/current/completion/SEIF1014_REPORT.md` §11.
+
+**Ask:** answer (1)–(3).
+
+**Impact if unanswered:** CW05 cannot show the pending, cancelled and can't-restore screens without risking a wrong
+message to a student.
+
+## S49. 🟡 University Subjects before the term opens — is a term-release notice planned?
+
+> **Filed 2026-10-15, SEIF1014 follow-up** (Figma `1411:10150` "B9 Uni Subjects – empty before term opens", light,
+> English).
+
+**Where:** `contract/openapi.yaml` `listSubjects`: "An unreleased term is ABSENT, not flagged … the client has no way
+to know an unreleased term exists. Therefore `[]` is a NORMAL response"; notification kinds are
+`enrolment_opened, announcement, moderation_warning, support_ticket_replied, academic_year_opened` (no term kind);
+`docs/BACKEND_HANDOFF.md` BH-E8 ("one copy must cover both" out-of-scope and unreleased).
+
+**What:** the frame's empty state says "Your subjects will appear here when your term opens. We'll let you know." The
+app cannot tell "term not open" from any other empty list, and no notification kind announces a term release. Is a
+term-release inbox item or push planned?
+
+**Today:** the app shows the approved "No subjects yet" only; the frame's second sentence is not built.
+
+**Ask:** yes (with the kind) or no — if no, the designer drops "We'll let you know".
+
+**Impact if unanswered:** copy only; the empty state stays as it is.
 
 ---
 
