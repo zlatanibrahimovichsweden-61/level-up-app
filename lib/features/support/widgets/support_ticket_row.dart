@@ -8,11 +8,12 @@ import '../../../core/widgets/content_text_direction.dart';
 import '../../../core/widgets/elevation/elevated_surface.dart';
 import '../../../l10n/app_localizations.dart';
 import '../models/support_models.dart';
-import 'support_closed_pill.dart';
+import 'support_status_pill.dart';
 
 /// One ticket on the support list · Figma `178:3104`: the subject in full, the
-/// `TK-n · yyyy-MM-dd` meta line under it, and at the end the Closed pill when,
-/// and only when, the ticket is closed.
+/// `TK-n · yyyy-MM-dd` meta line under it, and at the end its status pill
+/// (Closed, Open or In progress; [SupportStatusPill.labelFor]). A `pending`
+/// ticket has no pill: its label waits on SQ-32.
 ///
 /// **The subject renders in full.** The frame draws one line, but a student
 /// writes the subject (up to 120 characters) and nothing else on this screen
@@ -21,10 +22,8 @@ import 'support_closed_pill.dart';
 /// **`reference` is a label, never an id.** The tap goes to the thread by
 /// `ticketId`; the reference is only ever printed.
 ///
-/// **One semantics node.** The subject, the meta line and (for a closed ticket)
-/// its status read together as a single button. Nothing in the node says
-/// "open", "pending" or "in progress": no approved text exists for them
-/// (CW12a_PLAN §4.3).
+/// **One semantics node.** The subject, the meta line and the pill's status
+/// read together as a single button. A pending ticket's node names no status.
 ///
 /// **Content direction.** The subject is the student's own text, in whatever
 /// language they wrote it, so it takes the direction of its first strong
@@ -58,7 +57,7 @@ class SupportTicketRow extends StatelessWidget {
 
   static const _metaGap = 2.0;
 
-  /// The gap between the text column and the Closed pill: `gap-[8px]` on
+  /// The gap between the text column and the status pill: `gap-[8px]` on
   /// `178:3105`.
   static const _pillGap = 8.0;
 
@@ -77,6 +76,7 @@ class SupportTicketRow extends StatelessWidget {
       locale,
     ).format(ticket.createdAt.toLocal());
     final meta = l10n.supportTicketMeta(ticket.reference, date);
+    final status = SupportStatusPill.labelFor(l10n, ticket.status);
 
     return MergeSemantics(
       child: Semantics(
@@ -124,10 +124,11 @@ class SupportTicketRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (ticket.isClosed) ...[
+                if (status != null) ...[
                   const SizedBox(width: _pillGap),
-                  SupportClosedPill(
+                  SupportStatusPill(
                     key: Key('support_status_pill_${ticket.ticketId}'),
+                    label: status,
                   ),
                 ],
               ],

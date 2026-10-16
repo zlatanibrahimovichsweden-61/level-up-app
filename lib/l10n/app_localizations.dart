@@ -1754,71 +1754,89 @@ abstract class AppLocalizations {
   /// **'We received a report about content from your account that does not follow the Level Up community rules. This is a warning. Please keep your messages and photos respectful. If this happens again, your account may be banned. If you think this is a mistake, contact Support from the app.'**
   String get notifModerationWarningBody;
 
-  /// Support list: the title of the create-ticket card (Figma 178:3061), and the action label on a closed ticket's thread. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation. Tracked by test/features/support/support_copy_status_test.dart (tracking only, not a release gate).
+  /// Support list: the title of the create-ticket card (Figma 178:3061), and the action label on a closed ticket's thread (the same key, so both read alike). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14): the shorter form, identical to createTicket's Arabic, on purpose; keep the two the same. Tracked by test/features/support/support_copy_status_test.dart (tracking only, not a release gate).
   ///
   /// In en, this message translates to:
   /// **'Create a New Ticket'**
   String get supportCreateNewTicket;
 
-  /// Support list: the subtitle of the create-ticket card (Figma 178:3065). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Support list: the subtitle of the create-ticket card (Figma 178:3065). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Describe your issue'**
   String get supportDescribeYourIssue;
 
-  /// Support list: the heading above the student's tickets (Figma 178:3079). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Support list: the heading above the student's tickets (Figma 178:3079). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Recent Tickets'**
   String get supportRecentTickets;
 
-  /// Create-ticket screen: the title in the top bar (Figma 178:3250). The screen's heading below it reuses the approved createTicket. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the title in the top bar (Figma 178:3250). The screen's heading below it reuses the approved createTicket. EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'New Ticket'**
   String get supportNewTicketTitle;
 
-  /// Create-ticket screen: the subtitle under the heading (Figma 178:3343). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the subtitle under the heading (Figma 178:3343). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Describe your issue and we\'ll help you'**
   String get supportCreateTicketSubtitle;
 
-  /// Create-ticket screen: the label of the subject field, 1 to 120 characters (Figma 178:3334). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the label of the subject field, 1 to 120 characters (Figma 178:3334). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Subject'**
   String get supportSubjectLabel;
 
-  /// Create-ticket screen: the label of the details field, 1 to 4000 characters (Figma 178:3346). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the label of the details field, 1 to 4000 characters (Figma 178:3346). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Details'**
   String get supportDetailsLabel;
 
-  /// Create-ticket screen: the hint inside the empty details field (Figma 178:3352). EN is Figma design copy, verbatim, three full stops included. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the hint inside the empty details field (Figma 178:3352). EN is Figma design copy, verbatim, three full stops included. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Describe the issue in detail...'**
   String get supportDetailsHint;
 
-  /// Create-ticket screen: the submit button (Figma 178:3375). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// Create-ticket screen: the submit button (Figma 178:3375). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Submit Ticket'**
   String get supportSubmitTicket;
 
-  /// The status pill of a closed ticket, on its row and in its thread (Figma 178:3131). Only closed has a pill: open, in progress and pending have no approved text in either language and are not built. EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// The status pill of a closed ticket, on its row and on a closed thread's bar (Figma 178:3131, the only drawn pill; supportStatusOpen and supportStatusInProgress reuse its look). Pending has no approved label (SQ-32) and gets no pill. EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Closed'**
   String get supportStatusClosed;
 
-  /// Ticket thread: the hint inside the empty reply field (Figma 178:3469). EN is Figma design copy, verbatim. ARABIC NOT SUPPLIED (CW12a copy register): app_ar.arb carries this English text until approved Arabic is supplied; it is not a production-approved translation.
+  /// The status pill of an open ticket, on its row in the support list. Not drawn in Figma: it reuses the Closed pill's look (178:3131) until the designer draws per-status pills (DG-63). EN and AR approved by the owner 2026-10-10 (O-14).
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get supportStatusOpen;
+
+  /// The status pill of a ticket Customer Service is working on (in_progress), on its row in the support list. It also labels any status this app does not know, because the contract says to treat an unknown value as in progress, not closed. Never used for pending (SQ-32). Not drawn in Figma: it reuses the Closed pill's look (178:3131) until the designer draws per-status pills (DG-63). EN and AR approved by the owner 2026-10-10 (O-14).
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get supportStatusInProgress;
+
+  /// Ticket thread: the hint inside the empty reply field (Figma 178:3469), and the field's accessible name (it is restated once the hint is gone). EN is Figma design copy, verbatim. Arabic approved by the owner 2026-10-10 (O-14).
   ///
   /// In en, this message translates to:
   /// **'Write your message'**
   String get supportComposerHint;
+
+  /// Ticket thread: the accessible name of the reply composer's send button (the paper-plane icon). Screen readers only; nothing draws it as text. EN and AR approved by the owner 2026-10-10 (O-14).
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get supportSend;
 
   /// A ticket row's meta line: the ticket reference (a display label such as TK-12, never an id) and the created date as yyyy-MM-dd, joined by a middle dot (Figma 178:3110 without its leading '#', DESIGN_ISSUES DG-53). Format only, no words, so it is identical in app_ar.arb and needs no Arabic.
   ///

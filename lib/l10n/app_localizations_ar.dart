@@ -945,38 +945,46 @@ class AppLocalizationsAr extends AppLocalizations {
       'وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل التطبيق.';
 
   @override
-  String get supportCreateNewTicket => 'Create a New Ticket';
+  String get supportCreateNewTicket => 'إنشاء تذكرة';
 
   @override
-  String get supportDescribeYourIssue => 'Describe your issue';
+  String get supportDescribeYourIssue => 'اشرح مشكلتك';
 
   @override
-  String get supportRecentTickets => 'Recent Tickets';
+  String get supportRecentTickets => 'التذاكر الأخيرة';
 
   @override
-  String get supportNewTicketTitle => 'New Ticket';
+  String get supportNewTicketTitle => 'تذكرة جديدة';
 
   @override
-  String get supportCreateTicketSubtitle =>
-      'Describe your issue and we\'ll help you';
+  String get supportCreateTicketSubtitle => 'اشرح مشكلتك وسنساعدك';
 
   @override
-  String get supportSubjectLabel => 'Subject';
+  String get supportSubjectLabel => 'الموضوع';
 
   @override
-  String get supportDetailsLabel => 'Details';
+  String get supportDetailsLabel => 'التفاصيل';
 
   @override
-  String get supportDetailsHint => 'Describe the issue in detail...';
+  String get supportDetailsHint => 'اشرح المشكلة بالتفصيل...';
 
   @override
-  String get supportSubmitTicket => 'Submit Ticket';
+  String get supportSubmitTicket => 'إرسال التذكرة';
 
   @override
-  String get supportStatusClosed => 'Closed';
+  String get supportStatusClosed => 'مغلقة';
 
   @override
-  String get supportComposerHint => 'Write your message';
+  String get supportStatusOpen => 'مفتوحة';
+
+  @override
+  String get supportStatusInProgress => 'قيد المعالجة';
+
+  @override
+  String get supportComposerHint => 'اكتب رسالتك';
+
+  @override
+  String get supportSend => 'إرسال';
 
   @override
   String supportTicketMeta(String reference, String date) {

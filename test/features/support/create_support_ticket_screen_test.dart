@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -727,13 +728,13 @@ void main() {
     });
 
     testWidgets('RTL: the labels and the back chip start at the RIGHT, and '
-        'the unapproved copy is English', (tester) async {
+        'every line is the approved Arabic', (tester) async {
       await pumpCreate(tester, language: 'ar');
 
       final screen = tester.element(find.byType(CreateSupportTicketScreen));
       expect(Directionality.of(screen), TextDirection.rtl);
 
-      final label = tester.getRect(find.text('Subject'));
+      final label = tester.getRect(find.text('الموضوع'));
       final section = tester.getRect(
         find.byKey(const Key('support_create_subject_section')),
       );
@@ -743,17 +744,35 @@ void main() {
         tester.getCenter(find.byKey(const Key('support_new_back'))).dx,
         greaterThan(201),
       );
-      // The heading is the approved Arabic; the rest has no approved Arabic.
+      // The heading was already approved; the rest is owner-approved O-14,
+      // character for character. No English is left.
       expect(find.text('إنشاء تذكرة'), findsOneWidget);
-      expect(find.text('New Ticket'), findsOneWidget);
+      expect(find.text('تذكرة جديدة'), findsOneWidget);
+      expect(find.text('اشرح مشكلتك وسنساعدك'), findsOneWidget);
+      expect(find.text('الموضوع'), findsOneWidget);
+      expect(find.text('التفاصيل'), findsOneWidget);
+      expect(find.text('اشرح المشكلة بالتفصيل...'), findsOneWidget);
+      expect(find.text('إرسال التذكرة'), findsOneWidget);
+      for (final english in [
+        'New Ticket',
+        "Describe your issue and we'll help you",
+        'Subject',
+        'Details',
+        'Describe the issue in detail...',
+        'Submit Ticket',
+      ]) {
+        expect(find.text(english), findsNothing, reason: english);
+      }
+      // The hint's three full stops sit at its END, which in Arabic is the
+      // left: the field lays it out right to left.
       expect(
-        find.text('Describe your issue and we\'ll help you'),
-        findsOneWidget,
+        tester
+            .renderObject<RenderParagraph>(
+              find.text('اشرح المشكلة بالتفصيل...'),
+            )
+            .textDirection,
+        TextDirection.rtl,
       );
-      expect(find.text('Subject'), findsOneWidget);
-      expect(find.text('Details'), findsOneWidget);
-      expect(find.text('Describe the issue in detail...'), findsOneWidget);
-      expect(find.text('Submit Ticket'), findsOneWidget);
     });
 
     testWidgets('RTL: a rejected field and the banner follow the direction', (
@@ -865,18 +884,38 @@ void main() {
 
   // -------------------------------------------------------------------------
   group('semantics', () {
-    testWidgets('each field is named by its label, once', (tester) async {
-      final handle = tester.ensureSemantics();
-      await pumpCreate(tester);
+    for (final language in languages) {
+      testWidgets('each field is named by its label, before and after typing '
+          '· $language', (tester) async {
+        final handle = tester.ensureSemantics();
+        final l10n = await l10nFor(language);
+        await pumpCreate(tester, language: language);
 
-      final subject = tester.getSemantics(subjectField);
-      expect(subject.flagsCollection.isTextField, isTrue);
-      expect(subject.label, contains('Subject'));
-      final details = tester.getSemantics(detailsField);
-      expect(details.flagsCollection.isTextField, isTrue);
-      expect(details.label, contains('Details'));
-      handle.dispose();
-    });
+        final subject = tester.getSemantics(subjectField);
+        expect(subject.flagsCollection.isTextField, isTrue);
+        expect(subject.label, contains(l10n.supportSubjectLabel));
+        final details = tester.getSemantics(detailsField);
+        expect(details.flagsCollection.isTextField, isTrue);
+        expect(details.label, contains(l10n.supportDetailsLabel));
+        // The empty details field also reads its hint.
+        expect(details.label, contains(l10n.supportDetailsHint));
+
+        await tester.enterText(subjectField, 'A subject');
+        await tester.enterText(detailsField, 'Some details');
+        await tester.pumpAndSettle();
+
+        // The visible label names the field whatever it holds; the hint
+        // goes with the text it described.
+        final subjectAfter = tester.getSemantics(subjectField);
+        expect(subjectAfter.label, contains(l10n.supportSubjectLabel));
+        expect(subjectAfter.value, 'A subject');
+        final detailsAfter = tester.getSemantics(detailsField);
+        expect(detailsAfter.label, contains(l10n.supportDetailsLabel));
+        expect(detailsAfter.label, isNot(contains(l10n.supportDetailsHint)));
+        expect(detailsAfter.value, 'Some details');
+        handle.dispose();
+      });
+    }
 
     // Only the "Create Ticket" heading is asserted: the bar's own title comes
     // from the shared `TitledChrome`, which marks no header (not this wave's to
@@ -919,17 +958,23 @@ void main() {
       });
     }
 
-    testWidgets('the submit button reads as one labelled button', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await pumpCreate(tester);
+    for (final language in languages) {
+      testWidgets(
+        'the submit button reads as one labelled button · $language',
+        (tester) async {
+          final handle = tester.ensureSemantics();
+          await pumpCreate(tester, language: language);
 
-      final node = tester.getSemantics(submitButton);
-      expect(node.flagsCollection.isButton, isTrue);
-      expect(node.label, 'Submit Ticket');
-      handle.dispose();
-    });
+          final node = tester.getSemantics(submitButton);
+          expect(node.flagsCollection.isButton, isTrue);
+          expect(
+            node.label,
+            language == 'ar' ? 'إرسال التذكرة' : 'Submit Ticket',
+          );
+          handle.dispose();
+        },
+      );
+    }
   });
 }
 
