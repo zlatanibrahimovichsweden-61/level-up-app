@@ -155,7 +155,7 @@ These are the questions for Seif, with stable IDs. SQ-19 is retired (folded into
 | SQ-12 | P1 | A banned student gets 403 `account_banned` after a correct code and is told to contact Support (`cl:78`, `ec:51`). `recovery_unavailable` says "route to the support path" (`ec:29`, `oa:477`). Every `/support/*` operation needs a bearer token, and none of the 19 operations without one is a support one (our census of `eddb6ac`). Is there, or will there be, an anonymous support-contact operation, or is the channel outside the app? | The banned screen and the recovery-failure screen are dead ends without a destination. | Operation id, or "outside the app" | CW02, CW06, CW20 |
 | SQ-13 | P1 | Does the backend have, or plan, operations for (a) the Progress screen (history or time series), (b) Daily Tasks and their XP, (c) a personal daily streak (not the friend-pair streak)? If no, please say so in writing. | A grep of all four contract files at `eddb6ac` finds none (`rt:10` folds the streaks hub into chat). The server is authoritative, so nothing can be computed on the client. | Per-item yes, no or version | CW16, CW17 |
 | SQ-14 | P1 | Please seed a University-track whitelisted account on a released term. It needs questions, lecture flashcards and at least one wrong answer. State its cohort. | University learning surfaces and per-lecture `retakeWrong` have never run against a real server (S37 ask 2, `RISKS.md:125`). | Account plus cohort | CW16, CW19 |
-| SQ-15 | P1 | For two or more whitelisted accounts, please seed: an accepted friendship; a pending incoming friend request; an open conversation with messages, one being a forwarded-question card; an open support ticket with a staff reply; and a closed ticket. | Social, chat and support surfaces added after 3.28 have never been exercised by this app against staging (`RISKS.md:118-126`). | Seeded accounts and a state list | CW09-CW12, CW19 |
+| SQ-15 | P1 | For two or more whitelisted accounts, please seed: an accepted friendship; a pending incoming friend request; an open conversation with messages, one being a forwarded-question card; ~~an open support ticket with a staff reply; and a closed ticket~~ (**support part superseded 2026-10-10 by the amended SQ-15 in §F.2; send that, not these two items**). | Social, chat and support surfaces added after 3.28 have never been exercised by this app against staging (`RISKS.md:118-126`). | Seeded accounts and a state list | CW09-CW12, CW19 |
 | SQ-16 | P1 | Please seed one inbox item per kind on a whitelisted account: `announcement`, `moderation_warning`, `support_ticket_replied`, `academic_year_opened`, and `enrolment_opened` if it can still be written. Also name a separate whitelisted account that Support has banned. | Inbox rendering by kind (`oa:1170-1197`) and `account_banned` after a correct code cannot be checked on a device otherwise. | Accounts and item lists | CW02, CW07, CW19 |
 | SQ-17 | P1 | `LeaderboardEntry.name` is required on every row (`oa:4660-4664`). Are leaderboard display names moderated, and by the same process as in SQ-07(a)? | Peers' names are user-generated content on the leaderboard. | Yes or no, plus the moderation process | CW17, CW09 |
 | SQ-18 | P2 | Will the monthly School parent report (adr-165) be delivered in production at release 1? If yes, when, and will the privacy text change? | Affects the Data Safety and App Privacy answers. `cl:269` says nothing is sent, and `parentReportStatus` (`oa:4265`) goes `active` only when delivery is on. | Yes or no, date | CW20 |
@@ -318,3 +318,115 @@ Verifier findings, one line each:
 - **No verifier finding was rejected.** Where this pass differs from a finding, it is a refinement of the cited line numbers, noted above.
 - **Facts re-checked this pass:** contract lines `rt:19-34`, `oa:54-88,134-152,186-202,980-1040,1184-1194,1409-1412,1486-1510,1985-1989,2932-2935`, `cl:5-20,576,586-587`, `ec` grep. Live: staging health, four legal-document GETs, hub GET 401, nonexistent-path 404, production DNS failure, and upstream HEAD unchanged (12:35Z to 12:36Z). Files: `build/**/*.aab`, `build/app/outputs/flutter-apk`, `docs/ENVIRONMENTS.md:340-360`, `docs/RISKS.md:137`, and the discovery Appendix (D:5665-5689).
 - **Not re-run this pass:** the AAB manifest hit counts (taken from the draft, not disputed), and the repo `main` branch line cite `build.gradle.kts:43`.
+
+---
+
+## F. Addendum 2026-10-10 — support tickets (CW12a follow-up). Draft, NOT sent.
+
+*Lead note: the 2026-10-09 draft above has not been sent either. The owner can send F.1 with it or after it. F.2
+extends the Section B register; F.3 is lead-only. Basis: `merged @ b227f61` + the uncommitted CW12a tree, contract
+`eddb6ac` (`oa:` = `openapi.yaml` there). The ticket operations are unchanged in upstream `cc2a29d` (3.48.0-m1).*
+
+*Revised 2026-10-10, second pass (§F.4): a signed-in staging run (`.ai/audits/current/smoke-staging-2026-10-10.md`)
+verified the five operations, so F.1 no longer asks about availability or `Retry-After`. The first F.1 was never
+sent; it is kept in `completion/fu2_prewave/02_SEIF_HANDOFF.md.prewave`.*
+
+*Revised 2026-10-10, third pass (§F.5): the owner approved the Support copy (O-14) except `pending`. F.1 item 3 now
+says which statuses carry a label. The asks are unchanged. Nothing was sent. The second-pass text is kept in
+`completion/o14_prewave/02_SEIF_HANDOFF.md.prewave`.*
+
+### F.1 Message to Seif (ready to send after owner review; revised 2026-10-10, third pass)
+
+Hi Seif,
+
+A follow-up on support tickets, text only (photos come in a later step). The ticket list, create and thread
+screens are built against 3.46.0-m1.
+
+We checked them on staging today with a signed-in whitelisted test account (backend build of 2026-10-10 05:01 UTC).
+All five text-ticket operations work, and the app decodes every response: `listMySupportTickets`,
+`getMySupportTicket`, `listMySupportTicketMessages`, `createSupportTicket` and `postMySupportTicketMessage`. An
+unknown or malformed ticket id answers `404 not_found`. So we have no availability question. Three requests:
+
+1. **Please close our test ticket.** The check left one ticket open on the test account. Its subject is "Mobile app
+   staging check - please ignore", and it has one student reply. A student can't close a ticket, so could Customer
+   Service close it? Feel free to use it for the seeds in item 2 first.
+2. **Seeds (SQ-15, support part).** The test account had no other tickets, so we couldn't see any of these: a staff
+   reply, `in_progress`, `pending`, `closed`, or the `409 ticket_closed` refusal. Please seed four tickets on a
+   whitelisted account:
+   - an `open` ticket with at least one staff reply
+   - an `in_progress` ticket
+   - a `pending` ticket
+   - a `closed` ticket
+
+   A second account with no tickets would also help us check that it gets `404 not_found` on the first account's
+   ticket. Does that need anything on your side? A staff reply also writes a `support_ticket_replied` inbox item, so
+   this covers part of SQ-16. Please send account details to the owner privately, not in chat or in a ticket.
+3. **What `pending` means (SQ-32).** The contract says Customer Service sets `in_progress` and `pending`. A reply
+   from either side never changes the status, and the student can still reply. It doesn't say what `pending` tells
+   the student: are you waiting for them, are they waiting for you, or is it on hold? Should the student do
+   anything? The app now labels `open`, `in_progress` and `closed` (and shows any status it doesn't recognise as
+   in progress, as the contract says). `pending` gets no label until we know.
+
+Thanks!
+
+### F.2 Register rows (extend Section B)
+
+| ID | Priority | Exact question / request | Why needed | Expected answer / artifact | Blocking wave |
+|---|---|---|---|---|---|
+| SQ-15 (support part, amended 2026-10-10) | P1 | Replaces SQ-15's last two items ("an open support ticket with a staff reply; and a closed ticket"). On whitelisted accounts: an `open` ticket with a staff reply, an `in_progress`, a `pending` and a `closed` ticket. Account A owns them; account B has none (isolation: B gets 404 on A's ticket). Details through the owner's private channel only. | CW12a renders all four statuses differently (closed: pill and closed bar; others: no pill until O-14). Isolation is a contract rule (`404 not_found` for another student's ticket). Nothing has run on staging. | Accounts (privately) and a state list | CW12a verification, CW19 |
+| | | *2026-10-10 second pass:* still needed. The signed-in staging run found **no tickets** on the test account and observed no staff reply, no `in_progress` / `pending` / `closed`, no `ticket_closed` and no isolation case. Supersedes the struck items in Section B's SQ-15 row. Overlaps SQ-16: a staff reply writes one `support_ticket_replied` inbox item. | | | |
+| | | *2026-10-10 third pass:* still needed, and more useful now. After O-14 the app draws a different pill for `open`, `in_progress` and `closed` and none for `pending`; none of the four has been seen against staging data. Staff-reply display, the closed thread's `409 ticket_closed`, isolation and a real 429 are still unverified on staging (the 429 is not to be provoked). | | | |
+| SQ-32 | P1 | What does `pending` mean to the student, and is the student expected to act? | `oa:3913-3916` defines who sets it, not what it means. The pill copy (O-14) cannot be approved without it. | One sentence per status, from the student's side | CW12a (pill copy) |
+| | | *2026-10-10 second pass:* still open. Not answered at the pin or upstream (`SupportTicketStatus` text is identical in 3.48.0-m1). F.1 now quotes what the contract does say (a reply never changes the status; the student may still reply). | | | |
+| | | *2026-10-10 third pass:* still open, and now the **only** status without a label: O-14 approved Open, In progress and Closed (EN + AR), but not Pending. A `pending` ticket shows no pill until this is answered and the owner approves the words. | | | |
+| ~~SQ-33~~ | — | **WITHDRAWN 2026-10-10 (not sent).** ~~Are the five text-ticket operations deployed and usable on staging?~~ | Answered twice: the pinned changelog's 3.39.0-m1 entry says the five student-support operations are "routed, covered by integration tests and deployed to staging" (`cl:119-120`), so this row's "contract-defined is not deployed" premise was wrong; and the signed-in staging run of 2026-10-10 exercised all five (`smoke-staging-2026-10-10.md`). | — | — |
+| ~~SQ-34~~ | — | **ANSWERED BY UPSTREAM TEXT 2026-10-10 (not sent).** ~~On 429 from `createSupportTicket` and `postMySupportTicketMessage`, is `Retry-After` always present and always whole seconds?~~ | 3.47.0-m1 (in `cc2a29d`) says `Retry-After` is "always a whole number of seconds" and is sent with `rate_limited`, the code both ticket 429s use (top-level description; `error-codes.md` note). Not in the pin until O-11; not observed live (it would take 6 creates or 61 replies). The app's fallback for a missing or non-integer header stays as built: the timeless rate-limit line, and Retry is withheld for every rate limit. SQ-22 is answered by the same note. | — | — |
+
+### F.3 Still open, deliberately NOT in F.1 (lead-only)
+
+- **SQ-20** (`enrolment_opened`): in the register, unsent. Upstream 3.48 documents `data: {track}` but still no copy.
+- **SQ-31** (refresh-body guarantee): PROPOSED, NOT FILED. Filing it is part of O-3.
+- **Unread count with ignored kinds**, and **inbox text vs push text** for `support_ticket_replied` /
+  `academic_year_opened` (CW07a_REPORT): proposed, not filed, no SQ id.
+- **`name_not_allowed` (3.47)**: not asked. Whether to re-vendor is O-11, which comes first. *Updated 2026-10-10:*
+  staging **enforces it on `updateMyProfile`** (422; the name was unchanged; a PATCH re-sending the stored name was
+  not refused). `completeRegistration` was not probed: that needs an unregistered number and could create an
+  account. The contract states both, so no question is needed for the client fix.
+- **Answered by upstream 3.47.0-m1 text, so do not send as written** (read-only check 2026-10-10; re-confirm
+  when O-11 re-vendors): SQ-22 (`Retry-After` format; `otp_throttled` carries none), SQ-23 (`getAppVersionPolicy`;
+  live on staging, every value `null`), SQ-24 (the wording corrections), SQ-25 (re-PUT rule), and the level-ladder
+  part of SQ-28. Partly answered: SQ-03 (the deletion copy is now the owner's to approve), SQ-09 (token cleanup),
+  SQ-12 (no anonymous support operation; the channel is email), SQ-20 (the `{track}` key, School or University),
+  SQ-26 (treat the URL as opaque; still no hostname). Informed only: SQ-02, SQ-07, SQ-13 (daily tasks are a
+  `draft` operation), SQ-17. Still open and untouched: SQ-01, 04, 05, 06, 08, 10, 11, 14, the social/chat part of
+  SQ-15, SQ-16, 18, 21, 27, 29, 30.
+- Nothing here re-asks a resolved item (D.1).
+
+### F.4 Revision note (lead-only, second pass 2026-10-10)
+
+- **Why F.1 changed:** a read-only Sonnet check found F.1 stale after the signed-in staging run. It said nothing
+  was verified on staging, asked SQ-33 (already answered by `cl:119-120` and by the run) and SQ-34 (answered by
+  3.47.0-m1), and did not ask Customer Service to close the test ticket the run left open.
+- **SQ-15:** Section B's row is struck for its two support items, so the support seed ask goes once. It is
+  cross-referenced with SQ-16.
+- **Citations:** F.1 no longer cites `oa:` line numbers. They were `eddb6ac` numbers, and Seif's current file is
+  3.48.0-m1. It uses operation and schema names instead.
+- **Ids:** always write the full `SQ-` prefix. `docs/seif_fight.md` has unrelated S32, S33 and S34.
+- **SQ-31** stays reserved, proposed and not filed (O-3), so F.2's numbering gap is deliberate.
+- **Not verified here:** whether the 2026-10-09 draft was sent outside this session. The 3.47.0-m1 changelog
+  credits corrections "from the mobile partner's review", so some Section B items may already have reached Seif.
+  The owner knows.
+
+### F.5 Revision note (lead-only, third pass 2026-10-10)
+
+- **Why:** the owner approved the O-14 copy. In the app, `open` and `in_progress` now get pills, an unknown status
+  shows In progress, and `pending` shows none. F.1 item 3's last sentence said "We show no label for `pending`
+  until we know", which was true but no longer the whole picture, so it now names what IS labelled.
+- **Unchanged:** the three asks (close or reuse the test ticket; seed `open` with a staff reply, `in_progress`,
+  `pending` and `closed`, plus an optional ticketless second account for the 404 check, with details sent
+  privately; the meaning of `pending`). The staging evidence stands as recorded in
+  `smoke-staging-2026-10-10.md`: all five operations, API level, signed in, through the app's network code in a
+  throwaway copy. That was **not** a device or UI walk.
+- **Not re-asked:** SQ-33 (withdrawn) and SQ-34 (answered by 3.47.0-m1 text). No new SQ id.
+- **Not done:** nothing was sent; no further staging calls were made in this pass, and the test ticket is still
+  open (a student account can't close it).
