@@ -56,10 +56,21 @@ import 'route_error_screen.dart';
 /// all.
 const _authRoutes = {'/', '/login', '/login/otp'};
 
+/// The legal documents (CW04a, owner D2 2026-10-10) — reachable signed out
+/// too, though they are not part of signing in: Login links to them before any
+/// account exists, and the contract serves them without sign-in
+/// (`getLegalDocument`, `security: []`). Exact paths, not a `/legal` prefix,
+/// so any other `/legal/…` location is still protected. Signed in they stay
+/// reachable from Profile: neither is in [_signedInLandingRedirects].
+const _publicDocumentRoutes = {'/legal/privacy', '/legal/terms'};
+
 /// A location is an auth route if it is a known signed-out route OR anywhere in
-/// the `/register` wizard (identity → track → Day-3 sub-flows).
+/// the `/register` wizard (identity → track → Day-3 sub-flows). The public
+/// legal documents pass the same way.
 bool _atAuthRoute(String location) =>
-    _authRoutes.contains(location) || location.startsWith('/register');
+    _authRoutes.contains(location) ||
+    _publicDocumentRoutes.contains(location) ||
+    location.startsWith('/register');
 
 /// The pre-auth landing routes an ALREADY-authenticated student must be bounced
 /// off. Onboarding sells the app to someone who has not signed up; showing "Get

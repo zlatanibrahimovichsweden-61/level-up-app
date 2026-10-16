@@ -63,6 +63,14 @@ dependencies:
   # Profile avatars (GET /me → avatar.url). Cached so Home doesn't re-download
   # the same image on every tab switch on a metered Egyptian connection.
   cached_network_image: ^3.4.1
+  # The legal documents (CW04a): `getLegalDocument` serves `contentMarkdown`,
+  # rendered in the app (owner D1, 2026-10-10). flutter_markdown_plus is the
+  # successor of the discontinued flutter_markdown (BSD-3-Clause, pure Dart, no
+  # native code). `markdown` (BSD-3-Clause) is its parser; it is declared only
+  # because the viewer names its node types. Raw HTML, images and any link but
+  # https/mailto are switched off in `lib/features/legal/widgets/legal_markdown.dart`.
+  flutter_markdown_plus: ^1.0.12
+  markdown: ^7.3.1
 
 dev_dependencies:
   flutter_test:

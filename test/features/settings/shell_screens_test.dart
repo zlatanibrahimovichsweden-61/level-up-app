@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/features/account_shells/screens/friends_screen.dart';
-import 'package:level_up_app/features/account_shells/screens/legal_document_screen.dart';
 import 'package:level_up_app/features/account_shells/screens/refer_a_friend_screen.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../profile/profile_harness.dart' show locationOf;
 import 'settings_harness.dart';
 
-/// The four disabled shell screens.
+/// The disabled shell screens. The two legal documents left this suite in
+/// CW04a: they render the server's text now (`test/features/legal/`).
 ///
 /// **Shells, not mocks.** The claim every test here defends is that these
 /// screens render the shape of a designed feature and contain **no invented
@@ -22,8 +22,6 @@ void main() {
   const shells = <String, String>{
     '/refer': 'Refer a Friend',
     '/friends': 'Friends',
-    '/legal/privacy': 'Privacy & policy',
-    '/legal/terms': 'Terms & Conditions',
   };
 
   /// The disabled primary controls, by route → `Key`.
@@ -43,7 +41,6 @@ void main() {
       for (final pair in <String, Type>{
         '/refer': ReferAFriendScreen,
         '/friends': FriendsScreen,
-        '/legal/privacy': LegalDocumentScreen,
       }.entries) {
         await pumpAppAt(tester, pair.key);
         expect(find.byType(pair.value), findsOneWidget);
@@ -140,34 +137,6 @@ void main() {
     });
   });
 
-  group('legal — one screen, two documents, no copy', () {
-    testWidgets('both routes render the same empty body, different titles', (
-      tester,
-    ) async {
-      await pumpAppAt(tester, '/legal/privacy');
-      expect(find.byKey(const Key('legal_body')), findsOneWidget);
-      expect(
-        find.text('This document hasn\'t been published yet.'),
-        findsOneWidget,
-      );
-      expect(find.text('Terms & Conditions'), findsNothing);
-
-      await pumpAppAt(tester, '/legal/terms');
-      expect(find.byKey(const Key('legal_body')), findsOneWidget);
-      expect(find.text('Privacy & policy'), findsNothing);
-    });
-
-    testWidgets('no legal prose is rendered — the screen is one line', (
-      tester,
-    ) async {
-      await pumpAppAt(tester, '/legal/privacy');
-
-      // If somebody ever pastes a policy in here, this is what notices: a
-      // document body would be many Texts, not a title and a line.
-      expect(find.byType(Text), findsNWidgets(2));
-    });
-  });
-
   group('leaving', () {
     testWidgets('the back chip pops to where the student came from', (
       tester,
@@ -209,12 +178,6 @@ void main() {
         ).extension<AppColors>()!.background,
         AppColors.dark.background,
       );
-    });
-
-    testWidgets('the legal screen is localized in Arabic', (tester) async {
-      await pumpAppAt(tester, '/legal/terms', locale: 'ar');
-
-      expect(find.text('لم يتم نشر هذا المستند بعد.'), findsOneWidget);
     });
   });
 }

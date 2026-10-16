@@ -18,6 +18,7 @@ import 'package:level_up_app/core/router/app_router.dart';
 import 'package:level_up_app/core/storage/preferences_store.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
 import 'package:level_up_app/features/auth/notifier/auth_controller.dart';
+import 'package:level_up_app/features/legal/repository/legal_repository.dart';
 import 'package:level_up_app/features/profile/models/profile_update.dart';
 import 'package:level_up_app/features/profile/models/student_profile.dart';
 import 'package:level_up_app/features/profile/repository/profile_repository.dart';
@@ -27,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:level_up_app/features/leaderboard/repository/leaderboard_repository.dart';
 
 import '../leaderboard/leaderboard_fixtures.dart';
+import '../legal/legal_fixtures.dart';
 import '../profile/profile_fixtures.dart';
 import '../profile/profile_harness.dart';
 
@@ -53,6 +55,9 @@ Future<ProviderContainer> pumpAppAt(
       leaderboardRepositoryProvider.overrideWithValue(
         QuietLeaderboardRepository(),
       ),
+      // `/legal/*` is a shell this suite pushes; it fetches its document
+      // (CW04a), never from the network here.
+      legalRepositoryProvider.overrideWithValue(QuietLegalRepository()),
       isOnlineProvider.overrideWith((ref) => Stream.value(online)),
       // Null unless a test supplies one — the default launch does not persist,
       // which is what keeps every other test in this suite free of a plugin stub.
@@ -61,6 +66,7 @@ Future<ProviderContainer> pumpAppAt(
   );
   addTearDown(container.dispose);
   holdBoards(container);
+  holdLegalDocuments(container);
   holdProfile(container);
 
   // Settings is ~850pt of sections and the default viewport is 600. Taller

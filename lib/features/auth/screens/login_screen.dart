@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/providers/core_providers.dart';
 import '../../../core/providers/locale_provider.dart';
@@ -39,13 +38,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// A flag, not a message: the copy is looked up in `build`, so it follows
   /// a language toggle while it is on screen.
   bool _showPhoneError = false;
-
-  // TODO(legal): real legal URLs are TBD — these are placeholders flagged to
-  // product/legal. Wired through url_launcher so the links work once finalized.
-  static const _userAgreementUrl =
-      'https://levelup.example/legal/user-agreement';
-  static const _privacyPolicyUrl = 'https://levelup.example/legal/privacy';
-  static const _cookiePolicyUrl = 'https://levelup.example/legal/cookies';
 
   @override
   void initState() {
@@ -117,10 +109,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         expiresInSeconds: result.expiresInSeconds,
       ),
     );
-  }
-
-  Future<void> _openUrl(String url) async {
-    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -272,12 +260,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _LegalLine(
-                      onOpen: _openUrl,
-                      userAgreementUrl: _userAgreementUrl,
-                      privacyPolicyUrl: _privacyPolicyUrl,
-                      cookiePolicyUrl: _cookiePolicyUrl,
-                    ),
+                    const _LegalLine(),
                   ],
                 ),
               ),
@@ -377,18 +360,22 @@ class _InlineMessage extends StatelessWidget {
   }
 }
 
+/// The consent line under the buttons (Figma `82:1086`).
+///
+/// CW04a (owner, 2026-10-10): each link opens the in-app viewer, which is
+/// public, so it works before sign-in. "User Agreement" opens the Terms of Use
+/// (C1: the contract serves only `terms` and `privacy`). The Cookie Policy link
+/// is gone (C2): there is no cookie document to open, and it went to a domain
+/// that never resolved. The sentence loses that clause with it, since agreeing
+/// to a document that does not exist is the misleading part; the two remaining
+/// links are joined by the existing "and" fragment instead of the comma. No new
+/// words: `cookiePolicy` and `legalSeparator` stay in the ARB files for when a
+/// cookie document exists.
+///
+/// The links were bare tap targets with no role; a screen reader now hears
+/// each as a link.
 class _LegalLine extends StatelessWidget {
-  const _LegalLine({
-    required this.onOpen,
-    required this.userAgreementUrl,
-    required this.privacyPolicyUrl,
-    required this.cookiePolicyUrl,
-  });
-
-  final Future<void> Function(String url) onOpen;
-  final String userAgreementUrl;
-  final String privacyPolicyUrl;
-  final String cookiePolicyUrl;
+  const _LegalLine();
 
   @override
   Widget build(BuildContext context) {
@@ -397,9 +384,13 @@ class _LegalLine extends StatelessWidget {
     final base = AppType.captionRegular.copyWith(color: ext.legalText);
     final link = AppType.buttonSmall.copyWith(color: ext.link);
 
-    Widget linkText(String label, String url) => GestureDetector(
-      onTap: () => onOpen(url),
-      child: Text(label, style: link),
+    Widget linkText(String label, String route, Key key) => Semantics(
+      link: true,
+      child: GestureDetector(
+        key: key,
+        onTap: () => context.push(route),
+        child: Text(label, style: link),
+      ),
     );
 
     return Wrap(
@@ -407,14 +398,17 @@ class _LegalLine extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text('${l10n.legalPrefix} ', style: base),
-        linkText(l10n.userAgreement, userAgreementUrl),
-        // Localized, because a comma is not the same character in both
-        // locales. This was the literal '، ' — U+060C ARABIC COMMA — in
-        // BOTH, so English read "User Agreement، Privacy Policy".
-        Text(l10n.legalSeparator, style: base),
-        linkText(l10n.privacyPolicy, privacyPolicyUrl),
+        linkText(
+          l10n.userAgreement,
+          '/legal/terms',
+          const Key('login_legal_terms'),
+        ),
         Text(' ${l10n.legalAnd} ', style: base),
-        linkText(l10n.cookiePolicy, cookiePolicyUrl),
+        linkText(
+          l10n.privacyPolicy,
+          '/legal/privacy',
+          const Key('login_legal_privacy'),
+        ),
       ],
     );
   }
