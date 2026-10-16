@@ -33,7 +33,14 @@ class CatalogScaffold extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(20, 20, 20, 16),
+              // The frame's 20 / 20 / 20 / 16 around its 35 header, less the
+              // 6.5 the header now takes for the back chip's 48 box (O-15).
+              padding: const EdgeInsetsDirectional.fromSTEB(
+                20 - CircleBackButton.tapSlop,
+                20 - CircleBackButton.tapSlop,
+                20 - CircleBackButton.tapSlop,
+                16 - CircleBackButton.tapSlop,
+              ),
               child: CatalogHeader(title: title, action: action),
             ),
             Expanded(child: child),
@@ -58,30 +65,42 @@ class CatalogScaffold extends StatelessWidget {
 /// drew a chip, kept it after Settings closed, and the chip popped nothing.
 /// `canPopOf` is scoped to this route in its own branch navigator and rebuilds
 /// the header when that changes. API→UI Wave 08, KNOWN_BUGS BUG-010.
+///
+/// **At least 48 tall (O-15; the remedy D-013 named).** The frame's header is
+/// 35, and a 35 box caps every control in it at a 35 target (DESIGN_ISSUES
+/// #80). It is now a 48 floor with [CircleBackButton.tapSlop] taken off
+/// [CatalogScaffold]'s insets and added back inside here, so the title, the
+/// chip and the trailing action keep their pixels and the chip's padded box
+/// fits. The trailing action is unchanged and still its own 35 target.
 class CatalogHeader extends StatelessWidget {
   const CatalogHeader({super.key, required this.title, this.action});
 
   final String title;
   final Widget? action;
 
+  static const _slop = CircleBackButton.tapSlop;
+
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColors>()!;
     final canPop = ModalRoute.canPopOf(context) ?? false;
 
-    return SizedBox(
-      height: 35,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: CircleBackButton.tapTarget),
       child: Stack(
         alignment: AlignmentDirectional.center,
         children: [
-          Text(
-            title,
-            // One line, like `TitledChrome`: a long server-side name would
-            // wrap to 52px inside this 35px bar and be clipped over the back
-            // chip. Register SF-08.
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppType.h2.copyWith(color: ext.textPrimary),
+          Padding(
+            // The width the title had inside the old 35 header.
+            padding: const EdgeInsets.symmetric(horizontal: _slop),
+            child: Text(
+              title,
+              // One line, like `TitledChrome` was: a long server-side name
+              // would wrap over the back chip. Register SF-08.
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppType.h2.copyWith(color: ext.textPrimary),
+            ),
           ),
           if (canPop)
             // The shared chip (Figma `90:208`), not a local copy: this header
@@ -92,9 +111,12 @@ class CatalogHeader extends StatelessWidget {
             // light drop shadow as every other back chip in the app.
             PositionedDirectional(
               start: 0,
-              child: CircleBackButton(onPressed: () => context.pop()),
+              child: CircleBackButton(
+                tapTargetSize: MaterialTapTargetSize.padded,
+                onPressed: () => context.pop(),
+              ),
             ),
-          if (action != null) PositionedDirectional(end: 0, child: action!),
+          if (action != null) PositionedDirectional(end: _slop, child: action!),
         ],
       ),
     );

@@ -142,13 +142,13 @@ Ranked, with `file:line`. Full detail in `.ai/audits/current/responsive.md`.
 | --- | --- | --- |
 | 1 | `catalog/widgets/subject_card.dart:21`, `screens/subjects_screen.dart:175,201` | Drop `childAspectRatio`; use `mainAxisExtent`. **Overflows at 1.2×** |
 | 2 | `quiz/screens/quiz_screen.dart:259,268` | `preferredSize` 30 → 36, bottom padding 12 → 8. **Clips at 1.25×, every question** |
-| 3 | `core/widgets/titled_chrome.dart:49` + 4 duplicates | `SizedBox(height: 35)` → `minHeight: 35`; collapse the 5 copies |
+| 3 | `core/widgets/titled_chrome.dart:49` + 4 duplicates | `SizedBox(height: 35)` → `minHeight: 35`; collapse the 5 copies. **Partly applied 2026-10-10 (O-15, DESIGN_ISSUES #132):** `TitledChrome` is a 48 floor and its title wraps; `EditProfileChrome` is now `TitledChrome`; `CatalogHeader` is a 48 floor (its title stays one line). The quiz bars already had floors |
 | 4 | `app.dart:51` | Clamp `textScaler` to 1.3 — **needs the product decision first** |
 | 5 | `quiz/screens/quiz_setup_screen.dart:224` | `LayoutBuilder`; drop `width: 171` |
 | 6 | `profile/screens/edit_profile_screen.dart:605`, `account_shells/widgets/shell_body.dart:94` | `height: 60` → theme `minimumSize` |
 | 7 | `home/widgets/home_banner.dart:26`, `quiz/screens/quiz_result_screen.dart:164`, `core/widgets/language_pill.dart:34` | `height` → `minHeight` (+ `FittedBox` on the ring label) |
 | 8 | `auth/screens/otp_screen.dart:254` | `FittedBox(fit: BoxFit.scaleDown)` around `Pinput` |
-| 9 | `core/widgets/circle_back_button.dart:40` + 4 more | 48dp hit box around the 35dp paint |
+| 9 | `core/widgets/circle_back_button.dart:40` + 4 more | 48dp hit box around the 35dp paint. **Applied 2026-10-10 (O-15, DESIGN_ISSUES #132)** to the back chip at every call site but four (OTP, unknown route, support thread, School/University detail); the other controls are not done |
 | 10 | 8 sites | `tooltip:` / `label:` / `Semantics` |
 | 11 | `quiz/screens/quiz_result_screen.dart:284` | Wrap in `Flexible` |
 | 12 | `catalog/widgets/tree_list_row.dart` (the `progress != null` row) | Wrap the caption in `Flexible`. **Narrow widths only**: fine at 375 and 411 dp up to 2.0× in `en` and `ar`; overflows at 320 dp 2.0× (`en`, 17 px) and at 250 dp from 1.3× |

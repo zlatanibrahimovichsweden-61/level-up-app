@@ -576,7 +576,8 @@ void main() {
 
       final r = tester.getRect(find.byKey(header));
       expect(r.height, moreOrLessEquals(92, epsilon: 0.01));
-      final chip = tester.getRect(find.byType(CircleBackButton));
+      // The drawn chip, not the 48 target box around it (O-15).
+      final chip = tester.getRect(find.byKey(const Key('quiz_result_back')));
       expect(chip.left, moreOrLessEquals(21, epsilon: 0.01));
       // 20 down to a 52 dp title block, the 35 dp chip on its centre line.
       expect(chip.center.dy - r.top, moreOrLessEquals(46, epsilon: 0.01));
@@ -901,6 +902,23 @@ void main() {
       expect(find.text('Back to Learn'), findsNothing);
       expect(find.byType(TextButton), findsNothing);
     });
+  });
+
+  // O-15 / DESIGN_ISSUES #132.
+  testWidgets('the back target is 48: a tap just off the drawn chip leaves '
+      'for Learn', (tester) async {
+    final harness = await openResult(tester, summary: quizSummary());
+
+    expect(tester.getSize(find.byType(CircleBackButton)), const Size(48, 48));
+    final chip = tester.getRect(find.byKey(const Key('quiz_result_back')));
+    expect(chip.size, const Size(35, 35));
+    // Outside the 35 circle, inside the 48 box around it.
+    await tester.tapAt(chip.topLeft - const Offset(4, 4));
+    await tester.pumpAndSettle();
+    expect(
+      harness.router.routerDelegate.currentConfiguration.uri.path,
+      '/learn',
+    );
   });
 }
 

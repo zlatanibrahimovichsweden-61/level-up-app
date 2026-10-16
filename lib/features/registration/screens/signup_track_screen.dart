@@ -19,6 +19,12 @@ import '../models/registration_draft.dart';
 import '../notifier/registration_controller.dart';
 import 'registration_expired_view.dart';
 
+/// The header row is now the back chip's 48 box tall, not the pill's 36.10
+/// (O-15), so the inset above it and the gap below it each give back half the
+/// difference: the chip, the pill and everything under them keep their pixels.
+const double _headerSlop =
+    (CircleBackButton.tapTarget - LanguagePill.height) / 2;
+
 /// Sign Up_2 (track picker) · Figma `337:15947`. Single-select between School and
 /// University — the discriminator `POST /auth/register` switches on. Continue is
 /// disabled until a track is chosen; it sets the track on the draft and routes to
@@ -70,7 +76,12 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
             Expanded(
               child: SingleChildScrollView(
                 // Side inset is 20 in the frame, not 24.
-                padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  20,
+                  8 - _headerSlop,
+                  20,
+                  24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -79,6 +90,10 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                         CircleBackButton(
                           onPressed: () => context.pop(),
                           variant: BackChipVariant.registration,
+                          // Flush to the start, so the box reaches into the
+                          // free space before the pill, not past the gutter.
+                          tapTargetSize: MaterialTapTargetSize.padded,
+                          chipAlignment: AlignmentDirectional.centerStart,
                         ),
                         const Spacer(),
                         LanguagePill(
@@ -88,7 +103,7 @@ class _SignupTrackScreenState extends ConsumerState<SignupTrackScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 8 - _headerSlop),
                     Text(
                       l10n.chooseTrackTitle,
                       style: AppType.h1.copyWith(color: ext.textPrimary),

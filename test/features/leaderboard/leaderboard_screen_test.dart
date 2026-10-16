@@ -19,6 +19,7 @@ import 'package:level_up_app/features/profile/repository/profile_repository.dart
 import 'package:level_up_app/features/shell/main_shell.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 
 import '../profile/profile_fixtures.dart';
 import 'leaderboard_fixtures.dart';
@@ -407,6 +408,40 @@ void main() {
 
       expect(find.text('Something went wrong'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
+    });
+  });
+
+  // O-15 / DESIGN_ISSUES #132: the row is already 48 tall (the share
+  // IconButton's padded target), so the chip's 48 box only had to find room
+  // sideways — it reaches toward the screen edge, never into the title.
+  group('the back target (O-15)', () {
+    testWidgets('the chip keeps the frame\'s 20 and a tap 10 dp outside it, '
+        'toward the edge, goes Home', (tester) async {
+      givenBoard();
+      await openLeaderboard(tester, me: schoolProfile());
+
+      final target = tester.getRect(find.byType(CircleBackButton));
+      final chip = tester.getRect(
+        find.descendant(
+          of: find.byType(CircleBackButton),
+          matching: find.byType(ElevatedSurface),
+        ),
+      );
+      expect(target.size, const Size(48, 48));
+      expect(chip.size, const Size(35, 35));
+      expect(chip.left, 20);
+      expect(chip.right, target.right, reason: 'the title starts where it did');
+      expect(chip.center.dy, target.center.dy);
+
+      await tester.tapAt(Offset(chip.left - 10, chip.center.dy));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<MainShell>(find.byType(MainShell))
+            .navigationShell
+            .currentIndex,
+        0,
+      );
     });
   });
 }

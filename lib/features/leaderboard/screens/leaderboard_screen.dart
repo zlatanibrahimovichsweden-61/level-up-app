@@ -105,10 +105,21 @@ class _Header extends StatelessWidget {
     final ext = Theme.of(context).extension<AppColors>()!;
 
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 16),
+      // The frame's 20 start inset, less the 13 the back chip's 48 box reaches
+      // past the chip toward the edge (O-15). The row is already 48 tall — the
+      // share IconButton's padded target — so nothing moves vertically.
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        20 - 2 * CircleBackButton.tapSlop,
+        8,
+        20,
+        16,
+      ),
       child: Row(
         children: [
           CircleBackButton(
+            // Flush to the box's end edge, so the title starts where it did.
+            tapTargetSize: MaterialTapTargetSize.padded,
+            chipAlignment: AlignmentDirectional.centerEnd,
             // This is a root tab of the shell, so there is nothing on this
             // branch's stack to pop — `Navigator.pop` would be a no-op. Back
             // here means "go to Home", which switches the shell branch and

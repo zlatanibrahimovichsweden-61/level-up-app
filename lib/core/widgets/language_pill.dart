@@ -25,7 +25,10 @@ class LanguagePill extends StatelessWidget {
   /// Frame metrics. The frame's radius is exactly half the height, so the
   /// shape is a `StadiumBorder` and no radius constant is needed — it holds at
   /// any width and at any text scale.
-  static const _height = 36.10;
+  ///
+  /// Public because a header row that holds the pill beside the back chip's
+  /// 48 box (O-15) needs it to keep its other children where they were.
+  static const height = 36.10;
   static const _inset = 14.47;
   static const _gap = 10.07;
   static const _iconSize = 20.13;
@@ -46,7 +49,7 @@ class LanguagePill extends StatelessWidget {
       button: true,
       child: ElevatedSurface(
         shape: const StadiumBorder(),
-        height: _height,
+        height: height,
         padding: const EdgeInsetsDirectional.symmetric(horizontal: _inset),
         // `languagePillFill`, not `background`: the pill used to paint the page
         // colour, which is why it vanished into the page on the dark canvas.

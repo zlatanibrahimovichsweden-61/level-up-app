@@ -37,11 +37,27 @@ enum BackChipVariant {
 /// Shared rather than re-declared per screen. It had already drifted into a
 /// bare `IconButton` on one registration screen and into a Material
 /// `Icons.arrow_back_ios_new` in `CatalogHeader`; both are now this widget.
+///
+/// **The tap target (O-15).** The drawn chip is 35, under the 48 that Material
+/// and Android's accessibility checks ask for. [MaterialTapTargetSize.padded]
+/// lays the chip out in a [tapTarget] box instead — the chip keeps its 35 and
+/// its look, the box is the finger's. The box only works if the bar around it
+/// is at least 48 tall too: a render box refuses a pointer outside its own
+/// size, so a 48 box inside a 35 bar is still a 35 target (D-013,
+/// DESIGN_ISSUES #80). A call site that switches to padded therefore takes
+/// [tapSlop] (or, for an off-centre box, twice it) off the insets around the
+/// chip and grows its bar to 48, so the chip lands on exactly the pixels it had.
+///
+/// [MaterialTapTargetSize.shrinkWrap], the default, is the old 35 box; the
+/// call sites that still use it are listed in DESIGN_ISSUES #132.
 class CircleBackButton extends StatelessWidget {
   const CircleBackButton({
     super.key,
     required this.onPressed,
     this.variant = BackChipVariant.standard,
+    this.tapTargetSize = MaterialTapTargetSize.shrinkWrap,
+    this.chipAlignment = AlignmentDirectional.center,
+    this.chipKey,
   });
 
   final VoidCallback onPressed;
@@ -49,7 +65,31 @@ class CircleBackButton extends StatelessWidget {
   /// [BackChipVariant.standard] everywhere except the four registration frames.
   final BackChipVariant variant;
 
-  static const _size = 35.0;
+  /// [MaterialTapTargetSize.padded] for a [tapTarget] box around the chip.
+  final MaterialTapTargetSize tapTargetSize;
+
+  /// Where the chip sits inside the padded box; ignored when shrink-wrapped.
+  ///
+  /// Centred in a `Stack` bar, where the box can spill [tapSlop] past the chip
+  /// on every side. In a `Row`, whose next child must not move, the chip goes
+  /// flush to one edge and the box spills twice [tapSlop] the other way —
+  /// the Home bell's layout.
+  final AlignmentDirectional chipAlignment;
+
+  /// Key on the DRAWN chip. A screen's tests measure the chip the frame draws
+  /// and tap it the way a student does; once padded, the widget's own [key]
+  /// is the whole 48 box, which is the target, not the chip.
+  final Key? chipKey;
+
+  /// The drawn chip.
+  static const double chipSize = 35;
+
+  /// Material's minimum interactive dimension.
+  static const double tapTarget = kMinInteractiveDimension;
+
+  /// How far a centred padded box reaches past the chip on each side: 6.5.
+  static const double tapSlop = (tapTarget - chipSize) / 2;
+
   static const _chevronWidth = 15.0;
   static const _chevronHeight = 30.0;
 
@@ -63,35 +103,57 @@ class CircleBackButton extends StatelessWidget {
     final rtl = Directionality.of(context) == TextDirection.rtl;
 
     final registration = variant == BackChipVariant.registration;
+    final label = MaterialLocalizations.of(context).backButtonTooltip;
 
+    final chip = ElevatedSurface(
+      key: chipKey,
+      shape: const CircleBorder(),
+      width: chipSize,
+      height: chipSize,
+      color: registration
+          ? ext.registrationBackChipFill
+          : ext.backChipSurfaceFill,
+      shadows: elevation.backChipShadows,
+      glass: registration
+          ? elevation.registrationBackChipGlass
+          : elevation.backChipGlass,
+      onTap: onPressed,
+      child: Center(
+        child: Transform.flip(
+          flipX: !rtl,
+          child: SvgPicture.asset(
+            'assets/icons/chevron.svg',
+            width: _chevronWidth,
+            height: _chevronHeight,
+            // The Semantics above names the chip. Without this the glyph's
+            // own image semantics merge in and TalkBack reads an ImageView
+            // on every screen with the chip (API→UI Wave 13; W11-7).
+            excludeFromSemantics: true,
+            colorFilter: ColorFilter.mode(ext.backChipGlyph, BlendMode.srcIn),
+          ),
+        ),
+      ),
+    );
+
+    if (tapTargetSize == MaterialTapTargetSize.shrinkWrap) {
+      return Semantics(button: true, label: label, child: chip);
+    }
+
+    // The bell's arrangement (`home_header.dart`): the chip keeps its ink, a
+    // plain detector takes the rest of the box, and this one labelled node —
+    // the whole box — carries the tap. Left in, the chip's InkWell would add a
+    // second, unlabelled clickable node inside it.
     return Semantics(
       button: true,
-      label: MaterialLocalizations.of(context).backButtonTooltip,
-      child: ElevatedSurface(
-        shape: const CircleBorder(),
-        width: _size,
-        height: _size,
-        color: registration
-            ? ext.registrationBackChipFill
-            : ext.backChipSurfaceFill,
-        shadows: elevation.backChipShadows,
-        glass: registration
-            ? elevation.registrationBackChipGlass
-            : elevation.backChipGlass,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onPressed,
-        child: Center(
-          child: Transform.flip(
-            flipX: !rtl,
-            child: SvgPicture.asset(
-              'assets/icons/chevron.svg',
-              width: _chevronWidth,
-              height: _chevronHeight,
-              // The Semantics above names the chip. Without this the glyph's
-              // own image semantics merge in and TalkBack reads an ImageView
-              // on every screen with the chip (API→UI Wave 13; W11-7).
-              excludeFromSemantics: true,
-              colorFilter: ColorFilter.mode(ext.backChipGlyph, BlendMode.srcIn),
-            ),
+        child: SizedBox.square(
+          dimension: tapTarget,
+          child: Align(
+            alignment: chipAlignment,
+            child: ExcludeSemantics(child: chip),
           ),
         ),
       ),
