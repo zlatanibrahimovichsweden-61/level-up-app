@@ -5405,6 +5405,23 @@ dark values keep the earlier provisional look. Item 7 is settled differently: no
 subjects", but a per-card Term chip (#135). **Still open:** the dark and Arabic frames; items 4, 5 and 9; a long
 module name; the row over the subjects' loading / error view; the picker's own loading / error states (DG-26).
 
+**2026-10-16 — decision: the drawn 35 holds in Arabic too, on every platform.** CI run 38890691888 (ubuntu, `81c1efa`)
+measured the Arabic «كل المواد» pill 37 tall; Windows measured 35. *Cause:* the label is laid out in two fonts. The
+theme's family is Inter with Tajawal / Cairo as fallbacks; Inter has the space (and digits) but no Arabic letters, so
+the space is shaped in Inter and the letters in Tajawal. With the label's `height` (18/14) each run gets an 18 box
+split in its own font's ascent:descent ratio, and the line takes the larger ascent (Inter, 14.41) plus the larger
+descent (Tajawal). Tajawal's ratio depends on the font backend: DirectWrite (Windows) reads its OS/2 win metrics
+(1065 / 411), giving a descent of 5.01 and a 19.42 line, rounded to 19, so the pill was 16 + 19 = 35 *by luck*;
+FreeType (Linux; also Android `[INFERRED]`, not device-measured) reads hhea (643 / 357), giving 6.43 and a 20.84 line,
+rounded to 21, so the pill was 37 beside 35-tall Latin-named pills. A single-font label is exactly 18 on both
+(probed on Windows; the Linux figures are computed from the font tables and match CI's 37). *Decision:* the frame's
+35 is a metric, and the rule was already "equalised so the row does not jump", so the label now forces a strut built
+from its own style: every line is 18 × the text scale in any script, the pill is 35 at 1.0x, and a larger scale still
+grows it. `module_picker_layout_test.dart` now measures the label line itself (an Arabic module name too), which
+failed on Windows as well before the fix. *Still open under DG-26:* where Arabic sits vertically in the pill — the
+baseline is where Inter puts it, as before; with no Arabic frame that is not designed. *Wider than the picker:* any
+Arabic text with a `height` and a space or digit mixes the two fonts the same way; not audited here.
+
 **Asks (designer):** the dark and RTL picker frames, a long module name, and the open items above. ~~**Ask (owner):** confirm or replace «كل المواد».~~
 **Answered 2026-10-15:** «كل المواد» confirmed.
 

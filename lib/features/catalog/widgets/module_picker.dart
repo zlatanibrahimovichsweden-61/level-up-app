@@ -67,7 +67,8 @@ class ModulePicker extends StatelessWidget {
   /// equalises both to this 35 so the row does not jump when the choice changes
   /// (the selected pill is 2 dp taller than drawn and the idle pill about 2 dp
   /// narrower). A minimum - a larger text scale grows the pill, it never clips
-  /// it.
+  /// it. The label's forced strut holds it in Arabic too, whatever fonts the
+  /// label mixes (docs/DESIGN_ISSUES.md #134).
   static const pillHeight = 35.0;
 
   /// The pill's tap target (Material and both platforms floor it at 48 / 44).
@@ -246,6 +247,23 @@ class _Pill extends StatelessWidget {
                           // states: a selected label in a bigger style made
                           // the pill grow when chosen.
                           style: AppType.labelLarge.copyWith(color: labelColor),
+                          // Every line is the style's own 18, in any script,
+                          // so the pill is 35 at 1.0x. Unforced, an Arabic
+                          // label is laid out in TWO fonts - its spaces and
+                          // digits in Inter (the theme's family has them),
+                          // its letters in the Tajawal fallback - and a line
+                          // takes Inter's ascent plus Tajawal's descent:
+                          // "كل المواد" was 19 on Windows and 21 under
+                          // FreeType (Linux CI; Android uses it too, not
+                          // measured), whose Tajawal descent is deeper, so
+                          // its pill was 37 next to 35-tall ones. The strut is the label's own style, so it
+                          // follows the theme's font and the text scale.
+                          strutStyle: StrutStyle.fromTextStyle(
+                            DefaultTextStyle.of(
+                              context,
+                            ).style.merge(AppType.labelLarge),
+                            forceStrutHeight: true,
+                          ),
                         ),
                       ),
                     ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_theme.dart';
+import 'package:level_up_app/core/theme/app_typography.dart';
 import 'package:level_up_app/core/widgets/elevation/elevated_surface.dart';
 import 'package:level_up_app/features/catalog/widgets/module_picker.dart';
 import 'package:level_up_app/l10n/app_localizations.dart';
@@ -119,7 +120,11 @@ void main() {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ModulePicker(
-                    modules: u1Modules(),
+                    modules: [
+                      ...u1Modules(),
+                      // Server copy in Arabic, with a space and a digit.
+                      module(id: 'mod-ar', name: 'وحدة القلب 2'),
+                    ],
                     selectedId: 'mod-foundation',
                     onChanged: (_) {},
                   ),
@@ -131,13 +136,28 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        for (final id in ['all', 'mod-foundation', 'mod-cardio']) {
+        for (final id in ['all', 'mod-foundation', 'mod-cardio', 'mod-ar']) {
           final box = tester.getRect(pill(id));
           final drawn = tester.getRect(
             find.descendant(
               of: pill(id),
               matching: find.byType(ElevatedSurface),
             ),
+          );
+          // The label's line itself, not only the pill: an Arabic label mixes
+          // Inter (its spaces and digits) with Tajawal (its letters), and an
+          // unforced line of the two was 19 here on Windows - rounded into the
+          // pill's 35 by luck - and 21 under FreeType on Linux, a 37 pill.
+          final line = tester.getSize(
+            find.descendant(of: pill(id), matching: find.byType(Text)),
+          );
+          expect(
+            line.height,
+            closeTo(
+              AppType.labelLarge.fontSize! * AppType.labelLarge.height!,
+              0.01,
+            ),
+            reason: '$id label line',
           );
           expect(drawn.height, closeTo(35, 0.01), reason: '$id drawn height');
           expect(box.height, greaterThanOrEqualTo(48), reason: '$id tap box');
