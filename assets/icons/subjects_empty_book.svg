@@ -1,0 +1,7 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="icon/book">
+<path id="Vector" d="M10.6667 14.6667C10.6667 12.8986 11.369 11.2029 12.6193 9.95262C13.8695 8.70238 15.5652 8 17.3333 8H53.3333V48H17.3333C15.5652 48 13.8695 48.7024 12.6193 49.9526C11.369 51.2029 10.6667 52.8986 10.6667 54.6667V14.6667Z" stroke="#AE87E7" stroke-width="4.26667" stroke-linejoin="round"/>
+<path id="Vector_2" d="M10.6667 54.6667C10.6667 56.4348 11.369 58.1305 12.6193 59.3807C13.8695 60.631 15.5652 61.3333 17.3333 61.3333H53.3333V48" stroke="#AE87E7" stroke-width="4.26667" stroke-linejoin="round"/>
+<path id="Vector_3" d="M32 18.6667V34.6667M24 26.6667H40" stroke="#AE87E7" stroke-width="4.26667" stroke-linecap="round"/>
+</g>
+</svg>
