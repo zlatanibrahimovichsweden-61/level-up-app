@@ -183,6 +183,16 @@ class RegistrationController extends Notifier<RegistrationDraft?> {
   void setEducationSystem(String educationSystem) =>
       _update((draft) => draft.copyWith(educationSystem: educationSystem));
 
+  /// Forget the chosen stage: the server says it is not open for registration
+  /// (`status: soon`, or a `422 school_stage_not_available`). No-op without a
+  /// draft. Nothing else on the draft moves, and the token stays.
+  void clearStage() => _update((draft) => draft.copyWith(stage: null));
+
+  /// Forget the chosen education system, for the same reason as [clearStage]
+  /// (`422 education_system_not_available`). No-op without a draft.
+  void clearEducationSystem() =>
+      _update((draft) => draft.copyWith(educationSystem: null));
+
   // --- University cascade (university → faculty → year) --------------------
 
   /// Faculties belong to a university, so changing it invalidates faculty+year.

@@ -692,6 +692,24 @@ abstract class AppLocalizations {
   /// **'Your registration session expired. Please start again.'**
   String get registrationTokenInvalid;
 
+  /// Trailing mark on a School grade or education-system row the server has not opened (status soon). Figma 1409:26374 / 1409:26436 (light, English) draw it at the row's end edge; the app draws the text only, not the frame's pill (DESIGN_ISSUES #133). Arabic «قريبًا» per the owner, 2026-10-15.
+  ///
+  /// In en, this message translates to:
+  /// **'Soon'**
+  String get registrationSoonMark;
+
+  /// 422 school_stage_not_available on completeRegistration (School body): the contract-suggested copy, contract/error-codes.md row `school_stage_not_available` (spec-081 / adr-230, vendored 3.52.0-m1), verbatim. Shown in the School form's failure banner; the same registrationToken is resubmitted after the student picks an open grade.
+  ///
+  /// In en, this message translates to:
+  /// **'Level Up isn\'t open for this grade yet. Coming soon!'**
+  String get registrationSchoolStageNotAvailable;
+
+  /// 422 education_system_not_available on completeRegistration (School body): the contract-suggested copy, contract/error-codes.md row `education_system_not_available` (spec-081 / adr-230, vendored 3.52.0-m1), verbatim. Shown in the School form's failure banner; the same registrationToken is resubmitted after the student picks an open education system.
+  ///
+  /// In en, this message translates to:
+  /// **'This education system isn\'t available yet. Coming soon!'**
+  String get registrationEducationSystemNotAvailable;
+
   /// No description provided for @homeWelcome.
   ///
   /// In en, this message translates to:

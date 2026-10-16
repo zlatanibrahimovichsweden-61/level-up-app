@@ -13,6 +13,14 @@ import '../repository/reference_repository.dart';
 /// loading / data(empty) / error(→ offline) states the consuming screens render
 /// through the shared `StateWidget`.
 ///
+/// **The ONE exception: [schoolStagesProvider] and [educationSystemsProvider]
+/// are `autoDispose`.** Which School stages and education systems are open for
+/// registration is a server setting (`status: active | soon`, 3.51.0-m1 /
+/// 3.52.0-m1), so the School screen reads it fresh on EVERY visit — never
+/// cached for the session, never defaulted, never hard-coded (decision D-026).
+/// Their only consumer is the School screen, so they live exactly as long as it
+/// does and a second visit asks the server again.
+///
 /// 🔴 **Every provider here sets `retry: _noRetry`, and none may be added
 /// without it.** Riverpod 3 retries a failed provider build automatically —
 /// `ProviderContainer.defaultRetry` is ten retries at 200 ms doubling to a
@@ -84,9 +92,18 @@ final schoolsProvider =
       retry: _noRetry,
     );
 
-/// `GET /reference/education-systems`.
-final educationSystemsProvider = FutureProvider<List<EducationSystemRef>>(
-  (ref) => ref.watch(referenceRepositoryProvider).getEducationSystems(),
+/// `GET /reference/education-systems` — each row carries its `status`.
+/// `autoDispose`: see the file note above (D-026).
+final educationSystemsProvider =
+    FutureProvider.autoDispose<List<EducationSystemRef>>(
+      (ref) => ref.watch(referenceRepositoryProvider).getEducationSystems(),
+      retry: _noRetry,
+    );
+
+/// `GET /reference/school-stages` — all six stages, each `active` or `soon`.
+/// `autoDispose`: see the file note above (D-026).
+final schoolStagesProvider = FutureProvider.autoDispose<List<SchoolStageRef>>(
+  (ref) => ref.watch(referenceRepositoryProvider).getSchoolStages(),
   retry: _noRetry,
 );
 

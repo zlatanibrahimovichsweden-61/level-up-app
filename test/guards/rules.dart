@@ -430,6 +430,99 @@ List<String> contractRequiredFields(String yaml, List<String> path) {
   );
 }
 
+/// The names in the `required: [...]` list of the INLINE item schema of an
+/// operation's `200` array response — the sibling of [contractRequiredFields]
+/// for a response the contract does not give a named schema.
+///
+/// `listSchoolStages` and `listEducationSystems` answer a bare array whose item
+/// is written inline under the operation, so there is no `components.schemas`
+/// entry for [contractRequiredFields] to read. The walk is, in the contract's
+/// own YAML terms and indents:
+/// `paths:` (0) → `<path>:` (2) → `<method>:` (4) → `responses:` (6) →
+/// `'200':` (8) → `content:` (10) → `application/json:` (12) → `schema:` (14) →
+/// `items:` (16), and the `required:` that sits beside `items`' own keys
+/// (18). The `200` key is single-quoted, as this contract writes it.
+///
+/// The same promises as [contractRequiredFields]: only the flow form is
+/// understood, and anything that cannot be found — the path, the method, any
+/// step of the walk, the list itself — raises [ContractShapeException] rather
+/// than returning an empty list that would make a bound model look complete.
+/// A `required:` anywhere else (a sibling of `items`, the response, another
+/// method) is never read. Both `\n` and `\r\n` documents are read.
+///
+/// The line-walking is the same as [contractRequiredFields]' and is repeated
+/// here on purpose rather than shared: that helper guards twelve bindings, and
+/// reshaping it to serve this one is a risk this addition does not need.
+List<String> contractOperationItemRequiredFields(
+  String yaml, {
+  required String path,
+  required String method,
+}) {
+  final lines = yaml.split(RegExp(r'\r?\n'));
+
+  bool blank(String l) => l.trim().isEmpty || l.trimLeft().startsWith('#');
+  int indentOf(String l) => l.length - l.trimLeft().length;
+
+  /// The half-open line range of the block under `key:` at [indent], searched
+  /// within `[from, to)`.
+  (int, int) child(String key, int indent, int from, int to) {
+    final head = RegExp('^ {$indent}${RegExp.escape(key)}:');
+    for (var i = from; i < to; i++) {
+      if (blank(lines[i]) || !head.hasMatch(lines[i])) continue;
+      for (var j = i + 1; j < to; j++) {
+        if (blank(lines[j])) continue;
+        if (indentOf(lines[j]) <= indent) return (i + 1, j);
+      }
+      return (i + 1, to);
+    }
+    throw ContractShapeException(
+      "no `$key:` at indent $indent within lines ${from + 1}-$to "
+      '(looking for $method $path)',
+    );
+  }
+
+  var (from, to) = child('paths', 0, 0, lines.length);
+  (from, to) = child(path, 2, from, to);
+  (from, to) = child(method, 4, from, to);
+  (from, to) = child('responses', 6, from, to);
+  (from, to) = child("'200'", 8, from, to);
+  (from, to) = child('content', 10, from, to);
+  (from, to) = child('application/json', 12, from, to);
+  (from, to) = child('schema', 14, from, to);
+  (from, to) = child('items', 16, from, to);
+
+  // `required:` is a sibling of the item block's own keys, i.e. at indent 18.
+  const indent = 18;
+  final want = RegExp(
+    '^ {$indent}required:'
+    r'\s*(.*)$',
+  );
+  for (var i = from; i < to; i++) {
+    if (indentOf(lines[i]) != indent) continue;
+    final m = want.firstMatch(lines[i]);
+    if (m == null) continue;
+    final raw = m.group(1)!.trim();
+    if (!raw.startsWith('[') || !raw.endsWith(']')) {
+      throw ContractShapeException(
+        'line ${i + 1}: `required:` is not a flow list — got "$raw"',
+      );
+    }
+    final names = raw
+        .substring(1, raw.length - 1)
+        .split(',')
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+    if (names.isEmpty) {
+      throw ContractShapeException('line ${i + 1}: empty `required:` list');
+    }
+    return names;
+  }
+  throw ContractShapeException(
+    'no `required:` at indent $indent in the 200 items of $method $path',
+  );
+}
+
 /// Whether [dart] declares [field] as a constructor parameter.
 ///
 /// Comments are stripped first, for the reason [stripComments] exists at all:

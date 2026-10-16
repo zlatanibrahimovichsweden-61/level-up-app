@@ -110,6 +110,9 @@
   "fieldRejected": "من فضلك تحقق من هذا الحقل",
   "phoneAlreadyRegistered": "هذا الرقم لديه حساب بالفعل. من فضلك سجّل الدخول.",
   "registrationTokenInvalid": "انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.",
+  "registrationSoonMark": "قريبًا",
+  "registrationSchoolStageNotAvailable": "ليفل أب غير متاح لهذا الصف بعد. قريبًا!",
+  "registrationEducationSystemNotAvailable": "هذا النظام التعليمي غير متاح بعد. قريبًا!",
 
   "homeWelcome": "أهلًا بعودتك،",
   "notifications": "الإشعارات",

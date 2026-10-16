@@ -9,7 +9,7 @@ import '../models/reference_models.dart';
 /// Returns domain models, throws the typed [AppException] hierarchy; the
 /// notifiers/pickers catch these and the UI never sees Dio.
 ///
-/// All seven endpoints are `x-stability: stable` and `security: []` (public —
+/// All eight endpoints are `x-stability: stable` and `security: []` (public —
 /// needed at registration before any account exists). They ride the main
 /// [dioProvider]; with no stored token the AuthInterceptor attaches no Bearer,
 /// which is exactly right here.
@@ -135,6 +135,28 @@ class ReferenceRepository {
       final res = await _dio.get<List<dynamic>>('/reference/education-systems');
       return res.data!
           .map((e) => EducationSystemRef.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _asAppException(e);
+    } on AppException {
+      rethrow;
+    } on Object catch (e) {
+      // F-7-01: fromJson runs OUTSIDE Dio — real-API schema drift throws a
+      // core TypeError/FormatException here, not a DioException. Wrap it so
+      // the typed boundary holds. runtimeType only: response bodies carry
+      // minors' data and must never leak into an error detail.
+      throw UnknownException(detail: 'parse: ${e.runtimeType}');
+    }
+  }
+
+  /// `GET /reference/school-stages` — the six School stages, each `active` or
+  /// `soon` (closed, bare array, `listSchoolStages`). The open set is a server
+  /// setting, so the School form reads it on every visit.
+  Future<List<SchoolStageRef>> getSchoolStages() async {
+    try {
+      final res = await _dio.get<List<dynamic>>('/reference/school-stages');
+      return res.data!
+          .map((e) => SchoolStageRef.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
       throw _asAppException(e);

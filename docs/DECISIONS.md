@@ -1184,3 +1184,39 @@ follow-ups are listed in `contract/SOURCE.md` ("Delta from 3.46.0-m1"). No bound
 **Supersedes:** D-022.
 
 **Revisit when:** Seif announces a later version the app needs, or a release-1 contract freeze.
+
+### D-026 · School registration reads stage and system status fresh on every visit, and anything not `active` is refused
+
+**Feature:** School registration (wave SEIF1014, change set SSG) · **Date:** 2026-10-14 · **Status:** **Accepted —
+applied (SEIF1014 Job 2)** · **Raised by:** Seif's messages of 2026-10-12 and 2026-10-13 and contract 3.52.0-m1
+(`listSchoolStages`, `listEducationSystems.status`); **decided by** the owner (the SEIF1014 prompt, 2026-10-14)
+
+**Context.** Which School stages and education systems may register is a server setting that can change with a
+redeploy and no app release (`contract-changelog.md`, 3.51.0-m1: "Never hard-code the open set; read it").
+Production applies the launch rule (secondary2/3, the two National systems) from its next deploy; staging stays
+all-open for test accounts. The app's reference providers were deliberately process-lifetime caches
+(`reference_providers.dart`; `session_scope.dart` keeps them across sign-outs), which would keep a stage "Soon" after
+the server opens it, or open after it closes.
+
+**Decision.**
+1. **Freshness — the one exception to session-cached reference data.** `schoolStagesProvider` and
+   `educationSystemsProvider` are `autoDispose`: the statuses are read from the server on every visit to the School
+   screen, and again after either `422` (`school_stage_not_available`, `education_system_not_available`). They are
+   never hard-coded, defaulted or cached across visits. Every other reference provider keeps its process-lifetime
+   cache.
+2. **Fail closed.** A row is selectable if and only if its status is exactly `active`. `soon`, an unknown value and a
+   stage the response omits are all refused; only `soon` carries the "Soon" / «قريباً» mark. A slow or failed status
+   read enables nothing: the field shows its loading, error or offline state with a user-tapped Retry, and **Start
+   learning** stays disabled until both lists are loaded. A choice in the draft that is no longer `active` is cleared
+   quietly (fresh statuses, a restored draft, or after a `422`).
+
+**Rejected.** Fail-open on a failed status read (would let a closed choice reach a `422` the student cannot
+explain); a session cache (would keep stale statuses for a whole session); a hard-coded launch set, even as a
+fallback (the contract forbids it). The mock's launch-rule default is test data, not app logic.
+
+**Consequences.** Two extra public GETs per School-screen visit (both under the `/reference` per-address limit). The
+University year picker is unchanged in this wave and still reads `universitiesProvider`'s process-lifetime cache
+(`contract/SOURCE.md`, 3.47–3.52 follow-up 6).
+
+**Revisit when:** the designer specifies the "Soon" treatment (`docs/DESIGN_ISSUES.md` #133), or Seif changes the
+open-set rule.

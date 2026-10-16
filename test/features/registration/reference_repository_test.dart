@@ -152,8 +152,9 @@ void main() {
             'code': 'nationalArabic',
             'nameAr': 'قومي عربي',
             'nameEn': 'National (Arabic)',
+            'status': 'active',
           },
-          {'code': 'ig', 'nameAr': 'آي جي', 'nameEn': 'IG'},
+          {'code': 'ig', 'nameAr': 'آي جي', 'nameEn': 'IG', 'status': 'active'},
         ]),
       );
 

@@ -27,9 +27,10 @@ import '../registration_error_copy.dart';
 /// offers `soon` years disabled instead of dropping them, which is what
 /// `openapi.yaml:751` asks for. A disabled row is dimmed to
 /// [disabledControlOpacity], the same treatment a gated field gets — no new
-/// token, and no wording on the row. It used to be the `ext.hint` colour,
-/// which is `textPrimary` in dark, so there the row looked selectable
-/// (Wave 04 walk, W04-4).
+/// token. It used to be the `ext.hint` colour, which is `textPrimary` in dark,
+/// so there the row looked selectable (Wave 04 walk, W04-4). Since 2026-10-15
+/// a `soon` year also carries the School form's "Soon" mark
+/// ([ReferenceDropdown.rowMarks]); the mark never decides selectability.
 typedef PickerOption = ({
   String id,
   String label,
@@ -66,6 +67,7 @@ class ReferenceDropdown extends ConsumerWidget {
     this.errorText,
     this.onRetry,
     this.fieldKey,
+    this.rowMarks,
   });
 
   /// Field caption (localized).
@@ -93,6 +95,17 @@ class ReferenceDropdown extends ConsumerWidget {
 
   /// Stable key for widget tests / semantics, e.g. `'field-governorateId'`.
   final String? fieldKey;
+
+  /// A short mark drawn at a row's end edge, keyed by the row's `id` — "Soon"
+  /// on a School stage or education system (Figma `1409:26374` / `1409:26436`)
+  /// or a University study year (`1409:26536`) the server has not opened yet,
+  /// the same mark on all three. Null, or no entry for a
+  /// row, leaves that row exactly as it was. On a refused row the label and
+  /// glyph are dimmed and the mark is not, as the frames draw it. The mark is
+  /// part of the row's spoken name too ("Prep 1, Soon"), so a screen reader says
+  /// why the row is dimmed. It does not change whether a row can be selected:
+  /// that is [PickerOption.enabled], on its own.
+  final Map<String, String>? rowMarks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -156,6 +169,7 @@ class ReferenceDropdown extends ConsumerWidget {
             rows: rows,
             hint: l10n.selectHint,
             onSelected: onSelected,
+            rowMarks: rowMarks,
           ),
         ),
       };
@@ -179,12 +193,14 @@ class _Dropdown extends StatelessWidget {
     required this.rows,
     required this.hint,
     required this.onSelected,
+    this.rowMarks,
   });
 
   final String? value;
   final List<PickerOption> rows;
   final String hint;
   final ValueChanged<String> onSelected;
+  final Map<String, String>? rowMarks;
 
   @override
   Widget build(BuildContext context) {
@@ -213,20 +229,7 @@ class _Dropdown extends StatelessWidget {
               // item's tap handler but keeps it in the list, which is exactly
               // the "visible but refused" shape the contract needs.
               enabled: row.enabled,
-              child: _dimUnless(
-                row.enabled,
-                Row(
-                  children: [
-                    if (row.leading != null) ...[
-                      row.leading!,
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: Text(row.label, overflow: TextOverflow.ellipsis),
-                    ),
-                  ],
-                ),
-              ),
+              child: _rowContent(row, rowMarks?[row.id], ext),
             ),
         ],
         // Belt and braces. `DropdownButton` already refuses to fire for a
@@ -244,6 +247,64 @@ class _Dropdown extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One menu row: the optional leading glyph, the label, and — only when the
+/// caller gave this row a [mark] — the mark at the row's end edge. A row with
+/// no mark is the plain row it always was; the widget tree is unchanged for it.
+///
+/// **The mark is not dimmed with the row.** Figma `1409:26374` (Grade),
+/// `1409:26436` (Education System) and `1409:26536` (Academic Year), light
+/// English, grey the row's label and draw the "Soon" mark at full strength. So
+/// for a refused row only the leading
+/// glyph and the label sit under [disabledControlOpacity]; the mark is drawn
+/// beside that, in `AppType.buttonSmall` (Inter SemiBold 12) in the hint
+/// colour. The frame's pill fill `#EFE6FB` and text `#7B52C4` are not tokens
+/// and have no dark value, so the pill is not built — the text only
+/// (docs/DESIGN_ISSUES.md #133). An enabled row, marked or not, is never dimmed.
+///
+/// A marked row is read as "<label>, <mark>" and its parts are not read again
+/// separately, so the spoken row is the same thing the eye sees.
+Widget _rowContent(PickerOption row, String? mark, AppColors ext) {
+  Widget labelPart() => Row(
+    children: [
+      if (row.leading != null) ...[row.leading!, const SizedBox(width: 10)],
+      Expanded(child: Text(row.label, overflow: TextOverflow.ellipsis)),
+    ],
+  );
+
+  if (mark == null) return _dimUnless(row.enabled, labelPart());
+
+  final markText = Text(
+    mark,
+    style: AppType.buttonSmall.copyWith(color: ext.hint),
+  );
+  final Widget content;
+  if (row.enabled) {
+    content = Row(
+      children: [
+        if (row.leading != null) ...[row.leading!, const SizedBox(width: 10)],
+        Expanded(child: Text(row.label, overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 8),
+        markText,
+      ],
+    );
+  } else {
+    content = Row(
+      children: [
+        Expanded(
+          child: Opacity(opacity: disabledControlOpacity, child: labelPart()),
+        ),
+        const SizedBox(width: 8),
+        markText,
+      ],
+    );
+  }
+  return Semantics(
+    label: '${row.label}, $mark',
+    excludeSemantics: true,
+    child: content,
+  );
 }
 
 /// A refused row at the gated field's own dimming; a selectable one untouched.

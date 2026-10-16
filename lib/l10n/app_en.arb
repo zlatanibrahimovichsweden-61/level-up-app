@@ -194,6 +194,18 @@
   "fieldRejected": "Please check this field",
   "phoneAlreadyRegistered": "This number already has an account. Please sign in.",
   "registrationTokenInvalid": "Your registration session expired. Please start again.",
+  "registrationSoonMark": "Soon",
+  "@registrationSoonMark": {
+    "description": "Trailing mark on a School grade or education-system row the server has not opened (status soon). Figma 1409:26374 / 1409:26436 (light, English) draw it at the row's end edge; the app draws the text only, not the frame's pill (DESIGN_ISSUES #133). Arabic «قريبًا» per the owner, 2026-10-15."
+  },
+  "registrationSchoolStageNotAvailable": "Level Up isn't open for this grade yet. Coming soon!",
+  "@registrationSchoolStageNotAvailable": {
+    "description": "422 school_stage_not_available on completeRegistration (School body): the contract-suggested copy, contract/error-codes.md row `school_stage_not_available` (spec-081 / adr-230, vendored 3.52.0-m1), verbatim. Shown in the School form's failure banner; the same registrationToken is resubmitted after the student picks an open grade."
+  },
+  "registrationEducationSystemNotAvailable": "This education system isn't available yet. Coming soon!",
+  "@registrationEducationSystemNotAvailable": {
+    "description": "422 education_system_not_available on completeRegistration (School body): the contract-suggested copy, contract/error-codes.md row `education_system_not_available` (spec-081 / adr-230, vendored 3.52.0-m1), verbatim. Shown in the School form's failure banner; the same registrationToken is resubmitted after the student picks an open education system."
+  },
 
   "homeWelcome": "Welcome back,",
   "notifications": "Notifications",

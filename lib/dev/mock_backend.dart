@@ -37,6 +37,21 @@ import 'mock_legal.dart';
 import 'mock_notifications.dart';
 import 'mock_support.dart';
 
+/// Which School stages and education systems the mock opens for registration.
+/// TEST DATA for the walk-through, not app logic — the app only ever reads the
+/// `status` the mock serves.
+///
+/// `false` is the LAUNCH rule (Seif's message of 2026-10-12 and the contract
+/// changelog): only `secondary2` and `secondary3` are `active`, and only
+/// `nationalArabic` and `nationalLanguages`; every other stage and system is
+/// `soon` and `POST /auth/register` refuses it with `422
+/// school_stage_not_available` / `education_system_not_available`. `true` opens
+/// everything, as staging serves its test accounts.
+///
+/// Read once, as the default of [buildMockDio]'s `schoolRegistrationAllOpen`;
+/// a test passes that argument instead of editing this line.
+const kMockSchoolRegistrationAllOpen = false;
+
 /// Builds the Dio that replaces the real client for the mock run.
 ///
 /// The chain is [MockBackendInterceptor] then the REAL [ErrorInterceptor], so
@@ -46,7 +61,10 @@ import 'mock_support.dart';
 /// There is no `AuthInterceptor`: the mock never answers 401, so the Bearer +
 /// refresh/retry path is unreachable here anyway, and leaving it out keeps the
 /// harness from depending on `AuthController`/`AuthRepository` wiring.
-Dio buildMockDio({Duration latency = const Duration(milliseconds: 300)}) {
+Dio buildMockDio({
+  Duration latency = const Duration(milliseconds: 300),
+  bool schoolRegistrationAllOpen = kMockSchoolRegistrationAllOpen,
+}) {
   final dio = Dio(
     BaseOptions(
       // Never resolved — the interceptor short-circuits every request before it
@@ -56,7 +74,10 @@ Dio buildMockDio({Duration latency = const Duration(milliseconds: 300)}) {
     ),
   );
   dio.interceptors.addAll([
-    MockBackendInterceptor(latency: latency),
+    MockBackendInterceptor(
+      latency: latency,
+      schoolRegistrationAllOpen: schoolRegistrationAllOpen,
+    ),
     ErrorInterceptor(),
   ]);
   return dio;
@@ -67,9 +88,16 @@ Dio buildMockDio({Duration latency = const Duration(milliseconds: 300)}) {
 /// [latency] is real (not zero) on purpose: the loading state of every picker
 /// and button is part of what this harness exists to let you look at.
 class MockBackendInterceptor extends Interceptor {
-  MockBackendInterceptor({this.latency = const Duration(milliseconds: 300)});
+  MockBackendInterceptor({
+    this.latency = const Duration(milliseconds: 300),
+    this.schoolRegistrationAllOpen = kMockSchoolRegistrationAllOpen,
+  });
 
   final Duration latency;
+
+  /// See [kMockSchoolRegistrationAllOpen]: `false` is the launch rule, `true`
+  /// opens every School stage and education system.
+  final bool schoolRegistrationAllOpen;
 
   /// Which track this mock session is. Set by the OTP code you enter (see
   /// [_kAuthenticatedCode] / [_kUniversityCode]) or by what you register as,
@@ -228,6 +256,33 @@ class MockBackendInterceptor extends Interceptor {
       final rejected = _registerViolations(body);
       if (rejected != null) {
         return _validationFailed(handler, options, rejected);
+      }
+
+      // spec-081 / adr-230: the School body is refused when its stage or
+      // education system is not open for registration. Checked after every
+      // `400` (above), the stage first — it also wins when both are closed.
+      // The token is not consumed and NOTHING is written: the track, the
+      // registered city and the profile edits below stay exactly as they were.
+      // The University body is not affected.
+      if (body['track'] == 'school') {
+        if (!_stageOpen(body['stage'])) {
+          return _problem(
+            handler,
+            options,
+            422,
+            'school_stage_not_available',
+            'Registration is not open for this School stage yet',
+          );
+        }
+        if (!_educationSystemOpen(body['educationSystem'])) {
+          return _problem(
+            handler,
+            options,
+            422,
+            'education_system_not_available',
+            'Registration is not open for this education system yet',
+          );
+        }
       }
 
       // Registering as a university student makes the rest of the session
@@ -633,7 +688,24 @@ class MockBackendInterceptor extends Interceptor {
     }
 
     if (method == 'GET' && path == '/reference/education-systems') {
-      return _ok(handler, options, 200, _educationSystems);
+      return _ok(handler, options, 200, [
+        for (final row in _educationSystems)
+          <String, dynamic>{
+            ...row as Map<String, dynamic>,
+            'status': _statusOf(_educationSystemOpen(row['code'])),
+          },
+      ]);
+    }
+
+    // `listSchoolStages`: always all six, in the fixed order, no names.
+    if (method == 'GET' && path == '/reference/school-stages') {
+      return _ok(handler, options, 200, [
+        for (final stage in _kSchoolStagesInOrder)
+          <String, dynamic>{
+            'stage': stage,
+            'status': _statusOf(_stageOpen(stage)),
+          },
+      ]);
     }
 
     if (method == 'GET' && path == '/reference/universities') {
@@ -654,6 +726,18 @@ class MockBackendInterceptor extends Interceptor {
       'No mock for $method $path',
     );
   }
+
+  /// Is [stage] open for School registration? Anything that is not one of the
+  /// six stages is not (and the real server would have answered `400` first).
+  bool _stageOpen(Object? stage) =>
+      schoolRegistrationAllOpen || _kLaunchOpenStages.contains(stage);
+
+  /// Is the education system [code] open for School registration?
+  bool _educationSystemOpen(Object? code) =>
+      schoolRegistrationAllOpen || _kLaunchOpenEducationSystems.contains(code);
+
+  /// The contract's `status` string for an open / not-open stage or system.
+  String _statusOf(bool open) => open ? 'active' : 'soon';
 
   /// The adr-028 rules `POST /auth/register` now enforces, as a
   /// `ProblemDetails.errors` field map — or null when the body is acceptable.
@@ -1504,6 +1588,30 @@ int _decodeCursor(String? cursor) {
   }
 }
 
+/// The six School stages in the order `listSchoolStages` promises.
+const _kSchoolStagesInOrder = <String>[
+  'prep1',
+  'prep2',
+  'prep3',
+  'secondary1',
+  'secondary2',
+  'secondary3',
+];
+
+/// The launch rule (see [kMockSchoolRegistrationAllOpen]): the only stages
+/// open for School registration. The other four are `soon`.
+const _kLaunchOpenStages = <String>{'secondary2', 'secondary3'};
+
+/// The launch rule: the only education systems open for School registration.
+/// `ig`, `american` and `ib` are `soon`.
+const _kLaunchOpenEducationSystems = <String>{
+  'nationalArabic',
+  'nationalLanguages',
+};
+
+/// The five systems' names. Each is served with a `status` from the rule above
+/// (`GET /reference/education-systems`): it is added when the row is served, so
+/// the one rule decides it for the list and for the `422`.
 final _educationSystems = <dynamic>[
   <String, dynamic>{
     'code': 'nationalArabic',

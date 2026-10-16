@@ -20,6 +20,10 @@ String registrationErrorMessage(AppLocalizations l10n, Object? error) {
         return l10n.registrationTokenInvalid;
       case 'phone_already_registered':
         return l10n.phoneAlreadyRegistered;
+      case 'school_stage_not_available':
+        return l10n.registrationSchoolStageNotAvailable;
+      case 'education_system_not_available':
+        return l10n.registrationEducationSystemNotAvailable;
       case 'validation_failed':
       case 'name_not_allowed':
         return l10n.errorValidationFailed;
@@ -70,8 +74,31 @@ Map<String, RegFieldIssue> fieldIssuesFrom(Object? error) => switch (error) {
   _ when isNameNotAllowed(error) => const {
     RegFields.name: RegFieldIssue.rejected,
   },
+  // `422 school_stage_not_available` / `education_system_not_available` name
+  // no field either, but each can only be about its own: the stage, the system.
+  _ when isSchoolStageNotAvailable(error) => const {
+    RegFields.stage: RegFieldIssue.rejected,
+  },
+  _ when isEducationSystemNotAvailable(error) => const {
+    RegFields.educationSystem: RegFieldIssue.rejected,
+  },
   _ => const {},
 };
+
+/// `422 school_stage_not_available` — the School body's `stage` is not open for
+/// registration yet (`listSchoolStages` said `soon`, or said `active` and has
+/// since changed). Also the code the server answers when BOTH the stage and the
+/// education system are closed. The `registrationToken` is not consumed, so the
+/// student fixes the choice on the School form and resubmits with the SAME
+/// token: this never restarts the registration ([restartsRegistration]).
+bool isSchoolStageNotAvailable(Object? error) =>
+    error is ApiException && error.code == 'school_stage_not_available';
+
+/// `422 education_system_not_available` — only the School body's
+/// `educationSystem` is not open yet. Same token rule as
+/// [isSchoolStageNotAvailable].
+bool isEducationSystemNotAvailable(Object? error) =>
+    error is ApiException && error.code == 'education_system_not_available';
 
 /// `422 name_not_allowed` — the name contains a blocked term.
 ///

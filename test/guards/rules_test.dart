@@ -425,6 +425,189 @@ components:
     });
   });
 
+  group('contract operation-item required-field extraction', () {
+    // A miniature of an operation whose `200` is an inline array: two methods on
+    // one path (so a method is not mixed up with its neighbour), a `required`
+    // sitting BESIDE `items` (so the wrong level is not read), and several
+    // paths that each break the walk in one specific way.
+    const yaml = '''
+openapi: 3.1.0
+paths:
+  /things:
+    get:
+      operationId: listThings
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    status: { type: string, enum: [active, soon] }
+                  required: [id, status]
+        '429':
+          description: slow down
+    post:
+      operationId: makeThing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [other]
+  /no-items:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { \$ref: '#/components/schemas/Whole' }
+  /no-required:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    a: { type: string }
+  /block-required:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - a
+  /outer-required:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                required: [wrongLevel]
+                items:
+                  type: object
+                  properties:
+                    a: { type: string }
+''';
+
+    test('reads the item required list of the named operation', () {
+      expect(
+        contractOperationItemRequiredFields(
+          yaml,
+          path: '/things',
+          method: 'get',
+        ),
+        ['id', 'status'],
+      );
+    });
+
+    test('does not read the neighbouring method of the same path', () {
+      expect(
+        contractOperationItemRequiredFields(
+          yaml,
+          path: '/things',
+          method: 'post',
+        ),
+        ['other'],
+      );
+    });
+
+    test('raises — never returns empty — when the path is absent', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/no-such-path',
+          method: 'get',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises when the path has no such method', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/no-items',
+          method: 'post',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises when the 200 schema has no inline items', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/no-items',
+          method: 'get',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises when the items block has no required list', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/no-required',
+          method: 'get',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('raises on a block-style required list, never reads it as empty', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/block-required',
+          method: 'get',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('a required list beside `items`, not inside it, is not read', () {
+      expect(
+        () => contractOperationItemRequiredFields(
+          yaml,
+          path: '/outer-required',
+          method: 'get',
+        ),
+        throwsA(isA<ContractShapeException>()),
+      );
+    });
+
+    test('reads a document with Windows line endings the same way', () {
+      expect(
+        contractOperationItemRequiredFields(
+          yaml.replaceAll('\n', '\r\n'),
+          path: '/things',
+          method: 'get',
+        ),
+        ['id', 'status'],
+      );
+    });
+  });
+
   group('Dart field declaration', () {
     test('detects a declared constructor parameter', () {
       expect(

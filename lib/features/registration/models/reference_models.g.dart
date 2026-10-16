@@ -37,6 +37,7 @@ _EducationSystemRef _$EducationSystemRefFromJson(Map<String, dynamic> json) =>
       code: json['code'] as String,
       nameAr: json['nameAr'] as String,
       nameEn: json['nameEn'] as String,
+      status: json['status'] as String,
     );
 
 Map<String, dynamic> _$EducationSystemRefToJson(_EducationSystemRef instance) =>
@@ -44,7 +45,17 @@ Map<String, dynamic> _$EducationSystemRefToJson(_EducationSystemRef instance) =>
       'code': instance.code,
       'nameAr': instance.nameAr,
       'nameEn': instance.nameEn,
+      'status': instance.status,
     };
+
+_SchoolStageRef _$SchoolStageRefFromJson(Map<String, dynamic> json) =>
+    _SchoolStageRef(
+      stage: json['stage'] as String,
+      status: json['status'] as String,
+    );
+
+Map<String, dynamic> _$SchoolStageRefToJson(_SchoolStageRef instance) =>
+    <String, dynamic>{'stage': instance.stage, 'status': instance.status};
 
 _UniversityRef _$UniversityRefFromJson(Map<String, dynamic> json) =>
     _UniversityRef(

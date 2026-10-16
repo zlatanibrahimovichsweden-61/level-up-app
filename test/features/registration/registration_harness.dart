@@ -45,12 +45,30 @@ const cities = [
 ];
 
 const educationSystems = [
-  EducationSystemRef(code: 'ig', nameAr: 'آي جي', nameEn: 'IG'),
+  EducationSystemRef(
+    code: 'ig',
+    nameAr: 'آي جي',
+    nameEn: 'IG',
+    status: 'active',
+  ),
   EducationSystemRef(
     code: 'nationalArabic',
     nameAr: 'وطني عربي',
     nameEn: 'National Arabic',
+    status: 'active',
   ),
+];
+
+/// `GET /reference/school-stages`: all six stages in the contract's fixed
+/// order. All `active` here, so every School test that is not about "Soon"
+/// keeps every grade selectable.
+const schoolStages = [
+  SchoolStageRef(stage: 'prep1', status: 'active'),
+  SchoolStageRef(stage: 'prep2', status: 'active'),
+  SchoolStageRef(stage: 'prep3', status: 'active'),
+  SchoolStageRef(stage: 'secondary1', status: 'active'),
+  SchoolStageRef(stage: 'secondary2', status: 'active'),
+  SchoolStageRef(stage: 'secondary3', status: 'active'),
 ];
 
 const schoolsPage = CursorPage<NamedRef>(
@@ -106,6 +124,7 @@ void stubReferenceHappyPath(MockReferenceRepository repo) {
     ),
   ).thenAnswer((_) async => cities);
   when(repo.getEducationSystems).thenAnswer((_) async => educationSystems);
+  when(repo.getSchoolStages).thenAnswer((_) async => schoolStages);
   when(repo.getUniversities).thenAnswer((_) async => universities);
   when(repo.getAvatars).thenAnswer((_) async => const []);
   when(

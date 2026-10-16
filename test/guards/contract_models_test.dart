@@ -155,6 +155,58 @@ void main() {
     ),
   ];
 
+  /// Operations whose `200` response is a bare array of an INLINE item — the
+  /// contract writes the item under the operation instead of naming a schema,
+  /// so [bindings] (which reads `components.schemas`) cannot see it. Kept as a
+  /// SEPARATE list so the table above stays exactly what it was; the check is
+  /// the same one, class-scoped, and reads the item's `required` list from
+  /// `contractOperationItemRequiredFields`.
+  ///
+  /// Both rows exist because `status: active | soon` (3.51.0-m1 / 3.52.0-m1)
+  /// is `required` on them and a School registration that does not model it
+  /// would offer a closed stage as open.
+  const inlineBindings =
+      <
+        ({
+          String label,
+          String path,
+          String method,
+          String dart,
+          String dartClass,
+        })
+      >[
+        (
+          label: 'listSchoolStages (GET /reference/school-stages) items',
+          path: '/reference/school-stages',
+          method: 'get',
+          dart: 'lib/features/registration/models/reference_models.dart',
+          dartClass: 'SchoolStageRef',
+        ),
+        (
+          label:
+              'listEducationSystems (GET /reference/education-systems) items',
+          path: '/reference/education-systems',
+          method: 'get',
+          dart: 'lib/features/registration/models/reference_models.dart',
+          dartClass: 'EducationSystemRef',
+        ),
+      ];
+
+  /// The contract-required names of an inline binding that [body] does not take
+  /// as a constructor parameter.
+  List<String> missingInline(
+    String body,
+    ({String label, String path, String method, String dart, String dartClass})
+    b,
+  ) => [
+    for (final field in contractOperationItemRequiredFields(
+      contract,
+      path: b.path,
+      method: b.method,
+    ))
+      if (!dartDeclaresField(body, field)) field,
+  ];
+
   test('the contract is actually being read', () {
     // The canary. If `contract/openapi.yaml` moves or is emptied, every binding
     // below would raise rather than pass vacuously — but this states the
@@ -201,6 +253,80 @@ void main() {
             'the field genuinely should not be modelled, that is a question for '
             'docs/seif_fight.md, not a guard to switch off.',
       );
+    });
+  }
+
+  for (final b in inlineBindings) {
+    test('${b.label} — every contract-required field is modelled', () {
+      final dart = File(b.dart).readAsStringSync();
+
+      // Class-scoped, exactly like the schema bindings: a binding naming a
+      // class the file no longer declares fails here rather than widening back
+      // to the whole file.
+      final body = dartClassBody(dart, b.dartClass);
+      expect(
+        body,
+        isNotNull,
+        reason:
+            '${b.dart} declares no `class ${b.dartClass}`. Either the model was '
+            'renamed or moved — update this binding — or it was deleted, which '
+            'is a contract question for docs/seif_fight.md. Do NOT widen this '
+            'back to the whole file.',
+      );
+
+      final missing = missingInline(body!, b);
+
+      expect(
+        missing,
+        isEmpty,
+        reason:
+            'contract/openapi.yaml marks ${missing.join(", ")} as REQUIRED on '
+            'the items of ${b.method.toUpperCase()} ${b.path}, but ${b.dart} '
+            'does not take ${missing.length == 1 ? "it" : "them"} as a '
+            'constructor parameter on ${b.dartClass}.\n'
+            'The contract wins: add the field to the model and regenerate '
+            '(`dart run build_runner build`). Do NOT delete this binding — if '
+            'the field genuinely should not be modelled, that is a question for '
+            'docs/seif_fight.md, not a guard to switch off.',
+      );
+    });
+
+    // MUTATION PROBE, permanent. Proves the guard above can FAIL, without ever
+    // breaking a repo file: the real source is read, narrowed to the class, and
+    // the `status` parameter is removed from that STRING in memory. The same
+    // check must then name `status` — and name nothing on the unmodified body.
+    test('${b.label} — mutation probe: dropping `status` from the model is '
+        'caught', () {
+      final dart = File(b.dart).readAsStringSync();
+      final body = dartClassBody(dart, b.dartClass)!;
+
+      // Unmodified: nothing missing (and `status` really is a required field
+      // of the item, so the probe below is about something the contract says).
+      expect(missingInline(body, b), isEmpty);
+      expect(
+        contractOperationItemRequiredFields(
+          contract,
+          path: b.path,
+          method: b.method,
+        ),
+        contains('status'),
+        reason: 'the probe removes `status`, so the contract must require it',
+      );
+
+      final lines = body.split('\n');
+      final mutated = [
+        for (final line in lines)
+          if (!RegExp(r'\bstatus\s*[,)}]').hasMatch(line)) line,
+      ];
+      expect(
+        mutated.length,
+        lessThan(lines.length),
+        reason:
+            'no `status` parameter line was found to remove — the probe '
+            'would be vacuous',
+      );
+
+      expect(missingInline(mutated.join('\n'), b), ['status']);
     });
   }
 }

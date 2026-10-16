@@ -323,6 +323,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهت صلاحية جلسة التسجيل. من فضلك ابدأ من جديد.';
 
   @override
+  String get registrationSoonMark => 'قريبًا';
+
+  @override
+  String get registrationSchoolStageNotAvailable =>
+      'ليفل أب غير متاح لهذا الصف بعد. قريبًا!';
+
+  @override
+  String get registrationEducationSystemNotAvailable =>
+      'هذا النظام التعليمي غير متاح بعد. قريبًا!';
+
+  @override
   String get homeWelcome => 'أهلًا بعودتك،';
 
   @override

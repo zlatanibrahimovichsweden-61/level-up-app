@@ -323,6 +323,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your registration session expired. Please start again.';
 
   @override
+  String get registrationSoonMark => 'Soon';
+
+  @override
+  String get registrationSchoolStageNotAvailable =>
+      'Level Up isn\'t open for this grade yet. Coming soon!';
+
+  @override
+  String get registrationEducationSystemNotAvailable =>
+      'This education system isn\'t available yet. Coming soon!';
+
+  @override
   String get homeWelcome => 'Welcome back,';
 
   @override

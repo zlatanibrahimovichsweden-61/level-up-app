@@ -41,8 +41,8 @@ Map<String, dynamic> _schoolBody({
   'cityName': ?cityName,
   'schoolId': ?schoolId,
   if (includeSchoolName) 'schoolName': 'Some Free Text',
-  'stage': 'secondary1',
-  'educationSystem': 'ig',
+  'stage': 'secondary2',
+  'educationSystem': 'nationalArabic',
   'parentPhone': '+2010000000001',
 };
 

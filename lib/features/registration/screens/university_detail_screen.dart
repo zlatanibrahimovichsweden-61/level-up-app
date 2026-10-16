@@ -214,15 +214,23 @@ class _UniversityDetailScreenState
                             id: year.id,
                             label: l10n.studyYearNumber(year.yearNumber),
                             leading: null,
-                            // The capability Phase 1 added, in its first real
-                            // use. The row carries no extra wording: the
-                            // disabled treatment is the existing `ext.hint`
-                            // colour the field already uses for its other
-                            // unavailable states, and a "coming soon" suffix
-                            // would be new copy nobody has approved.
+                            // Only `active` can be chosen. A `soon` year is
+                            // dimmed and carries the School form's "Soon" mark
+                            // (`rowMarks` below); any other status is dimmed
+                            // with no mark.
                             enabled: year.status == _activeYear,
                           ),
                       ]),
+                      // "Soon" on the years the server marks `soon` — the same
+                      // key, style and row treatment as the School pickers
+                      // (Figma `1409:26536`; owner decision 2026-10-15). It
+                      // never changes which rows can be selected.
+                      rowMarks: {
+                        for (final year
+                            in selectedFaculty?.years ?? const <StudyYearRef>[])
+                          if (year.status == _soonYear)
+                            year.id: l10n.registrationSoonMark,
+                      },
                       errorText: errorFor(RegFields.studyYearId),
                       onSelected: (id) =>
                           _edit(() => controller.setStudyYear(id)),
@@ -321,6 +329,10 @@ class _UniversityDetailScreenState
   /// enum because the contract keeps it open; only `active` enables a row, so
   /// an unknown third status disables rather than crashes.
   static const _activeYear = 'active';
+
+  /// The year status that carries the "Soon" mark. A status that is neither
+  /// this nor [_activeYear] is disabled with no mark.
+  static const _soonYear = 'soon';
 
   /// 201 → `/home`; a token/phone failure → restart at `/login`.
   void _handleSubmitOutcome(AppLocalizations l10n) {

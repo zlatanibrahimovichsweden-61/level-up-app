@@ -556,7 +556,7 @@ as bool,
 /// @nodoc
 mixin _$EducationSystemRef {
 
- String get code; String get nameAr; String get nameEn;
+ String get code; String get nameAr; String get nameEn; String get status;
 /// Create a copy of EducationSystemRef
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -569,16 +569,16 @@ $EducationSystemRefCopyWith<EducationSystemRef> get copyWith => _$EducationSyste
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EducationSystemRef&&(identical(other.code, code) || other.code == code)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EducationSystemRef&&(identical(other.code, code) || other.code == code)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn)&&(identical(other.status, status) || other.status == status));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,nameAr,nameEn);
+int get hashCode => Object.hash(runtimeType,code,nameAr,nameEn,status);
 
 @override
 String toString() {
-  return 'EducationSystemRef(code: $code, nameAr: $nameAr, nameEn: $nameEn)';
+  return 'EducationSystemRef(code: $code, nameAr: $nameAr, nameEn: $nameEn, status: $status)';
 }
 
 
@@ -589,7 +589,7 @@ abstract mixin class $EducationSystemRefCopyWith<$Res>  {
   factory $EducationSystemRefCopyWith(EducationSystemRef value, $Res Function(EducationSystemRef) _then) = _$EducationSystemRefCopyWithImpl;
 @useResult
 $Res call({
- String code, String nameAr, String nameEn
+ String code, String nameAr, String nameEn, String status
 });
 
 
@@ -606,11 +606,12 @@ class _$EducationSystemRefCopyWithImpl<$Res>
 
 /// Create a copy of EducationSystemRef
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? nameAr = null,Object? nameEn = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? nameAr = null,Object? nameEn = null,Object? status = null,}) {
   return _then(_self.copyWith(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,nameAr: null == nameAr ? _self.nameAr : nameAr // ignore: cast_nullable_to_non_nullable
 as String,nameEn: null == nameEn ? _self.nameEn : nameEn // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -696,10 +697,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String nameAr,  String nameEn)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String nameAr,  String nameEn,  String status)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EducationSystemRef() when $default != null:
-return $default(_that.code,_that.nameAr,_that.nameEn);case _:
+return $default(_that.code,_that.nameAr,_that.nameEn,_that.status);case _:
   return orElse();
 
 }
@@ -717,10 +718,10 @@ return $default(_that.code,_that.nameAr,_that.nameEn);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String nameAr,  String nameEn)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String nameAr,  String nameEn,  String status)  $default,) {final _that = this;
 switch (_that) {
 case _EducationSystemRef():
-return $default(_that.code,_that.nameAr,_that.nameEn);case _:
+return $default(_that.code,_that.nameAr,_that.nameEn,_that.status);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -737,10 +738,10 @@ return $default(_that.code,_that.nameAr,_that.nameEn);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String nameAr,  String nameEn)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String nameAr,  String nameEn,  String status)?  $default,) {final _that = this;
 switch (_that) {
 case _EducationSystemRef() when $default != null:
-return $default(_that.code,_that.nameAr,_that.nameEn);case _:
+return $default(_that.code,_that.nameAr,_that.nameEn,_that.status);case _:
   return null;
 
 }
@@ -752,12 +753,13 @@ return $default(_that.code,_that.nameAr,_that.nameEn);case _:
 @JsonSerializable()
 
 class _EducationSystemRef implements EducationSystemRef {
-  const _EducationSystemRef({required this.code, required this.nameAr, required this.nameEn});
+  const _EducationSystemRef({required this.code, required this.nameAr, required this.nameEn, required this.status});
   factory _EducationSystemRef.fromJson(Map<String, dynamic> json) => _$EducationSystemRefFromJson(json);
 
 @override final  String code;
 @override final  String nameAr;
 @override final  String nameEn;
+@override final  String status;
 
 /// Create a copy of EducationSystemRef
 /// with the given fields replaced by the non-null parameter values.
@@ -772,16 +774,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EducationSystemRef&&(identical(other.code, code) || other.code == code)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EducationSystemRef&&(identical(other.code, code) || other.code == code)&&(identical(other.nameAr, nameAr) || other.nameAr == nameAr)&&(identical(other.nameEn, nameEn) || other.nameEn == nameEn)&&(identical(other.status, status) || other.status == status));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,code,nameAr,nameEn);
+int get hashCode => Object.hash(runtimeType,code,nameAr,nameEn,status);
 
 @override
 String toString() {
-  return 'EducationSystemRef(code: $code, nameAr: $nameAr, nameEn: $nameEn)';
+  return 'EducationSystemRef(code: $code, nameAr: $nameAr, nameEn: $nameEn, status: $status)';
 }
 
 
@@ -792,7 +794,7 @@ abstract mixin class _$EducationSystemRefCopyWith<$Res> implements $EducationSys
   factory _$EducationSystemRefCopyWith(_EducationSystemRef value, $Res Function(_EducationSystemRef) _then) = __$EducationSystemRefCopyWithImpl;
 @override @useResult
 $Res call({
- String code, String nameAr, String nameEn
+ String code, String nameAr, String nameEn, String status
 });
 
 
@@ -809,11 +811,278 @@ class __$EducationSystemRefCopyWithImpl<$Res>
 
 /// Create a copy of EducationSystemRef
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? nameAr = null,Object? nameEn = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? nameAr = null,Object? nameEn = null,Object? status = null,}) {
   return _then(_EducationSystemRef(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,nameAr: null == nameAr ? _self.nameAr : nameAr // ignore: cast_nullable_to_non_nullable
 as String,nameEn: null == nameEn ? _self.nameEn : nameEn // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$SchoolStageRef {
+
+ String get stage; String get status;
+/// Create a copy of SchoolStageRef
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SchoolStageRefCopyWith<SchoolStageRef> get copyWith => _$SchoolStageRefCopyWithImpl<SchoolStageRef>(this as SchoolStageRef, _$identity);
+
+  /// Serializes this SchoolStageRef to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SchoolStageRef&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stage,status);
+
+@override
+String toString() {
+  return 'SchoolStageRef(stage: $stage, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SchoolStageRefCopyWith<$Res>  {
+  factory $SchoolStageRefCopyWith(SchoolStageRef value, $Res Function(SchoolStageRef) _then) = _$SchoolStageRefCopyWithImpl;
+@useResult
+$Res call({
+ String stage, String status
+});
+
+
+
+
+}
+/// @nodoc
+class _$SchoolStageRefCopyWithImpl<$Res>
+    implements $SchoolStageRefCopyWith<$Res> {
+  _$SchoolStageRefCopyWithImpl(this._self, this._then);
+
+  final SchoolStageRef _self;
+  final $Res Function(SchoolStageRef) _then;
+
+/// Create a copy of SchoolStageRef
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? stage = null,Object? status = null,}) {
+  return _then(_self.copyWith(
+stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SchoolStageRef].
+extension SchoolStageRefPatterns on SchoolStageRef {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SchoolStageRef value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SchoolStageRef() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SchoolStageRef value)  $default,){
+final _that = this;
+switch (_that) {
+case _SchoolStageRef():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SchoolStageRef value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SchoolStageRef() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String stage,  String status)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SchoolStageRef() when $default != null:
+return $default(_that.stage,_that.status);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String stage,  String status)  $default,) {final _that = this;
+switch (_that) {
+case _SchoolStageRef():
+return $default(_that.stage,_that.status);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String stage,  String status)?  $default,) {final _that = this;
+switch (_that) {
+case _SchoolStageRef() when $default != null:
+return $default(_that.stage,_that.status);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _SchoolStageRef implements SchoolStageRef {
+  const _SchoolStageRef({required this.stage, required this.status});
+  factory _SchoolStageRef.fromJson(Map<String, dynamic> json) => _$SchoolStageRefFromJson(json);
+
+@override final  String stage;
+@override final  String status;
+
+/// Create a copy of SchoolStageRef
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SchoolStageRefCopyWith<_SchoolStageRef> get copyWith => __$SchoolStageRefCopyWithImpl<_SchoolStageRef>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SchoolStageRefToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SchoolStageRef&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.status, status) || other.status == status));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,stage,status);
+
+@override
+String toString() {
+  return 'SchoolStageRef(stage: $stage, status: $status)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SchoolStageRefCopyWith<$Res> implements $SchoolStageRefCopyWith<$Res> {
+  factory _$SchoolStageRefCopyWith(_SchoolStageRef value, $Res Function(_SchoolStageRef) _then) = __$SchoolStageRefCopyWithImpl;
+@override @useResult
+$Res call({
+ String stage, String status
+});
+
+
+
+
+}
+/// @nodoc
+class __$SchoolStageRefCopyWithImpl<$Res>
+    implements _$SchoolStageRefCopyWith<$Res> {
+  __$SchoolStageRefCopyWithImpl(this._self, this._then);
+
+  final _SchoolStageRef _self;
+  final $Res Function(_SchoolStageRef) _then;
+
+/// Create a copy of SchoolStageRef
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? stage = null,Object? status = null,}) {
+  return _then(_SchoolStageRef(
+stage: null == stage ? _self.stage : stage // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

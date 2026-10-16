@@ -10,10 +10,12 @@ part 'reference_models.g.dart';
 /// none must be added. Contract-required fields are `required` with no default —
 /// a missing field must throw, surfacing contract drift rather than hiding it.
 ///
-/// `EducationSystem.code` and `StudyYearRef.status` are kept as `String` (not
+/// `EducationSystem.code`, `EducationSystemRef.status`, `SchoolStageRef.stage`,
+/// `SchoolStageRef.status` and `StudyYearRef.status` are kept as `String` (not
 /// Dart enums) on purpose: the contract marks `EducationSystem` as extensible
 /// ("clients must tolerate unknown values"), and a generated enum would throw on
-/// a newly-added value. The UI compares against the known wire values.
+/// a newly-added value — as would a `status` the server adds one day. The UI
+/// compares against the known wire values and refuses anything else.
 
 /// Generic bilingual reference row — `{id, nameAr, nameEn}`. Reused for
 /// governorates, cities, and schools (contract `NamedRef`). `id` is a UUID
@@ -50,16 +52,40 @@ abstract class Country with _$Country {
 /// A school education system — `GET /reference/education-systems`.
 /// `code` is the wire enum value (`nationalArabic` / `nationalLanguages` / `ig`
 /// / `american` / `ib`, extensible) submitted verbatim at registration.
+///
+/// `status` is `active` | `soon` (contract-required since 3.51.0-m1, so a
+/// missing one throws): only `active` is open for School registration, `soon`
+/// is shown but not selectable. Kept a `String` — see the file note.
 @freezed
 abstract class EducationSystemRef with _$EducationSystemRef {
   const factory EducationSystemRef({
     required String code,
     required String nameAr,
     required String nameEn,
+    required String status,
   }) = _EducationSystemRef;
 
   factory EducationSystemRef.fromJson(Map<String, dynamic> json) =>
       _$EducationSystemRefFromJson(json);
+}
+
+/// One School stage's registration status — `GET /reference/school-stages`
+/// (`listSchoolStages`, 3.52.0-m1): `{stage, status}`, both required.
+///
+/// The response is always all six stages in the fixed order, but carries NO
+/// names — the app keeps its own stage labels and matches a row to a `Stage` by
+/// its wire value. `status` is `active` | `soon`: only `active` is open for
+/// registration, `soon` is shown but not selectable
+/// (`completeRegistration` answers `422 school_stage_not_available`).
+@freezed
+abstract class SchoolStageRef with _$SchoolStageRef {
+  const factory SchoolStageRef({
+    required String stage,
+    required String status,
+  }) = _SchoolStageRef;
+
+  factory SchoolStageRef.fromJson(Map<String, dynamic> json) =>
+      _$SchoolStageRefFromJson(json);
 }
 
 /// A university with its nested faculties — `GET /reference/universities`.

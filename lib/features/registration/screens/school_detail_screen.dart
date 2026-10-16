@@ -53,6 +53,27 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
   /// (Wave 03, W03-1).
   static const _gap = 25.0;
 
+  /// The wire `status` of a stage / education system that is open for School
+  /// registration. Anything else — `soon`, or a value this build has never seen —
+  /// is shown but not selectable: an unknown status fails closed.
+  static const _active = 'active';
+
+  /// The wire `status` that carries the "Soon" mark. Any other not-open status
+  /// is disabled with no mark.
+  static const _soon = 'soon';
+
+  /// The Education System and Grade blocks, so a `422` that refuses one of them
+  /// can scroll that field back into view (the banner is far below it).
+  final _systemBlockKey = GlobalKey();
+  final _stageBlockKey = GlobalKey();
+
+  /// The stage and education system the draft held when Start learning was
+  /// last tapped - the values that request carried. The pickers stay enabled
+  /// while it is in flight, so the draft can have moved on by the time its
+  /// `422` lands; [_refuseChoice] forgets a refused field only if the draft
+  /// still holds what was refused.
+  ({String? stage, String? educationSystem})? _sent;
+
   /// Any edit clears a stale submit failure so its inline errors stop showing.
   void _edit(void Function() change) {
     change();
@@ -77,6 +98,20 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 
     final controller = ref.read(registrationControllerProvider.notifier);
     final requiresGovernorate = draft.requiresGovernorate ?? false;
+
+    // Which stages and education systems are open is the server's setting, read
+    // fresh on every visit to this screen (D-026): never cached, never
+    // defaulted, never hard-coded. Registration waits for both lists.
+    final stages = ref.watch(schoolStagesProvider);
+    final systems = ref.watch(educationSystemsProvider);
+    final statusesReady = _isSettled(stages) && _isSettled(systems);
+    _clearStaleChoices(
+      stage: draft.stage,
+      educationSystem: draft.educationSystem,
+      stages: stages,
+      systems: systems,
+    );
+    final canSubmit = statusesReady && !submitState.isLoading;
 
     // Inline errors come from whichever side rejected the form: the client
     // pre-flight (before any request) or the server's `validation_failed`
@@ -206,29 +241,42 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                     ),
                     const SizedBox(height: _gap),
 
-                    // 4 — Education System.
-                    ReferenceDropdown(
-                      fieldKey: 'field-educationSystem',
-                      label: l10n.educationSystemLabel,
-                      value: draft.educationSystem,
-                      options: _educationSystemOptions(),
-                      errorText: errorFor(RegFields.educationSystem),
-                      onRetry: () => ref.invalidate(educationSystemsProvider),
-                      onSelected: (code) =>
-                          _edit(() => controller.setEducationSystem(code)),
+                    // 4 — Education System. Each row carries the server's own
+                    // `status`: `active` selects, `soon` shows "Soon" and does
+                    // not. A `422` that refuses the system scrolls back here.
+                    KeyedSubtree(
+                      key: _systemBlockKey,
+                      child: ReferenceDropdown(
+                        fieldKey: 'field-educationSystem',
+                        label: l10n.educationSystemLabel,
+                        value: draft.educationSystem,
+                        options: _educationSystemOptions(systems),
+                        rowMarks: _educationSystemMarks(l10n, systems),
+                        errorText: errorFor(RegFields.educationSystem),
+                        onRetry: () => ref.invalidate(educationSystemsProvider),
+                        onSelected: (code) =>
+                            _edit(() => controller.setEducationSystem(code)),
+                      ),
                     ),
                     const SizedBox(height: _gap),
 
                     // 5 — Grade (the design's label for the contract's `stage`).
-                    // A closed contract enum, so it needs no endpoint.
-                    ReferenceDropdown(
-                      fieldKey: 'field-stage',
-                      label: l10n.stageLabel,
-                      value: draft.stage,
-                      options: AsyncData(_stageOptions(l10n)),
-                      errorText: errorFor(RegFields.stage),
-                      onSelected: (stage) =>
-                          _edit(() => controller.setStage(stage)),
+                    // The six rows and their labels are the app's own; which of
+                    // them is open comes from `GET /reference/school-stages`
+                    // (`active` | `soon`), which carries no names.
+                    KeyedSubtree(
+                      key: _stageBlockKey,
+                      child: ReferenceDropdown(
+                        fieldKey: 'field-stage',
+                        label: l10n.stageLabel,
+                        value: draft.stage,
+                        options: _stageOptions(l10n, stages),
+                        rowMarks: _stageMarks(l10n, stages),
+                        errorText: errorFor(RegFields.stage),
+                        onRetry: () => ref.invalidate(schoolStagesProvider),
+                        onSelected: (stage) =>
+                            _edit(() => controller.setStage(stage)),
+                      ),
                     ),
 
                     // 6 — School. EGYPT ONLY (adr-028 §2): the coded list is
@@ -268,14 +316,26 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
                       ),
                     const SizedBox(height: _gap),
 
+                    // Disabled until both status lists have loaded without
+                    // error, and while a submit is in flight: registering on a
+                    // slow or failed status read would be a guess.
                     PrimaryCta(
-                      enabled: !submitState.isLoading,
+                      enabled: canSubmit,
                       child: FilledButton(
-                        onPressed: submitState.isLoading
-                            ? null
-                            : () => ref
-                                  .read(registrationSubmitProvider.notifier)
-                                  .submit(),
+                        onPressed: canSubmit
+                            ? () {
+                                final current = ref.read(
+                                  registrationControllerProvider,
+                                );
+                                _sent = (
+                                  stage: current?.stage,
+                                  educationSystem: current?.educationSystem,
+                                );
+                                ref
+                                    .read(registrationSubmitProvider.notifier)
+                                    .submit();
+                              }
+                            : null,
                         child: submitState.isLoading
                             ? const SizedBox(
                                 height: 24,
@@ -326,7 +386,8 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     });
   }
 
-  /// 201 → `/home`; a token/phone failure → restart at `/login`.
+  /// 201 → `/home`; a token/phone failure → restart at `/login`; a refused
+  /// stage or education system → stay here and fix the choice.
   void _handleSubmitOutcome(AppLocalizations l10n) {
     ref.listen(registrationSubmitProvider, (_, next) {
       if (!mounted) return;
@@ -343,6 +404,16 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(registrationControllerProvider.notifier).reset();
         });
+        return;
+      }
+
+      if (next.hasError && isSchoolStageNotAvailable(next.error)) {
+        _refuseChoice(stage: true);
+        return;
+      }
+
+      if (next.hasError && isEducationSystemNotAvailable(next.error)) {
+        _refuseChoice(stage: false);
         return;
       }
 
@@ -369,7 +440,143 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     });
   }
 
+  /// A `422` that says the choice is not open: `school_stage_not_available`
+  /// ([stage] true) or `education_system_not_available` (false). The student
+  /// stays on this form with the draft and its token — the token is not
+  /// consumed — and fixes it. The refused selection is forgotten, both status
+  /// lists are read again (they have just proved out of date, or the student
+  /// would have been shown a closed row as open), and the refused field is
+  /// scrolled back into view: the banner that names the problem sits far below
+  /// it. Nothing is resubmitted from here; the next request is the student's own
+  /// Start learning.
+  ///
+  /// The draft is changed directly rather than through [_edit], which would
+  /// clear the very error the banner and the field mark are showing.
+  ///
+  /// The `422` answers the request that was SENT (see [_sent]), and the pickers
+  /// stay enabled while it is in flight. So the field is cleared only if the
+  /// draft still holds the value that was refused: a valid value the student
+  /// picked meanwhile is not wiped. With no value recorded (never expected) it
+  /// is cleared, as it always was.
+  void _refuseChoice({required bool stage}) {
+    final controller = ref.read(registrationControllerProvider.notifier);
+    final draft = ref.read(registrationControllerProvider);
+    final sent = _sent;
+    if (stage) {
+      if (sent == null || draft?.stage == sent.stage) controller.clearStage();
+    } else {
+      if (sent == null || draft?.educationSystem == sent.educationSystem) {
+        controller.clearEducationSystem();
+      }
+    }
+    ref.invalidate(schoolStagesProvider);
+    ref.invalidate(educationSystemsProvider);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final target = (stage ? _stageBlockKey : _systemBlockKey).currentContext;
+      if (target == null) return;
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  /// A settled status list: it has loaded, is not being reloaded (a refresh
+  /// that still holds the old rows is NOT settled — Riverpod 3 keeps the old
+  /// value on a refreshing state), and failed with nothing.
+  bool _isSettled<T>(AsyncValue<List<T>> status) =>
+      !status.isLoading && !status.hasError && status.hasValue;
+
+  /// No stale choice. When the server's statuses are in and the draft still
+  /// holds a stage or education system that is not `active` there — closed,
+  /// unknown, or missing from the answer altogether — the choice is forgotten,
+  /// quietly: no banner, no snackbar. This is what keeps a draft restored from
+  /// an earlier visit, or one made before the server closed an option, from
+  /// being submitted.
+  ///
+  /// After the frame, re-reading both the draft and the lists, so nothing
+  /// mutates during build and a choice the student has just changed is judged
+  /// on what it is now.
+  void _clearStaleChoices({
+    required String? stage,
+    required String? educationSystem,
+    required AsyncValue<List<SchoolStageRef>> stages,
+    required AsyncValue<List<EducationSystemRef>> systems,
+  }) {
+    if (!_isStaleStage(stage, stages) &&
+        !_isStaleSystem(educationSystem, systems)) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final current = ref.read(registrationControllerProvider);
+      if (current == null) return;
+      final controller = ref.read(registrationControllerProvider.notifier);
+      if (_isStaleStage(current.stage, ref.read(schoolStagesProvider))) {
+        controller.clearStage();
+      }
+      if (_isStaleSystem(
+        current.educationSystem,
+        ref.read(educationSystemsProvider),
+      )) {
+        controller.clearEducationSystem();
+      }
+    });
+  }
+
+  bool _isStaleStage(String? stage, AsyncValue<List<SchoolStageRef>> stages) =>
+      stage != null &&
+      _isSettled(stages) &&
+      _stageStatus(stages.requireValue, stage) != _active;
+
+  bool _isStaleSystem(
+    String? educationSystem,
+    AsyncValue<List<EducationSystemRef>> systems,
+  ) =>
+      educationSystem != null &&
+      _isSettled(systems) &&
+      _systemStatus(systems.requireValue, educationSystem) != _active;
+
+  /// The status the server gave [stage], or null when the answer omits it.
+  /// Items whose `stage` this build's `Stage` enum does not know never match a
+  /// row, so they are ignored.
+  String? _stageStatus(List<SchoolStageRef> served, String stage) {
+    for (final item in served) {
+      if (item.stage == stage) return item.status;
+    }
+    return null;
+  }
+
+  /// The status the server gave the education system [code], or null.
+  String? _systemStatus(List<EducationSystemRef> served, String code) {
+    for (final item in served) {
+      if (item.code == code) return item.status;
+    }
+    return null;
+  }
+
   // --- Options mapping: bilingual rows in, {id,label} out ------------------
+
+  /// What a status-driven picker is told. Loading — INCLUDING a refresh that
+  /// still holds the old rows, which would otherwise show a closed row as open
+  /// for as long as the answer takes — and error are passed on as such; only a
+  /// settled, error-free list becomes data. Loading wins over an error that is
+  /// being retried.
+  AsyncValue<List<PickerOption>> _whenSettled<T>(
+    AsyncValue<List<T>> status,
+    List<PickerOption> Function(List<T> served) rows,
+  ) {
+    if (status.isLoading) return const AsyncLoading();
+    if (status.hasError) {
+      return AsyncError(status.error!, status.stackTrace ?? StackTrace.empty);
+    }
+    if (!status.hasValue) return const AsyncLoading();
+    return AsyncData(rows(status.requireValue));
+  }
 
   AsyncValue<List<PickerOption>> _countryOptions() => ref
       .watch(countriesProvider)
@@ -413,29 +620,65 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
         .whenData(_namedRefRows);
   }
 
-  AsyncValue<List<PickerOption>> _educationSystemOptions() => ref
-      .watch(educationSystemsProvider)
-      .whenData(
-        (systems) => [
-          for (final system in systems)
-            (
-              id: system.code,
-              label: localizedRefName(context, system.nameAr, system.nameEn),
-              leading: null,
-              enabled: true,
-            ),
-        ],
-      );
+  /// The education systems the server served, each selectable only when its
+  /// `status` is exactly `active` (`soon` and anything unknown are shown,
+  /// dimmed, and refuse a tap).
+  AsyncValue<List<PickerOption>> _educationSystemOptions(
+    AsyncValue<List<EducationSystemRef>> systems,
+  ) => _whenSettled(systems, (served) {
+    return [
+      for (final system in served)
+        (
+          id: system.code,
+          label: localizedRefName(context, system.nameAr, system.nameEn),
+          leading: null,
+          enabled: system.status == _active,
+        ),
+    ];
+  });
 
-  List<PickerOption> _stageOptions(AppLocalizations l10n) => [
-    for (final stage in Stage.values)
-      (
-        id: stage.wireValue,
-        label: _stageLabel(l10n, stage),
-        leading: null,
-        enabled: true,
-      ),
-  ];
+  /// "Soon" on the systems the server marks `soon` — and only those: an
+  /// unknown status is disabled with no mark.
+  Map<String, String>? _educationSystemMarks(
+    AppLocalizations l10n,
+    AsyncValue<List<EducationSystemRef>> systems,
+  ) => _isSettled(systems)
+      ? {
+          for (final system in systems.requireValue)
+            if (system.status == _soon) system.code: l10n.registrationSoonMark,
+        }
+      : null;
+
+  /// The six stages in `Stage.values` order, under the app's own labels. The
+  /// answer only says which are open: a stage it leaves out is disabled, a
+  /// stage it names that the enum does not know is ignored.
+  AsyncValue<List<PickerOption>> _stageOptions(
+    AppLocalizations l10n,
+    AsyncValue<List<SchoolStageRef>> stages,
+  ) => _whenSettled(stages, (served) {
+    return [
+      for (final stage in Stage.values)
+        (
+          id: stage.wireValue,
+          label: _stageLabel(l10n, stage),
+          leading: null,
+          enabled: _stageStatus(served, stage.wireValue) == _active,
+        ),
+    ];
+  });
+
+  /// "Soon" on the stages the server marks `soon`. A stage with an unknown
+  /// status, or one the answer omits, is disabled with no mark.
+  Map<String, String>? _stageMarks(
+    AppLocalizations l10n,
+    AsyncValue<List<SchoolStageRef>> stages,
+  ) => _isSettled(stages)
+      ? {
+          for (final stage in Stage.values)
+            if (_stageStatus(stages.requireValue, stage.wireValue) == _soon)
+              stage.wireValue: l10n.registrationSoonMark,
+        }
+      : null;
 
   List<PickerOption> _namedRefRows(List<NamedRef> rows) => [
     for (final row in rows)
