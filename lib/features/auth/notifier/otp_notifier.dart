@@ -26,6 +26,7 @@ class OtpUiState {
     this.isResending = false,
     this.error,
     this.isInvalidCode = false,
+    this.isBanned = false,
     this.outcome,
   });
 
@@ -41,10 +42,17 @@ class OtpUiState {
   /// `otp_invalid` — drives the red/pink OTP-box error styling.
   final bool isInvalidCode;
 
+  /// `403 account_banned` — the code was correct, the server consumed it, and no
+  /// tokens or session exist (`contract/error-codes.md:51`). Terminal for this
+  /// screen: the code cannot be retried and resend is locked, so the only way
+  /// forward is back to login. Deliberately separate from [isInvalidCode] (no
+  /// red-box styling) and from [outcome] (nothing succeeded).
+  final bool isBanned;
+
   /// Set once verify succeeds; the screen navigates on it.
   final AuthOutcome? outcome;
 
-  bool get canResend => secondsRemaining <= 0;
+  bool get canResend => !isBanned && secondsRemaining <= 0;
 
   OtpUiState copyWith({
     int? secondsRemaining,
@@ -53,6 +61,7 @@ class OtpUiState {
     Object? error,
     bool clearError = false,
     bool? isInvalidCode,
+    bool? isBanned,
     AuthOutcome? outcome,
   }) {
     return OtpUiState(
@@ -61,6 +70,7 @@ class OtpUiState {
       isResending: isResending ?? this.isResending,
       error: clearError ? null : (error ?? this.error),
       isInvalidCode: isInvalidCode ?? this.isInvalidCode,
+      isBanned: isBanned ?? this.isBanned,
       outcome: outcome ?? this.outcome,
     );
   }
@@ -100,6 +110,9 @@ class OtpNotifier extends Notifier<OtpUiState> {
   /// `registrationRequired` no tokens exist, so only the reg token is carried.
   Future<void> verify(String code) async {
     if (state.isVerifying) return;
+    // A banned account's code is already consumed and the contract says "do not
+    // retry" (`contract/error-codes.md:51`), so a second call is never sent.
+    if (state.isBanned) return;
     // Captured BEFORE the first await (R-2 / W3-1). `otpProvider` is
     // autoDispose: popping the OTP screen mid-verify disposes this notifier,
     // and `Ref.read` on a disposed ref throws `UnmountedRefException`
@@ -124,14 +137,20 @@ class OtpNotifier extends Notifier<OtpUiState> {
         device: device,
       );
       switch (result) {
-        case AuthenticatedResult(:final tokens):
+        case AuthenticatedResult(:final tokens, :final profile):
           await storage.writeTokens(
             access: tokens.accessToken,
             refresh: tokens.refreshToken,
           );
+          // The id of the student who just signed in: handed to the auth
+          // controller (so a later forced sign-out can bind the return target
+          // to THIS session's student without a `/me` read) and to the outcome
+          // (so the landing can match the target). Null when the response
+          // carried none.
+          final studentId = _studentIdOf(profile);
           // Flip the single source of auth truth so the router guard authorizes
           // /home (the screen still shows the success view + Continue first).
-          auth.markAuthenticated();
+          auth.markAuthenticated(studentId: studentId);
           // The guard goes HERE, not around the await block. The tokens are
           // already written and auth is already flipped — those side effects
           // must survive the screen being popped, or the student ends up
@@ -140,7 +159,7 @@ class OtpNotifier extends Notifier<OtpUiState> {
           if (_disposed) return;
           state = state.copyWith(
             isVerifying: false,
-            outcome: const AuthenticatedOutcome(),
+            outcome: AuthenticatedOutcome(studentId: studentId),
           );
         case RegistrationRequiredResult(
           :final registrationToken,
@@ -157,6 +176,20 @@ class OtpNotifier extends Notifier<OtpUiState> {
       }
     } on AppException catch (e) {
       if (_disposed) return;
+      if (isAccountBanned(e)) {
+        // The code was correct but the account is banned: no tokens exist, so
+        // nothing is written to storage and `markAuthenticated` is NOT called
+        // (both live in the success arm above and are unreachable from here —
+        // keep it that way). The countdown is moot, so stop it too.
+        _timer?.cancel();
+        state = state.copyWith(
+          isVerifying: false,
+          error: e,
+          isBanned: true,
+          isInvalidCode: false,
+        );
+        return;
+      }
       state = state.copyWith(
         isVerifying: false,
         error: e,
@@ -174,7 +207,9 @@ class OtpNotifier extends Notifier<OtpUiState> {
   /// Re-requests an OTP (enabled only when the countdown hits 0) and restarts
   /// the countdown from the fresh `resendAfterSeconds`.
   Future<void> resend() async {
-    if (!state.canResend || state.isResending) return;
+    // `canResend` is already false when banned; the explicit check keeps the
+    // "no repository call once banned" rule readable at the call site.
+    if (state.isBanned || !state.canResend || state.isResending) return;
     state = state.copyWith(
       isResending: true,
       clearError: true,
@@ -184,22 +219,32 @@ class OtpNotifier extends Notifier<OtpUiState> {
       final res = await ref.read(authRepositoryProvider).requestOtp(args.phone);
       // Returning early also skips _scheduleTicks(), which is correct: a timer
       // started on a disposed notifier would tick into a dead state setter.
-      if (_disposed) return;
+      if (_disposed || _settleResendIfBanned()) return;
       state = state.copyWith(
         isResending: false,
         secondsRemaining: res.resendAfterSeconds,
       );
       if (res.resendAfterSeconds > 0) _scheduleTicks();
     } on AppException catch (e) {
-      if (_disposed) return;
+      if (_disposed || _settleResendIfBanned()) return;
       state = state.copyWith(isResending: false, error: e);
     } catch (_) {
-      if (_disposed) return;
+      if (_disposed || _settleResendIfBanned()) return;
       state = state.copyWith(
         isResending: false,
         error: const UnknownException(),
       );
     }
+  }
+
+  /// A `verify` can answer `account_banned` while a resend is still in flight
+  /// (the spinner does not disable Verify). The banned state is terminal, so
+  /// the late resend answer must not restart the countdown or replace the
+  /// banned error — it only clears its own spinner. Returns true when it did.
+  bool _settleResendIfBanned() {
+    if (!state.isBanned) return false;
+    state = state.copyWith(isResending: false);
+    return true;
   }
 
   void _scheduleTicks() {
@@ -214,6 +259,18 @@ class OtpNotifier extends Notifier<OtpUiState> {
       }
     });
   }
+}
+
+/// The server id of the student who just signed in, from the opaque `profile`
+/// of an `authenticated` verify response — the contract's required
+/// `StudentProfile.id` — or null when it is absent or not a non-empty string.
+/// It exists only so the router's return target can be matched to the student
+/// whose session ended — the sign-in landing compares it, and the auth
+/// controller keeps it for the session so a later forced sign-out can bind the
+/// target; nothing else in the profile is read here, and the id is never logged.
+String? _studentIdOf(Map<String, dynamic> profile) {
+  final id = profile['id'];
+  return id is String && id.isNotEmpty ? id : null;
 }
 
 final otpProvider = NotifierProvider.autoDispose

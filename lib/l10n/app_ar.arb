@@ -61,6 +61,7 @@
   "errorOtpInvalid": "الرمز غير صحيح، حاول مرة أخرى",
   "errorOtpExpired": "انتهت صلاحية هذا الرمز. اطلب رمزًا جديدًا.",
   "errorOtpThrottled": "محاولات كثيرة جدًا. انتظر لحظة ثم حاول مرة أخرى.",
+  "errorAccountBanned": "تم حظر الحساب — تواصل مع الدعم",
   "errorValidationFailed": "من فضلك تحقق من بياناتك وحاول مرة أخرى.",
 
   "schoolRegistrationTitle": "تسجيل طلاب المدارس",

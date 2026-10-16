@@ -186,6 +186,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Too many attempts. Please wait a moment and try again.';
 
   @override
+  String get errorAccountBanned => 'Account banned — contact Support';
+
+  @override
   String get errorValidationFailed => 'Please check your input and try again.';
 
   @override

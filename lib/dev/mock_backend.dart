@@ -174,10 +174,22 @@ class MockBackendInterceptor extends Interceptor {
           'The code is incorrect.',
         );
       }
+      // The banned path — `403 account_banned` per the contract's verifyOtp
+      // (the code was correct, it is consumed, no tokens or session are
+      // issued) — so the OTP screen's inline banned state can be walked.
+      if (code == _kBannedCode) {
+        return _problem(
+          handler,
+          options,
+          403,
+          'account_banned',
+          'The account has been banned.',
+        );
+      }
       // The two magic codes land you straight on /home with a full session, one
-      // per track; `999999` is the wrong code (above); every other 6-digit
-      // code forks to registration so the wizard
-      // can be walked.
+      // per track; `999999` is the wrong code and `222222` the banned account
+      // (both above); every other 6-digit code forks to registration so the
+      // wizard can be walked.
       if (code == _kAuthenticatedCode || code == _kUniversityCode) {
         _track = code == _kUniversityCode ? 'university' : 'school';
         return _ok(handler, options, 200, <String, dynamic>{
@@ -1236,6 +1248,10 @@ const _kUniversityCode = '111111';
 
 /// Enter this at the OTP screen to get `400 otp_invalid` — the wrong-code state.
 const _kInvalidCode = '999999';
+
+/// Enter this at the OTP screen to get `403 account_banned` — the banned
+/// account's sign-in, which the contract refuses only after a correct code.
+const _kBannedCode = '222222';
 
 /// The mock's real launch countries. The rows beyond these in [_countries]
 /// exist only to make v1.1's new `/reference/*` failures reachable from the

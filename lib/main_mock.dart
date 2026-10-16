@@ -9,7 +9,8 @@
 /// At the OTP screen: **`000000`** signs in as a SCHOOL student, **`111111`** as
 /// a UNIVERSITY one (which changes Home, the subject list and the whole shape of
 /// the Learn tab); **`999999`** answers `400 otp_invalid` (the wrong-code state);
-/// any other 6-digit code forks to the registration wizard.
+/// **`222222`** answers `403 account_banned` (the banned-account state); any
+/// other 6-digit code forks to the registration wizard.
 ///
 /// This file and `lib/dev/mock_backend.dart` are the ONLY additions — nothing
 /// that ships was edited. Injection is a single `dioProvider` override, which

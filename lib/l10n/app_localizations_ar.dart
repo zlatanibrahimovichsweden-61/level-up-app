@@ -187,6 +187,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'محاولات كثيرة جدًا. انتظر لحظة ثم حاول مرة أخرى.';
 
   @override
+  String get errorAccountBanned => 'تم حظر الحساب — تواصل مع الدعم';
+
+  @override
   String get errorValidationFailed => 'من فضلك تحقق من بياناتك وحاول مرة أخرى.';
 
   @override

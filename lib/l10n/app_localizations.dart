@@ -428,6 +428,12 @@ abstract class AppLocalizations {
   /// **'Too many attempts. Please wait a moment and try again.'**
   String get errorOtpThrottled;
 
+  /// 403 account_banned on verifyOtp: the contract-suggested copy (contract/error-codes.md account_banned row, pin eddb6ac), shown inline on the OTP screen until the designer's banned frame exists (CW02).
+  ///
+  /// In en, this message translates to:
+  /// **'Account banned — contact Support'**
+  String get errorAccountBanned;
+
   /// No description provided for @errorValidationFailed.
   ///
   /// In en, this message translates to:

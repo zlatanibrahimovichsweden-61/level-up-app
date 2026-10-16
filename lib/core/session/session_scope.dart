@@ -48,6 +48,23 @@ import '../../features/registration/notifier/school_search_notifier.dart';
 ///   the same catalogue for every student, carrying no user data. Dropping them
 ///   would re-download the whole reference set on a metered Egyptian connection
 ///   to achieve nothing.
+/// - `returnTargetProvider` — the router's in-memory "where was I" location
+///   (`lib/core/router/return_target.dart`). A FORCED sign-out must leave it
+///   in place: returning the student to where they were after signing in
+///   again is the whole feature. It holds a route string and the ending
+///   student's server id — no other profile data — and `AuthController.logout`
+///   (the user-initiated path) clears it itself.
+///   A forced sign-out binds it to the ENDING student's server id
+///   (`ReturnTarget.sessionEnding`, called by `forceLogout` before the state
+///   flip), and only that same student gets it back at the next sign-in; a
+///   different student lands on Home and the target is dropped (owner decision
+///   O-10). The id is held in memory beside the route string, never logged.
+///   It is a plain `Provider`, which the discipline scan above does NOT see
+///   (it only classifies notifier providers), so nothing there guards it.
+///   What pins "survives a forced sign-out" is `session_isolation_test.dart`
+///   (the `same(target)` case after `forceLogout`), and a comment-stripped scan
+///   in `session_scope_discipline_test.dart` fails if the CODE of this file
+///   ever references it.
 /// - Repositories, Dio, storage, connectivity, router, screen protection —
 ///   infrastructure, stateless with respect to who is signed in.
 ///

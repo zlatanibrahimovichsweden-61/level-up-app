@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/core_providers.dart';
+import '../../../core/router/return_target.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/elevation/primary_cta.dart';
@@ -325,6 +326,10 @@ class _UniversityDetailScreenState
       if (!mounted) return;
 
       if (next.value != null) {
+        // `registrationRequired` means no account existed for this phone, so a
+        // new registrant is never the student whose session ended: forget any
+        // remembered return target and land on Home.
+        ref.read(returnTargetProvider).clear();
         context.go('/home');
         // Drop the consumed registrationToken after the frame, so this screen
         // is gone before the draft-null guard could flash the expiry view.
