@@ -18,7 +18,7 @@ For each hub, drafting means: hub route, auth handshake (Bearer), client→serve
 
 ### Route and authentication
 
-- **Route:** `/hubs/chat` (outside `/api/v1`).
+- **Route:** `/hubs/chat` (outside `/api/v1`). Production: `wss://api.level-upworld.com/hubs/chat` (live 2026-10-11). Staging: `wss://level-up-backend-staging.up.railway.app/hubs/chat`.
 - **Auth:** the same bearer access token as REST — in the `Authorization` header, or, for the WebSocket handshake where a header cannot be set, in the `access_token` query parameter. The query string is scrubbed from every server log.
 - **Connect is refused** for an invalid or expired token, a superseded session (logged in on another device), and an account pending deletion (adr-114).
 - **Transport — WebSockets only, with `skipNegotiation: true`.** Set the client's transport to WebSockets and turn negotiation off (in most SignalR clients: `transport: WebSockets`, `skipNegotiation: true`). Pass the token through the client's access-token option; it then travels as the `access_token` query parameter of the WebSocket handshake.
@@ -105,4 +105,4 @@ The eight strings the app ships:
 
 - **Tap handling.** `support_ticket_replied`: open the ticket (`ticketId`, `getMySupportTicket`). `friend_request_received`: `friendRequestId` equals the incoming request's `requestId`; open the friend requests list (`listMyFriendRequests`). `academic_year_opened`: open the notifications screen — the same event also arrives as an inbox item of kind `academic_year_opened` (its `track` and `academicYear` are inbox `data`, never push `data`). `chat_message_received`: open the conversation (`conversationId`); it writes no inbox row. **An unknown `kind`: open the notifications screen and ignore the rest.**
 - **At most one per event.** A push is never repeated for the same event once delivered. Each kind is limited per student per hour; a chat conversation produces at most one push per 5 minutes, and none while the app's chat connection received the message.
-- **Token.** The app registers its FCM token after sign-in and on every token refresh (`registerFcmToken`, `PUT /api/v1/me/fcm-token`); one token per student, the latest wins.
+- **Token.** The app registers its FCM token after sign-in and on every token refresh (`registerFcmToken`, `PUT /api/v1/me/fcm-token`); one token per student, the latest wins. Since `3.47.0-m1` the server removes the registration on app logout, when any new sign-in session starts, on a ban and when a deletion request is accepted — never on refresh; the full rule is on `registerFcmToken`.

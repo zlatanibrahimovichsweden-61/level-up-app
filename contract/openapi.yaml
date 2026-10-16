@@ -25,7 +25,7 @@
 openapi: 3.1.0
 info:
   title: Level Up API
-  version: 3.46.0-m1
+  version: 3.52.0-m1
   description: >
     Milestone-1 surface. Paths marked `x-stability: draft` are NOT safe to build against;
     paths marked `stable` are frozen (changes announced via contract-changelog.md).
@@ -88,6 +88,14 @@ info:
     the previous code (after cooldown).
 
 
+    **`Retry-After`** is always a whole number of seconds. It is sent with `rate_limited`, with
+    `forward_daily_limit_reached` and with the avatar and support-photo throttles — **not on every
+    `429`**. `otp_throttled` carries no `Retry-After` and no remaining duration: time the resend
+    button from `requestOtp`'s `202` `resendAfterSeconds`, and treat a verify lock as the
+    15-minute lock above (30 minutes on the recovery code checks, `verifyParentOtp` and
+    `confirmRecovery`).
+
+
     **Registration ordering — phone-verify-first:** no PII is submitted before phone possession
     is proven. `otp/verify` returns full tokens for an existing account or a short-lived
     `registrationToken` (10 min) for a new phone; `POST /auth/register` consumes it.
@@ -105,6 +113,8 @@ info:
     **Question text format:** plain text; the ONLY inline markup is `<u>…</u>` for underline
     (contract v2 rich-text scope). No other HTML/Markdown is ever sent.
 servers:
+  - url: https://api.level-upworld.com/api/v1
+    description: production (live 2026-10-11)
   - url: https://level-up-backend-staging.up.railway.app/api/v1
     description: staging
 security:
@@ -114,6 +124,8 @@ tags:
     description: OTP login, registration, refresh, device binding, recovery (adr-019, adr-010)
   - name: reference
     description: Public lookup data for registration pickers (no auth)
+  - name: app
+    description: App-level signals the client reads before it has a session (forced-update policy)
   - name: profile
     description: Student profile, avatar, privacy toggles, FCM token
   - name: catalog
@@ -132,22 +144,31 @@ tags:
     description: Scoped boards (adr-015) with privacy filtering (adr-023)
   - name: support
     description: >
-      The student's own support tickets — create, list, read the thread, reply (adr-009, spec-045
-      Group A). Text only for launch (Seif 2026-10-07, amending adr-187): attachments arrive later as
-      an additive change in their own spec. Every operation here is `stable`.
+      The student's own support tickets — create, list, read the thread, reply, and attach photos
+      (adr-009, spec-045 Group A, spec-067). Photos are `stable` since 3.46.0-m1: at most 3 per
+      message and 10 per ticket (`createSupportAttachmentUpload`, `completeSupportAttachment`,
+      `getMySupportAttachmentContent`). Every operation here is `stable`.
   - name: social
     description: >
       The student's friend graph — friend requests, friends, suggestions, exact phone lookup, and a
-      peer block (spec-042, adr-185). Owner-only: no operation reads another student's graph. Free
-      for every student. No chat, photos or streaks here. Every operation here is `stable`.
+      peer block (spec-042, adr-185), and the caller's friend streaks (`listMyFriendStreaks`,
+      spec-056). Owner-only: no operation reads another student's graph. Free for every student.
+      Chat is under the `chat` tag. Every operation here is `stable`.
   - name: chat
     description: >
-      One-to-one friend TEXT chat (spec-055, adr-196). One conversation per friendship: it exists from
-      the moment two students become friends and is deleted, with every message, on unfriend, block
-      or Track transfer. A message expires 24 hours after the recipient reads it or 30 days after it
+      One-to-one friend chat: text messages and forwarded-question cards (spec-055, spec-056,
+      adr-196). One conversation per friendship: it exists from the moment two students become
+      friends and is deleted, with every message, on unfriend, block or Track transfer. A message expires 24 hours after the recipient reads it or 30 days after it
       is sent, whichever is first. Every state change is REST; the `chat` SignalR hub
-      (`realtime.md`, also `stable`) only pushes. No photo, voice, group chat or streaks. Every
-      operation here is `stable`.
+      (`realtime.md`, also `stable`) only pushes. No photo, voice or group chat. Friend streaks
+      exist (`listMyFriendStreaks`, under `social`), but `ConversationSummary` carries no streak
+      counter: read the streak from `listMyFriendStreaks`. Every operation here is `stable`.
+  - name: dailyTasks
+    description: >
+      Admin-defined daily tasks (spec-078) — "answer N questions", "answer N correctly", "finish N
+      quizzes", optionally limited to one subject. Progress resets at Africa/Cairo midnight; the reward
+      is credited instantly when the count is reached, to the student's current Track's points. For
+      every student, free or subscribed; no push and no inbox item — screen only. `draft`.
 paths:
   /auth/otp/request:
     post:
@@ -158,7 +179,9 @@ paths:
       summary: Send a login OTP to a phone (SMS)
       description: >
         Always `202` for a well-formed phone, whether or not an account exists (anti-enumeration).
-        Delivered by SMS; the client is not told the provider.
+        Delivered by SMS; the client is not told the provider. Some accounts may be configured
+        server-side for app-store review; requests, responses, status codes, throttling and error
+        codes are identical for every number.
       security: []
       requestBody:
         required: true
@@ -184,7 +207,7 @@ paths:
           description: "`validation_failed` (malformed phone)"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled` (cooldown or per-identifier/device/IP limit)"
+          description: "`otp_throttled` (cooldown or per-identifier/device/IP limit). No `Retry-After` header and no remaining duration: time the resend button from the last `202`'s `resendAfterSeconds`."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/otp/verify:
     post:
@@ -197,7 +220,9 @@ paths:
         Proving possession forks the flow: `authenticated` = tokens + profile, and if this is a
         NEW device the previous device's session is revoked HERE (it starts seeing
         `session_superseded`). `registrationRequired` = short-lived registrationToken (10 min);
-        no account exists yet. 5 failed attempts → 15-min lock (`otp_throttled`).
+        no account exists yet. 5 failed attempts → 15-min lock (`otp_throttled`). Some accounts may
+        be configured server-side for app-store review; requests, responses, status codes,
+        throttling and error codes are identical for every number.
       security: []
       requestBody:
         required: true
@@ -231,7 +256,7 @@ paths:
           description: "`account_banned` — the code was verified, but the account has been banned by Support; the code is consumed and no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled` (attempt lockout)"
+          description: "`otp_throttled` (attempt lockout: 15 minutes after 5 failed verifies). No `Retry-After` header and no remaining duration."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   # ---------------------------------------------------------------------------------------------
   # The REDEMPTION-SCOPED WEB SESSION (adr-171, spec-036). A SECOND credential kind, for the web
@@ -377,6 +402,7 @@ paths:
     post:
       tags: [auth]
       x-stability: stable
+      x-behaviour-changed: '3.51.0-m1'
       operationId: completeRegistration
       summary: Complete registration (consumes registrationToken) — one endpoint, track-discriminated body
       description: >
@@ -389,6 +415,25 @@ paths:
 
         `inviteCode` (optional, spec-047, `stable` since 3.44.0-m1): a friend's Refer a Friend code. It never fails
         registration — see `inviteCodeApplied` on the 201 response.
+
+
+        **Name filter (spec-074, new in 3.47.0-m1, BEHAVIOURAL):** a `name` that contains a blocked
+        term is refused with `422 name_not_allowed`, on both the School and the University body. It
+        is checked after every `400`, and before the registration token is used, so the same
+        `registrationToken` can be resubmitted with another name (while it is still valid). The
+        response does not repeat the name.
+
+
+        **School launch availability (spec-081, adr-230, new in 3.51.0-m1, BEHAVIOURAL):** the server
+        opens School registration only for some stages and education systems. A School body whose
+        `stage` is not open is refused with `422 school_stage_not_available`; one whose
+        `educationSystem` is not open, with `422 education_system_not_available`. When both are
+        closed, `school_stage_not_available` is returned. Read `listSchoolStages` and
+        `listEducationSystems` (`status: active | soon`) to know which are open: show `soon` items
+        but do not let the student select them. Checked after every `400` and before the
+        registration token is used (and before the name filter), so the same `registrationToken`
+        can be resubmitted with an open stage and system while it is still valid. The University
+        body is not affected.
       security: []
       requestBody:
         required: true
@@ -417,6 +462,9 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '409':
           description: "`phone_already_registered` (account appeared since verify — client restarts login)"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '422':
+          description: "`school_stage_not_available` — School body only: the `stage` is not open for registration yet (new in 3.51.0-m1); also returned when both the stage and the education system are closed. · `education_system_not_available` — School body only: the `educationSystem` is not open yet (new in 3.51.0-m1). · `name_not_allowed` — the display name contains a blocked term (new in 3.47.0-m1). All three are checked after every `400`, in that order, and the registration token is not used: let the student fix the choice or the name and resubmit with the same token. **Read `code` to tell them apart.** Nothing was written."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/refresh:
     post:
@@ -454,6 +502,9 @@ paths:
       x-stability: stable
       operationId: logout
       summary: Revoke this session (access + refresh chain)
+      description: >
+        Revokes the calling session. An app logout also removes the device's push registration
+        (see `registerFcmToken`); a redemption-scoped logout does not.
       responses:
         '204': { description: Session revoked. Idempotent. }
         '401':
@@ -508,8 +559,17 @@ paths:
     post:
       tags: [auth]
       x-stability: stable
+      x-behaviour-changed: '3.47.0-m1'
       operationId: verifyParentOtp
       summary: "Recovery step 2: verify the parent-phone OTP"
+      description: >
+        **Failed codes (BEHAVIOURAL tightening in 3.47.0-m1).** This operation and `confirmRecovery`
+        share one budget of 3 failed codes per student and one 30-minute lock. A wrong code is
+        `400 otp_invalid` and spends one unit; the third failure answers `429 otp_throttled` and
+        starts the 30-minute lock. While the lock holds, **every** call to either operation answers
+        `429 otp_throttled`, even with a correct or an expired code. `otp_expired` and `401` spend
+        nothing. This enforces the 3-failure rule under concurrent requests: before 3.47.0-m1 the
+        code could still be compared after the third failure.
       security: []
       requestBody:
         required: true
@@ -542,7 +602,7 @@ paths:
           description: "`account_banned` — the code was verified, but the account has been banned by Support; no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled`"
+          description: "`otp_throttled` — the third failed recovery code, and every call while the shared 30-minute recovery lock holds (even with a correct or expired code). No `Retry-After` header."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /auth/recovery/new-phone:
     post:
@@ -591,12 +651,22 @@ paths:
     post:
       tags: [auth]
       x-stability: stable
+      x-behaviour-changed: '3.47.0-m1'
       operationId: confirmRecovery
       summary: "Recovery step 4: verify new-phone OTP — rebinds phone + device, resets THE single session"
       description: >
         On success the account's phone is replaced, the new device becomes the one active device,
         any previous session is revoked, and the event is audited (adr-019 anti-sharing guard —
         recovery never grants a second concurrent session).
+
+
+        **Failed codes (BEHAVIOURAL tightening in 3.47.0-m1).** This operation and `verifyParentOtp`
+        share one budget of 3 failed codes per student and one 30-minute lock. A wrong code is
+        `400 otp_invalid` and spends one unit; the third failure answers `429 otp_throttled` and
+        starts the 30-minute lock. While the lock holds, **every** call to either operation answers
+        `429 otp_throttled`, even with a correct or an expired code. `otp_expired` and `401` spend
+        nothing. This enforces the 3-failure rule under concurrent requests: before 3.47.0-m1 the
+        code could still be compared after the third failure.
       security: []
       requestBody:
         required: true
@@ -625,7 +695,7 @@ paths:
           description: "`account_banned` — the code was verified, but the account has been banned by Support; no tokens or session were issued (spec-062 §8). Never returned before a code is proven."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '429':
-          description: "`otp_throttled`"
+          description: "`otp_throttled` — the third failed recovery code, and every call while the shared 30-minute recovery lock holds (even with a correct or expired code). No `Retry-After` header."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /reference/countries:
     get:
@@ -749,13 +819,51 @@ paths:
         '429':
           description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
-  /reference/education-systems:
+  /reference/school-stages:
     get:
       tags: [reference]
       x-stability: stable
       x-consumers: [mobile, web]
+      operationId: listSchoolStages
+      summary: The six School stages, each open (active) or not yet (soon) for registration
+      description: >
+        spec-081 / adr-230, new in 3.51.0-m1. Always all six stages, in the fixed order `prep1`,
+        `prep2`, `prep3`, `secondary1`, `secondary2`, `secondary3`. `status: active` = the stage is
+        open for School registration; `soon` = show it as "Soon", visible but not selectable —
+        `completeRegistration` refuses it with `422 school_stage_not_available`. No names on the wire:
+        the app localises stage labels itself, as before. The open set is a server setting, so read
+        this list rather than hard-coding it. Bare array (closed set); unauthenticated, under the
+        `/reference` per-address limit.
+      security: []
+      responses:
+        '200':
+          description: All six stages, fixed order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    stage: { $ref: '#/components/schemas/Stage' }
+                    status: { type: string, enum: [active, soon] }
+                  required: [stage, status]
+        '429':
+          description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /reference/education-systems:
+    get:
+      tags: [reference]
+      x-stability: stable
+      x-behaviour-changed: '3.51.0-m1'
+      x-consumers: [mobile, web]
       operationId: listEducationSystems
       summary: School education systems (National AR/Languages, IG, American, IB; STEM future)
+      description: >
+        Each item carries `status` (new in 3.51.0-m1, spec-081 / adr-230): `active` = open for School
+        registration; `soon` = show it as "Soon", visible but not selectable — `completeRegistration`
+        refuses it with `422 education_system_not_available`. The open set is a server setting, so read
+        this list rather than hard-coding it.
       security: []
       responses:
         '200':
@@ -770,7 +878,8 @@ paths:
                     code: { $ref: '#/components/schemas/EducationSystem' }
                     nameAr: { type: string }
                     nameEn: { type: string }
-                  required: [code, nameAr, nameEn]
+                    status: { type: string, enum: [active, soon], description: "New in 3.51.0-m1. `soon` = shown but not selectable." }
+                  required: [code, nameAr, nameEn, status]
         '429':
           description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -926,6 +1035,42 @@ paths:
         '429':
           description: "`rate_limited` (unauthenticated per-IP limit on /reference/*) — honour `Retry-After`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /app/version-policy:
+    get:
+      tags: [app]
+      x-stability: stable
+      x-consumers: [mobile]
+      operationId: getAppVersionPolicy
+      summary: Minimum and latest app version per platform (forced-update signal)
+      description: >
+        spec-073. Anonymous: call it on app launch, before (or without) a session. Read the entry
+        for the running platform (`android` or `ios`) and compare the installed version with it,
+        numerically per segment (`1.10.0` is newer than `1.9.0`):
+
+
+        - installed version below `minimumVersion` → show a blocking update screen;
+
+        - otherwise, installed version below `latestVersion` → show a dismissible update nudge;
+
+        - a `null` value → no prompt for that rule.
+
+
+        When both are set, `minimumVersion` is never above `latestVersion`. **If the call fails for
+        any reason (network, `429`, `5xx`), do not block the student** — carry on as if both values
+        were `null`. The `200` may be cached for up to five minutes, so a changed policy can take
+        that long to reach a device.
+      security: []
+      responses:
+        '200':
+          description: The current policy for both platforms.
+          headers:
+            Cache-Control: { schema: { type: string, example: "public, max-age=300" } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppVersionPolicy' }
+        '429':
+          description: "`rate_limited` — the same unauthenticated per-IP limit as /reference/*, counted separately from it. Honour `Retry-After`; do not block the student."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me:
     get:
       tags: [profile]
@@ -944,12 +1089,19 @@ paths:
     patch:
       tags: [profile]
       x-stability: stable
+      x-behaviour-changed: '3.47.0-m1'
       operationId: updateMyProfile
       summary: Update editable fields (name, email, default avatar, privacy toggles)
       description: >
         Privacy toggles per adr-023 — both default to visible; enforcement is server-side.
         Custom avatar upload is the separate PUT /me/avatar (moderated). Choosing `avatarId` (a default
         avatar) also REPLACES an active custom avatar, whose photo is deleted (spec-070).
+
+
+        **Name filter (spec-074, new in 3.47.0-m1, BEHAVIOURAL):** a new or changed `name` that
+        contains a blocked term is refused with `422 name_not_allowed`, checked after every `400`;
+        nothing is changed. Only a new or changed name is checked: a PATCH that re-sends the stored
+        name, or omits `name`, is never refused. The response does not repeat the name.
       requestBody:
         required: true
         content:
@@ -974,6 +1126,9 @@ paths:
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
         '401':
           description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '422':
+          description: "`name_not_allowed` — the new or changed display name contains a blocked term (new in 3.47.0-m1). Nothing was changed. Let the student edit the name; do not retry the same name."
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/avatar:
     put:
@@ -1061,8 +1216,25 @@ paths:
     put:
       tags: [profile]
       x-stability: stable
+      x-behaviour-changed: '3.47.0-m1'
       operationId: registerFcmToken
       summary: Register/replace this device's FCM push token
+      description: >
+        Stores the caller's FCM token. **Call this after every successful sign-in and after every
+        Firebase token refresh.**
+
+
+        **When the server removes the registration (since 3.47.0-m1, BEHAVIOURAL):** when the app
+        logs out (`logout`); when any new sign-in session starts (`verifyOtp`,
+        `completeRegistration`, `confirmRecovery` — the previous device is superseded); when the
+        student is banned; and when a deletion request is accepted (`requestAccountDeletion`).
+        Refresh (`refreshTokens`) does not remove it, nor does the web redemption session or its
+        logout. After cancelling a deletion request (`cancelAccountDeletion`), register the token
+        again.
+
+
+        A token value belongs to one student: registering a value another student holds moves it
+        to the caller.
       requestBody:
         required: true
         content:
@@ -1080,6 +1252,9 @@ paths:
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); no token was stored. Route to the cancel screen, and register the token again after cancelling."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
   /me/terms-acceptance:
     get:
       tags: [profile]
@@ -1092,8 +1267,13 @@ paths:
         must accept, or `null` when none is configured (the feature is inert until one is — every
         accept is then refused). `acceptedVersion` / `acceptedAtUtc` are the caller's most recent
         acceptance, or `null`. `isCurrent` is `true` only when `currentVersion` is non-null and equals
-        `acceptedVersion`. The version is an opaque identifier; the backend serves no Terms text and
-        no link. This records the student's own acceptance; it is not parent consent.
+        `acceptedVersion`. The version is an opaque identifier; the Terms text itself is served by
+        `getLegalDocument`. This records the student's own acceptance; it is not parent consent.
+
+
+        Re-acceptance is not forced: when a new version becomes current, `isCurrent` turns `false`
+        and nothing is refused until a photo feature is used (see `acceptTerms`). When `isCurrent`
+        is `false`, the app should prompt the student to accept.
       responses:
         '200':
           description: The caller's Terms acceptance state.
@@ -1119,8 +1299,14 @@ paths:
         `termsVersion` must equal the `currentVersion` returned by `getTermsAcceptance`. The server
         records the time — no timestamp is accepted from the client. Accepting a version already
         accepted is `204` and changes nothing: the first acceptance time stands. A later version adds
-        a new record; earlier acceptances are kept. Acceptance is recorded, not enforced: no other
-        operation refuses a student who has not accepted.
+        a new record; earlier acceptances are kept.
+
+
+        **Where acceptance is enforced:** photos only. `uploadCustomAvatar`,
+        `createSupportAttachmentUpload`, and `createSupportTicket` / `postMySupportTicketMessage`
+        when they carry `attachmentIds`, answer `403 terms_acceptance_required` until the current
+        version is accepted. Text tickets and replies are never gated, and no other operation
+        refuses a student who has not accepted. While no version is current, nothing is gated.
       requestBody:
         required: true
         content:
@@ -1195,6 +1381,11 @@ paths:
             `track` (`school` or `university`) and `academicYear` (`YYYY/YYYY`, e.g. `2026/2027`) —
             as localization parameters, not display text. One item per opening; it may also arrive as
             a push of the same kind, which carries neither key (`realtime.md` § Push notifications).
+            **`kind: enrolment_opened`** (`category: system`): the welcome item written when an
+            Enrolment opens on a Track. Its `data` always carries exactly one key, `track`, whose
+            value is `School` or `University` — capitalised, unlike the lowercase `track` of
+            `kind: academic_year_opened` — as a localization parameter, not display text. It is
+            never pushed.
           content:
             application/json:
               schema:
@@ -1279,13 +1470,21 @@ paths:
         from every peer-visible surface at once (leaderboards included).
 
 
-        **Confirm-screen copy the app must show BEFORE calling this (adr-114 D3).** The request is
-        reversible only inside the grace window, by logging in again and calling
-        `DELETE /me/deletion-request`. **An active paid subscription is forfeited** — there is no
-        partial refund, the remaining paid time is not restored by cancelling, and it does not
-        carry to a future account. **A new account registered later with the same phone number
-        starts from zero** — no points, no level, no badges, no quiz history. The phone stays
-        blocked for the whole grace window (the account still exists) and is freed at execution.
+        **Confirm screen — show it BEFORE calling this.** Suggested copy (amends adr-114 D3, Seif
+        2026-10-09; the final wording is pending the client's approval):
+
+
+        - EN: "Deleting your account is permanent. You will lose access to Level Up, and your
+        points, level, badges and quiz history will be removed. A new account registered later
+        with the same number starts from zero."
+
+        - AR: "حذف الحساب نهائي. ستفقد إمكانية الدخول إلى Level Up، وسيتم حذف نقاطك ومستواك وشاراتك وسجل اختباراتك. أي حساب جديد يُسجَّل لاحقاً بنفس الرقم يبدأ من الصفر."
+
+
+        Do not mention payments, refunds or subscriptions on this screen (no "paid", "refund" or
+        "subscription" wording). The request is reversible only inside the grace window, by
+        logging in again and calling `DELETE /me/deletion-request`. The phone stays blocked for the
+        whole grace window (the account still exists) and is freed at execution.
 
 
         **During grace the account offers exactly one action**, enforced server-side: every
@@ -1448,6 +1647,80 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MyInvite' }
+        '401':
+          description: "`authentication_required` · `session_superseded`"
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+        '403':
+          description: "`account_pending_deletion` — inside the deletion grace window (adr-114); route to the cancel screen."
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
+  /me/daily-tasks:
+    get:
+      tags: [dailyTasks]
+      x-stability: stable
+      operationId: listMyDailyTasks
+      summary: Today's daily tasks for the caller, with progress
+      description: >
+        spec-078. The daily tasks live for the caller **today** (the Africa/Cairo calendar date in
+        `date`), in the order the admin created them, each with the caller's progress today. A task is
+        live for the caller when it is active, today is inside its date range, the caller's current
+        Track is in its audience, and — for a task limited to one subject — the caller's current stage
+        (school) or cohort (university) has that subject. At most five tasks are ever live for one
+        student, so the list is always one page: `nextCursor` is `null` and `hasMore` is `false`. An
+        empty `items` means no task today — render the empty state, not an error.
+
+
+        **How progress moves.** `answerQuestions` counts graded quiz answers, right or wrong;
+        `answerCorrectly` counts correct answers only; `finishQuizzes` counts quizzes the caller
+        finished with `finishQuiz` (a quiz that expired unfinished, or one finished with nothing
+        answered, does not count). For a subject task, only answers to questions in that subject count,
+        and a finished quiz counts only if every answered question is in that subject. A replayed
+        `submitAnswer` (its `pointsDelta: 0`) never counts again. Answers to forwarded questions in chat
+        do not count.
+
+
+        **The reward.** When `progress` reaches `targetCount`, `rewardPoints` are added **instantly** to
+        the caller's current Track's points (the same points as answer points — level, badges and
+        leaderboards follow), exactly once per task per Cairo day; `completed` turns `true` and
+        `completedAt` is set. There is no claim step. The `submitAnswer` / `finishQuiz` response that
+        completed it does not mention the reward — re-read this list (and `GET /me`) to show it.
+
+
+        **The reset.** Everything here is for one Cairo day: at `endsAt` (the next Africa/Cairo midnight,
+        as a UTC instant) progress starts again from 0 and unfinished tasks simply expire. Read-only —
+        calling it never changes anything.
+      responses:
+        '200':
+          description: Today's live daily tasks with the caller's progress (one page).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MyDailyTasksPage' }
+              example:
+                date: "2026-10-10"
+                items:
+                  - id: "0197b2f3-8a11-7cc3-9b4e-3f2a1d6e8c01"
+                    titleAr: "أجب عن ١٠ أسئلة في الرياضيات"
+                    titleEn: "Answer 10 math questions"
+                    type: answerQuestions
+                    targetCount: 10
+                    progress: 4
+                    completed: false
+                    completedAt: null
+                    rewardPoints: 20
+                    subject: { id: "0197b2f3-8a11-7cc3-9b4e-3f2a1d6e8c02", name: "الرياضيات" }
+                    endsAt: "2026-10-10T21:00:00Z"
+                  - id: "0197b2f3-8a11-7cc3-9b4e-3f2a1d6e8c03"
+                    titleAr: "أنهِ اختبارين"
+                    titleEn: "Finish 2 quizzes"
+                    type: finishQuizzes
+                    targetCount: 2
+                    progress: 2
+                    completed: true
+                    completedAt: "2026-10-10T15:42:07Z"
+                    rewardPoints: 15
+                    subject: null
+                    endsAt: "2026-10-10T21:00:00Z"
+                nextCursor: null
+                hasMore: false
         '401':
           description: "`authentication_required` · `session_superseded`"
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -1980,6 +2253,7 @@ paths:
     post:
       tags: [quiz]
       x-stability: stable
+      x-behaviour-changed: '3.47.0-m1'
       operationId: finishQuiz
       summary: Close the quiz — summary, points awarded, level/badge events. Idempotent.
       description: >
@@ -1988,6 +2262,11 @@ paths:
         The summary reports what THIS attempt did — it does not report the student's current
         standing. `leveledUp` and `newBadge` are frozen events; the student's current total and
         level are state and are read from `GET /me` (3.0.0-m1).
+
+
+        **BEHAVIOURAL in 3.47.0-m1 (spec-075):** `leveledUp` now uses the same level ladder as
+        `level` on `GET /me` (Level 1 at 0 points, Level 12 at 5,500) and is `true` exactly when
+        this attempt raised the level. It previously fired 500 points late. No shape changed.
       parameters:
         - { name: quizId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -2331,7 +2610,12 @@ paths:
         submission for this session has **not been recorded as finished** — usually it is still
         running; rarely it finished but its completion could not be recorded, so something may
         already be granted. On `redemption_in_progress`: wait, then read `GET /me/entitlements`. Do
-        not re-submit — a second submission cannot win and it is counted against the attempt limit.
+        not re-submit in the same session — a second submission cannot win. (It is refused before
+        the attempt limit is checked, so it does not spend an attempt; corrected in 3.47.0-m1.) If
+        `redemption_in_progress` persists — it can last up to 10 minutes after a hard server
+        failure — start a new redemption session (a new OTP verify). That is always safe: the same
+        student re-posting the same code there gets `201` (a replay if it was already redeemed),
+        and nothing is granted twice.
 
 
         **BEHAVIOURAL CHANGE in 3.20.0-m1 (adr-171 D7.3), restated because it still stands — the
@@ -2413,8 +2697,12 @@ paths:
             `redemption_in_progress` — a submission for this session has **not been recorded as
             finished**: usually it is still running; rarely it finished but its completion could not
             be recorded, so something may already be granted. Wait, then read `GET
-            /me/entitlements`. Do **not** re-submit: a second submission cannot win, and it is
-            counted against the `429` attempt limit below. **This was previously
+            /me/entitlements`. Do **not** re-submit in the same session: a second submission cannot
+            win. It is refused before the `429` attempt limit below is checked, so it does not spend
+            an attempt (corrected in 3.47.0-m1). If it persists (up to 10 minutes after a hard
+            server failure), start a new redemption session with a new OTP verify — always safe: the
+            same student re-posting the same code there gets `201` (a replay if it was already
+            redeemed) and nothing is granted twice. **This was previously
             `redemption_scope_only` too**, which told the student their redemption had finished
             when it had not.
           content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } }
@@ -2467,7 +2755,7 @@ paths:
     get:
       tags: [leaderboard]
       x-stability: stable
-      x-behaviour-changed: 3.4.0-m1
+      x-behaviour-changed: '3.36.0-m1'
       operationId: getLeaderboard
       summary: Scoped board (adr-015), privacy-filtered (adr-023), cursor over rank order
       description: >
@@ -2477,8 +2765,9 @@ paths:
         BOTH adr-023 privacy toggles remove a student from this board (adr-111): a student with
         `leaderboardVisible: false` AND a student with `scoreHidden: true` are excluded before
         ranking, so *visible* here means NEITHER invisible NOR score-hidden. Peer ranks are
-        therefore DENSE over visible students. Each caller's board ALSO excludes every student
-        blocked in either direction between them and the caller (adr-185 D8), exactly as an
+        therefore DENSE over visible students. Since 3.36.0-m1 (BEHAVIOURAL) each caller's board
+        ALSO excludes every student blocked in either direction between them and the caller
+        (adr-185 D8), exactly as an
         invisible student is excluded, so ranks stay dense from the caller's point of view and a
         block never shows as a gap. Since 3.2.0-m1, board rank and self-rank are
         computed over the same caller-visible population and agree by construction. A score-hidden
@@ -2575,12 +2864,13 @@ paths:
     get:
       tags: [leaderboard]
       x-stability: stable
-      x-behaviour-changed: 3.9.0-m1
+      x-behaviour-changed: '3.36.0-m1'
       operationId: getMyRank
       summary: Self-rank — computed over the VISIBLE leaderboard population (adr-113)
       description: >
-        The caller's own position among the students the caller's board actually shows (students blocked
-        either way with the caller are excluded, adr-185 D8). Since adr-113 this is
+        The caller's own position among the students the caller's board actually shows (since
+        3.36.0-m1, BEHAVIOURAL: students blocked either way with the caller are excluded, adr-185
+        D8). Since adr-113 this is
         the SAME population `GET /leaderboard` pages, so `rank` here and the caller's rank there
         agree — they used to be able to disagree, and differencing them recovered how many students
         the board was hiding. A caller with `leaderboardVisible: false` still gets a rank: their
@@ -2861,6 +3151,13 @@ paths:
         Downscale before uploading (about 2048 px on the long edge, JPEG) so a photo stays well under the
         cap. A student may hold at most 10 photos that are not yet attached to a ticket; an unattached
         photo is deleted 24 hours after this call.
+
+
+        **Retrying the PUT.** Before `upload.expiresAt`, re-PUTting the identical bytes with the
+        identical headers to the same URL is allowed (for example after a dropped connection). After
+        expiry, or when storage answers with a signature error, call this operation again and use the
+        new `attachmentId` it returns. Treat the URL, including its host, as opaque: never build or
+        edit it.
       requestBody:
         required: true
         content:
@@ -2908,8 +3205,8 @@ paths:
 
 
         🔴 **A refused photo is gone.** After `413` or either `422` the photo has been deleted and the id is
-        dead — nothing is kept and no one ever sees it; to try again, start a fresh upload. A `503` keeps the
-        upload: retry this call later. No body.
+        dead — nothing is kept and no one ever sees it; to try again, start a fresh upload
+        (`createSupportAttachmentUpload`). A `503` keeps the upload: retry this call later. No body.
       parameters:
         - { name: attachmentId, in: path, required: true, schema: { $ref: '#/components/schemas/Uuid' } }
       responses:
@@ -3159,7 +3456,9 @@ paths:
         Creates a pending request from the caller to `studentId`. If `studentId` already has a
         pending request to the caller, that request is accepted instead: `201` with `status:
         accepted` and the new `friend` (adr-185 D7). There is no friend, pending or daily count cap.
-        The recipient is not notified (no push or inbox item in this version).
+        The recipient gets no inbox item. For a new pending request, a `friend_request_received`
+        push is sent when push delivery is enabled (it is off today; `realtime.md` § Push
+        notifications).
       requestBody:
         required: true
         content:
@@ -3705,7 +4004,7 @@ paths:
         `422 question_not_forwardable`. The card follows every chat rule: it expires like a text
         message (adr-196 D1), it disappears with the conversation when the friendship ends, the
         friend receives `messageCreated` on the `chat` hub, and a push request of kind
-        `ChatMessageReceived` is made exactly as for a text message (inert until push delivery is
+        `chat_message_received` is made exactly as for a text message (inert until push delivery is
         enabled). 🔴 **A forward never reveals anything about the friend's plan:** it succeeds or
         fails the same way whether or not the friend holds a `baseSubscription` — a free-plan friend
         can open and answer the card too (Seif 2026-10-07; see `answerForwardedQuestion`).
@@ -4070,6 +4369,28 @@ components:
         platform: { type: string, enum: [android, ios] }
         model: { type: string, maxLength: 100, description: "Display label for eviction messaging, e.g. \"Redmi Note 12\"." }
       required: [deviceId, platform]
+    AppVersionPolicy:
+      type: object
+      description: The forced-update policy for each platform (spec-073). Read the entry for the running platform.
+      properties:
+        android: { $ref: '#/components/schemas/PlatformVersionPolicy' }
+        ios: { $ref: '#/components/schemas/PlatformVersionPolicy' }
+      required: [android, ios]
+    PlatformVersionPolicy:
+      type: object
+      description: >
+        Versions are `major.minor.patch`, 1–4 digits per segment; compare them numerically per
+        segment (`1.10.0` is newer than `1.9.0`). `null` means "no prompt" for that rule.
+      properties:
+        minimumVersion:
+          type: [string, "null"]
+          pattern: '^[0-9]{1,4}[.][0-9]{1,4}[.][0-9]{1,4}$'
+          description: Below this version the app shows a blocking update screen. Never above `latestVersion` when both are set.
+        latestVersion:
+          type: [string, "null"]
+          pattern: '^[0-9]{1,4}[.][0-9]{1,4}[.][0-9]{1,4}$'
+          description: Below this version (and at or above `minimumVersion`) the app shows a dismissible update nudge.
+      required: [minimumVersion, latestVersion]
     TokenPair:
       type: object
       properties:
@@ -4179,8 +4500,7 @@ components:
         inviteCode:
           type: string
           description: >
-            OPTIONAL (spec-047; this field is `draft` — send it only once it is `stable`, because an
-            older backend refuses unknown properties with `validation_failed`). The code a friend
+            OPTIONAL (spec-047; `stable` since 3.44.0-m1). The code a friend
             shared from their Refer a Friend screen (`getMyInvite`). Case, spaces and hyphens are
             ignored. It NEVER fails registration: an unknown, malformed or unusable code still creates
             the account, and `inviteCodeApplied: false` says so (with no reason). The friend who shared
@@ -4291,8 +4611,8 @@ components:
             university: { type: integer }
             total: { type: integer }
           required: [school, university, total]
-        level: { type: integer, description: "1–12, thresholds every 500 points; static, not configurable." }
-        badges: { type: integer, description: "Post-level-12 badges (every 5,000 points; first at 11,000)." }
+        level: { type: integer, description: "1–12. Level 1 at 0 points, +1 every 500 points, Level 12 at 5,500; static, not configurable." }
+        badges: { type: integer, description: "Post-level-12 badges: the first at 11,000 points, then one every 5,000 after it." }
         privacy:
           type: object
           description: adr-023 toggles; defaults preserve visible behavior.
@@ -4585,9 +4905,12 @@ components:
         leveledUp:
           type: boolean
           description: >
-            Whether THIS attempt's awards crossed a level threshold. An EVENT, frozen on the attempt
-            when it happened — it never changes afterwards, and a later quiz cannot turn it on or off.
-            The student's CURRENT level and total are state, not events: read them from GET /me.
+            Whether THIS attempt's awards raised the student's level. The ladder is the one `level`
+            on GET /me uses (Level 1 at 0 points, Level 12 at 5,500): `leveledUp` is true exactly
+            when the level increases (since 3.47.0-m1; it previously fired 500 points late). An
+            EVENT, frozen on the attempt when it happened — it never changes afterwards, and a later
+            quiz cannot turn it on or off. The student's CURRENT level and total are state, not
+            events: read them from GET /me.
         newBadge:
           type: boolean
           description: >
@@ -4933,3 +5256,46 @@ components:
         conversationId: { $ref: '#/components/schemas/Uuid' }
         messageId: { $ref: '#/components/schemas/Uuid' }
       required: [conversationId, messageId]
+    MyDailyTasksPage:
+      type: object
+      description: >
+        `listMyDailyTasks` — the cursor-list envelope (always a single page) plus the Africa/Cairo date
+        the list is for.
+      properties:
+        date: { type: string, format: date, description: "Today's Africa/Cairo calendar date — the day these tasks and this progress belong to." }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MyDailyTask' }
+        nextCursor: { type: [string, "null"], description: Always null — at most five tasks are live for one student. }
+        hasMore: { type: boolean, description: Always false. }
+      required: [date, items, nextCursor, hasMore]
+    MyDailyTask:
+      type: object
+      description: One daily task live for the caller today, with the caller's progress today.
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        titleAr: { type: string, maxLength: 80, description: Arabic title, as the admin wrote it. }
+        titleEn: { type: string, maxLength: 80, description: English title, as the admin wrote it. }
+        type:
+          type: string
+          enum: [answerQuestions, answerCorrectly, finishQuizzes]
+          description: "`answerQuestions` = graded answers, right or wrong; `answerCorrectly` = correct answers; `finishQuizzes` = finished quizzes."
+        targetCount: { type: integer, minimum: 1, maximum: 100, description: The count that completes the task today. }
+        progress: { type: integer, minimum: 0, maximum: 100, description: "Counted so far today; never above `targetCount`." }
+        completed: { type: boolean, description: "True once `progress` reached `targetCount` today (the reward was credited then)." }
+        completedAt: { type: [string, "null"], format: date-time, description: When today's target was reached (UTC); null while in progress. }
+        rewardPoints: { type: integer, minimum: 1, maximum: 50, description: Points credited instantly on completion, once per Cairo day. }
+        subject:
+          oneOf:
+            - $ref: '#/components/schemas/DailyTaskSubject'
+            - type: 'null'
+          description: The one subject whose answers / quizzes count, or null when any subject counts.
+        endsAt: { type: string, format: date-time, description: "The next Africa/Cairo midnight (UTC) — progress resets and unfinished tasks expire then." }
+      required: [id, titleAr, titleEn, type, targetCount, progress, completed, completedAt, rewardPoints, subject, endsAt]
+    DailyTaskSubject:
+      type: object
+      description: The subject a subject-limited daily task counts.
+      properties:
+        id: { $ref: '#/components/schemas/Uuid' }
+        name: { type: string, description: The subject's name as the catalog stores it. }
+      required: [id, name]

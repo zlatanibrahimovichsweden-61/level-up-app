@@ -1108,6 +1108,8 @@ transfer, referral, quiz history/favourites. `verifyOtp` gains `403 account_bann
 
 **Revisit when:** upstream moves before CW01 starts, or Seif announces a release-1 contract freeze.
 
+**Superseded by D-025** (2026-10-14): the completion program now builds against `ded6213` (3.52.0-m1).
+
 ### D-023 · Release 1 includes push, chat, the notifications inbox and the Message tab; deletion and banned handling are required
 
 **Feature:** Completion program (CW04–CW13) · **Date:** 2026-10-09 · **Status:** **Accepted — not built** ·
@@ -1153,3 +1155,32 @@ registered in any console without explicit authorisation.
 **Consequences.** The `NEXT`/`WALK`/`FORMULATE` control rules in `wave_state.md` govern the closed 22-wave list only.
 
 **Revisit when:** the owner changes the protocol.
+
+### D-025 · The completion program builds against contract `ded6213` (3.52.0-m1)
+
+**Feature:** Completion program (wave SEIF1014, change set CV352) · **Date:** 2026-10-14 · **Status:** **Accepted —
+applied (SEIF1014 Job 1, 2026-10-14)** · **Raised by:** Seif's messages of 2026-10-12 and 2026-10-13
+(`docs/SEIF_MESSAGE_2026-10-12_school-launch-stages.md`, `docs/SEIF_MESSAGE_2026-10-13_school-stages-stable.md`);
+**decided by** the owner (the SEIF1014 prompt, 2026-10-14, which authorises this re-vendor and no other version)
+
+**Context.** The pin `eddb6ac` (3.46.0-m1, D-022) predates `listSchoolStages`, the `status` field on
+`listEducationSystems` and the registration codes `school_stage_not_available` / `education_system_not_available`.
+All three are `stable` from 3.52.0-m1. `git fetch` on 2026-10-14: upstream `origin/main` is `ded6213`; nine mirror
+commits carry 3.52.0-m1 (`8ef3306` … `ded6213`). Of the eight after `8ef3306`, only `1b4b0d5` touches a mobile file
+(one `contract-changelog.md` entry, the OpenRouter note); the other seven change admin files only, so the four mobile
+files are blob-identical from `1b4b0d5` onward. Census at `ded6213` (PyYAML): 89
+operations, all `stable`, 4 `x-consumers: [web]` → **85 app-buildable** (82 at `eddb6ac`).
+
+**Decision.** Pin `ded6213` (3.52.0-m1), the newest commit carrying exactly that version. Nothing later exists upstream
+today, and a later version would not be authorised. The re-vendor is its own change set (CV352): the four contract
+files and `contract/SOURCE.md`, plus the PIN and version rows of `docs/BACKEND_HANDOFF.md`. The files were proven
+blob-identical to upstream (`git hash-object` = `git rev-parse ded6213:<file>`, 0 CR bytes) before and after the copy.
+
+**Consequences.** Unblocks the School "Soon" stages and systems (SEIF1014 Job 2). Brings into the pin the four
+3.47.0-m1 behavioural changes (their acknowledgment to Seif is still owed, `docs/BACKEND_HANDOFF.md` BH-B4),
+`getAppVersionPolicy`, `listMyDailyTasks` (stable since 3.49.0-m1) and the production server in `servers:`. The
+follow-ups are listed in `contract/SOURCE.md` ("Delta from 3.46.0-m1"). No bound schema changed shape.
+
+**Supersedes:** D-022.
+
+**Revisit when:** Seif announces a later version the app needs, or a release-1 contract freeze.

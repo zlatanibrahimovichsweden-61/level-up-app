@@ -1,35 +1,103 @@
 # Vendored API contract — pinned copy
 
 Source: https://github.com/seifhamdii-collab/level-up-contract
-Pinned commit: eddb6ac (`eddb6aca993f1edeef49a03fd1f2454c314b645e`, "Mirror contract from level-up-backend@a158daa33231f2d8d8812092d8c9f7745552362a", 2026-10-08T14:56:03Z)
-Vendored: 2026-10-09 (completion program CW01, `docs/DECISIONS.md` D-022)
-Previous pin: 65245be ("Mirror contract from level-up-backend@856da7fcf973217944d23a1113c8a5b81bb843a9", v3.38.0-m1), vendored 2026-10-07 into the working tree and never committed. The last committed pin is 0df5cf4 (v3.28.0-m1, vendored 2026-10-04).
+Pinned commit: ded6213 (`ded62139739866f8bd4aa995190cb80d215874e0`, "Mirror contract from level-up-backend@2e2c36f7a90f216524b7c5fab1215aaa9192f917", 2026-10-14T02:08:35Z)
+Vendored: 2026-10-14 (wave SEIF1014, change set CV352, `docs/DECISIONS.md` D-025; uncommitted at the time of writing)
+Previous pin: eddb6ac ("Mirror contract from level-up-backend@a158daa33231f2d8d8812092d8c9f7745552362a", v3.46.0-m1), vendored 2026-10-09 (CW01, D-022) and committed in `b227f61`. Before it: 65245be (v3.38.0-m1, never committed) and 0df5cf4 (v3.28.0-m1, the last pin committed before `b227f61`).
 
-info.version at this pin: 3.46.0-m1
+info.version at this pin: 3.52.0-m1
 
 Operation census at this pin, counted by parsing `paths` with a YAML parser (never
 `grep -c "x-stability: …"` — header and description prose inflate both counts):
-**86 stable · 0 draft · 86 total**. Of the 86, 4 are `x-consumers: [web]` and are forbidden to
+**89 stable · 0 draft · 89 total**. Of the 89, 4 are `x-consumers: [web]` and are forbidden to
 the app (`listTerms`, `redeemSubscriptionCode`, `requestRedemptionSessionOtp`,
-`verifyRedemptionSessionOtp`), leaving **82 stable operations the app may build against**; 19 are
-public (`security: []`). An absent `x-consumers` means mobile. The previous pin (65245be) was
-**53 stable · 24 draft · 77 total** (49 app-buildable); the last committed pin (0df5cf4) was
-38 · 16 · 54 (35 app-buildable).
+`verifyRedemptionSessionOtp`), leaving **85 stable operations the app may build against**; 21 are
+public (`security: []`). An absent `x-consumers` means mobile. The previous pin (eddb6ac) was
+**86 stable · 0 draft · 86 total** (82 app-buildable, 19 public); 65245be was 53 · 24 · 77
+(49 app-buildable); 0df5cf4 was 38 · 16 · 54 (35 app-buildable).
 
-All four vendored files are blob-identical to upstream `eddb6ac` (`git hash-object` on each equals
-`git rev-parse eddb6ac:<file>`) and are **LF, as upstream stores them**: 0 CR bytes in each,
-counted 2026-10-09. Blob ids at this pin: `openapi.yaml` `5af03f923e8bae978d0b2586d39d126aad7d3cdb`,
-`contract-changelog.md` `4f0a1c268077a1228060007d10d97e1cbfe77ebd`, `error-codes.md`
-`08dfacebd16f693be81222f1302dfb5041003b5a`, `realtime.md` `ff05c7ac55bec9057e1b76a3313259f712a70bb6`
-— `git hash-object contract/<file>` re-checks them without a clone. The uncommitted 2026-10-07
-edition of this file said the copies were "CRLF exactly as upstream stores them"; that was never
-true — the upstream blobs are LF at `0df5cf4`, `65245be` and `eddb6ac` alike. Copy with
-`git -C <clone> show <sha>:<file> > contract/<file>`, never from a clone's checkout, which can hold
-CRLF (the local clone's checked-out `realtime.md` does); `.gitattributes` keeps them LF here
-(`* text=auto eol=lf`). `test/guards/contract_pin_test.dart` fails on any CR byte in these four
-files and on a version line here that disagrees with `openapi.yaml`. All four changed in this delta.
+All four vendored files are blob-identical to upstream `ded6213` (`git hash-object` on each equals
+`git rev-parse ded6213:<file>`) and are **LF, as upstream stores them**: 0 CR bytes in each,
+counted 2026-10-14 — first on a dry-run copy in a scratch folder outside the repo, then again on the
+files in `contract/`. Blob ids at this pin: `openapi.yaml` `1f067289cd73da97f9bbf9491bdd6017f4d8c43d`,
+`contract-changelog.md` `57dc8a4a37ceb6abcbbe76ae5e82743eeddffa71`, `error-codes.md`
+`ab767838047042af51b970cf6a2e7aca77792a9b`, `realtime.md` `171e9ee361aa34db9cd7676dbfa182e8f11dcbd1`
+— `git hash-object contract/<file>` re-checks them without a clone. Upstream stores all four as LF
+(true at `0df5cf4`, `65245be`, `eddb6ac` and `ded6213` alike; an uncommitted 2026-10-07 edition of
+this file once claimed CRLF, which was never true). Copy with
+`git -C <clone> show <sha>:<file> > contract/<file>` from Git Bash or `cmd` — never a PowerShell `>`,
+which writes UTF-16 — and never from a clone's checkout, which can hold CRLF (the local clone's
+checked-out `realtime.md` does); `.gitattributes` keeps them LF here (`* text=auto eol=lf`).
+`test/guards/contract_pin_test.dart` fails on any CR byte in these four files and on a version line
+here that disagrees with `openapi.yaml`. All four changed in this delta.
 
-## Delta from 3.38.0-m1 — eight mobile versions (2026-10-09 re-vendor, CW01)
+## Delta from 3.46.0-m1 — six mobile versions (2026-10-14 re-vendor, SEIF1014)
+
+Re-vendored on the owner's authorisation (the SEIF1014 prompt, 2026-10-14, D-025) to the upstream commit carrying
+**3.52.0-m1**, because Seif's School-launch messages (`docs/SEIF_MESSAGE_2026-10-12_school-launch-stages.md`,
+`docs/SEIF_MESSAGE_2026-10-13_school-stages-stable.md`) rest on `listSchoolStages`, which the old pin lacks. Upstream
+moved **16 commits** past `eddb6ac` (2026-10-10 → 2026-10-14). Eight touch the mobile files (`1fdae81`, `cc2a29d`,
+`56542a5`, `eeac4c5`, `f2c0b41`, `3718644`, `8ef3306`, `1b4b0d5`); the other eight touch only the admin files. Nine
+commits carry 3.52.0-m1 (`8ef3306` … `ded6213`); the mobile blobs are identical from `1b4b0d5` on, and the newest,
+`ded6213`, is pinned. `git fetch` and `git ls-remote` on 2026-10-14 returned `ded6213` for `HEAD` and `main`: no
+version after 3.52.0-m1 exists upstream. In the same wave the app builds `listSchoolStages`, the `status` field and
+the two registration codes (Job 2), and `listModules` (Job 3; it was already `stable` at the old pin).
+
+| Version | Change | Breaking | App impact (SOURCE, read 2026-10-14 against the working tree) |
+| --- | --- | --- | --- |
+| 3.47.0-m1 | 🔴 Four behavioural items: **push-token cleanup** (the server drops the device's push registration on logout, on any new sign-in session, on a ban and on an accepted deletion request; `registerFcmToken` now declares `403 account_pending_deletion`); the **`leveledUp` ladder fix** (`finishQuiz`); **`422 name_not_allowed`** (`completeRegistration`, both bodies; `updateMyProfile` when the name is new or changed); the **recovery code lock** (`verifyParentOtp` + `confirmRecovery`: three failures, then a shared 30-minute lock that answers `429 otp_throttled` to every call). New **`stable`** `getAppVersionPolicy` (`GET /app/version-policy`, public). The deletion confirm copy no longer mentions paid time, refunds or subscriptions. `account_banned`: new suggested copy, and the client rule is now "the channel is email" (no anonymous support operation). Clarifications: `Retry-After` is whole seconds and absent from `otp_throttled`; inbox kind `enrolment_opened`; support-photo re-PUT / `503` / `413` / `422`; Terms enforced for photos; `flashcard_subscription_required` = zero cards deliverable; `avatar_not_found` unused; reviewer sign-in note; `getLeaderboard`/`getMyRank` re-stamped `x-behaviour-changed: 3.36.0-m1` (a relabel of an old change); `UniversityRegistration.inviteCode` prose | **BEHAVIOURAL** (`registerFcmToken`, `finishQuiz`, `completeRegistration`, `updateMyProfile`, `verifyParentOtp`, `confirmRecovery`) | Name filter: built ahead of the old pin (NNA), matched on `code`, token kept, never resent. Push, recovery, version policy, photos, friends, chat: not built, so no effect. `leveledUp`, `level`, `badges`: shown as sent or only parsed; nothing computes the ladder except Home's progress-bar target (below). `account_banned`: the app shows the OLD suggestion ("Account banned — contact Support"), now stale — follow-up 3. Deletion: not built (CW05). The four acknowledgments to Seif are still owed (`docs/BACKEND_HANDOFF.md` BH-B4) |
+| 3.48.0-m1 | `listMyDailyTasks` (`GET /me/daily-tasks`) **`draft`**, tag `dailyTasks`, schemas `MyDailyTasksPage`, `MyDailyTask`, `DailyTaskSubject` | no | none (draft) |
+| 3.49.0-m1 | `listMyDailyTasks` → **`stable`** | no | not built. Home's Daily Tasks block is a "Coming soon" placeholder whose stated premise ("no tasks endpoint") is now false — follow-up 4. The tag text still ends in "`draft`" (an upstream inconsistency; `x-stability` governs) |
+| 3.50.0-m1 | **Production in `servers:`** (first entry `https://api.level-upworld.com/api/v1`; staging second); `realtime.md` names both chat hub hosts. Same version, 2026-10-12 entry, `openapi.yaml` unchanged: admins may correct university, faculty, subject and lecture names ("don't cache them across sessions"), open a `soon` Study Year for good, and remove an empty subject or lecture (an old id may then answer `404`) | no (server behaviour, no stamp) | The prod flavor still points at the fail-closed placeholder (`lib/core/config/app_config.dart:54`) — follow-up 5. Catalogue and `/me` names are held in memory and dropped at sign-out: compliant. `universitiesProvider` lives for the app process, so a corrected university/faculty name or a newly opened year stays stale until restart on the registration screens (low; University year picker out of SEIF1014 scope) — follow-up 6. A removed subject or lecture ends in the generic error with a Retry that cannot succeed — follow-up 7 |
+| 3.51.0-m1 | `listSchoolStages` (`GET /reference/school-stages`) **`draft`**; `listEducationSystems` items gain **required** `status: active \| soon`; `completeRegistration` answers `422 school_stage_not_available` / `422 education_system_not_available` (School body only; after every `400`, before `name_not_allowed`; both closed → the stage code; token not consumed) | **BEHAVIOURAL** (`completeRegistration`, `listEducationSystems`) | Until SEIF1014 Job 2, the shipped School screen offered every stage and system as selectable and answered both codes with "Something went wrong" (it stayed on the screen with the draft and token; no name mark, no restart). Production applies the launch rule from its next deploy, so this mattered as soon as a prod base URL exists. Job 2 builds it |
+| 3.52.0-m1 | `listSchoolStages`, the `status` field and the two codes → **`stable`**. 2026-10-13 note: AI explanations go through OpenRouter with safety checks (server only) | no | Job 2 builds against it. Explain stays gated on `AnswerResult.explanationAvailable` (unchanged) |
+
+**Wire-shape audit** (both revisions parsed with PyYAML; descriptions, summaries and examples stripped): no
+operation or schema was removed and no route moved. **3 operations added** (`listSchoolStages`,
+`getAppVersionPolicy`, `listMyDailyTasks`) and **5 schemas** (`AppVersionPolicy`, `PlatformVersionPolicy`,
+`MyDailyTasksPage`, `MyDailyTask`, `DailyTaskSubject`). Wire changes to pre-existing operations, all four of them:
+`completeRegistration` (+ `422`), `listEducationSystems` (+ required `status` on its inline item), `updateMyProfile`
+(+ `422`), `registerFcmToken` (+ `403`). The other 17 changed operations changed prose or stamps only. Three
+component schemas changed prose only: `UniversityRegistration` (`inviteCode`), `StudentProfile` (`level`, `badges`),
+`QuizSummary` (`leveledUp`). **All 13 schemas bound in `test/guards/contract_models_test.dart` are wire-identical**,
+so the re-vendor alone needs no model, mock or fixture change. The app decodes one changed shape,
+`listEducationSystems`' item (`EducationSystemRef`): before Job 2 the new key was simply ignored (nothing in `lib/`
+sets `disallowUnrecognizedKeys`); Job 2 models it. `error-codes.md`: 62 → 65 codes (+ `name_not_allowed`,
+`school_stage_not_available`, `education_system_not_available`), none removed; rows amended in place (see 3.47).
+`realtime.md`: two bullets. `servers:` gains production. `listModules`, `listSubjects` and `getSubjectTree` are
+byte-identical at the operation level.
+
+**Follow-ups this delta surfaces — none is done by the re-vendor** (only SEIF1014 Jobs 2 and 3 build anything):
+
+1. 🔴 **School launch availability** (3.51/3.52) — SEIF1014 Job 2 (`SEIF1014_REPORT.md`).
+2. **The four 3.47 behavioural acknowledgments** to Seif — owner (BH-B4). Nothing in the app breaks under them.
+3. **`account_banned`** — the app's line is the old suggestion and says "contact Support"; the contract now says the
+   channel is email (`error-codes.md`, `account_banned` row). The comment at `lib/core/network/exceptions.dart:155-157`
+   ("no signed-out Support route yet (a question for Seif)") is stale. A copy change needs the owner's approval.
+4. **Daily tasks** (`listMyDailyTasks`, stable since 3.49) — not built; the Home placeholder's premise is stale.
+5. **Production base URL** — the contract now carries it; the prod flavor still fails closed on a placeholder
+   (environment wave, owner decision).
+6. **Reference cache vs admin corrections** — `universitiesProvider` is process-lifetime (low severity).
+7. **Removed subject or lecture** — a `404` lands on a generic error with a futile Retry (low; no code is documented).
+8. **Home level card at Level 12** shows a 6,000 target (`lib/features/home/widgets/level_card.dart:41`, `:169`),
+   a client-side figure the ladder does not have (Level 12 is at 5,500; the next milestone is the first badge at
+   11,000). Pre-existing, already in BH-E10; the 3.47 text only states the ladder exactly.
+9. **Stale wording, comments only:** `lib/features/registration/registration_error_copy.dart:106` and
+   `lib/features/profile/profile_error_copy.dart:49` say `name_not_allowed` is "past the vendored pin (3.46.0-m1)";
+   `lib/l10n/app_localizations.dart:431`, `:1769` and `:1775` (generated from the ARB `@` descriptions) cite "pin
+   eddb6ac"; the NNA test headers (`edit_profile_name_not_allowed_test.dart:22`,
+   `registration_name_not_allowed_test.dart:39`) say "ahead of the vendored 3.46.0-m1 pin". All are in other waves'
+   uncommitted hunks and none is a test assertion, so none was changed (line numbers as of 2026-10-14, after SEIF1014).
+10. **Answered upstream:** SQ-09 (push-token lifecycle), the chat-hub half of SQ-01, and SQ-24(l) / H-19 / I-5
+    (`inviteCode` stable on both bodies) — record them as answered in the next handoff pass.
+11. **Two upstream inconsistencies to mention to Seif:** the `dailyTasks` tag text still says `draft`; the
+    `redemption_in_progress` wording (web only, no app impact).
+
+⚠️ **Line-number drift.** `openapi.yaml` grows by 366 lines (4,935 → 5,301). Line 28 (`info.version`) changes in
+place; the first insertion lands after old line 90 (inside `info.description`), so nearly every `openapi.yaml:NNN`
+citation in `lib/` and `test/` is off by an irregular amount. Treat every citation as approximate.
+
+## Delta from 3.38.0-m1 — eight mobile versions (2026-10-09 re-vendor, CW01, kept for history)
 
 Re-vendored on the owner's authorisation (2026-10-09, D-022), as a contract update only: nothing is
 built against it yet. Upstream moved 13 commits past 65245be (2026-10-07 → 2026-10-08); ten touch
