@@ -108,7 +108,7 @@ void main() {
   Future<void> reachOtp(WidgetTester tester) async {
     await tester.tap(find.text('Log In'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '01021871999');
+    await tester.enterText(find.byType(TextField), '010000000001');
     await tester.tap(find.widgetWithText(FilledButton, 'Send OTP'));
     await pumpFrames(tester);
     expect(find.byType(OtpScreen), findsOneWidget);

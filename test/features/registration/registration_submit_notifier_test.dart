@@ -97,7 +97,7 @@ void main() {
       )
       ..setIdentity(
         name: 'Nour Hassan',
-        parentPhone: '+201021871999',
+        parentPhone: '+2010000000001',
         referralCode: 'FRIEND50',
       )
       ..setTrack(RegTrack.school)
@@ -123,7 +123,7 @@ void main() {
     final c = container();
     c.read(registrationControllerProvider.notifier)
       ..start(_args)
-      ..setIdentity(name: 'Nour Hassan', parentPhone: '+201021871999')
+      ..setIdentity(name: 'Nour Hassan', parentPhone: '+2010000000001')
       ..setTrack(RegTrack.university)
       ..setDateOfBirth(DateTime(2004, 3, 7))
       ..setUniversity('uni-cairo')
@@ -200,7 +200,7 @@ void main() {
                     as SchoolRegistration)
                 .toJson();
         expect(json['name'], 'Nour Hassan');
-        expect(json['parentPhone'], '+201021871999');
+        expect(json['parentPhone'], '+2010000000001');
         expect(json.containsKey('referralCode'), isFalse);
         expect(json.values, isNot(contains('FRIEND50')));
       },

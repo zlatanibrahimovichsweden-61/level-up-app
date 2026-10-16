@@ -49,7 +49,7 @@ Pull it yourself with the Figma MCP for pixel detail.
 - Bird logo (vector) + "Welcome back" — Inter Bold 36, black, centered
 - "Enter your phone number to continue" — Inter Bold 20, `#0e0e0e`
 - "Phone Number" label — Inter Medium 18, `#2c2c2c`
-- Phone field: bg `#fdfdfd`, border `#d1d1d1` 1.17px, radius 20, height 60. EG flag + `+20` (Tajawal Bold, `#2a2a2a`) + dropdown caret + placeholder `01021871999` (`#696969`, 18)
+- Phone field: bg `#fdfdfd`, border `#d1d1d1` 1.17px, radius 20, height 60. EG flag + `+20` (Tajawal Bold, `#2a2a2a`) + dropdown caret + placeholder `01X XXXX XXXX` (`#696969`, 18) — the frame's sample number was a real person's; replaced 2026-10-09 (N-26, `DESIGN_ISSUES.md` #127)
 - **Send OTP** button: bg `#384f47`, radius 20, height 60, text `#fcfbf9` Inter SemiBold 22, subtle drop shadow
 - "OR" — 14, centered
 - **Create New Account** button: bg `#fcfbf9`, border `#384f47` 0.5px, radius 20, height 60, text `#0e0e0e` 22 → routes to `/register`

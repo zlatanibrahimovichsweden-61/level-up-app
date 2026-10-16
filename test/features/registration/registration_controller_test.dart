@@ -7,7 +7,7 @@ import 'package:level_up_app/features/registration/notifier/registration_control
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600, // 10-minute window
-  phone: '+201021871999',
+  phone: '+2010000000001',
 );
 
 ProviderContainer _container() {
@@ -30,7 +30,7 @@ void main() {
 
       final draft = container.read(registrationControllerProvider)!;
       expect(draft.registrationToken, 'reg.token');
-      expect(draft.phone, '+201021871999');
+      expect(draft.phone, '+2010000000001');
       expect(draft.isExpired, isFalse);
       // Deadline is ~now + expiresInSeconds (allow slack for test execution).
       expect(
@@ -63,7 +63,7 @@ void main() {
       expect(draft.track, RegTrack.university);
       // Token + phone survive the accumulation.
       expect(draft.registrationToken, 'reg.token');
-      expect(draft.phone, '+201021871999');
+      expect(draft.phone, '+2010000000001');
       // Reference the notifier so the cascade isn't flagged as unused.
       expect(notifier, isNotNull);
     });
@@ -124,7 +124,7 @@ void main() {
       final draft = RegistrationDraft(
         registrationToken: 't',
         tokenExpiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
-        phone: '+201021871999',
+        phone: '+2010000000001',
       );
       expect(draft.isExpired, isTrue);
     });
@@ -133,7 +133,7 @@ void main() {
       final draft = RegistrationDraft(
         registrationToken: 't',
         tokenExpiresAt: DateTime.now().add(const Duration(minutes: 5)),
-        phone: '+201021871999',
+        phone: '+2010000000001',
       );
       expect(draft.isExpired, isFalse);
     });
@@ -146,7 +146,7 @@ void main() {
             const RegistrationArgs(
               registrationToken: 'reg.token',
               expiresInSeconds: -1, // already past
-              phone: '+201021871999',
+              phone: '+2010000000001',
             ),
           );
       expect(container.read(registrationControllerProvider)!.isExpired, isTrue);

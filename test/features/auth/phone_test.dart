@@ -1,28 +1,30 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/features/auth/models/phone.dart';
+import 'package:level_up_app/l10n/app_localizations.dart';
 
 void main() {
   group(
     'Phone.tryParse — normalizes to contract E.164 (^\\+[1-9][0-9]{7,14}\$)',
     () {
       test('Egyptian local number with leading 0 → +20…', () {
-        expect(Phone.tryParse('01021871999')?.e164, '+201021871999');
+        expect(Phone.tryParse('010000000001')?.e164, '+2010000000001');
       });
 
       test('local number without leading 0 → +20…', () {
-        expect(Phone.tryParse('1021871999')?.e164, '+201021871999');
+        expect(Phone.tryParse('10000000001')?.e164, '+2010000000001');
       });
 
       test('already-E.164 input is preserved', () {
-        expect(Phone.tryParse('+201021871999')?.e164, '+201021871999');
+        expect(Phone.tryParse('+2010000000001')?.e164, '+2010000000001');
       });
 
       test('Arabic-Indic digits are folded to ASCII', () {
-        expect(Phone.tryParse('٠١٠٢١٨٧١٩٩٩')?.e164, '+201021871999');
+        expect(Phone.tryParse('٠١٠٠٠٠٠٠٠٠٠١')?.e164, '+2010000000001');
       });
 
       test('spaces and dashes are stripped', () {
-        expect(Phone.tryParse('010 2187-1999')?.e164, '+201021871999');
+        expect(Phone.tryParse('010 0000-00001')?.e164, '+2010000000001');
       });
     },
   );
@@ -39,7 +41,16 @@ void main() {
   });
 
   test('isValid mirrors tryParse', () {
-    expect(Phone.isValid('01021871999'), isTrue);
+    expect(Phone.isValid('010000000001'), isTrue);
     expect(Phone.isValid('abc'), isFalse);
+  });
+
+  // N-26: the frame's sample in this hint was a real person's number. The
+  // hint is a pattern now and must never again be a number someone can dial.
+  test('the phone hint is not a dialable number, in either language', () {
+    for (final code in const ['en', 'ar']) {
+      final hint = lookupAppLocalizations(Locale(code)).phoneHint;
+      expect(Phone.isValid(hint), isFalse, reason: 'phoneHint ($code)');
+    }
   });
 }

@@ -41,7 +41,7 @@ class MockSecureStorage extends Mock implements SecureStorage {}
 const _countdown = 21;
 
 OtpArgs _argsWith(int resendAfterSeconds) => OtpArgs(
-  phone: '+201021871999',
+  phone: '+2010000000001',
   resendAfterSeconds: resendAfterSeconds,
   expiresInSeconds: 300,
 );

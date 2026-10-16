@@ -24,7 +24,7 @@ import 'package:level_up_app/l10n/app_localizations.dart';
 const _args = RegistrationArgs(
   registrationToken: 'reg.token',
   expiresInSeconds: 600,
-  phone: '+201021871999',
+  phone: '+2010000000001',
 );
 
 const _black25 = Color.fromRGBO(0, 0, 0, 0.25);

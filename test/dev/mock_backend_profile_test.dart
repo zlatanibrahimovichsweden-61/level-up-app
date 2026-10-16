@@ -63,7 +63,7 @@ void main() {
 
     Future<void> signInUniversity() => dio.post<Object?>(
       '/auth/otp/verify',
-      data: {'phone': '+201021871999', 'code': '111111'},
+      data: {'phone': '+2010000000001', 'code': '111111'},
     );
 
     test('a new name is in the answer and in the next GET /me', () async {
@@ -147,7 +147,7 @@ void main() {
       await repo.updateMe(const ProfileUpdate(name: 'ليلى'));
       await dio.post<Object?>(
         '/auth/otp/verify',
-        data: {'phone': '+201021871999', 'code': '000000'},
+        data: {'phone': '+2010000000001', 'code': '000000'},
       );
       expect((await repo.getMe()).name, 'سارة');
     });

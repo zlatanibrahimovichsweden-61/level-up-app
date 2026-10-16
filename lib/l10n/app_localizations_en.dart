@@ -41,7 +41,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneLabel => 'Phone Number';
 
   @override
-  String get phoneHint => '01021871999';
+  String get phoneHint => '01X XXXX XXXX';
 
   @override
   String get sendOtp => 'Send OTP';

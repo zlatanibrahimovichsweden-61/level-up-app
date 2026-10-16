@@ -145,7 +145,7 @@ void main() {
         // typed number does not reach `_submit`.
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(TextField), '01021871999');
+        await tester.enterText(find.byType(TextField), '010000000001');
         await tester.pumpAndSettle();
         await _tapCreateAccount(tester);
         await tester.pumpAndSettle();
@@ -155,7 +155,7 @@ void main() {
         // and let `otp/verify` decide new-vs-existing.
         expect(find.text('OTP SCREEN'), findsOneWidget);
         expect(find.text('REGISTER'), findsNothing);
-        verify(() => repo.requestOtp('+201021871999')).called(1);
+        verify(() => repo.requestOtp('+2010000000001')).called(1);
       },
     );
 
