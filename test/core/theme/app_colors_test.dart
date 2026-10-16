@@ -1066,6 +1066,233 @@ void main() {
     });
   });
 
+  // CW12a: the support tickets screens. One row per token, so a token added to
+  // the class without a row here is the next reviewer's question.
+  group('CW12a Support tokens', () {
+    const light = AppColors.light;
+    const dark = AppColors.dark;
+
+    const ink = Color(0xFF384F47); // Brand.greenPrimary
+    const cream = Color(0xFFFCFBF9);
+    const veil = Color(0x33232428); // #232428 at 20%
+    const pillFill = Color.fromRGBO(182, 182, 182, 0.13); // #B6B6B6 at 13%
+    const divider = Color.fromRGBO(124, 58, 237, 0.1); // 178:3398
+
+    final tokens = <_Token>[
+      _Token(
+        'supportCardFill',
+        (c) => c.supportCardFill,
+        (c, v) => c.copyWith(supportCardFill: v),
+        cream, // 178:3052
+        veil,
+      ),
+      _Token(
+        'supportSurfaceFill',
+        (c) => c.supportSurfaceFill,
+        (c, v) => c.copyWith(supportSurfaceFill: v),
+        const Color(0xFFFFFFFF), // 178:3104
+        veil,
+      ),
+      _Token(
+        'supportInk',
+        (c) => c.supportInk,
+        (c, v) => c.copyWith(supportInk: v),
+        ink, // 178:3104
+        cream,
+      ),
+      _Token(
+        'supportInkMuted',
+        (c) => c.supportInkMuted,
+        (c, v) => c.copyWith(supportInkMuted: v),
+        const Color(0xFF4B675E), // 178:3110
+        const Color(0xFFDCDCDC),
+      ),
+      _Token(
+        'supportRowBorder',
+        (c) => c.supportRowBorder,
+        (c, v) => c.copyWith(supportRowBorder: v),
+        const Color(0xFF4B675E), // 178:3104
+        const Color(0xFF4B675E),
+      ),
+      _Token(
+        'supportOnInk',
+        (c) => c.supportOnInk,
+        (c, v) => c.copyWith(supportOnInk: v),
+        cream, // 178:3066
+        const Color(0xFF232428),
+      ),
+      _Token(
+        'supportCreateTitle',
+        (c) => c.supportCreateTitle,
+        (c, v) => c.copyWith(supportCreateTitle: v),
+        const Color(0xFF1A1A1A), // 178:3061
+        cream,
+      ),
+      _Token(
+        'supportCreateSubtitle',
+        (c) => c.supportCreateSubtitle,
+        (c, v) => c.copyWith(supportCreateSubtitle: v),
+        const Color(0xFF424242), // 178:3065
+        const Color(0xFFDCDCDC),
+      ),
+      _Token(
+        'supportHeadingSubtitle',
+        (c) => c.supportHeadingSubtitle,
+        (c, v) => c.copyWith(supportHeadingSubtitle: v),
+        const Color(0xFF7C7C7C), // 178:3343
+        const Color(0xFFECECEC),
+      ),
+      _Token(
+        'supportInputHint',
+        (c) => c.supportInputHint,
+        (c, v) => c.copyWith(supportInputHint: v),
+        const Color(0xFFB7B7B7), // 178:3352
+        const Color(0xFFB3B3B3),
+      ),
+      _Token(
+        'supportComposerHint',
+        (c) => c.supportComposerHint,
+        (c, v) => c.copyWith(supportComposerHint: v),
+        const Color(0xFFA1A1A1), // 178:3469
+        const Color(0xFFB3B3B3),
+      ),
+      _Token(
+        'supportPillClosedFill',
+        (c) => c.supportPillClosedFill,
+        (c, v) => c.copyWith(supportPillClosedFill: v),
+        pillFill, // 178:3131
+        pillFill,
+      ),
+      _Token(
+        'supportPillClosedLabel',
+        (c) => c.supportPillClosedLabel,
+        (c, v) => c.copyWith(supportPillClosedLabel: v),
+        const Color(0xFF444444), // 178:3131
+        const Color(0xFFDCDCDC),
+      ),
+      _Token(
+        'supportThreadDivider',
+        (c) => c.supportThreadDivider,
+        (c, v) => c.copyWith(supportThreadDivider: v),
+        divider, // 178:3398
+        divider,
+      ),
+    ];
+
+    test('the table has one row per token, none repeated', () {
+      expect(tokens, hasLength(14));
+      expect({for (final t in tokens) t.name}, hasLength(14));
+      expect(
+        tokens.every((t) => t.name.startsWith('support')),
+        isTrue,
+        reason: 'every CW12a token is named support*',
+      );
+    });
+
+    test('the frame\'s values in light, the stand-ins in dark', () {
+      for (final t in tokens) {
+        expect(t.read(light), t.light, reason: '${t.name} in light');
+        expect(t.read(dark), t.dark, reason: '${t.name} in dark');
+      }
+    });
+
+    test('the pill alpha and the divider alpha are the frame\'s', () {
+      // 13% and 10% as the Properties panel states them: 0.13 * 255 = 33.15,
+      // 0.10 * 255 = 25.5. The alpha is part of the reading, so it is pinned
+      // on its own as well as inside the table.
+      expect(light.supportPillClosedFill.a, closeTo(0.13, 0.005));
+      expect(light.supportThreadDivider.a, closeTo(0.10, 0.005));
+    });
+
+    test('the dark values with no frame are named stand-ins, not '
+        'inventions', () {
+      // No dark support frame exists: every dark value copies the dark token
+      // it is documented to copy, so the day one is drawn the diff is a
+      // reading and not a surprise.
+      expect(dark.supportCardFill, dark.cardFill);
+      expect(dark.supportSurfaceFill, dark.fieldFill);
+      expect(dark.supportInk, dark.textPrimary);
+      expect(dark.supportInkMuted, dark.textSecondary);
+      expect(dark.supportRowBorder, dark.quizOptionBorder);
+      expect(dark.supportOnInk, dark.background);
+      expect(dark.supportCreateTitle, dark.textPrimary);
+      expect(dark.supportCreateSubtitle, dark.textSecondary);
+      expect(dark.supportHeadingSubtitle, dark.bodyMuted);
+      expect(dark.supportInputHint, dark.mutedText);
+      expect(dark.supportComposerHint, dark.mutedText);
+      expect(dark.supportPillClosedLabel, dark.textSecondary);
+    });
+
+    test('the dark text stand-ins read on the dark canvas', () {
+      // The reason the light inks (#384F47, #444444 ...) are NOT repeated in
+      // dark: measured WCAG 2.x contrast against the opaque dark canvas.
+      double contrast(Color a, Color b) {
+        final la = a.computeLuminance();
+        final lb = b.computeLuminance();
+        final hi = la > lb ? la : lb;
+        final lo = la > lb ? lb : la;
+        return (hi + 0.05) / (lo + 0.05);
+      }
+
+      final canvas = dark.background;
+      for (final t in tokens.where(
+        (t) => const {
+          'supportInk',
+          'supportInkMuted',
+          'supportCreateTitle',
+          'supportCreateSubtitle',
+          'supportHeadingSubtitle',
+          'supportInputHint',
+          'supportComposerHint',
+          'supportPillClosedLabel',
+        }.contains(t.name),
+      )) {
+        expect(
+          contrast(t.read(dark), canvas),
+          greaterThanOrEqualTo(4.5),
+          reason: '${t.name} does not read on the dark canvas',
+        );
+      }
+      // The plus on the add button: the glyph on the button's own fill.
+      expect(
+        contrast(dark.supportOnInk, dark.supportInk),
+        greaterThanOrEqualTo(4.5),
+        reason: 'the add button\'s plus does not read in dark',
+      );
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probe = Color(0xFF010203);
+
+      for (final t in tokens) {
+        // copyWith sets this one…
+        final one = t.put(light, probe);
+        expect(t.read(one), probe, reason: '${t.name} copyWith');
+        // …and leaves every other one alone.
+        for (final other in tokens.where((o) => o != t)) {
+          expect(
+            other.read(one),
+            other.read(light),
+            reason: '${t.name} copyWith moved ${other.name}',
+          );
+        }
+      }
+
+      // Several are identical on both canvases, so light→dark would pass with
+      // a broken lerp. Lerp towards probes instead.
+      var target = light;
+      for (final t in tokens) {
+        target = t.put(target, probe);
+      }
+      final end = light.lerp(target, 1);
+      final start = light.lerp(target, 0);
+      for (final t in tokens) {
+        expect(t.read(end), probe, reason: '${t.name} lerp to 1');
+        expect(t.read(start), t.read(light), reason: '${t.name} lerp to 0');
+      }
+    });
+  });
+
   test('all three brand assets landed', () {
     // DESIGN_ISSUES #1 (export disabled on a View-only seat) is closed; these
     // three were placeholders since Day 1.

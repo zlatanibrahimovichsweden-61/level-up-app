@@ -306,5 +306,17 @@
   "flashcardPreviewUsedUp": "لقد استخدمت البطاقات المجانية لهذا الأسبوع.",
   "notifFilterAll": "الكل",
   "notifModerationWarningTitle": "رسالة بخصوص حسابك",
-  "notifModerationWarningBody": "وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل التطبيق."
+  "notifModerationWarningBody": "وصلنا بلاغ عن محتوى من حسابك لا يتوافق مع قواعد مجتمع Level Up. هذا تنبيه لك. من فضلك حافظ على احترام الآخرين في رسائلك وصورك. إذا تكرر ذلك فقد يتم إيقاف حسابك نهائيا. إذا كنت ترى أن هذا حدث بالخطأ، تواصل مع الدعم من داخل التطبيق.",
+  "supportCreateNewTicket": "Create a New Ticket",
+  "supportDescribeYourIssue": "Describe your issue",
+  "supportRecentTickets": "Recent Tickets",
+  "supportNewTicketTitle": "New Ticket",
+  "supportCreateTicketSubtitle": "Describe your issue and we'll help you",
+  "supportSubjectLabel": "Subject",
+  "supportDetailsLabel": "Details",
+  "supportDetailsHint": "Describe the issue in detail...",
+  "supportSubmitTicket": "Submit Ticket",
+  "supportStatusClosed": "Closed",
+  "supportComposerHint": "Write your message",
+  "supportTicketMeta": "{reference} · {date}"
 }

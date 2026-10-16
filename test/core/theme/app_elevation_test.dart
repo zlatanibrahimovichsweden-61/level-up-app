@@ -718,6 +718,160 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  group('CW12a — the support tickets screens', () {
+    const black13 = Color.fromRGBO(0, 0, 0, 0.13);
+
+    test('light: three DROP and three INNER shadows, no Glass '
+        '(178:3052, 178:3066, 178:3104, 178:3333, 178:3467, 178:3468)', () {
+      expect(light.supportCreateCardShadows, const [
+        FigmaShadow(color: black25, offset: Offset(0.5, 0.5), blur: 4),
+      ]);
+      expect(light.supportAddButtonShadows, const [
+        FigmaShadow(color: black25, offset: Offset(0.028, 0.028), blur: 1.3),
+      ]);
+      expect(light.supportRowShadows, const [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0.02, 0.02),
+          blur: 2.8,
+          inset: true,
+        ),
+      ]);
+      expect(light.supportFieldSectionShadows, const [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0.2, 0.2),
+          blur: 3.4,
+          inset: true,
+        ),
+      ]);
+      expect(light.supportInputShadows, const [
+        FigmaShadow(
+          color: black25,
+          offset: Offset(0, 0),
+          blur: 3.3,
+          inset: true,
+        ),
+      ]);
+      // The composer bar sits at the bottom, so its drop shadow points UP.
+      //
+      // Both composer shadows are exported as CSS drop-shadow FILTERS
+      // (`drop-shadow-[0px_-1px_1.85px…]`, `drop-shadow-[0.2px_0.2px_0.8px…]`),
+      // whose third value is half the Figma blur: the primary CTA is blur 4 and
+      // node 348:8911 exports it as `drop-shadow-[0.5px_0.5px_2px]`. So the
+      // blurs are 2 x 1.85 = 3.7 and 2 x 0.8 = 1.6. The other support shadows
+      // are box-shadows (`shadow-[…]`) and stay 1:1.
+      expect(light.primaryCtaShadows.single.blur, 4);
+      expect(light.supportComposerBarShadows, const [
+        FigmaShadow(color: black10, offset: Offset(0, -1), blur: 3.7),
+      ]);
+      expect(light.supportComposerFieldShadows, const [
+        FigmaShadow(color: black13, offset: Offset(0.2, 0.2), blur: 1.6),
+      ]);
+      expect(light.supportCreateCardGlass, isNull);
+      expect(light.supportRowGlass, isNull);
+      expect(light.supportFieldSectionGlass, isNull);
+      expect(light.supportComposerBarGlass, isNull);
+    });
+
+    test('the three inner shadows are inset, the four others are not', () {
+      for (final s in [
+        ...light.supportRowShadows,
+        ...light.supportFieldSectionShadows,
+        ...light.supportInputShadows,
+      ]) {
+        expect(s.inset, isTrue);
+      }
+      for (final s in [
+        ...light.supportCreateCardShadows,
+        ...light.supportAddButtonShadows,
+        ...light.supportComposerBarShadows,
+        ...light.supportComposerFieldShadows,
+      ]) {
+        expect(s.inset, isFalse);
+      }
+    });
+
+    test('dark: no shadow anywhere and Glass G5 on the four surfaces that '
+        'have a token - stand-ins, no dark frame exists', () {
+      expect(dark.supportCreateCardShadows, isEmpty);
+      expect(dark.supportAddButtonShadows, isEmpty);
+      expect(dark.supportRowShadows, isEmpty);
+      expect(dark.supportFieldSectionShadows, isEmpty);
+      expect(dark.supportInputShadows, isEmpty);
+      expect(dark.supportComposerBarShadows, isEmpty);
+      expect(dark.supportComposerFieldShadows, isEmpty);
+      expect(dark.supportCreateCardGlass, g5);
+      expect(dark.supportRowGlass, g5);
+      expect(dark.supportFieldSectionGlass, g5);
+      expect(dark.supportComposerBarGlass, g5);
+    });
+
+    test('every one is wired through copyWith and lerp', () {
+      const probeShadows = [
+        FigmaShadow(color: black25, offset: Offset(9, 9), blur: 9),
+      ];
+      const probeGlass = GlassStyle(
+        frost: 9,
+        refraction: 0.1,
+        depth: 9,
+        lightAngle: 9,
+        lightIntensity: 0.9,
+        dispersion: 0.9,
+        splay: 9,
+      );
+      final one = light.copyWith(
+        supportCreateCardShadows: probeShadows,
+        supportCreateCardGlass: probeGlass,
+        supportAddButtonShadows: probeShadows,
+        supportRowShadows: probeShadows,
+        supportRowGlass: probeGlass,
+        supportFieldSectionShadows: probeShadows,
+        supportFieldSectionGlass: probeGlass,
+        supportInputShadows: probeShadows,
+        supportComposerBarShadows: probeShadows,
+        supportComposerBarGlass: probeGlass,
+        supportComposerFieldShadows: probeShadows,
+      );
+      expect(one.supportCreateCardShadows, probeShadows);
+      expect(one.supportCreateCardGlass, probeGlass);
+      expect(one.supportAddButtonShadows, probeShadows);
+      expect(one.supportRowShadows, probeShadows);
+      expect(one.supportRowGlass, probeGlass);
+      expect(one.supportFieldSectionShadows, probeShadows);
+      expect(one.supportFieldSectionGlass, probeGlass);
+      expect(one.supportInputShadows, probeShadows);
+      expect(one.supportComposerBarShadows, probeShadows);
+      expect(one.supportComposerBarGlass, probeGlass);
+      expect(one.supportComposerFieldShadows, probeShadows);
+      // …and a neighbour is left alone.
+      expect(one.notificationRowShadows, light.notificationRowShadows);
+      expect(one.flashcardCardShadows, light.flashcardCardShadows);
+
+      // Light and dark differ in every one, so a lerp that ignored a token
+      // would leave it at the start value.
+      final end = light.lerp(dark, 1);
+      expect(end.supportCreateCardGlass, g5);
+      expect(end.supportRowGlass, g5);
+      expect(end.supportFieldSectionGlass, g5);
+      expect(end.supportComposerBarGlass, g5);
+      expect(end.supportCreateCardShadows, isEmpty);
+      expect(end.supportAddButtonShadows, isEmpty);
+      expect(end.supportRowShadows, isEmpty);
+      expect(end.supportFieldSectionShadows, isEmpty);
+      expect(end.supportInputShadows, isEmpty);
+      expect(end.supportComposerBarShadows, isEmpty);
+      expect(end.supportComposerFieldShadows, isEmpty);
+      final start = light.lerp(dark, 0);
+      expect(start.supportRowGlass, isNull);
+      expect(start.supportCreateCardShadows, light.supportCreateCardShadows);
+      expect(start.supportRowShadows, light.supportRowShadows);
+      expect(start.supportInputShadows, light.supportInputShadows);
+      expect(start.supportComposerBarShadows, light.supportComposerBarShadows);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   /// Every shadow-list token, by name, so the sweeps below cannot quietly miss
   /// one that was added to the class after they were written.
   Map<String, List<FigmaShadow>> shadowsOf(AppElevation e) => {
@@ -753,6 +907,13 @@ void main() {
     'flashcardCardShadows': e.flashcardCardShadows,
     'notificationRowShadows': e.notificationRowShadows,
     'notificationChipIdleShadows': e.notificationChipIdleShadows,
+    'supportCreateCardShadows': e.supportCreateCardShadows,
+    'supportAddButtonShadows': e.supportAddButtonShadows,
+    'supportRowShadows': e.supportRowShadows,
+    'supportFieldSectionShadows': e.supportFieldSectionShadows,
+    'supportInputShadows': e.supportInputShadows,
+    'supportComposerBarShadows': e.supportComposerBarShadows,
+    'supportComposerFieldShadows': e.supportComposerFieldShadows,
   };
 
   group('#34 — the dark canvas drops BLACK shadows, never cream', () {
@@ -851,6 +1012,10 @@ void main() {
       'notificationRowGlass': e.notificationRowGlass,
       'notificationDiscGlass': e.notificationDiscGlass,
       'notificationChipIdleGlass': e.notificationChipIdleGlass,
+      'supportCreateCardGlass': e.supportCreateCardGlass,
+      'supportRowGlass': e.supportRowGlass,
+      'supportFieldSectionGlass': e.supportFieldSectionGlass,
+      'supportComposerBarGlass': e.supportComposerBarGlass,
     };
 
     test('the onboarding sheet is the ONLY light Glass', () {
@@ -915,8 +1080,10 @@ void main() {
         // 88 from API→UI Wave 22: `flashcardCardShadows`.
         // 93 from CW07a: the inbox's row and idle-chip shadows and the three
         // Glass tokens (row, disc, idle chip).
+        // 104 from CW12a: the support screens' seven shadow lists and four
+        // Glass tokens (create card, row, field section, composer bar).
         light.props.length,
-        93,
+        104,
         reason:
             'a token was added or removed. Update props (and this count) so '
             'equality keeps covering every field.',

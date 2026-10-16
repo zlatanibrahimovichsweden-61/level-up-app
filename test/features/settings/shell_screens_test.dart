@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:level_up_app/core/theme/app_colors.dart';
-import 'package:level_up_app/features/account_shells/screens/customer_support_screen.dart';
 import 'package:level_up_app/features/account_shells/screens/friends_screen.dart';
 import 'package:level_up_app/features/account_shells/screens/legal_document_screen.dart';
 import 'package:level_up_app/features/account_shells/screens/refer_a_friend_screen.dart';
@@ -22,17 +21,13 @@ void main() {
   /// route → the screen's title, in EN.
   const shells = <String, String>{
     '/refer': 'Refer a Friend',
-    '/support': 'Customer Support',
     '/friends': 'Friends',
     '/legal/privacy': 'Privacy & policy',
     '/legal/terms': 'Terms & Conditions',
   };
 
   /// The disabled primary controls, by route → `Key`.
-  const deadControls = <String, String>{
-    '/refer': 'refer_share_button',
-    '/support': 'support_create_ticket_button',
-  };
+  const deadControls = <String, String>{'/refer': 'refer_share_button'};
 
   group('each shell exists at its route', () {
     for (final entry in shells.entries) {
@@ -47,7 +42,6 @@ void main() {
     testWidgets('the right screen class, not a placeholder', (tester) async {
       for (final pair in <String, Type>{
         '/refer': ReferAFriendScreen,
-        '/support': CustomerSupportScreen,
         '/friends': FriendsScreen,
         '/legal/privacy': LegalDocumentScreen,
       }.entries) {
@@ -113,7 +107,6 @@ void main() {
     ) async {
       const reasons = <String, String>{
         'refer_share_button': 'Inviting friends isn\'t available yet.',
-        'support_create_ticket_button': 'Support isn\'t available yet.',
       };
 
       for (final entry in deadControls.entries) {

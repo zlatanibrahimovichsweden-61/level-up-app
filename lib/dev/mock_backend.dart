@@ -34,6 +34,7 @@ import 'package:dio/dio.dart';
 
 import '../core/network/interceptors/error_interceptor.dart';
 import 'mock_notifications.dart';
+import 'mock_support.dart';
 
 /// Builds the Dio that replaces the real client for the mock run.
 ///
@@ -143,6 +144,12 @@ class MockBackendInterceptor extends Interceptor {
   /// `POST /me/notifications/{id}/read`. Its fixtures and rules live in
   /// `mock_notifications.dart`; read marks persist for this session.
   final _notifications = MockNotificationsInbox();
+
+  /// The student's support tickets (CW12a): `GET`/`POST /support/tickets`,
+  /// `GET /support/tickets/{id}` and `GET`/`POST /support/tickets/{id}/messages`.
+  /// Fixtures and rules live in `mock_support.dart`; creates and replies persist
+  /// for this session.
+  final _support = MockSupportDesk();
 
   @override
   Future<void> onRequest(
@@ -301,6 +308,40 @@ class MockBackendInterceptor extends Interceptor {
           :final detail,
         ):
           return _problem(handler, options, status, code, detail);
+      }
+    }
+
+    // ---- support tickets (CW12a) ------------------------------------------
+    // The five text-only operations are `stable`; the data and the contract's
+    // rules (paging, cursor validation, create limits and the daily 429, the
+    // closed-ticket 409, 404 for an unknown id) are in `mock_support.dart`.
+    // `/support/attachments*` (photos, CW12b) is not served and falls through
+    // to the generic 404 below.
+    final supportReply = _support.handle(method, path, query, body);
+    if (supportReply != null) {
+      switch (supportReply) {
+        case MockSupportOk(:final status, :final data):
+          return _ok(handler, options, status, data);
+        case MockSupportValidation(:final errors):
+          return _validationFailed(handler, options, errors);
+        case MockSupportProblem(
+          :final status,
+          :final code,
+          :final detail,
+          :final retryAfterSeconds,
+        ):
+          return _problem(
+            handler,
+            options,
+            status,
+            code,
+            detail,
+            headers: retryAfterSeconds == null
+                ? null
+                : <String, List<String>>{
+                    'retry-after': ['$retryAfterSeconds'],
+                  },
+          );
       }
     }
 

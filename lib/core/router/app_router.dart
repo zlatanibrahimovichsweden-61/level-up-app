@@ -40,6 +40,8 @@ import '../../features/registration/screens/university_detail_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/shell/screens/tab_placeholder.dart';
+import '../../features/support/screens/create_support_ticket_screen.dart';
+import '../../features/support/screens/support_ticket_screen.dart';
 import '../../l10n/app_localizations.dart';
 import 'return_target.dart';
 import 'route_error_screen.dart';
@@ -545,6 +547,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/support',
         builder: (_, _) => const CustomerSupportScreen(),
+      ),
+      // The support tickets' other two screens (CW12a), flat siblings of
+      // `/support` and pushed over the shell the same way: the frames draw no
+      // nav bar. Authenticated by the default-deny redirect; not shell
+      // locations, so return-to-target never remembers them. `ticketId` is the
+      // server's handle, never the `TK-n` reference.
+      GoRoute(
+        path: '/support/new',
+        builder: (_, _) => const CreateSupportTicketScreen(),
+      ),
+      GoRoute(
+        path: '/support/tickets/:ticketId',
+        builder: (_, state) =>
+            SupportTicketScreen(ticketId: state.pathParameters['ticketId']!),
       ),
       // No entry point in the app — the Profile frame draws no Friends row (see
       // FriendsScreen). Routed so the built screen is reachable and testable

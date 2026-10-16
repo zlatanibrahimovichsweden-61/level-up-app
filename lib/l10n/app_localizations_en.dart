@@ -956,4 +956,43 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notifModerationWarningBody =>
       'We received a report about content from your account that does not follow the Level Up community rules. This is a warning. Please keep your messages and photos respectful. If this happens again, your account may be banned. If you think this is a mistake, contact Support from the app.';
+
+  @override
+  String get supportCreateNewTicket => 'Create a New Ticket';
+
+  @override
+  String get supportDescribeYourIssue => 'Describe your issue';
+
+  @override
+  String get supportRecentTickets => 'Recent Tickets';
+
+  @override
+  String get supportNewTicketTitle => 'New Ticket';
+
+  @override
+  String get supportCreateTicketSubtitle =>
+      'Describe your issue and we\'ll help you';
+
+  @override
+  String get supportSubjectLabel => 'Subject';
+
+  @override
+  String get supportDetailsLabel => 'Details';
+
+  @override
+  String get supportDetailsHint => 'Describe the issue in detail...';
+
+  @override
+  String get supportSubmitTicket => 'Submit Ticket';
+
+  @override
+  String get supportStatusClosed => 'Closed';
+
+  @override
+  String get supportComposerHint => 'Write your message';
+
+  @override
+  String supportTicketMeta(String reference, String date) {
+    return '$reference · $date';
+  }
 }
